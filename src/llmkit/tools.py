@@ -2,6 +2,7 @@
 Tool System - Function Calling
 LLM이 도구(함수)를 호출할 수 있게 하는 시스템
 """
+
 import inspect
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
@@ -14,6 +15,7 @@ logger = get_logger(__name__)
 @dataclass
 class ToolParameter:
     """도구 파라미터"""
+
     name: str
     type: str  # string, number, boolean, object, array
     description: str
@@ -38,6 +40,7 @@ class Tool:
         result = tool.execute({"query": "Python"})
         ```
     """
+
     name: str
     description: str
     parameters: List[ToolParameter]
@@ -50,10 +53,7 @@ class Tool:
         required = []
 
         for param in self.parameters:
-            prop = {
-                "type": param.type,
-                "description": param.description
-            }
+            prop = {"type": param.type, "description": param.description}
             if param.enum:
                 prop["enum"] = param.enum
 
@@ -67,26 +67,18 @@ class Tool:
             "function": {
                 "name": self.name,
                 "description": self.description,
-                "parameters": {
-                    "type": "object",
-                    "properties": properties,
-                    "required": required
-                }
-            }
+                "parameters": {"type": "object", "properties": properties, "required": required},
+            },
         }
 
     def to_anthropic_format(self) -> Dict:
         """Anthropic Tool 형식으로 변환"""
-        input_schema = {
-            "type": "object",
-            "properties": {},
-            "required": []
-        }
+        input_schema = {"type": "object", "properties": {}, "required": []}
 
         for param in self.parameters:
             input_schema["properties"][param.name] = {
                 "type": param.type,
-                "description": param.description
+                "description": param.description,
             }
             if param.enum:
                 input_schema["properties"][param.name]["enum"] = param.enum
@@ -94,11 +86,7 @@ class Tool:
             if param.required:
                 input_schema["required"].append(param.name)
 
-        return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": input_schema
-        }
+        return {"name": self.name, "description": self.description, "input_schema": input_schema}
 
     def execute(self, arguments: Dict[str, Any]) -> Any:
         """
@@ -121,10 +109,7 @@ class Tool:
 
     @classmethod
     def from_function(
-        cls,
-        func: Callable,
-        name: Optional[str] = None,
-        description: Optional[str] = None
+        cls, func: Callable, name: Optional[str] = None, description: Optional[str] = None
     ) -> "Tool":
         """
         Python 함수에서 Tool 생성
@@ -176,18 +161,20 @@ class Tool:
             # 필수 여부
             required = param.default == inspect.Parameter.empty
 
-            parameters.append(ToolParameter(
-                name=param_name,
-                type=param_type,
-                description=f"Parameter {param_name}",
-                required=required
-            ))
+            parameters.append(
+                ToolParameter(
+                    name=param_name,
+                    type=param_type,
+                    description=f"Parameter {param_name}",
+                    required=required,
+                )
+            )
 
         return cls(
             name=tool_name,
             description=tool_description.strip(),
             parameters=parameters,
-            function=func
+            function=func,
         )
 
 
@@ -226,7 +213,7 @@ class ToolRegistry:
         self,
         func: Optional[Callable] = None,
         name: Optional[str] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         도구 등록 (데코레이터로 사용 가능)
@@ -238,6 +225,7 @@ class ToolRegistry:
                 return x * 2
             ```
         """
+
         def decorator(f: Callable) -> Callable:
             tool = Tool.from_function(f, name=name, description=description)
             self.tools[tool.name] = tool
@@ -283,9 +271,7 @@ _global_registry = ToolRegistry()
 
 
 def register_tool(
-    func: Optional[Callable] = None,
-    name: Optional[str] = None,
-    description: Optional[str] = None
+    func: Optional[Callable] = None, name: Optional[str] = None, description: Optional[str] = None
 ):
     """
     전역 레지스트리에 도구 등록
@@ -334,7 +320,7 @@ def calculator(operation: str, a: float, b: float) -> float:
         "add": lambda x, y: x + y,
         "subtract": lambda x, y: x - y,
         "multiply": lambda x, y: x * y,
-        "divide": lambda x, y: x / y if y != 0 else "Error: Division by zero"
+        "divide": lambda x, y: x / y if y != 0 else "Error: Division by zero",
     }
 
     if operation not in operations:
@@ -347,6 +333,7 @@ def calculator(operation: str, a: float, b: float) -> float:
 def get_current_time() -> str:
     """현재 시간 가져오기"""
     from datetime import datetime
+
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 

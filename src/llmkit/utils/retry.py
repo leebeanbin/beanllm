@@ -2,6 +2,7 @@
 Retry Logic
 재시도 로직 (독립적)
 """
+
 import asyncio
 import time
 from functools import wraps
@@ -15,7 +16,7 @@ logger = get_logger(__name__)
 def retry(
     max_attempts: int = 3,
     backoff: float = 2.0,
-    exceptions: Tuple[Type[Exception], ...] = (Exception,)
+    exceptions: Tuple[Type[Exception], ...] = (Exception,),
 ):
     """
     재시도 데코레이터
@@ -30,6 +31,7 @@ def retry(
         async def fetch_data():
             ...
     """
+
     def decorator(func: Callable):
         @wraps(func)
         async def async_wrapper(*args, **kwargs):
@@ -42,9 +44,7 @@ def retry(
                     last_exception = e
 
                     if attempt == max_attempts:
-                        logger.error(
-                            f"Failed after {max_attempts} attempts: {func.__name__}"
-                        )
+                        logger.error(f"Failed after {max_attempts} attempts: {func.__name__}")
                         raise
 
                     wait_time = backoff ** (attempt - 1)
@@ -67,9 +67,7 @@ def retry(
                     last_exception = e
 
                     if attempt == max_attempts:
-                        logger.error(
-                            f"Failed after {max_attempts} attempts: {func.__name__}"
-                        )
+                        logger.error(f"Failed after {max_attempts} attempts: {func.__name__}")
                         raise
 
                     wait_time = backoff ** (attempt - 1)

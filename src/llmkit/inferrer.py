@@ -30,7 +30,7 @@ class MetadataInferrer:
                     "rules": {
                         "uses_max_completion_tokens": True,
                         "supports_max_tokens": False,
-                    }
+                    },
                 },
                 {
                     "match": r".*nano.*",
@@ -41,7 +41,7 @@ class MetadataInferrer:
                         "tier": "nano",
                         "speed": "fastest",
                         "notes": "Temperature parameter not supported",
-                    }
+                    },
                 },
                 {
                     "match": r".*mini.*",
@@ -51,7 +51,7 @@ class MetadataInferrer:
                         "max_tokens": 16384,
                         "tier": "mini",
                         "speed": "fast",
-                    }
+                    },
                 },
                 {
                     "match": r"o3.*|o4.*",
@@ -60,7 +60,7 @@ class MetadataInferrer:
                         "supports_temperature": False,
                         "max_tokens": 16384,
                         "notes": "Reasoning models, temperature not supported",
-                    }
+                    },
                 },
             ],
             "defaults": {
@@ -70,7 +70,7 @@ class MetadataInferrer:
                 "supports_max_tokens": True,
                 "uses_max_completion_tokens": False,
                 "max_tokens": 128000,
-            }
+            },
         },
         "anthropic": {
             "patterns": [
@@ -80,7 +80,7 @@ class MetadataInferrer:
                     "rules": {
                         "max_tokens": 16384,
                         "description": "Claude 4 시리즈 (최신)",
-                    }
+                    },
                 },
                 {
                     "match": r"claude-3-5.*",
@@ -88,7 +88,7 @@ class MetadataInferrer:
                     "rules": {
                         "max_tokens": 8192,
                         "description": "Claude 3.5 시리즈",
-                    }
+                    },
                 },
                 {
                     "match": r".*opus.*",
@@ -97,7 +97,7 @@ class MetadataInferrer:
                         "tier": "opus",
                         "max_tokens": 4096,
                         "description": "최고 성능 모델",
-                    }
+                    },
                 },
                 {
                     "match": r".*sonnet.*",
@@ -106,7 +106,7 @@ class MetadataInferrer:
                         "tier": "sonnet",
                         "max_tokens": 8192,
                         "description": "균형잡힌 모델",
-                    }
+                    },
                 },
                 {
                     "match": r".*haiku.*",
@@ -115,7 +115,7 @@ class MetadataInferrer:
                         "tier": "haiku",
                         "max_tokens": 4096,
                         "description": "빠른 모델",
-                    }
+                    },
                 },
             ],
             "defaults": {
@@ -125,7 +125,7 @@ class MetadataInferrer:
                 "supports_max_tokens": True,
                 "uses_max_completion_tokens": False,
                 "max_tokens": 8192,
-            }
+            },
         },
         "google": {
             "patterns": [
@@ -136,7 +136,7 @@ class MetadataInferrer:
                         "supports_thinking": True,
                         "max_tokens": 8192,
                         "description": "Gemini 2.5 (Thinking 모드 지원)",
-                    }
+                    },
                 },
                 {
                     "match": r"gemini-2\.0.*",
@@ -145,7 +145,7 @@ class MetadataInferrer:
                         "supports_thinking": False,
                         "max_tokens": 8192,
                         "description": "Gemini 2.0",
-                    }
+                    },
                 },
                 {
                     "match": r"gemini-1\.5.*",
@@ -154,7 +154,7 @@ class MetadataInferrer:
                         "supports_thinking": False,
                         "max_tokens": 8192,
                         "description": "Gemini 1.5",
-                    }
+                    },
                 },
                 {
                     "match": r".*flash.*",
@@ -162,7 +162,7 @@ class MetadataInferrer:
                     "rules": {
                         "tier": "flash",
                         "speed": "fast",
-                    }
+                    },
                 },
                 {
                     "match": r".*pro.*",
@@ -170,7 +170,7 @@ class MetadataInferrer:
                     "rules": {
                         "tier": "pro",
                         "speed": "balanced",
-                    }
+                    },
                 },
             ],
             "defaults": {
@@ -179,7 +179,7 @@ class MetadataInferrer:
                 "temperature_range": [0.0, 2.0],
                 "uses_max_output_tokens": True,
                 "max_tokens": 8192,
-            }
+            },
         },
         "ollama": {
             "defaults": {
@@ -188,7 +188,7 @@ class MetadataInferrer:
                 "uses_num_predict": True,
                 "description": "Ollama 로컬 모델",
             }
-        }
+        },
     }
 
     def infer(self, provider: str, model_id: str) -> Dict:
@@ -278,13 +278,7 @@ class MetadataInferrer:
         """특정 Provider의 추론 규칙 조회"""
         return self.INFERENCE_RULES.get(provider, {})
 
-    def add_inference_rule(
-        self,
-        provider: str,
-        pattern: str,
-        name: str,
-        rules: Dict
-    ):
+    def add_inference_rule(self, provider: str, pattern: str, name: str, rules: Dict):
         """추론 규칙 동적 추가"""
         if provider not in self.INFERENCE_RULES:
             self.INFERENCE_RULES[provider] = {"patterns": [], "defaults": {}}
@@ -292,10 +286,8 @@ class MetadataInferrer:
         if "patterns" not in self.INFERENCE_RULES[provider]:
             self.INFERENCE_RULES[provider]["patterns"] = []
 
-        self.INFERENCE_RULES[provider]["patterns"].append({
-            "match": pattern,
-            "name": name,
-            "rules": rules
-        })
+        self.INFERENCE_RULES[provider]["patterns"].append(
+            {"match": pattern, "name": name, "rules": rules}
+        )
 
         logger.info(f"Added inference rule for {provider}: {name}")

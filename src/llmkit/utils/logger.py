@@ -2,6 +2,7 @@
 Logger
 독립적인 로거 (loguru 대체)
 """
+
 import logging
 import sys
 
@@ -31,8 +32,7 @@ def get_logger(name: str, level: str = "INFO") -> logging.Logger:
 
     # 포맷터
     formatter = logging.Formatter(
-        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
     handler.setFormatter(formatter)
 

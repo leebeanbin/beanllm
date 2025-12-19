@@ -2,6 +2,7 @@
 Vector Stores - Unified interface for vector databases
 llmkit 방식: Client와 같은 패턴, Fluent API
 """
+
 import asyncio
 import os
 from abc import ABC, abstractmethod
@@ -14,6 +15,7 @@ from .document_loaders import Document
 @dataclass
 class VectorSearchResult:
     """벡터 검색 결과"""
+
     document: Document
     score: float
     metadata: Dict[str, Any]
@@ -35,12 +37,7 @@ class BaseVectorStore(ABC):
         pass
 
     @abstractmethod
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         pass
 
@@ -50,40 +47,24 @@ class BaseVectorStore(ABC):
         pass
 
     def add_texts(
-        self,
-        texts: List[str],
-        metadatas: Optional[List[Dict]] = None,
-        **kwargs
+        self, texts: List[str], metadatas: Optional[List[Dict]] = None, **kwargs
     ) -> List[str]:
         """텍스트 직접 추가"""
         documents = [
-            Document(
-                content=text,
-                metadata=metadatas[i] if metadatas else {}
-            )
+            Document(content=text, metadata=metadatas[i] if metadatas else {})
             for i, text in enumerate(texts)
         ]
         return self.add_documents(documents, **kwargs)
 
     async def asimilarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
+        self, query: str, k: int = 4, **kwargs
     ) -> List[VectorSearchResult]:
         """비동기 유사도 검색"""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            lambda: self.similarity_search(query, k, **kwargs)
-        )
+        return await loop.run_in_executor(None, lambda: self.similarity_search(query, k, **kwargs))
 
     def hybrid_search(
-        self,
-        query: str,
-        k: int = 4,
-        alpha: float = 0.5,
-        **kwargs
+        self, query: str, k: int = 4, alpha: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """
         Hybrid Search (벡터 + 키워드 검색)
@@ -112,19 +93,11 @@ class BaseVectorStore(ABC):
         keyword_results = self._keyword_search(query, k=k * 2)
 
         # 3. 점수 결합 (RRF - Reciprocal Rank Fusion)
-        combined = self._combine_results(
-            vector_results,
-            keyword_results,
-            alpha=alpha
-        )
+        combined = self._combine_results(vector_results, keyword_results, alpha=alpha)
 
         return combined[:k]
 
-    def _keyword_search(
-        self,
-        query: str,
-        k: int = 10
-    ) -> List[VectorSearchResult]:
+    def _keyword_search(self, query: str, k: int = 10) -> List[VectorSearchResult]:
         """
         키워드 기반 검색 (BM25 스타일)
 
@@ -143,7 +116,7 @@ class BaseVectorStore(ABC):
         self,
         vector_results: List[VectorSearchResult],
         keyword_results: List[VectorSearchResult],
-        alpha: float = 0.5
+        alpha: float = 0.5,
     ) -> List[VectorSearchResult]:
         """
         벡터와 키워드 결과 결합 (RRF)
@@ -183,11 +156,11 @@ class BaseVectorStore(ABC):
             total_score = vec_score + key_score
 
             # 새로운 점수로 결과 생성
-            scored_results.append(VectorSearchResult(
-                document=result.document,
-                score=total_score,
-                metadata=result.metadata
-            ))
+            scored_results.append(
+                VectorSearchResult(
+                    document=result.document, score=total_score, metadata=result.metadata
+                )
+            )
 
         # 점수로 정렬
         scored_results.sort(key=lambda x: x.score, reverse=True)
@@ -198,7 +171,7 @@ class BaseVectorStore(ABC):
         query: str,
         results: List[VectorSearchResult],
         model: Optional[str] = None,
-        top_k: Optional[int] = None
+        top_k: Optional[int] = None,
     ) -> List[VectorSearchResult]:
         """
         Re-ranking with Cross-encoder
@@ -225,10 +198,7 @@ class BaseVectorStore(ABC):
         try:
             from sentence_transformers import CrossEncoder
         except ImportError:
-            raise ImportError(
-                "sentence-transformers 필요:\n"
-                "pip install sentence-transformers"
-            )
+            raise ImportError("sentence-transformers 필요:\n" "pip install sentence-transformers")
 
         # 모델 로드
         model_name = model or "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -243,11 +213,11 @@ class BaseVectorStore(ABC):
         # 점수로 재정렬
         reranked_results = []
         for result, score in zip(results, scores):
-            reranked_results.append(VectorSearchResult(
-                document=result.document,
-                score=float(score),
-                metadata=result.metadata
-            ))
+            reranked_results.append(
+                VectorSearchResult(
+                    document=result.document, score=float(score), metadata=result.metadata
+                )
+            )
 
         reranked_results.sort(key=lambda x: x.score, reverse=True)
 
@@ -256,12 +226,7 @@ class BaseVectorStore(ABC):
         return reranked_results
 
     def mmr_search(
-        self,
-        query: str,
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_param: float = 0.5,
-        **kwargs
+        self, query: str, k: int = 4, fetch_k: int = 20, lambda_param: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """
         MMR (Maximal Marginal Relevance) 검색 - 다양성 고려
@@ -298,17 +263,14 @@ class BaseVectorStore(ABC):
         query_vec = self.embedding_function([query])[0]
 
         # 후보 벡터들
-        candidate_vecs = [
-            self.embedding_function([c.document.content])[0]
-            for c in candidates
-        ]
+        candidate_vecs = [self.embedding_function([c.document.content])[0] for c in candidates]
 
         # MMR 알고리즘
         selected_indices = []
         remaining_indices = list(range(len(candidates)))
 
         for _ in range(min(k, len(candidates))):
-            best_score = float('-inf')
+            best_score = float("-inf")
             best_idx = None
 
             for idx in remaining_indices:
@@ -318,10 +280,7 @@ class BaseVectorStore(ABC):
                 # 다양성 점수 (이미 선택된 문서들과의 최대 유사도)
                 if selected_indices:
                     diversity = max(
-                        self._cosine_similarity(
-                            candidate_vecs[idx],
-                            candidate_vecs[selected_idx]
-                        )
+                        self._cosine_similarity(candidate_vecs[idx], candidate_vecs[selected_idx])
                         for selected_idx in selected_indices
                     )
                 else:
@@ -344,6 +303,7 @@ class BaseVectorStore(ABC):
         """코사인 유사도 계산"""
         try:
             import numpy as np
+
             a = np.array(vec1)
             b = np.array(vec2)
             return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
@@ -363,7 +323,7 @@ class ChromaVectorStore(BaseVectorStore):
         collection_name: str = "llmkit",
         persist_directory: Optional[str] = None,
         embedding_function=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(embedding_function)
 
@@ -371,25 +331,20 @@ class ChromaVectorStore(BaseVectorStore):
             import chromadb
             from chromadb.config import Settings
         except ImportError:
-            raise ImportError(
-                "Chroma not installed. "
-                "pip install chromadb"
-            )
+            raise ImportError("Chroma not installed. " "pip install chromadb")
 
         # Chroma 클라이언트 설정
         if persist_directory:
-            self.client = chromadb.Client(Settings(
-                persist_directory=persist_directory,
-                anonymized_telemetry=False
-            ))
+            self.client = chromadb.Client(
+                Settings(persist_directory=persist_directory, anonymized_telemetry=False)
+            )
         else:
             self.client = chromadb.Client()
 
         # Collection 생성/가져오기
         self.collection_name = collection_name
         self.collection = self.client.get_or_create_collection(
-            name=collection_name,
-            metadata={"hnsw:space": "cosine"}
+            name=collection_name, metadata={"hnsw:space": "cosine"}
         )
 
     def add_documents(self, documents: List[Document], **kwargs) -> List[str]:
@@ -405,60 +360,38 @@ class ChromaVectorStore(BaseVectorStore):
 
         # ID 생성
         import uuid
+
         ids = [str(uuid.uuid4()) for _ in texts]
 
         # Chroma에 추가
         if embeddings:
             self.collection.add(
-                documents=texts,
-                metadatas=metadatas,
-                ids=ids,
-                embeddings=embeddings
+                documents=texts, metadatas=metadatas, ids=ids, embeddings=embeddings
             )
         else:
-            self.collection.add(
-                documents=texts,
-                metadatas=metadatas,
-                ids=ids
-            )
+            self.collection.add(documents=texts, metadatas=metadatas, ids=ids)
 
         return ids
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         # 쿼리 임베딩
         if self.embedding_function:
             query_embedding = self.embedding_function([query])[0]
             results = self.collection.query(
-                query_embeddings=[query_embedding],
-                n_results=k,
-                **kwargs
+                query_embeddings=[query_embedding], n_results=k, **kwargs
             )
         else:
-            results = self.collection.query(
-                query_texts=[query],
-                n_results=k,
-                **kwargs
-            )
+            results = self.collection.query(query_texts=[query], n_results=k, **kwargs)
 
         # 결과 변환
         search_results = []
-        for i in range(len(results['ids'][0])):
-            doc = Document(
-                content=results['documents'][0][i],
-                metadata=results['metadatas'][0][i]
+        for i in range(len(results["ids"][0])):
+            doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
+            score = 1 - results["distances"][0][i]  # Cosine distance -> similarity
+            search_results.append(
+                VectorSearchResult(document=doc, score=score, metadata=results["metadatas"][0][i])
             )
-            score = 1 - results['distances'][0][i]  # Cosine distance -> similarity
-            search_results.append(VectorSearchResult(
-                document=doc,
-                score=score,
-                metadata=results['metadatas'][0][i]
-            ))
 
         return search_results
 
@@ -479,17 +412,14 @@ class PineconeVectorStore(BaseVectorStore):
         embedding_function=None,
         dimension: int = 1536,  # OpenAI default
         metric: str = "cosine",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(embedding_function)
 
         try:
             import pinecone
         except ImportError:
-            raise ImportError(
-                "Pinecone not installed. "
-                "pip install pinecone-client"
-            )
+            raise ImportError("Pinecone not installed. " "pip install pinecone-client")
 
         # API 키 설정
         api_key = api_key or os.getenv("PINECONE_API_KEY")
@@ -504,11 +434,7 @@ class PineconeVectorStore(BaseVectorStore):
         # 인덱스 생성/가져오기
         self.index_name = index_name
         if index_name not in pinecone.list_indexes():
-            pinecone.create_index(
-                name=index_name,
-                dimension=dimension,
-                metric=metric
-            )
+            pinecone.create_index(name=index_name, dimension=dimension, metric=metric)
 
         self.index = pinecone.Index(index_name)
         self.dimension = dimension
@@ -526,6 +452,7 @@ class PineconeVectorStore(BaseVectorStore):
 
         # ID 생성
         import uuid
+
         ids = [str(uuid.uuid4()) for _ in texts]
 
         # Pinecone에 추가
@@ -538,12 +465,7 @@ class PineconeVectorStore(BaseVectorStore):
 
         return ids
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         if not self.embedding_function:
             raise ValueError("Embedding function required for Pinecone")
@@ -552,25 +474,18 @@ class PineconeVectorStore(BaseVectorStore):
         query_embedding = self.embedding_function([query])[0]
 
         # 검색
-        results = self.index.query(
-            vector=query_embedding,
-            top_k=k,
-            include_metadata=True,
-            **kwargs
-        )
+        results = self.index.query(vector=query_embedding, top_k=k, include_metadata=True, **kwargs)
 
         # 결과 변환
         search_results = []
-        for match in results['matches']:
-            metadata = match.get('metadata', {})
-            text = metadata.pop('text', '')
+        for match in results["matches"]:
+            metadata = match.get("metadata", {})
+            text = metadata.pop("text", "")
 
             doc = Document(content=text, metadata=metadata)
-            search_results.append(VectorSearchResult(
-                document=doc,
-                score=match['score'],
-                metadata=metadata
-            ))
+            search_results.append(
+                VectorSearchResult(document=doc, score=match["score"], metadata=metadata)
+            )
 
         return search_results
 
@@ -588,7 +503,7 @@ class FAISSVectorStore(BaseVectorStore):
         embedding_function=None,
         dimension: int = 1536,
         index_type: str = "IndexFlatL2",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(embedding_function)
 
@@ -596,10 +511,7 @@ class FAISSVectorStore(BaseVectorStore):
             import faiss
             import numpy as np
         except ImportError:
-            raise ImportError(
-                "FAISS not installed. "
-                "pip install faiss-cpu  # or faiss-gpu"
-            )
+            raise ImportError("FAISS not installed. " "pip install faiss-cpu  # or faiss-gpu")
 
         self.faiss = faiss
         self.np = np
@@ -627,10 +539,11 @@ class FAISSVectorStore(BaseVectorStore):
         embeddings = self.embedding_function(texts)
 
         # numpy array로 변환
-        embeddings_array = self.np.array(embeddings).astype('float32')
+        embeddings_array = self.np.array(embeddings).astype("float32")
 
         # ID 생성
         import uuid
+
         ids = [str(uuid.uuid4()) for _ in texts]
 
         # 인덱스에 추가
@@ -644,19 +557,14 @@ class FAISSVectorStore(BaseVectorStore):
 
         return ids
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         if not self.embedding_function:
             raise ValueError("Embedding function required for FAISS")
 
         # 쿼리 임베딩
         query_embedding = self.embedding_function([query])[0]
-        query_array = self.np.array([query_embedding]).astype('float32')
+        query_array = self.np.array([query_embedding]).astype("float32")
 
         # 검색
         distances, indices = self.index.search(query_array, k)
@@ -668,11 +576,9 @@ class FAISSVectorStore(BaseVectorStore):
                 doc = self.documents[idx]
                 # L2 distance -> similarity score
                 score = 1 / (1 + distances[0][i])
-                search_results.append(VectorSearchResult(
-                    document=doc,
-                    score=score,
-                    metadata=doc.metadata
-                ))
+                search_results.append(
+                    VectorSearchResult(document=doc, score=score, metadata=doc.metadata)
+                )
 
         return search_results
 
@@ -693,11 +599,8 @@ class FAISSVectorStore(BaseVectorStore):
         self.faiss.write_index(self.index, f"{path}.index")
 
         # 문서 및 매핑 저장
-        with open(f"{path}.pkl", 'wb') as f:
-            pickle.dump({
-                'documents': self.documents,
-                'ids_to_index': self.ids_to_index
-            }, f)
+        with open(f"{path}.pkl", "wb") as f:
+            pickle.dump({"documents": self.documents, "ids_to_index": self.ids_to_index}, f)
 
     def load(self, path: str):
         """인덱스 로드"""
@@ -707,10 +610,10 @@ class FAISSVectorStore(BaseVectorStore):
         self.index = self.faiss.read_index(f"{path}.index")
 
         # 문서 및 매핑 로드
-        with open(f"{path}.pkl", 'rb') as f:
+        with open(f"{path}.pkl", "rb") as f:
             data = pickle.load(f)
-            self.documents = data['documents']
-            self.ids_to_index = data['ids_to_index']
+            self.documents = data["documents"]
+            self.ids_to_index = data["ids_to_index"]
 
 
 class QdrantVectorStore(BaseVectorStore):
@@ -723,7 +626,7 @@ class QdrantVectorStore(BaseVectorStore):
         api_key: Optional[str] = None,
         embedding_function=None,
         dimension: int = 1536,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(embedding_function)
 
@@ -731,10 +634,7 @@ class QdrantVectorStore(BaseVectorStore):
             from qdrant_client import QdrantClient
             from qdrant_client.models import Distance, PointStruct, VectorParams
         except ImportError:
-            raise ImportError(
-                "Qdrant not installed. "
-                "pip install qdrant-client"
-            )
+            raise ImportError("Qdrant not installed. " "pip install qdrant-client")
 
         self.PointStruct = PointStruct
 
@@ -757,10 +657,7 @@ class QdrantVectorStore(BaseVectorStore):
             # Collection 생성
             self.client.create_collection(
                 collection_name=collection_name,
-                vectors_config=VectorParams(
-                    size=dimension,
-                    distance=Distance.COSINE
-                )
+                vectors_config=VectorParams(size=dimension, distance=Distance.COSINE),
             )
 
         self.dimension = dimension
@@ -778,31 +675,22 @@ class QdrantVectorStore(BaseVectorStore):
 
         # ID 생성
         import uuid
+
         ids = [str(uuid.uuid4()) for _ in texts]
 
         # Qdrant에 추가
         points = []
-        for i, (id_, embedding, text, metadata) in enumerate(zip(ids, embeddings, texts, metadatas)):
+        for i, (id_, embedding, text, metadata) in enumerate(
+            zip(ids, embeddings, texts, metadatas)
+        ):
             payload = {**metadata, "text": text}
-            points.append(self.PointStruct(
-                id=id_,
-                vector=embedding,
-                payload=payload
-            ))
+            points.append(self.PointStruct(id=id_, vector=embedding, payload=payload))
 
-        self.client.upsert(
-            collection_name=self.collection_name,
-            points=points
-        )
+        self.client.upsert(collection_name=self.collection_name, points=points)
 
         return ids
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         if not self.embedding_function:
             raise ValueError("Embedding function required for Qdrant")
@@ -812,33 +700,25 @@ class QdrantVectorStore(BaseVectorStore):
 
         # 검색
         results = self.client.search(
-            collection_name=self.collection_name,
-            query_vector=query_embedding,
-            limit=k,
-            **kwargs
+            collection_name=self.collection_name, query_vector=query_embedding, limit=k, **kwargs
         )
 
         # 결과 변환
         search_results = []
         for result in results:
             payload = result.payload
-            text = payload.pop('text', '')
+            text = payload.pop("text", "")
 
             doc = Document(content=text, metadata=payload)
-            search_results.append(VectorSearchResult(
-                document=doc,
-                score=result.score,
-                metadata=payload
-            ))
+            search_results.append(
+                VectorSearchResult(document=doc, score=result.score, metadata=payload)
+            )
 
         return search_results
 
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
-        self.client.delete(
-            collection_name=self.collection_name,
-            points_selector=ids
-        )
+        self.client.delete(collection_name=self.collection_name, points_selector=ids)
         return True
 
 
@@ -851,17 +731,14 @@ class WeaviateVectorStore(BaseVectorStore):
         url: Optional[str] = None,
         api_key: Optional[str] = None,
         embedding_function=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(embedding_function)
 
         try:
             import weaviate
         except ImportError:
-            raise ImportError(
-                "Weaviate not installed. "
-                "pip install weaviate-client"
-            )
+            raise ImportError("Weaviate not installed. " "pip install weaviate-client")
 
         # 클라이언트 설정
         url = url or os.getenv("WEAVIATE_URL", "http://localhost:8080")
@@ -869,8 +746,7 @@ class WeaviateVectorStore(BaseVectorStore):
 
         if api_key:
             self.client = weaviate.Client(
-                url=url,
-                auth_client_secret=weaviate.AuthApiKey(api_key=api_key)
+                url=url, auth_client_secret=weaviate.AuthApiKey(api_key=api_key)
             )
         else:
             self.client = weaviate.Client(url=url)
@@ -882,15 +758,9 @@ class WeaviateVectorStore(BaseVectorStore):
             "class": class_name,
             "vectorizer": "none",  # 우리가 직접 벡터 제공
             "properties": [
-                {
-                    "name": "text",
-                    "dataType": ["text"]
-                },
-                {
-                    "name": "metadata",
-                    "dataType": ["object"]
-                }
-            ]
+                {"name": "text", "dataType": ["text"]},
+                {"name": "metadata", "dataType": ["object"]},
+            ],
         }
 
         # 클래스 존재 확인 및 생성
@@ -912,26 +782,16 @@ class WeaviateVectorStore(BaseVectorStore):
         ids = []
         with self.client.batch as batch:
             for text, metadata, embedding in zip(texts, metadatas, embeddings):
-                properties = {
-                    "text": text,
-                    "metadata": metadata
-                }
+                properties = {"text": text, "metadata": metadata}
 
                 uuid = batch.add_data_object(
-                    data_object=properties,
-                    class_name=self.class_name,
-                    vector=embedding
+                    data_object=properties, class_name=self.class_name, vector=embedding
                 )
                 ids.append(str(uuid))
 
         return ids
 
-    def similarity_search(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
         if not self.embedding_function:
             raise ValueError("Embedding function required for Weaviate")
@@ -941,8 +801,7 @@ class WeaviateVectorStore(BaseVectorStore):
 
         # 검색
         results = (
-            self.client.query
-            .get(self.class_name, ["text", "metadata"])
+            self.client.query.get(self.class_name, ["text", "metadata"])
             .with_near_vector({"vector": query_embedding})
             .with_limit(k)
             .with_additional(["distance"])
@@ -951,31 +810,26 @@ class WeaviateVectorStore(BaseVectorStore):
 
         # 결과 변환
         search_results = []
-        if results.get('data', {}).get('Get', {}).get(self.class_name):
-            for result in results['data']['Get'][self.class_name]:
-                text = result.get('text', '')
-                metadata = result.get('metadata', {})
-                distance = result.get('_additional', {}).get('distance', 1.0)
+        if results.get("data", {}).get("Get", {}).get(self.class_name):
+            for result in results["data"]["Get"][self.class_name]:
+                text = result.get("text", "")
+                metadata = result.get("metadata", {})
+                distance = result.get("_additional", {}).get("distance", 1.0)
 
                 # Distance -> similarity score
                 score = 1 / (1 + distance)
 
                 doc = Document(content=text, metadata=metadata)
-                search_results.append(VectorSearchResult(
-                    document=doc,
-                    score=score,
-                    metadata=metadata
-                ))
+                search_results.append(
+                    VectorSearchResult(document=doc, score=score, metadata=metadata)
+                )
 
         return search_results
 
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
         for id_ in ids:
-            self.client.data_object.delete(
-                uuid=id_,
-                class_name=self.class_name
-            )
+            self.client.data_object.delete(uuid=id_, class_name=self.class_name)
         return True
 
 
@@ -1024,8 +878,7 @@ class VectorStore:
 
         if provider not in cls.PROVIDERS:
             raise ValueError(
-                f"Unknown provider: {provider}. "
-                f"Available: {list(cls.PROVIDERS.keys())}"
+                f"Unknown provider: {provider}. " f"Available: {list(cls.PROVIDERS.keys())}"
             )
 
         vector_store_class = cls.PROVIDERS[provider]
@@ -1103,60 +956,56 @@ class VectorStoreBuilder:
         self.embedding_function = None
         self.kwargs = {}
 
-    def use_chroma(self, **kwargs) -> 'VectorStoreBuilder':
+    def use_chroma(self, **kwargs) -> "VectorStoreBuilder":
         """Use Chroma"""
         self.provider = "chroma"
         self.kwargs.update(kwargs)
         return self
 
-    def use_pinecone(self, **kwargs) -> 'VectorStoreBuilder':
+    def use_pinecone(self, **kwargs) -> "VectorStoreBuilder":
         """Use Pinecone"""
         self.provider = "pinecone"
         self.kwargs.update(kwargs)
         return self
 
-    def use_faiss(self, **kwargs) -> 'VectorStoreBuilder':
+    def use_faiss(self, **kwargs) -> "VectorStoreBuilder":
         """Use FAISS"""
         self.provider = "faiss"
         self.kwargs.update(kwargs)
         return self
 
-    def use_qdrant(self, **kwargs) -> 'VectorStoreBuilder':
+    def use_qdrant(self, **kwargs) -> "VectorStoreBuilder":
         """Use Qdrant"""
         self.provider = "qdrant"
         self.kwargs.update(kwargs)
         return self
 
-    def use_weaviate(self, **kwargs) -> 'VectorStoreBuilder':
+    def use_weaviate(self, **kwargs) -> "VectorStoreBuilder":
         """Use Weaviate"""
         self.provider = "weaviate"
         self.kwargs.update(kwargs)
         return self
 
-    def with_embedding(self, embedding_function) -> 'VectorStoreBuilder':
+    def with_embedding(self, embedding_function) -> "VectorStoreBuilder":
         """Set embedding function"""
         self.embedding_function = embedding_function
         return self
 
-    def with_collection(self, name: str) -> 'VectorStoreBuilder':
+    def with_collection(self, name: str) -> "VectorStoreBuilder":
         """Set collection/index name"""
-        self.kwargs['collection_name'] = name
+        self.kwargs["collection_name"] = name
         return self
 
     def build(self) -> BaseVectorStore:
         """Build vector store"""
         return VectorStore(
-            provider=self.provider,
-            embedding_function=self.embedding_function,
-            **self.kwargs
+            provider=self.provider, embedding_function=self.embedding_function, **self.kwargs
         )
 
 
 # Convenience functions
 def create_vector_store(
-    provider: Optional[str] = None,
-    embedding_function=None,
-    **kwargs
+    provider: Optional[str] = None, embedding_function=None, **kwargs
 ) -> BaseVectorStore:
     """
     편리한 vector store 생성 함수
@@ -1173,18 +1022,11 @@ def create_vector_store(
         # 명시적 선택
         store = create_vector_store("chroma", embedding_function=embed_func)
     """
-    return VectorStore(
-        provider=provider,
-        embedding_function=embedding_function,
-        **kwargs
-    )
+    return VectorStore(provider=provider, embedding_function=embedding_function, **kwargs)
 
 
 def from_documents(
-    documents: List[Document],
-    embedding_function,
-    provider: Optional[str] = None,
-    **kwargs
+    documents: List[Document], embedding_function, provider: Optional[str] = None, **kwargs
 ) -> BaseVectorStore:
     """
     문서에서 직접 vector store 생성
@@ -1202,10 +1044,6 @@ def from_documents(
         # 명시적 선택
         store = from_documents(docs, embed_func, provider="chroma")
     """
-    store = create_vector_store(
-        provider=provider,
-        embedding_function=embedding_function,
-        **kwargs
-    )
+    store = create_vector_store(provider=provider, embedding_function=embedding_function, **kwargs)
     store.add_documents(documents)
     return store

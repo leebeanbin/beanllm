@@ -16,54 +16,65 @@ from typing import Any, Callable, Dict, List, Optional
 
 # ===== Exceptions =====
 
+
 class LLMKitError(Exception):
     """llmkit 베이스 예외"""
+
     pass
 
 
 class ProviderError(LLMKitError):
     """프로바이더 에러"""
+
     pass
 
 
 class RateLimitError(ProviderError):
     """Rate limit 에러"""
+
     pass
 
 
 class TimeoutError(LLMKitError):
     """Timeout 에러"""
+
     pass
 
 
 class ValidationError(LLMKitError):
     """검증 에러"""
+
     pass
 
 
 class CircuitBreakerError(LLMKitError):
     """Circuit breaker open 에러"""
+
     pass
 
 
 class MaxRetriesExceededError(LLMKitError):
     """최대 재시도 횟수 초과"""
+
     pass
 
 
 # ===== Retry Logic =====
 
+
 class RetryStrategy(Enum):
     """재시도 전략"""
-    FIXED = "fixed"              # 고정 간격
+
+    FIXED = "fixed"  # 고정 간격
     EXPONENTIAL = "exponential"  # 지수 백오프
-    LINEAR = "linear"            # 선형 증가
-    JITTER = "jitter"           # 지수 백오프 + 지터
+    LINEAR = "linear"  # 선형 증가
+    JITTER = "jitter"  # 지수 백오프 + 지터
 
 
 @dataclass
 class RetryConfig:
     """재시도 설정"""
+
     max_retries: int = 3
     initial_delay: float = 1.0
     max_delay: float = 60.0
@@ -162,7 +173,7 @@ def retry(
     max_retries: int = 3,
     initial_delay: float = 1.0,
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
-    retry_on: tuple = (Exception,)
+    retry_on: tuple = (Exception,),
 ):
     """
     재시도 데코레이터
@@ -172,6 +183,7 @@ def retry(
         def api_call():
             ...
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -179,30 +191,35 @@ def retry(
                 max_retries=max_retries,
                 initial_delay=initial_delay,
                 strategy=strategy,
-                retry_on_exceptions=retry_on
+                retry_on_exceptions=retry_on,
             )
             handler = RetryHandler(config)
             return handler.execute(func, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 # ===== Circuit Breaker =====
 
+
 class CircuitState(Enum):
     """Circuit breaker 상태"""
-    CLOSED = "closed"      # 정상 동작
-    OPEN = "open"          # 차단됨
+
+    CLOSED = "closed"  # 정상 동작
+    OPEN = "open"  # 차단됨
     HALF_OPEN = "half_open"  # 복구 테스트 중
 
 
 @dataclass
 class CircuitBreakerConfig:
     """Circuit breaker 설정"""
+
     failure_threshold: int = 5  # 실패 임계값
     success_threshold: int = 2  # 성공 임계값 (HALF_OPEN)
-    timeout: float = 60.0       # OPEN 상태 유지 시간
-    window_size: int = 10       # 슬라이딩 윈도우 크기
+    timeout: float = 60.0  # OPEN 상태 유지 시간
+    window_size: int = 10  # 슬라이딩 윈도우 크기
 
 
 class CircuitBreaker:
@@ -291,8 +308,7 @@ class CircuitBreaker:
             # OPEN 상태면 차단
             if self.state == CircuitState.OPEN:
                 raise CircuitBreakerError(
-                    f"Circuit breaker is OPEN. "
-                    f"Wait {self.config.timeout}s before retry."
+                    f"Circuit breaker is OPEN. " f"Wait {self.config.timeout}s before retry."
                 )
 
         # 함수 실행
@@ -317,7 +333,7 @@ class CircuitBreaker:
                 "failure_count": self.failure_count,
                 "success_count": self.success_count,
                 "success_rate": success_rate,
-                "recent_calls": len(self.recent_calls)
+                "recent_calls": len(self.recent_calls),
             }
 
     def reset(self):
@@ -329,10 +345,7 @@ class CircuitBreaker:
             self.recent_calls.clear()
 
 
-def circuit_breaker(
-    failure_threshold: int = 5,
-    timeout: float = 60.0
-):
+def circuit_breaker(failure_threshold: int = 5, timeout: float = 60.0):
     """
     Circuit breaker 데코레이터
 
@@ -341,26 +354,27 @@ def circuit_breaker(
         def api_call():
             ...
     """
-    config = CircuitBreakerConfig(
-        failure_threshold=failure_threshold,
-        timeout=timeout
-    )
+    config = CircuitBreakerConfig(failure_threshold=failure_threshold, timeout=timeout)
     breaker = CircuitBreaker(config)
 
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             return breaker.call(func, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 # ===== Rate Limiter =====
 
+
 @dataclass
 class RateLimitConfig:
     """Rate limit 설정"""
-    max_calls: int = 10       # 최대 호출 횟수
+
+    max_calls: int = 10  # 최대 호출 횟수
     time_window: float = 60.0  # 시간 윈도우 (초)
 
 
@@ -418,8 +432,7 @@ class RateLimiter:
             if not self._is_allowed():
                 wait_time = self._wait_time()
                 raise RateLimitError(
-                    f"Rate limit exceeded. "
-                    f"Wait {wait_time:.2f}s before retry."
+                    f"Rate limit exceeded. " f"Wait {wait_time:.2f}s before retry."
                 )
 
             # 호출 기록
@@ -461,7 +474,7 @@ class RateLimiter:
                 "current_calls": len(self.calls),
                 "max_calls": self.config.max_calls,
                 "time_window": self.config.time_window,
-                "calls_remaining": self.config.max_calls - len(self.calls)
+                "calls_remaining": self.config.max_calls - len(self.calls),
             }
 
 
@@ -484,11 +497,14 @@ def rate_limit(max_calls: int = 10, time_window: float = 60.0, wait: bool = Fals
                 return limiter.wait_and_call(func, *args, **kwargs)
             else:
                 return limiter.call(func, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 # ===== Fallback Handler =====
+
 
 class FallbackHandler:
     """
@@ -501,7 +517,7 @@ class FallbackHandler:
         self,
         fallback_func: Optional[Callable] = None,
         fallback_value: Optional[Any] = None,
-        raise_on_fallback: bool = False
+        raise_on_fallback: bool = False,
     ):
         self.fallback_func = fallback_func
         self.fallback_value = fallback_value
@@ -547,15 +563,19 @@ def fallback(fallback_func: Optional[Callable] = None, fallback_value: Optional[
         @wraps(func)
         def wrapper(*args, **kwargs):
             return handler.call(func, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 # ===== Error Tracker =====
 
+
 @dataclass
 class ErrorRecord:
     """에러 기록"""
+
     timestamp: float
     error_type: str
     error_message: str
@@ -575,11 +595,7 @@ class ErrorTracker:
         self.errors = deque(maxlen=max_records)
         self._lock = threading.Lock()
 
-    def record(
-        self,
-        exception: Exception,
-        metadata: Optional[Dict[str, Any]] = None
-    ):
+    def record(self, exception: Exception, metadata: Optional[Dict[str, Any]] = None):
         """에러 기록"""
         import traceback as tb
 
@@ -589,7 +605,7 @@ class ErrorTracker:
                 error_type=type(exception).__name__,
                 error_message=str(exception),
                 traceback=tb.format_exc(),
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
             self.errors.append(record)
 
@@ -602,11 +618,7 @@ class ErrorTracker:
         """에러 요약 통계"""
         with self._lock:
             if not self.errors:
-                return {
-                    "total_errors": 0,
-                    "error_types": {},
-                    "error_rate": 0.0
-                }
+                return {"total_errors": 0, "error_types": {}, "error_rate": 0.0}
 
             # 에러 타입별 카운트
             type_counts = {}
@@ -616,16 +628,15 @@ class ErrorTracker:
 
             # 에러율 계산 (최근 1시간)
             now = time.time()
-            recent_errors = sum(
-                1 for e in self.errors
-                if now - e.timestamp <= 3600
-            )
+            recent_errors = sum(1 for e in self.errors if now - e.timestamp <= 3600)
 
             return {
                 "total_errors": len(self.errors),
                 "error_types": type_counts,
                 "recent_errors_1h": recent_errors,
-                "most_common_error": max(type_counts.items(), key=lambda x: x[1])[0] if type_counts else None
+                "most_common_error": (
+                    max(type_counts.items(), key=lambda x: x[1])[0] if type_counts else None
+                ),
             }
 
     def clear(self):
@@ -645,6 +656,7 @@ def get_error_tracker() -> ErrorTracker:
 
 # ===== Combined Error Handler =====
 
+
 class ErrorHandlerConfig:
     """통합 에러 핸들러 설정"""
 
@@ -653,7 +665,7 @@ class ErrorHandlerConfig:
         retry_config: Optional[RetryConfig] = None,
         circuit_breaker_config: Optional[CircuitBreakerConfig] = None,
         rate_limit_config: Optional[RateLimitConfig] = None,
-        enable_tracking: bool = True
+        enable_tracking: bool = True,
     ):
         self.retry_config = retry_config
         self.circuit_breaker_config = circuit_breaker_config
@@ -699,6 +711,7 @@ class ErrorHandler:
         Returns:
             함수 실행 결과
         """
+
         def wrapped_func():
             result = func(*args, **kwargs)
             return result
@@ -747,10 +760,7 @@ class ErrorHandler:
 
 
 def with_error_handling(
-    max_retries: int = 3,
-    failure_threshold: int = 5,
-    max_calls: int = 10,
-    time_window: float = 60.0
+    max_retries: int = 3, failure_threshold: int = 5, max_calls: int = 10, time_window: float = 60.0
 ):
     """
     통합 에러 핸들링 데코레이터
@@ -763,7 +773,7 @@ def with_error_handling(
     config = ErrorHandlerConfig(
         retry_config=RetryConfig(max_retries=max_retries),
         circuit_breaker_config=CircuitBreakerConfig(failure_threshold=failure_threshold),
-        rate_limit_config=RateLimitConfig(max_calls=max_calls, time_window=time_window)
+        rate_limit_config=RateLimitConfig(max_calls=max_calls, time_window=time_window),
     )
     handler = ErrorHandler(config)
 
@@ -771,11 +781,14 @@ def with_error_handling(
         @wraps(func)
         def wrapper(*args, **kwargs):
             return handler.call(func, *args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 # ===== Timeout Handler =====
+
 
 def timeout(seconds: float):
     """
@@ -786,6 +799,7 @@ def timeout(seconds: float):
         def slow_function():
             ...
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -805,5 +819,7 @@ def timeout(seconds: float):
                 signal.signal(signal.SIGALRM, old_handler)
 
             return result
+
         return wrapper
+
     return decorator

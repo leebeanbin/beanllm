@@ -27,16 +27,18 @@ logger = get_logger(__name__)
 # Message Passing System
 # =============================================================================
 
+
 class MessageType(Enum):
     """메시지 타입"""
-    REQUEST = "request"           # 작업 요청
-    RESPONSE = "response"         # 작업 응답
-    BROADCAST = "broadcast"       # 전체 공지
-    QUERY = "query"              # 정보 요청
-    INFORM = "inform"            # 정보 전달
-    DELEGATE = "delegate"        # 작업 위임
-    VOTE = "vote"                # 투표
-    CONSENSUS = "consensus"       # 합의
+
+    REQUEST = "request"  # 작업 요청
+    RESPONSE = "response"  # 작업 응답
+    BROADCAST = "broadcast"  # 전체 공지
+    QUERY = "query"  # 정보 요청
+    INFORM = "inform"  # 정보 전달
+    DELEGATE = "delegate"  # 작업 위임
+    VOTE = "vote"  # 투표
+    CONSENSUS = "consensus"  # 합의
 
 
 @dataclass
@@ -51,27 +53,26 @@ class AgentMessage:
         Channel capacity:
         C = max I(X; Y) where X: input, Y: output
     """
+
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    sender: str = ""                          # 송신자 agent ID
-    receiver: Optional[str] = None            # 수신자 (None이면 broadcast)
+    sender: str = ""  # 송신자 agent ID
+    receiver: Optional[str] = None  # 수신자 (None이면 broadcast)
     message_type: MessageType = MessageType.INFORM
-    content: Any = None                       # 메시지 내용
+    content: Any = None  # 메시지 내용
     metadata: Dict[str, Any] = field(default_factory=dict)
     timestamp: datetime = field(default_factory=datetime.now)
-    reply_to: Optional[str] = None           # 답장하는 메시지 ID
+    reply_to: Optional[str] = None  # 답장하는 메시지 ID
 
     def reply(
-        self,
-        content: Any,
-        message_type: MessageType = MessageType.RESPONSE
-    ) -> 'AgentMessage':
+        self, content: Any, message_type: MessageType = MessageType.RESPONSE
+    ) -> "AgentMessage":
         """이 메시지에 대한 답장 생성"""
         return AgentMessage(
             sender=self.receiver,
             receiver=self.sender,
             message_type=message_type,
             content=content,
-            reply_to=self.id
+            reply_to=self.id,
         )
 
 
@@ -159,17 +160,10 @@ class CommunicationBus:
                     except Exception as e:
                         logger.error(f"Error in callback for {agent_id}: {e}")
 
-    def get_history(
-        self,
-        agent_id: Optional[str] = None,
-        limit: int = 100
-    ) -> List[AgentMessage]:
+    def get_history(self, agent_id: Optional[str] = None, limit: int = 100) -> List[AgentMessage]:
         """메시지 히스토리 조회"""
         if agent_id:
-            filtered = [
-                m for m in self.messages
-                if m.sender == agent_id or m.receiver == agent_id
-            ]
+            filtered = [m for m in self.messages if m.sender == agent_id or m.receiver == agent_id]
             return filtered[-limit:]
         return self.messages[-limit:]
 
@@ -178,16 +172,12 @@ class CommunicationBus:
 # Coordination Strategies
 # =============================================================================
 
+
 class CoordinationStrategy(ABC):
     """조정 전략 베이스 클래스"""
 
     @abstractmethod
-    async def execute(
-        self,
-        agents: List[Agent],
-        task: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(self, agents: List[Agent], task: str, **kwargs) -> Dict[str, Any]:
         """전략 실행"""
         pass
 
@@ -203,12 +193,7 @@ class SequentialStrategy(CoordinationStrategy):
         Time Complexity: O(Σ Tᵢ) - 모든 agent 시간의 합
     """
 
-    async def execute(
-        self,
-        agents: List[Agent],
-        task: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(self, agents: List[Agent], task: str, **kwargs) -> Dict[str, Any]:
         """순차 실행"""
         results = []
         current_input = task
@@ -226,7 +211,7 @@ class SequentialStrategy(CoordinationStrategy):
             "final_result": results[-1].answer if results else None,
             "intermediate_results": [r.answer for r in results],
             "all_steps": results,
-            "strategy": "sequential"
+            "strategy": "sequential",
         }
 
 
@@ -255,12 +240,7 @@ class ParallelStrategy(CoordinationStrategy):
         """
         self.aggregation = aggregation
 
-    async def execute(
-        self,
-        agents: List[Agent],
-        task: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(self, agents: List[Agent], task: str, **kwargs) -> Dict[str, Any]:
         """병렬 실행"""
         logger.info(f"Parallel: Executing {len(agents)} agents concurrently")
 
@@ -269,10 +249,7 @@ class ParallelStrategy(CoordinationStrategy):
 
         if self.aggregation == "first":
             # 첫 번째 완료된 것만 사용
-            done, pending = await asyncio.wait(
-                tasks,
-                return_when=asyncio.FIRST_COMPLETED
-            )
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
             # 나머지 취소
             for t in pending:
@@ -283,7 +260,7 @@ class ParallelStrategy(CoordinationStrategy):
                 "final_result": result.answer,
                 "strategy": "parallel-first",
                 "completed": 1,
-                "total": len(agents)
+                "total": len(agents),
             }
 
         else:
@@ -294,6 +271,7 @@ class ParallelStrategy(CoordinationStrategy):
             if self.aggregation == "vote":
                 # 투표: 가장 많이 나온 답 선택
                 from collections import Counter
+
                 vote_counts = Counter(answers)
                 final_answer = vote_counts.most_common(1)[0][0]
 
@@ -302,7 +280,7 @@ class ParallelStrategy(CoordinationStrategy):
                     "all_answers": answers,
                     "vote_counts": dict(vote_counts),
                     "strategy": "parallel-vote",
-                    "agreement_rate": vote_counts[final_answer] / len(answers)
+                    "agreement_rate": vote_counts[final_answer] / len(answers),
                 }
 
             elif self.aggregation == "consensus":
@@ -311,22 +289,18 @@ class ParallelStrategy(CoordinationStrategy):
                     return {
                         "final_result": answers[0],
                         "consensus": True,
-                        "strategy": "parallel-consensus"
+                        "strategy": "parallel-consensus",
                     }
                 else:
                     return {
                         "final_result": None,
                         "consensus": False,
                         "all_answers": answers,
-                        "strategy": "parallel-consensus"
+                        "strategy": "parallel-consensus",
                     }
 
             else:  # "all"
-                return {
-                    "final_result": answers,
-                    "all_results": results,
-                    "strategy": "parallel-all"
-                }
+                return {"final_result": answers, "all_results": results, "strategy": "parallel-all"}
 
 
 class HierarchicalStrategy(CoordinationStrategy):
@@ -352,12 +326,7 @@ class HierarchicalStrategy(CoordinationStrategy):
         """
         self.manager = manager_agent
 
-    async def execute(
-        self,
-        agents: List[Agent],  # Workers
-        task: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(self, agents: List[Agent], task: str, **kwargs) -> Dict[str, Any]:  # Workers
         """계층적 실행"""
         logger.info(f"Hierarchical: Manager delegating to {len(agents)} workers")
 
@@ -376,7 +345,7 @@ Return a JSON list of subtasks:
         import json
         import re
 
-        json_match = re.search(r'\{.*\}', delegation_result.answer, re.DOTALL)
+        json_match = re.search(r"\{.*\}", delegation_result.answer, re.DOTALL)
         if json_match:
             subtasks_data = json.loads(json_match.group())
             subtasks = subtasks_data.get("subtasks", [])
@@ -412,7 +381,7 @@ Provide a comprehensive final answer:
             "worker_results": worker_answers,
             "strategy": "hierarchical",
             "manager_steps": len(delegation_result.steps) + len(final_result.steps),
-            "total_workers": len(agents)
+            "total_workers": len(agents),
         }
 
 
@@ -440,12 +409,7 @@ class DebateStrategy(CoordinationStrategy):
         self.rounds = rounds
         self.judge = judge_agent
 
-    async def execute(
-        self,
-        agents: List[Agent],
-        task: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def execute(self, agents: List[Agent], task: str, **kwargs) -> Dict[str, Any]:
         """토론 실행"""
         logger.info(f"Debate: {len(agents)} agents, {self.rounds} rounds")
 
@@ -457,10 +421,7 @@ class DebateStrategy(CoordinationStrategy):
             result = await agent.run(task)
             current_answers[f"agent_{i}"] = result.answer
 
-        debate_history.append({
-            "round": 0,
-            "answers": current_answers.copy()
-        })
+        debate_history.append({"round": 0, "answers": current_answers.copy()})
 
         # 토론 라운드
         for round_num in range(1, self.rounds + 1):
@@ -470,11 +431,13 @@ class DebateStrategy(CoordinationStrategy):
 
             for i, agent in enumerate(agents):
                 # 다른 agents의 답변 보여주기
-                other_answers = "\n".join([
-                    f"Agent {j}: {ans}"
-                    for j, ans in enumerate(current_answers.values())
-                    if j != i
-                ])
+                other_answers = "\n".join(
+                    [
+                        f"Agent {j}: {ans}"
+                        for j, ans in enumerate(current_answers.values())
+                        if j != i
+                    ]
+                )
 
                 debate_prompt = f"""Task: {task}
 
@@ -496,10 +459,7 @@ Your refined answer:
                 new_answers[f"agent_{i}"] = result.answer
 
             current_answers = new_answers
-            debate_history.append({
-                "round": round_num,
-                "answers": current_answers.copy()
-            })
+            debate_history.append({"round": round_num, "answers": current_answers.copy()})
 
         # 최종 판정
         if self.judge:
@@ -520,6 +480,7 @@ As a judge, determine the best answer and explain why:
         else:
             # 투표로 결정
             from collections import Counter
+
             vote_counts = Counter(current_answers.values())
             final_answer = vote_counts.most_common(1)[0][0]
             decision_method = "vote"
@@ -529,13 +490,14 @@ As a judge, determine the best answer and explain why:
             "debate_history": debate_history,
             "rounds": self.rounds,
             "decision_method": decision_method,
-            "strategy": "debate"
+            "strategy": "debate",
         }
 
 
 # =============================================================================
 # Multi-Agent Coordinator
 # =============================================================================
+
 
 class MultiAgentCoordinator:
     """
@@ -578,9 +540,7 @@ class MultiAgentCoordinator:
     """
 
     def __init__(
-        self,
-        agents: Dict[str, Agent],
-        communication_bus: Optional[CommunicationBus] = None
+        self, agents: Dict[str, Agent], communication_bus: Optional[CommunicationBus] = None
     ):
         """
         Args:
@@ -610,10 +570,7 @@ class MultiAgentCoordinator:
             self.bus.unsubscribe(agent_id)
 
     async def execute_sequential(
-        self,
-        task: str,
-        agent_order: List[str],
-        **kwargs
+        self, task: str, agent_order: List[str], **kwargs
     ) -> Dict[str, Any]:
         """
         순차 실행
@@ -627,11 +584,7 @@ class MultiAgentCoordinator:
         return await strategy.execute(agents, task, **kwargs)
 
     async def execute_parallel(
-        self,
-        task: str,
-        agent_ids: Optional[List[str]] = None,
-        aggregation: str = "vote",
-        **kwargs
+        self, task: str, agent_ids: Optional[List[str]] = None, aggregation: str = "vote", **kwargs
     ) -> Dict[str, Any]:
         """
         병렬 실행
@@ -649,11 +602,7 @@ class MultiAgentCoordinator:
         return await strategy.execute(agents, task, **kwargs)
 
     async def execute_hierarchical(
-        self,
-        task: str,
-        manager_id: str,
-        worker_ids: List[str],
-        **kwargs
+        self, task: str, manager_id: str, worker_ids: List[str], **kwargs
     ) -> Dict[str, Any]:
         """
         계층적 실행
@@ -675,7 +624,7 @@ class MultiAgentCoordinator:
         agent_ids: Optional[List[str]] = None,
         rounds: int = 3,
         judge_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         토론 실행
@@ -700,21 +649,16 @@ class MultiAgentCoordinator:
         sender: str,
         receiver: Optional[str],
         content: Any,
-        message_type: MessageType = MessageType.INFORM
+        message_type: MessageType = MessageType.INFORM,
     ):
         """메시지 전송"""
         message = AgentMessage(
-            sender=sender,
-            receiver=receiver,
-            message_type=message_type,
-            content=content
+            sender=sender, receiver=receiver, message_type=message_type, content=content
         )
         await self.bus.publish(message)
 
     def get_communication_history(
-        self,
-        agent_id: Optional[str] = None,
-        limit: int = 100
+        self, agent_id: Optional[str] = None, limit: int = 100
     ) -> List[AgentMessage]:
         """통신 히스토리 조회"""
         return self.bus.get_history(agent_id, limit)
@@ -724,10 +668,8 @@ class MultiAgentCoordinator:
 # Convenience Functions
 # =============================================================================
 
-def create_coordinator(
-    agent_configs: List[Dict[str, Any]],
-    **kwargs
-) -> MultiAgentCoordinator:
+
+def create_coordinator(agent_configs: List[Dict[str, Any]], **kwargs) -> MultiAgentCoordinator:
     """
     Coordinator 빠르게 생성
 
@@ -748,10 +690,7 @@ def create_coordinator(
 
 
 async def quick_debate(
-    task: str,
-    num_agents: int = 3,
-    rounds: int = 2,
-    model: str = "gpt-4o-mini"
+    task: str, num_agents: int = 3, rounds: int = 2, model: str = "gpt-4o-mini"
 ) -> Dict[str, Any]:
     """
     빠른 토론 실행
@@ -766,14 +705,8 @@ async def quick_debate(
         토론 결과
     """
     # Agents 생성
-    agents = {
-        f"agent_{i}": Agent(model=model)
-        for i in range(num_agents)
-    }
+    agents = {f"agent_{i}": Agent(model=model) for i in range(num_agents)}
 
     coordinator = MultiAgentCoordinator(agents=agents)
 
-    return await coordinator.execute_debate(
-        task=task,
-        rounds=rounds
-    )
+    return await coordinator.execute_debate(task=task, rounds=rounds)

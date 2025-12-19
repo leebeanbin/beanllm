@@ -2,6 +2,7 @@
 CLI Tool - Beautiful Terminal UI
 터미널 디자인 시스템 적용
 """
+
 import asyncio
 import json
 import sys
@@ -44,7 +45,7 @@ def main():
             ErrorPattern.render(
                 "Usage: llmkit show <model_name>",
                 error_type="MissingArgument",
-                suggestion="Provide a model name to show details"
+                suggestion="Provide a model name to show details",
             )
             return
         show_model(registry, sys.argv[2])
@@ -67,7 +68,7 @@ async def async_main(command: str):
             ErrorPattern.render(
                 "Usage: llmkit analyze <model_name>",
                 error_type="MissingArgument",
-                suggestion="Provide a model name to analyze"
+                suggestion="Provide a model name to analyze",
             )
             return
         await analyze_model(sys.argv[2])
@@ -77,7 +78,7 @@ def print_help():
     """Help 메시지 (디자인 시스템 적용)"""
     # 로고 출력 (도움 패키지로서 커맨드 표시)
     print_logo(style="ascii", color="magenta", show_motto=True, show_commands=True)
-    
+
     help_panel = Panel(
         """[bold cyan]Commands:[/bold cyan]
 
@@ -100,7 +101,7 @@ def print_help():
 """,
         title="[bold magenta]llmkit[/bold magenta] - Unified LLM Model Manager",
         border_style="cyan",
-        expand=False
+        expand=False,
     )
     console.print(help_panel)
 
@@ -128,14 +129,7 @@ def list_models(registry):
         temp = "✅" if model.supports_temperature else "❌"
         max_tokens = str(model.max_tokens) if model.max_tokens else "N/A"
 
-        table.add_row(
-            status,
-            model.model_name,
-            model.provider,
-            stream,
-            temp,
-            max_tokens
-        )
+        table.add_row(status, model.model_name, model.provider, stream, temp, max_tokens)
 
     console.print(table)
 
@@ -159,11 +153,11 @@ def show_model(registry, model_name: str):
     if model.uses_max_completion_tokens:
         info_text += "\n  • Uses max_completion_tokens: ✅ Yes"
 
-    console.print(Panel(
-        info_text,
-        title=f"[bold magenta]{model.model_name}[/bold magenta]",
-        border_style="cyan"
-    ))
+    console.print(
+        Panel(
+            info_text, title=f"[bold magenta]{model.model_name}[/bold magenta]", border_style="cyan"
+        )
+    )
 
     # 파라미터 테이블
     if model.parameters:
@@ -178,13 +172,7 @@ def show_model(registry, model_name: str):
         for param in model.parameters:
             status = "✅" if param.supported else "❌"
             required = "Yes" if param.required else "No"
-            param_table.add_row(
-                status,
-                param.name,
-                param.type,
-                str(param.default),
-                required
-            )
+            param_table.add_row(status, param.name, param.type, str(param.default), required)
 
         console.print(param_table)
 
@@ -211,21 +199,20 @@ def list_providers(registry):
         if provider.default_model:
             info += f"\n[bold cyan]Default Model:[/bold cyan] {provider.default_model}"
 
-        console.print(Panel(
-            info,
-            title=f"{status_icon} [bold]{name}[/bold]",
-            border_style="green" if provider.status.value == "active" else "red",
-            expand=False
-        ))
+        console.print(
+            Panel(
+                info,
+                title=f"{status_icon} [bold]{name}[/bold]",
+                border_style="green" if provider.status.value == "active" else "red",
+                expand=False,
+            )
+        )
 
 
 def export_models(registry):
     """JSON export"""
     models = registry.get_available_models()
-    data = {
-        "models": [model.to_dict() for model in models],
-        "summary": registry.get_summary()
-    }
+    data = {"models": [model.to_dict() for model in models], "summary": registry.get_summary()}
     print(json.dumps(data, indent=2, ensure_ascii=False))
 
 
@@ -239,11 +226,9 @@ def show_summary(registry):
 
 [bold yellow]Active Providers:[/bold yellow] {', '.join(summary['active_provider_names'])}"""
 
-    console.print(Panel(
-        summary_text,
-        title="[bold magenta]Summary[/bold magenta]",
-        border_style="cyan"
-    ))
+    console.print(
+        Panel(summary_text, title="[bold magenta]Summary[/bold magenta]", border_style="cyan")
+    )
 
     # Provider별 상세
     console.print("\n[bold]Provider Details:[/bold]\n")
@@ -253,12 +238,12 @@ def show_summary(registry):
     detail_table.add_column("Models", justify="right")
     detail_table.add_column("Default Model")
 
-    for name, info in summary['providers'].items():
+    for name, info in summary["providers"].items():
         detail_table.add_row(
             name,
-            info['status'],
-            str(info['available_models_count']),
-            info['default_model'] or "N/A"
+            info["status"],
+            str(info["available_models_count"]),
+            info["default_model"] or "N/A",
         )
 
     console.print(detail_table)
@@ -270,9 +255,7 @@ async def scan_models():
 
     try:
         with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            console=console
+            SpinnerColumn(), TextColumn("[bold blue]{task.description}"), console=console
         ) as progress:
             task = progress.add_task("Loading models and scanning APIs...", total=None)
 
@@ -291,7 +274,7 @@ async def scan_models():
 [bold cyan]New Models:[/bold cyan] {summary['by_source']['inferred']}
 [bold cyan]Average Confidence:[/bold cyan] {summary['avg_confidence']:.2%}""",
             title="[bold magenta]📊 Scan Results[/bold magenta]",
-            border_style="cyan"
+            border_style="cyan",
         )
         console.print(summary_panel)
 
@@ -301,7 +284,7 @@ async def scan_models():
         provider_table.add_column("Provider", style="blue")
         provider_table.add_column("Count", justify="right", style="green")
 
-        for provider, count in summary['by_provider'].items():
+        for provider, count in summary["by_provider"].items():
             if count > 0:
                 provider_table.add_row(provider, str(count))
 
@@ -315,7 +298,11 @@ async def scan_models():
             console.print()
 
             for model in new_models:
-                confidence_color = "green" if model.inference_confidence >= 0.8 else "yellow" if model.inference_confidence >= 0.6 else "red"
+                confidence_color = (
+                    "green"
+                    if model.inference_confidence >= 0.8
+                    else "yellow" if model.inference_confidence >= 0.6 else "red"
+                )
 
                 model_info = f"""[bold cyan]Provider:[/bold cyan] {model.provider}
 [bold cyan]Display Name:[/bold cyan] {model.display_name}
@@ -327,18 +314,22 @@ async def scan_models():
   • Max Tokens: {model.max_tokens or 'N/A'}
   • Max Completion Tokens: {'✅ Yes' if model.uses_max_completion_tokens else '❌ No'}"""
 
-                console.print(Panel(
-                    model_info,
-                    title=f"[bold magenta]• {model.model_id}[/bold magenta]",
-                    border_style=confidence_color,
-                    expand=False
-                ))
+                console.print(
+                    Panel(
+                        model_info,
+                        title=f"[bold magenta]• {model.model_id}[/bold magenta]",
+                        border_style=confidence_color,
+                        expand=False,
+                    )
+                )
         else:
             console.print()
-            console.print(Panel(
-                "[green]✅ No new models discovered. All models are up to date![/green]",
-                border_style="green"
-            ))
+            console.print(
+                Panel(
+                    "[green]✅ No new models discovered. All models are up to date![/green]",
+                    border_style="green",
+                )
+            )
 
     except Exception as e:
         console.print(f"\n[red]❌ Error scanning APIs:[/red] {e}")
@@ -351,9 +342,7 @@ async def analyze_model(model_id: str):
 
     try:
         with Progress(
-            SpinnerColumn(),
-            TextColumn("[bold blue]{task.description}"),
-            console=console
+            SpinnerColumn(), TextColumn("[bold blue]{task.description}"), console=console
         ) as progress:
             task = progress.add_task("Loading and analyzing model...", total=None)
 
@@ -372,7 +361,11 @@ async def analyze_model(model_id: str):
 
         # 소스 색상
         source_color = "green" if model.source == "local" else "yellow"
-        confidence_color = "green" if model.inference_confidence >= 0.8 else "yellow" if model.inference_confidence >= 0.6 else "red"
+        confidence_color = (
+            "green"
+            if model.inference_confidence >= 0.8
+            else "yellow" if model.inference_confidence >= 0.6 else "red"
+        )
 
         # 모델 정보
         console.print()
@@ -380,11 +373,13 @@ async def analyze_model(model_id: str):
 [bold cyan]Display Name:[/bold cyan] {model.display_name}
 [bold cyan]Source:[/bold cyan] [{source_color}]{model.source}[/{source_color}]"""
 
-        console.print(Panel(
-            basic_info,
-            title=f"[bold magenta]📋 {model.model_id}[/bold magenta]",
-            border_style="cyan"
-        ))
+        console.print(
+            Panel(
+                basic_info,
+                title=f"[bold magenta]📋 {model.model_id}[/bold magenta]",
+                border_style="cyan",
+            )
+        )
 
         # 파라미터
         console.print()
@@ -392,7 +387,9 @@ async def analyze_model(model_id: str):
         param_tree.add(f"Streaming: {'✅ Yes' if model.supports_streaming else '❌ No'}")
         param_tree.add(f"Temperature: {'✅ Yes' if model.supports_temperature else '❌ No'}")
         param_tree.add(f"Max Tokens: {'✅ Yes' if model.supports_max_tokens else '❌ No'}")
-        param_tree.add(f"Max Completion Tokens: {'✅ Yes' if model.uses_max_completion_tokens else '❌ No'}")
+        param_tree.add(
+            f"Max Completion Tokens: {'✅ Yes' if model.uses_max_completion_tokens else '❌ No'}"
+        )
 
         if model.max_tokens:
             param_tree.add(f"Max Tokens Value: {model.max_tokens}")
@@ -408,17 +405,21 @@ async def analyze_model(model_id: str):
         inference_info = f"""[bold cyan]Confidence:[/bold cyan] [{confidence_color}]{model.inference_confidence:.2f} ({int(model.inference_confidence * 100)}%)[/{confidence_color}]"""
 
         if model.matched_patterns:
-            inference_info += f"\n[bold cyan]Matched Patterns:[/bold cyan] {', '.join(model.matched_patterns)}"
+            inference_info += (
+                f"\n[bold cyan]Matched Patterns:[/bold cyan] {', '.join(model.matched_patterns)}"
+            )
         if model.discovered_at:
             inference_info += f"\n[bold cyan]Discovered At:[/bold cyan] {model.discovered_at}"
         if model.last_seen:
             inference_info += f"\n[bold cyan]Last Seen:[/bold cyan] {model.last_seen}"
 
-        console.print(Panel(
-            inference_info,
-            title="[bold yellow]📊 Inference Information[/bold yellow]",
-            border_style=confidence_color
-        ))
+        console.print(
+            Panel(
+                inference_info,
+                title="[bold yellow]📊 Inference Information[/bold yellow]",
+                border_style=confidence_color,
+            )
+        )
 
     except Exception as e:
         console.print(f"\n[red]❌ Error analyzing model:[/red] {e}")

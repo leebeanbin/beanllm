@@ -2,6 +2,7 @@
 ML Models Integration
 TensorFlow, PyTorch, Scikit-learn 등 머신러닝 모델 통합
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Optional, Union
@@ -68,10 +69,7 @@ class TensorFlowModel(BaseMLModel):
         try:
             import tensorflow as tf
         except ImportError:
-            raise ImportError(
-                "TensorFlow 필요:\n"
-                "pip install tensorflow"
-            )
+            raise ImportError("TensorFlow 필요:\n" "pip install tensorflow")
 
         model_path = Path(model_path)
 
@@ -85,10 +83,7 @@ class TensorFlowModel(BaseMLModel):
         self.model_path = model_path
 
     def predict(
-        self,
-        inputs: Union[np.ndarray, List],
-        batch_size: Optional[int] = None,
-        **kwargs
+        self, inputs: Union[np.ndarray, List], batch_size: Optional[int] = None, **kwargs
     ) -> np.ndarray:
         """
         예측
@@ -124,17 +119,17 @@ class TensorFlowModel(BaseMLModel):
             self.model.save(str(save_path))
         elif format == "h5":
             # HDF5 형식
-            self.model.save(str(save_path), save_format='h5')
+            self.model.save(str(save_path), save_format="h5")
         else:
             raise ValueError(f"Unknown format: {format}")
 
     @classmethod
-    def from_keras(cls, model_path: Union[str, Path]) -> 'TensorFlowModel':
+    def from_keras(cls, model_path: Union[str, Path]) -> "TensorFlowModel":
         """Keras 모델에서 생성"""
         return cls(model_path)
 
     @classmethod
-    def from_saved_model(cls, model_path: Union[str, Path]) -> 'TensorFlowModel':
+    def from_saved_model(cls, model_path: Union[str, Path]) -> "TensorFlowModel":
         """SavedModel에서 생성"""
         return cls(model_path)
 
@@ -156,7 +151,7 @@ class PyTorchModel(BaseMLModel):
         self,
         model: Optional[Any] = None,
         model_path: Optional[Union[str, Path]] = None,
-        device: Optional[str] = None
+        device: Optional[str] = None,
     ):
         super().__init__(model_path)
         self.device = device or ("cuda" if self._is_cuda_available() else "cpu")
@@ -169,6 +164,7 @@ class PyTorchModel(BaseMLModel):
         """CUDA 사용 가능 여부"""
         try:
             import torch
+
             return torch.cuda.is_available()
         except ImportError:
             return False
@@ -183,22 +179,19 @@ class PyTorchModel(BaseMLModel):
         try:
             import torch
         except ImportError:
-            raise ImportError(
-                "PyTorch 필요:\n"
-                "pip install torch"
-            )
+            raise ImportError("PyTorch 필요:\n" "pip install torch")
 
         checkpoint = torch.load(str(model_path), map_location=self.device)
 
         # 체크포인트 형식 확인
-        if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
             # state_dict가 딕셔너리에 있는 경우
             if self.model is None:
                 raise ValueError(
                     "Model architecture not provided. "
                     "Pass model instance or use from_checkpoint_with_model()."
                 )
-            self.model.load_state_dict(checkpoint['model_state_dict'])
+            self.model.load_state_dict(checkpoint["model_state_dict"])
         else:
             # 모델 전체가 저장된 경우
             self.model = checkpoint
@@ -206,11 +199,7 @@ class PyTorchModel(BaseMLModel):
         self.model.to(self.device)
         self.model_path = model_path
 
-    def predict(
-        self,
-        inputs: Union[np.ndarray, Any],
-        **kwargs
-    ) -> np.ndarray:
+    def predict(self, inputs: Union[np.ndarray, Any], **kwargs) -> np.ndarray:
         """
         예측
 
@@ -247,11 +236,7 @@ class PyTorchModel(BaseMLModel):
         else:
             return outputs
 
-    def save(
-        self,
-        save_path: Union[str, Path],
-        save_full_model: bool = False
-    ):
+    def save(self, save_path: Union[str, Path], save_full_model: bool = False):
         """
         모델 저장
 
@@ -272,9 +257,7 @@ class PyTorchModel(BaseMLModel):
             torch.save(self.model, str(save_path))
         else:
             # state_dict만 저장
-            torch.save({
-                'model_state_dict': self.model.state_dict()
-            }, str(save_path))
+            torch.save({"model_state_dict": self.model.state_dict()}, str(save_path))
 
     def eval_mode(self):
         """평가 모드로 전환"""
@@ -288,20 +271,15 @@ class PyTorchModel(BaseMLModel):
 
     @classmethod
     def from_checkpoint(
-        cls,
-        checkpoint_path: Union[str, Path],
-        device: Optional[str] = None
-    ) -> 'PyTorchModel':
+        cls, checkpoint_path: Union[str, Path], device: Optional[str] = None
+    ) -> "PyTorchModel":
         """체크포인트에서 생성"""
         return cls(model_path=checkpoint_path, device=device)
 
     @classmethod
     def from_checkpoint_with_model(
-        cls,
-        checkpoint_path: Union[str, Path],
-        model: Any,
-        device: Optional[str] = None
-    ) -> 'PyTorchModel':
+        cls, checkpoint_path: Union[str, Path], model: Any, device: Optional[str] = None
+    ) -> "PyTorchModel":
         """체크포인트 + 모델 아키텍처로 생성"""
         instance = cls(model=model, device=device)
         instance.load(checkpoint_path)
@@ -339,6 +317,7 @@ class SklearnModel(BaseMLModel):
         # joblib 시도
         try:
             import joblib
+
             self.model = joblib.load(str(model_path))
             self.model_path = model_path
             return
@@ -348,17 +327,14 @@ class SklearnModel(BaseMLModel):
         # pickle 시도
         try:
             import pickle
-            with open(model_path, 'rb') as f:
+
+            with open(model_path, "rb") as f:
                 self.model = pickle.load(f)
             self.model_path = model_path
         except Exception as e:
             raise ValueError(f"Failed to load model: {e}")
 
-    def predict(
-        self,
-        inputs: Union[np.ndarray, List],
-        **kwargs
-    ) -> np.ndarray:
+    def predict(self, inputs: Union[np.ndarray, List], **kwargs) -> np.ndarray:
         """
         예측
 
@@ -374,11 +350,7 @@ class SklearnModel(BaseMLModel):
 
         return self.model.predict(inputs, **kwargs)
 
-    def predict_proba(
-        self,
-        inputs: Union[np.ndarray, List],
-        **kwargs
-    ) -> np.ndarray:
+    def predict_proba(self, inputs: Union[np.ndarray, List], **kwargs) -> np.ndarray:
         """
         확률 예측 (분류 모델)
 
@@ -392,17 +364,12 @@ class SklearnModel(BaseMLModel):
         if self.model is None:
             raise ValueError("Model not loaded")
 
-        if not hasattr(self.model, 'predict_proba'):
+        if not hasattr(self.model, "predict_proba"):
             raise AttributeError("Model does not support predict_proba")
 
         return self.model.predict_proba(inputs, **kwargs)
 
-    def fit(
-        self,
-        X: Union[np.ndarray, List],
-        y: Union[np.ndarray, List],
-        **kwargs
-    ):
+    def fit(self, X: Union[np.ndarray, List], y: Union[np.ndarray, List], **kwargs):
         """
         모델 학습
 
@@ -432,26 +399,29 @@ class SklearnModel(BaseMLModel):
         if use_joblib:
             try:
                 import joblib
+
                 joblib.dump(self.model, str(save_path))
             except ImportError:
                 # joblib 없으면 pickle 사용
                 import pickle
-                with open(save_path, 'wb') as f:
+
+                with open(save_path, "wb") as f:
                     pickle.dump(self.model, f)
         else:
             import pickle
-            with open(save_path, 'wb') as f:
+
+            with open(save_path, "wb") as f:
                 pickle.dump(self.model, f)
 
     @classmethod
-    def from_pickle(cls, model_path: Union[str, Path]) -> 'SklearnModel':
+    def from_pickle(cls, model_path: Union[str, Path]) -> "SklearnModel":
         """Pickle 파일에서 생성"""
         instance = cls()
         instance.load(model_path)
         return instance
 
     @classmethod
-    def from_estimator(cls, estimator: Any) -> 'SklearnModel':
+    def from_estimator(cls, estimator: Any) -> "SklearnModel":
         """Scikit-learn estimator에서 생성"""
         return cls(model=estimator)
 
@@ -466,9 +436,7 @@ class MLModelFactory:
 
     @staticmethod
     def load(
-        model_path: Union[str, Path],
-        framework: Optional[str] = None,
-        **kwargs
+        model_path: Union[str, Path], framework: Optional[str] = None, **kwargs
     ) -> BaseMLModel:
         """
         모델 로드 (자동 감지)
@@ -508,20 +476,20 @@ class MLModelFactory:
         suffix = model_path.suffix.lower()
 
         # TensorFlow
-        if suffix in ['.h5', '.hdf5'] or model_path.name == 'saved_model':
+        if suffix in [".h5", ".hdf5"] or model_path.name == "saved_model":
             return "tensorflow"
 
         # PyTorch
-        if suffix in ['.pt', '.pth', '.ckpt']:
+        if suffix in [".pt", ".pth", ".ckpt"]:
             return "pytorch"
 
         # Scikit-learn
-        if suffix in ['.pkl', '.pickle', '.joblib']:
+        if suffix in [".pkl", ".pickle", ".joblib"]:
             return "sklearn"
 
         # 디렉토리 체크 (SavedModel)
         if model_path.is_dir():
-            if (model_path / 'saved_model.pb').exists():
+            if (model_path / "saved_model.pb").exists():
                 return "tensorflow"
 
         raise ValueError(
@@ -532,9 +500,7 @@ class MLModelFactory:
 
 # 편의 함수
 def load_ml_model(
-    model_path: Union[str, Path],
-    framework: Optional[str] = None,
-    **kwargs
+    model_path: Union[str, Path], framework: Optional[str] = None, **kwargs
 ) -> BaseMLModel:
     """
     ML 모델 로드 (간편 함수)

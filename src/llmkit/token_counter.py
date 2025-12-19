@@ -31,6 +31,7 @@ from typing import Dict, List, Optional
 
 try:
     import tiktoken
+
     TIKTOKEN_AVAILABLE = True
 except ImportError:
     TIKTOKEN_AVAILABLE = False
@@ -40,6 +41,7 @@ except ImportError:
 # ============================================================================
 # Part 1: Token Pricing Database
 # ============================================================================
+
 
 class ModelPricing:
     """
@@ -58,33 +60,28 @@ class ModelPricing:
         "gpt-4o-2024-08-06": {"input": 2.50, "output": 10.00},
         "gpt-4o-2024-05-13": {"input": 5.00, "output": 15.00},
         "gpt-4o-mini-2024-07-18": {"input": 0.150, "output": 0.600},
-
         # O-series (Reasoning models)
         "o1": {"input": 15.00, "output": 60.00},
         "o1-mini": {"input": 3.00, "output": 12.00},
         "o1-preview": {"input": 15.00, "output": 60.00},
         "o1-preview-2024-09-12": {"input": 15.00, "output": 60.00},
         "o1-mini-2024-09-12": {"input": 3.00, "output": 12.00},
-
         # GPT-4 Turbo
         "gpt-4-turbo": {"input": 10.00, "output": 30.00},
         "gpt-4-turbo-2024-04-09": {"input": 10.00, "output": 30.00},
         "gpt-4-turbo-preview": {"input": 10.00, "output": 30.00},
         "gpt-4-0125-preview": {"input": 10.00, "output": 30.00},
         "gpt-4-1106-preview": {"input": 10.00, "output": 30.00},
-
         # GPT-4
         "gpt-4": {"input": 30.00, "output": 60.00},
         "gpt-4-0613": {"input": 30.00, "output": 60.00},
         "gpt-4-32k": {"input": 60.00, "output": 120.00},
         "gpt-4-32k-0613": {"input": 60.00, "output": 120.00},
-
         # GPT-3.5 Turbo
         "gpt-3.5-turbo": {"input": 0.50, "output": 1.50},
         "gpt-3.5-turbo-0125": {"input": 0.50, "output": 1.50},
         "gpt-3.5-turbo-1106": {"input": 1.00, "output": 2.00},
         "gpt-3.5-turbo-16k": {"input": 3.00, "output": 4.00},
-
         # Embeddings
         "text-embedding-3-large": {"input": 0.13, "output": 0.0},
         "text-embedding-3-small": {"input": 0.02, "output": 0.0},
@@ -127,12 +124,7 @@ class ModelPricing:
     }
 
     # 통합
-    ALL_MODELS = {
-        **OPENAI,
-        **ANTHROPIC,
-        **GOOGLE,
-        **OLLAMA
-    }
+    ALL_MODELS = {**OPENAI, **ANTHROPIC, **GOOGLE, **OLLAMA}
 
     @classmethod
     def get_pricing(cls, model: str) -> Optional[Dict[str, float]]:
@@ -153,6 +145,7 @@ class ModelPricing:
 # Part 2: Model Context Windows
 # ============================================================================
 
+
 class ModelContextWindow:
     """모델별 컨텍스트 윈도우 크기"""
 
@@ -167,7 +160,6 @@ class ModelContextWindow:
         "gpt-4-32k": 32768,
         "gpt-3.5-turbo": 16385,
         "gpt-3.5-turbo-16k": 16385,
-
         # Anthropic
         "claude-3-5-sonnet-20241022": 200000,
         "claude-3-5-haiku-20241022": 200000,
@@ -177,14 +169,12 @@ class ModelContextWindow:
         "claude-2.1": 200000,
         "claude-2.0": 100000,
         "claude-instant-1.2": 100000,
-
         # Google
         "gemini-2.0-flash-exp": 1000000,
         "gemini-1.5-pro": 2000000,
         "gemini-1.5-flash": 1000000,
         "gemini-1.5-flash-8b": 1000000,
         "gemini-1.0-pro": 32768,
-
         # Ollama (depends on hardware, typical values)
         "llama3.2": 128000,
         "llama3.1": 128000,
@@ -215,6 +205,7 @@ class ModelContextWindow:
 # Part 3: Token Counter
 # ============================================================================
 
+
 class TokenCounter:
     """
     Token 계산기
@@ -231,10 +222,8 @@ class TokenCounter:
         "text-embedding-3-large": "cl100k_base",
         "text-embedding-3-small": "cl100k_base",
         "text-embedding-ada-002": "cl100k_base",
-
         # Claude (approximation using cl100k_base)
         "claude": "cl100k_base",
-
         # Gemini (approximation)
         "gemini": "cl100k_base",
     }
@@ -305,10 +294,7 @@ class TokenCounter:
 
         return len(encoding.encode(text))
 
-    def count_tokens_from_messages(
-        self,
-        messages: List[Dict[str, str]]
-    ) -> int:
+    def count_tokens_from_messages(self, messages: List[Dict[str, str]]) -> int:
         """
         채팅 메시지의 토큰 수 계산
 
@@ -359,11 +345,7 @@ class TokenCounter:
         # 간단한 휴리스틱: 4 characters ≈ 1 token
         return len(text) // 4
 
-    def get_available_tokens(
-        self,
-        messages: List[Dict[str, str]],
-        reserved: int = 0
-    ) -> int:
+    def get_available_tokens(self, messages: List[Dict[str, str]], reserved: int = 0) -> int:
         """
         사용 가능한 토큰 수 계산
 
@@ -386,9 +368,11 @@ class TokenCounter:
 # Part 4: Cost Estimator
 # ============================================================================
 
+
 @dataclass
 class CostEstimate:
     """비용 추정 결과"""
+
     input_tokens: int
     output_tokens: int
     input_cost: float  # USD
@@ -423,7 +407,7 @@ class CostEstimator:
         output_text: Optional[str] = None,
         input_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
-        messages: Optional[List[Dict[str, str]]] = None
+        messages: Optional[List[Dict[str, str]]] = None,
     ) -> CostEstimate:
         """
         비용 추정
@@ -471,14 +455,11 @@ class CostEstimator:
             input_cost=input_cost,
             output_cost=output_cost,
             total_cost=total_cost,
-            model=self.model
+            model=self.model,
         )
 
     def compare_models(
-        self,
-        models: List[str],
-        input_text: str,
-        output_tokens: int = 1000
+        self, models: List[str], input_text: str, output_tokens: int = 1000
     ) -> List[CostEstimate]:
         """
         여러 모델의 비용 비교
@@ -495,10 +476,7 @@ class CostEstimator:
 
         for model in models:
             estimator = CostEstimator(model)
-            estimate = estimator.estimate_cost(
-                input_text=input_text,
-                output_tokens=output_tokens
-            )
+            estimate = estimator.estimate_cost(input_text=input_text, output_tokens=output_tokens)
             estimates.append(estimate)
 
         # 비용 순으로 정렬
@@ -511,10 +489,8 @@ class CostEstimator:
 # Convenience Functions
 # ============================================================================
 
-def count_tokens(
-    text: str,
-    model: str = "gpt-4o"
-) -> int:
+
+def count_tokens(text: str, model: str = "gpt-4o") -> int:
     """
     간편한 토큰 계산 함수
 
@@ -534,10 +510,7 @@ def count_tokens(
     return counter.count_tokens(text)
 
 
-def count_message_tokens(
-    messages: List[Dict[str, str]],
-    model: str = "gpt-4o"
-) -> int:
+def count_message_tokens(messages: List[Dict[str, str]], model: str = "gpt-4o") -> int:
     """
     메시지의 토큰 수 계산
 
@@ -559,11 +532,7 @@ def count_message_tokens(
     return counter.count_tokens_from_messages(messages)
 
 
-def estimate_cost(
-    input_text: str,
-    output_text: str = "",
-    model: str = "gpt-4o"
-) -> CostEstimate:
+def estimate_cost(input_text: str, output_text: str = "", model: str = "gpt-4o") -> CostEstimate:
     """
     간편한 비용 추정 함수
 
@@ -580,16 +549,11 @@ def estimate_cost(
         >>> print(f"Total cost: ${cost.total_cost:.6f}")
     """
     estimator = CostEstimator(model)
-    return estimator.estimate_cost(
-        input_text=input_text,
-        output_text=output_text
-    )
+    return estimator.estimate_cost(input_text=input_text, output_text=output_text)
 
 
 def get_cheapest_model(
-    input_text: str,
-    output_tokens: int = 1000,
-    models: Optional[List[str]] = None
+    input_text: str, output_tokens: int = 1000, models: Optional[List[str]] = None
 ) -> str:
     """
     가장 저렴한 모델 찾기
@@ -607,12 +571,7 @@ def get_cheapest_model(
         >>> print(f"Cheapest model: {cheapest}")
     """
     if models is None:
-        models = [
-            "gpt-4o-mini",
-            "gpt-3.5-turbo",
-            "claude-3-5-haiku-20241022",
-            "gemini-1.5-flash"
-        ]
+        models = ["gpt-4o-mini", "gpt-3.5-turbo", "claude-3-5-haiku-20241022", "gemini-1.5-flash"]
 
     estimator = CostEstimator(models[0])
     estimates = estimator.compare_models(models, input_text, output_tokens)

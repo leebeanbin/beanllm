@@ -2,6 +2,7 @@
 Memory System - Conversation Context Management
 대화 컨텍스트 관리 시스템
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -15,6 +16,7 @@ logger = get_logger(__name__)
 @dataclass
 class Message:
     """메시지"""
+
     role: str  # user, assistant, system
     content: str
     timestamp: datetime = field(default_factory=datetime.now)
@@ -26,7 +28,7 @@ class Message:
             "role": self.role,
             "content": self.content,
             "timestamp": self.timestamp.isoformat(),
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -54,10 +56,7 @@ class BaseMemory(ABC):
 
     def get_dict_messages(self) -> List[Dict]:
         """딕셔너리 형태로 메시지 반환"""
-        return [
-            {"role": msg.role, "content": msg.content}
-            for msg in self.get_messages()
-        ]
+        return [{"role": msg.role, "content": msg.content} for msg in self.get_messages()]
 
 
 class BufferMemory(BaseMemory):
@@ -94,7 +93,7 @@ class BufferMemory(BaseMemory):
 
         # 최대 메시지 수 제한
         if self.max_messages and len(self.messages) > self.max_messages:
-            self.messages = self.messages[-self.max_messages:]
+            self.messages = self.messages[-self.max_messages :]
 
         logger.debug(f"Added message: {role} ({len(content)} chars)")
 
@@ -148,7 +147,7 @@ class WindowMemory(BaseMemory):
 
         # 윈도우 크기 유지
         if len(self.messages) > self.window_size:
-            self.messages = self.messages[-self.window_size:]
+            self.messages = self.messages[-self.window_size :]
 
     def get_messages(self) -> List[Message]:
         """메시지 가져오기"""
@@ -246,10 +245,7 @@ class SummaryMemory(BaseMemory):
     """
 
     def __init__(
-        self,
-        summarizer: Optional[Any] = None,
-        max_messages: int = 10,
-        summary_trigger: int = 5
+        self, summarizer: Optional[Any] = None, max_messages: int = 10, summary_trigger: int = 5
     ):
         """
         Args:
@@ -278,10 +274,9 @@ class SummaryMemory(BaseMemory):
 
         # 요약이 있으면 system 메시지로 추가
         if self.summary:
-            messages.append(Message(
-                role="system",
-                content=f"Previous conversation summary:\n{self.summary}"
-            ))
+            messages.append(
+                Message(role="system", content=f"Previous conversation summary:\n{self.summary}")
+            )
 
         # 최근 메시지 추가
         messages.extend(self.messages.copy())
@@ -386,10 +381,7 @@ class ConversationMemory(BaseMemory):
 
 
 # 편의 함수
-def create_memory(
-    memory_type: str = "buffer",
-    **kwargs
-) -> BaseMemory:
+def create_memory(memory_type: str = "buffer", **kwargs) -> BaseMemory:
     """
     메모리 생성 팩토리
 
@@ -419,7 +411,7 @@ def create_memory(
         "window": WindowMemory,
         "token": TokenMemory,
         "summary": SummaryMemory,
-        "conversation": ConversationMemory
+        "conversation": ConversationMemory,
     }
 
     memory_class = memory_map.get(memory_type)

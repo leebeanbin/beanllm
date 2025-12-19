@@ -6,6 +6,7 @@ Custom Exceptions
 
 class LLMManagerError(Exception):
     """Base exception for llm-model-manager"""
+
     pass
 
 
@@ -35,9 +36,11 @@ class RateLimitError(ProviderError):
 
 class AuthenticationError(ProviderError):
     """인증 실패"""
+
     pass
 
 
 class InvalidParameterError(LLMManagerError):
     """잘못된 파라미터"""
+
     pass

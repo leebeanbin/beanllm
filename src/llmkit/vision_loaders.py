@@ -2,6 +2,7 @@
 Vision Document Loaders
 이미지 및 멀티모달 문서 로딩
 """
+
 import base64
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,7 @@ class ImageDocument(Document):
 
     텍스트와 이미지를 함께 포함
     """
+
     image_path: Optional[str] = None
     image_data: Optional[bytes] = None
     image_base64: Optional[str] = None
@@ -28,12 +30,12 @@ class ImageDocument(Document):
             return self.image_base64
 
         if self.image_data:
-            return base64.b64encode(self.image_data).decode('utf-8')
+            return base64.b64encode(self.image_data).decode("utf-8")
 
         if self.image_path:
-            with open(self.image_path, 'rb') as f:
+            with open(self.image_path, "rb") as f:
                 image_bytes = f.read()
-                return base64.b64encode(image_bytes).decode('utf-8')
+                return base64.b64encode(image_bytes).decode("utf-8")
 
         raise ValueError("No image data available")
 
@@ -57,11 +59,7 @@ class ImageLoader(BaseDocumentLoader):
         docs = loader.load("image.jpg")
     """
 
-    def __init__(
-        self,
-        generate_captions: bool = False,
-        caption_model: Optional[str] = None
-    ):
+    def __init__(self, generate_captions: bool = False, caption_model: Optional[str] = None):
         """
         Args:
             generate_captions: 이미지 캡션 자동 생성 여부
@@ -92,7 +90,7 @@ class ImageLoader(BaseDocumentLoader):
     def _load_image(self, image_path: Path) -> ImageDocument:
         """단일 이미지 로드"""
         # 이미지 읽기
-        with open(image_path, 'rb') as f:
+        with open(image_path, "rb") as f:
             image_data = f.read()
 
         # 캡션 생성
@@ -105,19 +103,19 @@ class ImageLoader(BaseDocumentLoader):
             metadata={
                 "source": str(image_path),
                 "type": "image",
-                "format": image_path.suffix[1:]  # .jpg -> jpg
+                "format": image_path.suffix[1:],  # .jpg -> jpg
             },
             image_path=str(image_path),
             image_data=image_data,
-            caption=caption
+            caption=caption,
         )
 
     def _load_directory(self, directory: Path) -> List[ImageDocument]:
         """디렉토리의 모든 이미지 로드"""
-        image_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+        image_extensions = {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
         documents = []
 
-        for file_path in directory.rglob('*'):
+        for file_path in directory.rglob("*"):
             if file_path.suffix.lower() in image_extensions:
                 documents.append(self._load_image(file_path))
 
@@ -129,10 +127,7 @@ class ImageLoader(BaseDocumentLoader):
             from PIL import Image
             from transformers import BlipForConditionalGeneration, BlipProcessor
         except ImportError:
-            raise ImportError(
-                "transformers 및 Pillow 필요:\n"
-                "pip install transformers pillow"
-            )
+            raise ImportError("transformers 및 Pillow 필요:\n" "pip install transformers pillow")
 
         # 모델 로드
         processor = BlipProcessor.from_pretrained(self.caption_model)
@@ -185,10 +180,7 @@ class PDFWithImagesLoader(BaseDocumentLoader):
         try:
             import fitz  # PyMuPDF
         except ImportError:
-            raise ImportError(
-                "PyMuPDF 필요:\n"
-                "pip install pymupdf"
-            )
+            raise ImportError("PyMuPDF 필요:\n" "pip install pymupdf")
 
         source_path = Path(source)
         documents = []
@@ -202,14 +194,12 @@ class PDFWithImagesLoader(BaseDocumentLoader):
             # 텍스트 추출
             text = page.get_text()
             if text.strip():
-                documents.append(Document(
-                    content=text,
-                    metadata={
-                        "source": str(source_path),
-                        "page": page_num + 1,
-                        "type": "text"
-                    }
-                ))
+                documents.append(
+                    Document(
+                        content=text,
+                        metadata={"source": str(source_path), "page": page_num + 1, "type": "text"},
+                    )
+                )
 
             # 이미지 추출
             if self.extract_images:
@@ -219,26 +209,25 @@ class PDFWithImagesLoader(BaseDocumentLoader):
                     base_image = pdf_document.extract_image(xref)
                     image_data = base_image["image"]
 
-                    documents.append(ImageDocument(
-                        content=f"Image from page {page_num + 1}",
-                        metadata={
-                            "source": str(source_path),
-                            "page": page_num + 1,
-                            "image_index": img_index,
-                            "type": "image"
-                        },
-                        image_data=image_data
-                    ))
+                    documents.append(
+                        ImageDocument(
+                            content=f"Image from page {page_num + 1}",
+                            metadata={
+                                "source": str(source_path),
+                                "page": page_num + 1,
+                                "image_index": img_index,
+                                "type": "image",
+                            },
+                            image_data=image_data,
+                        )
+                    )
 
         pdf_document.close()
         return documents
 
 
 # 편의 함수
-def load_images(
-    source: Union[str, Path],
-    generate_captions: bool = False
-) -> List[ImageDocument]:
+def load_images(source: Union[str, Path], generate_captions: bool = False) -> List[ImageDocument]:
     """
     이미지 로드 (간편 함수)
 

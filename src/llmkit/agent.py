@@ -2,6 +2,7 @@
 Agent - ReAct Pattern Implementation
 생각(Reasoning)하고 행동(Acting)하는 AI 에이전트
 """
+
 import json
 import re
 from dataclasses import dataclass
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class AgentStep:
     """에이전트 단계"""
+
     step_number: int
     thought: str
     action: Optional[str] = None
@@ -29,6 +31,7 @@ class AgentStep:
 @dataclass
 class AgentResult:
     """에이전트 실행 결과"""
+
     answer: str
     steps: List[AgentStep]
     total_steps: int
@@ -107,7 +110,7 @@ Let's begin!
         tools: Optional[List[Tool]] = None,
         max_iterations: int = 10,
         provider: Optional[str] = None,
-        verbose: bool = False
+        verbose: bool = False,
     ):
         """
         Args:
@@ -145,10 +148,7 @@ Let's begin!
         tools_description = self._format_tools()
 
         # 초기 프롬프트
-        prompt = self.REACT_PROMPT.format(
-            tools_description=tools_description,
-            task=task
-        )
+        prompt = self.REACT_PROMPT.format(tools_description=tools_description, task=task)
 
         messages = [{"role": "user", "content": prompt}]
         conversation_history = prompt
@@ -176,10 +176,7 @@ Let's begin!
                 # 최종 답변인 경우
                 if step.is_final and step.final_answer:
                     return AgentResult(
-                        answer=step.final_answer,
-                        steps=steps,
-                        total_steps=step_number,
-                        success=True
+                        answer=step.final_answer, steps=steps, total_steps=step_number, success=True
                     )
 
                 # 도구 실행
@@ -192,7 +189,9 @@ Let's begin!
 
                     # 대화 히스토리 업데이트
                     conversation_history += f"\n\n{content}\nObservation: {observation}"
-                    messages = [{"role": "user", "content": conversation_history + "\n\nContinue..."}]
+                    messages = [
+                        {"role": "user", "content": conversation_history + "\n\nContinue..."}
+                    ]
 
             # 최대 반복 도달
             return AgentResult(
@@ -200,17 +199,13 @@ Let's begin!
                 steps=steps,
                 total_steps=step_number,
                 success=False,
-                error="Max iterations exceeded"
+                error="Max iterations exceeded",
             )
 
         except Exception as e:
             logger.error(f"Agent error: {e}")
             return AgentResult(
-                answer="",
-                steps=steps,
-                total_steps=step_number,
-                success=False,
-                error=str(e)
+                answer="", steps=steps, total_steps=step_number, success=False, error=str(e)
             )
 
     def _format_tools(self) -> str:
@@ -221,9 +216,7 @@ Let's begin!
 
         lines = []
         for tool in tools:
-            params = ", ".join(
-                f"{p.name}: {p.type}" for p in tool.parameters
-            )
+            params = ", ".join(f"{p.name}: {p.type}" for p in tool.parameters)
             lines.append(f"- {tool.name}({params}): {tool.description}")
 
         return "\n".join(lines)
@@ -233,7 +226,9 @@ Let's begin!
         step = AgentStep(step_number=step_number, thought="")
 
         # Thought 추출
-        thought_match = re.search(r"Thought:\s*(.+?)(?=\n(?:Action|Final Answer):|$)", content, re.DOTALL)
+        thought_match = re.search(
+            r"Thought:\s*(.+?)(?=\n(?:Action|Final Answer):|$)", content, re.DOTALL
+        )
         if thought_match:
             step.thought = thought_match.group(1).strip()
 
@@ -276,10 +271,6 @@ Let's begin!
 
 
 # 편의 함수
-async def create_agent(
-    model: str,
-    tools: Optional[List[Tool]] = None,
-    **kwargs
-) -> Agent:
+async def create_agent(model: str, tools: Optional[List[Tool]] = None, **kwargs) -> Agent:
     """Agent 생성"""
     return Agent(model=model, tools=tools, **kwargs)

@@ -2,6 +2,7 @@
 Vision Embeddings
 이미지 임베딩 및 멀티모달 임베딩
 """
+
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -27,11 +28,7 @@ class CLIPEmbedding(BaseEmbedding):
         similarity = embed.similarity(text_vec[0], image_vec[0])
     """
 
-    def __init__(
-        self,
-        model: str = "openai/clip-vit-base-patch32",
-        device: Optional[str] = None
-    ):
+    def __init__(self, model: str = "openai/clip-vit-base-patch32", device: Optional[str] = None):
         """
         Args:
             model: CLIP 모델 이름
@@ -49,10 +46,7 @@ class CLIPEmbedding(BaseEmbedding):
                 import torch
                 from transformers import CLIPModel, CLIPProcessor
             except ImportError:
-                raise ImportError(
-                    "transformers 및 torch 필요:\n"
-                    "pip install transformers torch"
-                )
+                raise ImportError("transformers 및 torch 필요:\n" "pip install transformers torch")
 
             self._processor = CLIPProcessor.from_pretrained(self.model_name)
             self._model = CLIPModel.from_pretrained(self.model_name)
@@ -73,12 +67,7 @@ class CLIPEmbedding(BaseEmbedding):
         import torch
 
         # 입력 처리
-        inputs = self._processor(
-            text=texts,
-            return_tensors="pt",
-            padding=True,
-            truncation=True
-        )
+        inputs = self._processor(text=texts, return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # 임베딩 생성
@@ -90,11 +79,7 @@ class CLIPEmbedding(BaseEmbedding):
 
         return text_features.cpu().numpy().tolist()
 
-    def embed_images(
-        self,
-        images: List[Union[str, Path]],
-        **kwargs
-    ) -> List[List[float]]:
+    def embed_images(self, images: List[Union[str, Path]], **kwargs) -> List[List[float]]:
         """
         이미지 임베딩
 
@@ -113,19 +98,13 @@ class CLIPEmbedding(BaseEmbedding):
             import torch
             from PIL import Image
         except ImportError:
-            raise ImportError(
-                "Pillow 필요:\n"
-                "pip install pillow"
-            )
+            raise ImportError("Pillow 필요:\n" "pip install pillow")
 
         # 이미지 로드
         pil_images = [Image.open(img) for img in images]
 
         # 입력 처리
-        inputs = self._processor(
-            images=pil_images,
-            return_tensors="pt"
-        )
+        inputs = self._processor(images=pil_images, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         # 임베딩 생성
@@ -149,6 +128,7 @@ class CLIPEmbedding(BaseEmbedding):
             유사도 (0.0 ~ 1.0)
         """
         import numpy as np
+
         a = np.array(vec1)
         b = np.array(vec2)
         return float(np.dot(a, b))  # 이미 normalized됨
@@ -174,7 +154,7 @@ class MultimodalEmbedding(BaseEmbedding):
         self,
         text_model: str = "text-embedding-3-small",
         vision_model: str = "openai/clip-vit-base-patch32",
-        fusion_method: str = "concat"  # concat, average, weighted
+        fusion_method: str = "concat",  # concat, average, weighted
     ):
         """
         Args:
@@ -196,7 +176,7 @@ class MultimodalEmbedding(BaseEmbedding):
         self,
         text: Optional[str] = None,
         image: Optional[Union[str, Path]] = None,
-        text_weight: float = 0.5
+        text_weight: float = 0.5,
     ) -> List[float]:
         """
         멀티모달 임베딩
@@ -217,12 +197,12 @@ class MultimodalEmbedding(BaseEmbedding):
         # 텍스트 임베딩
         if text:
             text_vec = self.text_embedder.embed_sync([text])[0]
-            vectors.append(('text', text_vec))
+            vectors.append(("text", text_vec))
 
         # 이미지 임베딩
         if image:
             image_vec = self.vision_embedder.embed_images([image])[0]
-            vectors.append(('vision', image_vec))
+            vectors.append(("vision", image_vec))
 
         # 융합
         if len(vectors) == 1:
@@ -230,11 +210,7 @@ class MultimodalEmbedding(BaseEmbedding):
 
         return self._fuse_vectors(vectors, text_weight)
 
-    def _fuse_vectors(
-        self,
-        vectors: List[tuple],
-        text_weight: float
-    ) -> List[float]:
+    def _fuse_vectors(self, vectors: List[tuple], text_weight: float) -> List[float]:
         """
         벡터 융합
 
@@ -258,8 +234,8 @@ class MultimodalEmbedding(BaseEmbedding):
 
         elif self.fusion_method == "weighted":
             # 가중 평균
-            text_vecs = [vec for type, vec in vectors if type == 'text']
-            vision_vecs = [vec for type, vec in vectors if type == 'vision']
+            text_vecs = [vec for type, vec in vectors if type == "text"]
+            vision_vecs = [vec for type, vec in vectors if type == "vision"]
 
             if text_vecs and vision_vecs:
                 text_arr = np.array(text_vecs[0])
@@ -275,10 +251,7 @@ class MultimodalEmbedding(BaseEmbedding):
 
 
 # 편의 함수
-def create_vision_embedding(
-    model: str = "clip",
-    **kwargs
-) -> BaseEmbedding:
+def create_vision_embedding(model: str = "clip", **kwargs) -> BaseEmbedding:
     """
     Vision 임베딩 생성 (간편 함수)
 

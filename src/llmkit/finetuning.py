@@ -15,6 +15,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 class FineTuningStatus(Enum):
     """파인튜닝 작업 상태"""
+
     CREATED = "created"
     VALIDATING = "validating_files"
     QUEUED = "queued"
@@ -26,6 +27,7 @@ class FineTuningStatus(Enum):
 
 class ModelProvider(Enum):
     """지원 프로바이더"""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
@@ -35,6 +37,7 @@ class ModelProvider(Enum):
 @dataclass
 class TrainingExample:
     """훈련 예제"""
+
     messages: List[Dict[str, str]]
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -47,17 +50,15 @@ class TrainingExample:
         return json.dumps(self.to_dict(), ensure_ascii=False)
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'TrainingExample':
+    def from_dict(cls, data: Dict[str, Any]) -> "TrainingExample":
         """딕셔너리에서 생성"""
-        return cls(
-            messages=data["messages"],
-            metadata=data.get("metadata", {})
-        )
+        return cls(messages=data["messages"], metadata=data.get("metadata", {}))
 
 
 @dataclass
 class FineTuningConfig:
     """파인튜닝 설정"""
+
     model: str
     training_file: str
     validation_file: Optional[str] = None
@@ -71,6 +72,7 @@ class FineTuningConfig:
 @dataclass
 class FineTuningJob:
     """파인튜닝 작업"""
+
     job_id: str
     model: str
     status: FineTuningStatus
@@ -89,7 +91,7 @@ class FineTuningJob:
         return self.status in [
             FineTuningStatus.SUCCEEDED,
             FineTuningStatus.FAILED,
-            FineTuningStatus.CANCELLED
+            FineTuningStatus.CANCELLED,
         ]
 
     def is_success(self) -> bool:
@@ -100,6 +102,7 @@ class FineTuningJob:
 @dataclass
 class FineTuningMetrics:
     """파인튜닝 메트릭"""
+
     step: int
     train_loss: Optional[float] = None
     valid_loss: Optional[float] = None
@@ -110,15 +113,12 @@ class FineTuningMetrics:
 
 # ===== Base Fine-tuning Provider =====
 
+
 class BaseFineTuningProvider(ABC):
     """파인튜닝 프로바이더 베이스 클래스"""
 
     @abstractmethod
-    def prepare_data(
-        self,
-        examples: List[TrainingExample],
-        output_path: str
-    ) -> str:
+    def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """훈련 데이터 준비"""
         pass
 
@@ -150,6 +150,7 @@ class BaseFineTuningProvider(ABC):
 
 # ===== OpenAI Fine-tuning Provider =====
 
+
 class OpenAIFineTuningProvider(BaseFineTuningProvider):
     """
     OpenAI 파인튜닝 프로바이더
@@ -159,6 +160,7 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
 
     def __init__(self, api_key: Optional[str] = None):
         import os
+
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
 
         if not self.api_key:
@@ -172,18 +174,13 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
         if self._client is None:
             try:
                 from openai import OpenAI
+
                 self._client = OpenAI(api_key=self.api_key)
             except ImportError:
-                raise ImportError(
-                    "OpenAI SDK required. Install with: pip install openai"
-                )
+                raise ImportError("OpenAI SDK required. Install with: pip install openai")
         return self._client
 
-    def prepare_data(
-        self,
-        examples: List[TrainingExample],
-        output_path: str
-    ) -> str:
+    def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
         OpenAI 형식으로 데이터 준비
 
@@ -195,9 +192,9 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
             파일 경로
         """
         # JSONL 형식으로 저장
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             for example in examples:
-                f.write(example.to_jsonl() + '\n')
+                f.write(example.to_jsonl() + "\n")
 
         return output_path
 
@@ -214,11 +211,8 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
         """
         client = self._get_client()
 
-        with open(file_path, 'rb') as f:
-            response = client.files.create(
-                file=f,
-                purpose=purpose
-            )
+        with open(file_path, "rb") as f:
+            response = client.files.create(file=f, purpose=purpose)
 
         return response.id
 
@@ -249,7 +243,7 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
             validation_file=config.validation_file,
             model=config.model,
             hyperparameters=hyperparameters or None,
-            suffix=config.suffix
+            suffix=config.suffix,
         )
 
         # FineTuningJob으로 변환
@@ -285,14 +279,16 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
             for event in events.data:
                 if event.type == "metrics":
                     data = event.data
-                    metrics.append(FineTuningMetrics(
-                        step=data.get("step", 0),
-                        train_loss=data.get("train_loss"),
-                        valid_loss=data.get("valid_loss"),
-                        train_accuracy=data.get("train_accuracy"),
-                        valid_accuracy=data.get("valid_accuracy"),
-                        learning_rate=data.get("learning_rate")
-                    ))
+                    metrics.append(
+                        FineTuningMetrics(
+                            step=data.get("step", 0),
+                            train_loss=data.get("train_loss"),
+                            valid_loss=data.get("valid_loss"),
+                            train_accuracy=data.get("train_accuracy"),
+                            valid_accuracy=data.get("valid_accuracy"),
+                            learning_rate=data.get("learning_rate"),
+                        )
+                    )
 
             return metrics
         except Exception:
@@ -311,11 +307,12 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
             validation_file=response.validation_file,
             hyperparameters=response.hyperparameters.to_dict() if response.hyperparameters else {},
             result_files=response.result_files or [],
-            error=response.error.message if response.error else None
+            error=response.error.message if response.error else None,
         )
 
 
 # ===== Data Preparation Utilities =====
+
 
 class DatasetBuilder:
     """
@@ -325,9 +322,7 @@ class DatasetBuilder:
     """
 
     @staticmethod
-    def from_conversations(
-        conversations: List[List[Dict[str, str]]]
-    ) -> List[TrainingExample]:
+    def from_conversations(conversations: List[List[Dict[str, str]]]) -> List[TrainingExample]:
         """
         대화 데이터에서 훈련 예제 생성
 
@@ -344,8 +339,7 @@ class DatasetBuilder:
 
     @staticmethod
     def from_qa_pairs(
-        qa_pairs: List[Dict[str, str]],
-        system_message: Optional[str] = None
+        qa_pairs: List[Dict[str, str]], system_message: Optional[str] = None
     ) -> List[TrainingExample]:
         """
         Q&A 쌍에서 훈련 예제 생성
@@ -370,8 +364,7 @@ class DatasetBuilder:
 
     @staticmethod
     def from_instructions(
-        instructions: List[Dict[str, str]],
-        system_template: str = "You are a helpful assistant."
+        instructions: List[Dict[str, str]], system_template: str = "You are a helpful assistant."
     ) -> List[TrainingExample]:
         """
         Instruction-following 데이터에서 훈련 예제 생성
@@ -385,7 +378,7 @@ class DatasetBuilder:
             messages = [
                 {"role": "system", "content": system_template},
                 {"role": "user", "content": inst["instruction"]},
-                {"role": "assistant", "content": inst["output"]}
+                {"role": "assistant", "content": inst["output"]},
             ]
             examples.append(TrainingExample(messages=messages))
 
@@ -394,7 +387,7 @@ class DatasetBuilder:
     @staticmethod
     def from_json_file(file_path: str) -> List[TrainingExample]:
         """JSON 파일에서 훈련 예제 로드"""
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         if isinstance(data, list):
@@ -406,7 +399,7 @@ class DatasetBuilder:
     def from_jsonl_file(file_path: str) -> List[TrainingExample]:
         """JSONL 파일에서 훈련 예제 로드"""
         examples = []
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 data = json.loads(line)
                 examples.append(TrainingExample.from_dict(data))
@@ -414,9 +407,7 @@ class DatasetBuilder:
 
     @staticmethod
     def split_dataset(
-        examples: List[TrainingExample],
-        train_ratio: float = 0.8,
-        shuffle: bool = True
+        examples: List[TrainingExample], train_ratio: float = 0.8, shuffle: bool = True
     ) -> tuple[List[TrainingExample], List[TrainingExample]]:
         """데이터셋 분할 (훈련/검증)"""
         import random
@@ -498,7 +489,7 @@ class DataValidator:
             "is_valid": is_valid,
             "total_examples": total,
             "invalid_count": len(errors_per_example),
-            "errors": errors_per_example
+            "errors": errors_per_example,
         }
 
     @staticmethod
@@ -515,11 +506,12 @@ class DataValidator:
 
         return {
             "total_tokens": total_tokens,
-            "average_per_example": total_tokens / len(examples) if examples else 0
+            "average_per_example": total_tokens / len(examples) if examples else 0,
         }
 
 
 # ===== Fine-tuning Manager =====
+
 
 class FineTuningManager:
     """
@@ -532,10 +524,7 @@ class FineTuningManager:
         self.provider = provider
 
     def prepare_and_upload(
-        self,
-        examples: List[TrainingExample],
-        output_path: str,
-        validate: bool = True
+        self, examples: List[TrainingExample], output_path: str, validate: bool = True
     ) -> str:
         """
         데이터 준비 및 업로드
@@ -553,8 +542,7 @@ class FineTuningManager:
             report = DataValidator.validate_dataset(examples)
             if not report["is_valid"]:
                 raise ValueError(
-                    f"Dataset validation failed: "
-                    f"{report['invalid_count']} invalid examples"
+                    f"Dataset validation failed: " f"{report['invalid_count']} invalid examples"
                 )
 
         # 데이터 준비
@@ -568,11 +556,7 @@ class FineTuningManager:
             return output_path
 
     def start_training(
-        self,
-        model: str,
-        training_file: str,
-        validation_file: Optional[str] = None,
-        **kwargs
+        self, model: str, training_file: str, validation_file: Optional[str] = None, **kwargs
     ) -> FineTuningJob:
         """
         훈련 시작
@@ -587,10 +571,7 @@ class FineTuningManager:
             파인튜닝 작업
         """
         config = FineTuningConfig(
-            model=model,
-            training_file=training_file,
-            validation_file=validation_file,
-            **kwargs
+            model=model, training_file=training_file, validation_file=validation_file, **kwargs
         )
 
         return self.provider.create_job(config)
@@ -600,7 +581,7 @@ class FineTuningManager:
         job_id: str,
         poll_interval: int = 60,
         timeout: Optional[int] = None,
-        callback: Optional[Callable[[FineTuningJob], None]] = None
+        callback: Optional[Callable[[FineTuningJob], None]] = None,
     ) -> FineTuningJob:
         """
         작업 완료 대기
@@ -639,14 +620,11 @@ class FineTuningManager:
         job = self.provider.get_job(job_id)
         metrics = self.provider.get_metrics(job_id)
 
-        return {
-            "job": job,
-            "metrics": metrics,
-            "latest_metric": metrics[-1] if metrics else None
-        }
+        return {"job": job, "metrics": metrics, "latest_metric": metrics[-1] if metrics else None}
 
 
 # ===== Cost Estimation =====
+
 
 class FineTuningCostEstimator:
     """파인튜닝 비용 추정"""
@@ -660,10 +638,7 @@ class FineTuningCostEstimator:
 
     @staticmethod
     def estimate_training_cost(
-        model: str,
-        n_tokens: int,
-        n_epochs: int = 3,
-        provider: str = "openai"
+        model: str, n_tokens: int, n_epochs: int = 3, provider: str = "openai"
     ) -> Dict[str, Any]:
         """
         훈련 비용 추정
@@ -689,7 +664,7 @@ class FineTuningCostEstimator:
                 "total_tokens": total_tokens,
                 "price_per_1m": training_price,
                 "estimated_cost_usd": cost,
-                "epochs": n_epochs
+                "epochs": n_epochs,
             }
         else:
             return {"error": f"Provider {provider} not supported"}
@@ -697,10 +672,8 @@ class FineTuningCostEstimator:
 
 # ===== 유틸리티 함수 =====
 
-def create_finetuning_provider(
-    provider: str = "openai",
-    **kwargs
-) -> BaseFineTuningProvider:
+
+def create_finetuning_provider(provider: str = "openai", **kwargs) -> BaseFineTuningProvider:
     """
     파인튜닝 프로바이더 생성
 
@@ -723,7 +696,7 @@ def quick_finetune(
     validation_split: float = 0.1,
     n_epochs: int = 3,
     wait: bool = True,
-    **kwargs
+    **kwargs,
 ) -> FineTuningJob:
     """
     빠른 파인튜닝 시작
@@ -740,8 +713,7 @@ def quick_finetune(
     """
     # 데이터 분할
     train_examples, val_examples = DatasetBuilder.split_dataset(
-        training_data,
-        train_ratio=1 - validation_split
+        training_data, train_ratio=1 - validation_split
     )
 
     # 프로바이더 생성
@@ -749,34 +721,23 @@ def quick_finetune(
     manager = FineTuningManager(provider)
 
     # 데이터 업로드
-    train_file = manager.prepare_and_upload(
-        train_examples,
-        "train.jsonl"
-    )
+    train_file = manager.prepare_and_upload(train_examples, "train.jsonl")
 
     val_file = None
     if val_examples:
-        val_file = manager.prepare_and_upload(
-            val_examples,
-            "val.jsonl"
-        )
+        val_file = manager.prepare_and_upload(val_examples, "val.jsonl")
 
     # 훈련 시작
     job = manager.start_training(
-        model=model,
-        training_file=train_file,
-        validation_file=val_file,
-        n_epochs=n_epochs
+        model=model, training_file=train_file, validation_file=val_file, n_epochs=n_epochs
     )
 
     # 대기
     if wait:
+
         def progress_callback(j):
             print(f"Status: {j.status.value}, Model: {j.fine_tuned_model or 'N/A'}")
 
-        job = manager.wait_for_completion(
-            job.job_id,
-            callback=progress_callback
-        )
+        job = manager.wait_for_completion(job.job_id, callback=progress_callback)
 
     return job

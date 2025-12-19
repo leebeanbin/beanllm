@@ -2,14 +2,17 @@
 RAG Debug Utils - RAG 파이프라인 디버깅 및 검증 도구
 중간 과정을 확인하고 문제를 찾는 데 도움
 """
+
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
+
     # numpy 대체 함수들
     class np:
         @staticmethod
@@ -22,12 +25,13 @@ except ImportError:
 
         @staticmethod
         def linalg_norm(x):
-            return sum(v ** 2 for v in x) ** 0.5
+            return sum(v**2 for v in x) ** 0.5
 
         class linalg:
             @staticmethod
             def norm(x):
-                return sum(v ** 2 for v in x) ** 0.5
+                return sum(v**2 for v in x) ** 0.5
+
 
 from .document_loaders import Document
 
@@ -35,6 +39,7 @@ from .document_loaders import Document
 @dataclass
 class EmbeddingInfo:
     """임베딩 정보"""
+
     text: str
     vector: List[float]
     dimension: int
@@ -45,6 +50,7 @@ class EmbeddingInfo:
 @dataclass
 class SimilarityInfo:
     """유사도 정보"""
+
     text1: str
     text2: str
     cosine_similarity: float
@@ -84,10 +90,7 @@ class RAGDebugger:
     # ==================== 임베딩 검증 ====================
 
     def inspect_embedding(
-        self,
-        text: str,
-        vector: List[float],
-        show_preview: int = 10
+        self, text: str, vector: List[float], show_preview: int = 10
     ) -> EmbeddingInfo:
         """
         단일 임베딩 검사
@@ -105,11 +108,7 @@ class RAGDebugger:
         preview = vector[:show_preview]
 
         info = EmbeddingInfo(
-            text=text,
-            vector=vector,
-            dimension=dimension,
-            norm=norm,
-            preview=preview
+            text=text, vector=vector, dimension=dimension, norm=norm, preview=preview
         )
 
         self._print(f"\n{'='*60}")
@@ -124,10 +123,7 @@ class RAGDebugger:
 
         return info
 
-    def compare_embeddings(
-        self,
-        embeddings: List[Tuple[str, List[float]]]
-    ) -> None:
+    def compare_embeddings(self, embeddings: List[Tuple[str, List[float]]]) -> None:
         """
         여러 임베딩 비교
 
@@ -190,6 +186,7 @@ class RAGDebugger:
         """유클리드 거리 계산"""
         if HAS_NUMPY:
             import numpy as real_np
+
             a_arr = real_np.array(a)
             b_arr = real_np.array(b)
             return float(real_np.linalg.norm(a_arr - b_arr))
@@ -210,12 +207,7 @@ class RAGDebugger:
         else:
             return "무관 (전혀 다른 의미)"
 
-    def compare_texts(
-        self,
-        text1: str,
-        text2: str,
-        embedding_function
-    ) -> SimilarityInfo:
+    def compare_texts(self, text1: str, text2: str, embedding_function) -> SimilarityInfo:
         """
         두 텍스트의 유사도 계산
 
@@ -241,7 +233,7 @@ class RAGDebugger:
             text2=text2,
             cosine_similarity=cosine_sim,
             euclidean_distance=euclidean_dist,
-            interpretation=interpretation
+            interpretation=interpretation,
         )
 
         self._print(f"\n{'='*60}")
@@ -258,11 +250,7 @@ class RAGDebugger:
 
     # ==================== 청크 검증 ====================
 
-    def inspect_chunks(
-        self,
-        chunks: List[Document],
-        show_samples: int = 3
-    ) -> Dict[str, Any]:
+    def inspect_chunks(self, chunks: List[Document], show_samples: int = 3) -> Dict[str, Any]:
         """
         텍스트 청크 검사
 
@@ -289,7 +277,7 @@ class RAGDebugger:
             "avg_length": avg_length,
             "min_length": min_length,
             "max_length": max_length,
-            "chunk_lengths": chunk_lengths
+            "chunk_lengths": chunk_lengths,
         }
 
         self._print(f"\n{'='*60}")
@@ -314,12 +302,7 @@ class RAGDebugger:
 
     # ==================== Vector Store 검증 ====================
 
-    def inspect_vector_store(
-        self,
-        store,
-        sample_queries: List[str],
-        k: int = 3
-    ) -> Dict[str, Any]:
+    def inspect_vector_store(self, store, sample_queries: List[str], k: int = 3) -> Dict[str, Any]:
         """
         Vector Store 검사
 
@@ -338,7 +321,7 @@ class RAGDebugger:
         results = {}
 
         for query in sample_queries:
-            self._print(f"\n쿼리: \"{query}\"")
+            self._print(f'\n쿼리: "{query}"')
             self._print("-" * 60)
 
             try:
@@ -381,7 +364,7 @@ class RAGDebugger:
         chunks: List[Document],
         embedding_function,
         store,
-        test_queries: List[str]
+        test_queries: List[str],
     ) -> Dict[str, Any]:
         """
         전체 RAG 파이프라인 검증
@@ -406,9 +389,11 @@ class RAGDebugger:
         self._print("1️⃣  원본 문서 확인")
         report["documents"] = {
             "count": len(documents),
-            "total_length": sum(len(doc.content) for doc in documents)
+            "total_length": sum(len(doc.content) for doc in documents),
         }
-        self._print(f"   ✓ {len(documents)}개 문서, 총 {report['documents']['total_length']} 문자\n")
+        self._print(
+            f"   ✓ {len(documents)}개 문서, 총 {report['documents']['total_length']} 문자\n"
+        )
 
         # 2. 청크 확인
         self._print("2️⃣  청크 확인")
@@ -470,11 +455,8 @@ class RAGDebugger:
 
 # ==================== 편의 함수 ====================
 
-def inspect_embedding(
-    text: str,
-    embedding_function,
-    show_preview: int = 10
-) -> EmbeddingInfo:
+
+def inspect_embedding(text: str, embedding_function, show_preview: int = 10) -> EmbeddingInfo:
     """
     임베딩 검사 (간단한 버전)
 
@@ -489,11 +471,7 @@ def inspect_embedding(
     return debugger.inspect_embedding(text, vector, show_preview)
 
 
-def compare_texts(
-    text1: str,
-    text2: str,
-    embedding_function
-) -> SimilarityInfo:
+def compare_texts(text1: str, text2: str, embedding_function) -> SimilarityInfo:
     """
     두 텍스트 유사도 비교 (간단한 버전)
 
@@ -512,7 +490,7 @@ def validate_pipeline(
     chunks: List[Document],
     embedding_function,
     store,
-    test_queries: List[str] = None
+    test_queries: List[str] = None,
 ) -> Dict[str, Any]:
     """
     전체 RAG 파이프라인 검증 (간단한 버전)
@@ -540,11 +518,8 @@ def validate_pipeline(
 
 # ==================== 시각화 유틸리티 ====================
 
-def visualize_embeddings_2d(
-    texts: List[str],
-    embedding_function,
-    save_path: Optional[str] = None
-):
+
+def visualize_embeddings_2d(texts: List[str], embedding_function, save_path: Optional[str] = None):
     """
     임베딩을 2D로 시각화
 
@@ -573,7 +548,7 @@ def visualize_embeddings_2d(
     vectors_array = np.array(vectors)
 
     # 2D로 축소
-    tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(texts)-1))
+    tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(texts) - 1))
     vectors_2d = tsne.fit_transform(vectors_array)
 
     # 시각화
@@ -582,13 +557,7 @@ def visualize_embeddings_2d(
 
     for i, text in enumerate(texts):
         x, y = vectors_2d[i]
-        plt.annotate(
-            text,
-            (x, y),
-            fontsize=12,
-            ha='center',
-            va='bottom'
-        )
+        plt.annotate(text, (x, y), fontsize=12, ha="center", va="bottom")
 
     plt.title("Embeddings 시각화 (2D 투영)", fontsize=16)
     plt.xlabel("Dimension 1")
@@ -596,17 +565,13 @@ def visualize_embeddings_2d(
     plt.grid(True, alpha=0.3)
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ 저장: {save_path}")
 
     plt.show()
 
 
-def similarity_heatmap(
-    texts: List[str],
-    embedding_function,
-    save_path: Optional[str] = None
-):
+def similarity_heatmap(texts: List[str], embedding_function, save_path: Optional[str] = None):
     """
     유사도 히트맵 생성
 
@@ -648,20 +613,20 @@ def similarity_heatmap(
     sns.heatmap(
         similarity_matrix,
         annot=True,
-        fmt='.3f',
+        fmt=".3f",
         xticklabels=texts,
         yticklabels=texts,
-        cmap='RdYlGn',
+        cmap="RdYlGn",
         vmin=0,
         vmax=1,
-        square=True
+        square=True,
     )
 
     plt.title("Cosine Similarity Heatmap", fontsize=16)
     plt.tight_layout()
 
     if save_path:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"✓ 저장: {save_path}")
 
     plt.show()

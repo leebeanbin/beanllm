@@ -3,6 +3,7 @@ Chain Builder - Fluent API for LLM Workflows
 
 참고: LangChain의 체인 개념에서 영감을 받았습니다.
 """
+
 import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
@@ -18,6 +19,7 @@ logger = get_logger(__name__)
 @dataclass
 class ChainResult:
     """체인 실행 결과"""
+
     output: str
     steps: List[Dict[str, Any]] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -42,12 +44,7 @@ class Chain:
         ```
     """
 
-    def __init__(
-        self,
-        client: Client,
-        memory: Optional[BaseMemory] = None,
-        verbose: bool = False
-    ):
+    def __init__(self, client: Client, memory: Optional[BaseMemory] = None, verbose: bool = False):
         """
         Args:
             client: LLM Client
@@ -83,16 +80,12 @@ class Chain:
             return ChainResult(
                 output=response.content,
                 steps=[{"type": "llm", "input": user_input, "output": response.content}],
-                success=True
+                success=True,
             )
 
         except Exception as e:
             logger.error(f"Chain error: {e}")
-            return ChainResult(
-                output="",
-                success=False,
-                error=str(e)
-            )
+            return ChainResult(output="", success=False, error=str(e))
 
 
 class PromptChain:
@@ -118,12 +111,7 @@ class PromptChain:
         ```
     """
 
-    def __init__(
-        self,
-        client: Client,
-        template: str,
-        memory: Optional[BaseMemory] = None
-    ):
+    def __init__(self, client: Client, template: str, memory: Optional[BaseMemory] = None):
         """
         Args:
             client: LLM Client
@@ -166,16 +154,12 @@ class PromptChain:
             return ChainResult(
                 output=response.content,
                 steps=[{"type": "prompt", "template": self.template, "vars": kwargs}],
-                success=True
+                success=True,
             )
 
         except Exception as e:
             logger.error(f"PromptChain error: {e}")
-            return ChainResult(
-                output="",
-                success=False,
-                error=str(e)
-            )
+            return ChainResult(output="", success=False, error=str(e))
 
 
 class SequentialChain:
@@ -243,20 +227,11 @@ class SequentialChain:
                 current_output = result.output
                 steps.extend(result.steps)
 
-            return ChainResult(
-                output=current_output,
-                steps=steps,
-                success=True
-            )
+            return ChainResult(output=current_output, steps=steps, success=True)
 
         except Exception as e:
             logger.error(f"SequentialChain error: {e}")
-            return ChainResult(
-                output="",
-                steps=steps,
-                success=False,
-                error=str(e)
-            )
+            return ChainResult(output="", steps=steps, success=False, error=str(e))
 
 
 class ParallelChain:
@@ -325,16 +300,12 @@ class ParallelChain:
                 steps=all_steps,
                 metadata={"outputs": outputs, "count": len(outputs)},
                 success=success,
-                error="; ".join(errors) if errors else None
+                error="; ".join(errors) if errors else None,
             )
 
         except Exception as e:
             logger.error(f"ParallelChain error: {e}")
-            return ChainResult(
-                output="",
-                success=False,
-                error=str(e)
-            )
+            return ChainResult(output="", success=False, error=str(e))
 
 
 class ChainBuilder:
@@ -371,11 +342,7 @@ class ChainBuilder:
         self._tools: List[Tool] = []
         self._verbose: bool = False
 
-    def with_memory(
-        self,
-        memory_type: str = "buffer",
-        **kwargs
-    ) -> "ChainBuilder":
+    def with_memory(self, memory_type: str = "buffer", **kwargs) -> "ChainBuilder":
         """
         메모리 설정
 
@@ -387,6 +354,7 @@ class ChainBuilder:
             ChainBuilder: self (체이닝)
         """
         from .memory import create_memory
+
         self._memory = create_memory(memory_type, **kwargs)
         return self
 
@@ -441,18 +409,10 @@ class ChainBuilder:
         """
         # 적절한 체인 타입 선택
         if self._template:
-            chain = PromptChain(
-                self.client,
-                self._template,
-                memory=self._memory
-            )
+            chain = PromptChain(self.client, self._template, memory=self._memory)
             return await chain.run(**kwargs)
         else:
-            chain = Chain(
-                self.client,
-                memory=self._memory,
-                verbose=self._verbose
-            )
+            chain = Chain(self.client, memory=self._memory, verbose=self._verbose)
             # kwargs에서 user_input 추출
             user_input = kwargs.pop("input", None) or kwargs.pop("question", "")
             return await chain.run(user_input, **kwargs)
@@ -465,25 +425,13 @@ class ChainBuilder:
             Chain: 구성된 체인
         """
         if self._template:
-            return PromptChain(
-                self.client,
-                self._template,
-                memory=self._memory
-            )
+            return PromptChain(self.client, self._template, memory=self._memory)
         else:
-            return Chain(
-                self.client,
-                memory=self._memory,
-                verbose=self._verbose
-            )
+            return Chain(self.client, memory=self._memory, verbose=self._verbose)
 
 
 # 편의 함수
-def create_chain(
-    client: Client,
-    chain_type: str = "basic",
-    **kwargs
-) -> Union[Chain, PromptChain]:
+def create_chain(client: Client, chain_type: str = "basic", **kwargs) -> Union[Chain, PromptChain]:
     """
     체인 생성 팩토리
 

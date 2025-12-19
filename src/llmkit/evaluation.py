@@ -16,16 +16,18 @@ from typing import Any, Callable, Dict, List, Optional
 
 class MetricType(Enum):
     """메트릭 타입"""
+
     SIMILARITY = "similarity"  # 텍스트 유사도
-    SEMANTIC = "semantic"      # 의미론적 유사도
-    QUALITY = "quality"        # 품질 평가
-    RAG = "rag"               # RAG 전용
-    CUSTOM = "custom"         # 사용자 정의
+    SEMANTIC = "semantic"  # 의미론적 유사도
+    QUALITY = "quality"  # 품질 평가
+    RAG = "rag"  # RAG 전용
+    CUSTOM = "custom"  # 사용자 정의
 
 
 @dataclass
 class EvaluationResult:
     """평가 결과"""
+
     metric_name: str
     score: float
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -38,6 +40,7 @@ class EvaluationResult:
 @dataclass
 class BatchEvaluationResult:
     """배치 평가 결과"""
+
     results: List[EvaluationResult]
     average_score: float
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -57,12 +60,12 @@ class BatchEvaluationResult:
                     "metric": r.metric_name,
                     "score": r.score,
                     "metadata": r.metadata,
-                    "explanation": r.explanation
+                    "explanation": r.explanation,
                 }
                 for r in self.results
             ],
             "average_score": self.average_score,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -79,10 +82,7 @@ class BaseMetric(ABC):
         pass
 
     def batch_compute(
-        self,
-        predictions: List[str],
-        references: List[str],
-        **kwargs
+        self, predictions: List[str], references: List[str], **kwargs
     ) -> BatchEvaluationResult:
         """배치 평가"""
         if len(predictions) != len(references):
@@ -96,13 +96,12 @@ class BaseMetric(ABC):
         average_score = sum(r.score for r in results) / len(results)
 
         return BatchEvaluationResult(
-            results=results,
-            average_score=average_score,
-            metadata={"count": len(results)}
+            results=results, average_score=average_score, metadata={"count": len(results)}
         )
 
 
 # ===== Text Similarity Metrics =====
+
 
 class ExactMatchMetric(BaseMetric):
     """
@@ -135,10 +134,7 @@ class ExactMatchMetric(BaseMetric):
         return EvaluationResult(
             metric_name=self.name,
             score=score,
-            metadata={
-                "prediction": prediction,
-                "reference": reference
-            }
+            metadata={"prediction": prediction, "reference": reference},
         )
 
 
@@ -166,9 +162,7 @@ class F1ScoreMetric(BaseMetric):
 
         if num_common == 0:
             return EvaluationResult(
-                metric_name=self.name,
-                score=0.0,
-                metadata={"precision": 0.0, "recall": 0.0}
+                metric_name=self.name, score=0.0, metadata={"precision": 0.0, "recall": 0.0}
             )
 
         # Precision & Recall
@@ -184,11 +178,7 @@ class F1ScoreMetric(BaseMetric):
         return EvaluationResult(
             metric_name=self.name,
             score=f1,
-            metadata={
-                "precision": precision,
-                "recall": recall,
-                "common_tokens": num_common
-            }
+            metadata={"precision": precision, "recall": recall, "common_tokens": num_common},
         )
 
 
@@ -209,16 +199,11 @@ class BLEUMetric(BaseMetric):
         """N-gram 추출"""
         ngrams = []
         for i in range(len(tokens) - n + 1):
-            ngram = tuple(tokens[i:i + n])
+            ngram = tuple(tokens[i : i + n])
             ngrams.append(ngram)
         return Counter(ngrams)
 
-    def _modified_precision(
-        self,
-        pred_tokens: List[str],
-        ref_tokens: List[str],
-        n: int
-    ) -> float:
+    def _modified_precision(self, pred_tokens: List[str], ref_tokens: List[str], n: int) -> float:
         """Modified n-gram precision"""
         pred_ngrams = self._get_ngrams(pred_tokens, n)
         ref_ngrams = self._get_ngrams(ref_tokens, n)
@@ -274,8 +259,8 @@ class BLEUMetric(BaseMetric):
                 "precisions": precisions,
                 "brevity_penalty": bp,
                 "pred_length": len(pred_tokens),
-                "ref_length": len(ref_tokens)
-            }
+                "ref_length": len(ref_tokens),
+            },
         )
 
 
@@ -298,7 +283,7 @@ class ROUGEMetric(BaseMetric):
         """N-gram 추출"""
         ngrams = []
         for i in range(len(tokens) - n + 1):
-            ngram = tuple(tokens[i:i + n])
+            ngram = tuple(tokens[i : i + n])
             ngrams.append(ngram)
         return Counter(ngrams)
 
@@ -368,14 +353,11 @@ class ROUGEMetric(BaseMetric):
         else:
             raise ValueError(f"Unknown ROUGE type: {self.rouge_type}")
 
-        return EvaluationResult(
-            metric_name=self.name,
-            score=scores["f1"],
-            metadata=scores
-        )
+        return EvaluationResult(metric_name=self.name, score=scores["f1"], metadata=scores)
 
 
 # ===== Semantic Similarity Metrics =====
+
 
 class SemanticSimilarityMetric(BaseMetric):
     """
@@ -394,11 +376,11 @@ class SemanticSimilarityMetric(BaseMetric):
             # llmkit의 기본 임베딩 사용
             try:
                 from .embeddings import OpenAIEmbedding
+
                 self.embedding_model = OpenAIEmbedding()
             except Exception:
                 raise RuntimeError(
-                    "Embedding model not available. "
-                    "Please provide an embedding model."
+                    "Embedding model not available. " "Please provide an embedding model."
                 )
         return self.embedding_model
 
@@ -426,13 +408,12 @@ class SemanticSimilarityMetric(BaseMetric):
         return EvaluationResult(
             metric_name=self.name,
             score=similarity,
-            metadata={
-                "embedding_model": str(type(model).__name__)
-            }
+            metadata={"embedding_model": str(type(model).__name__)},
         )
 
 
 # ===== LLM-as-Judge Metrics =====
+
 
 class LLMJudgeMetric(BaseMetric):
     """
@@ -441,12 +422,7 @@ class LLMJudgeMetric(BaseMetric):
     LLM을 사용하여 출력 품질 평가
     """
 
-    def __init__(
-        self,
-        client=None,
-        criterion: str = "quality",
-        use_reference: bool = True
-    ):
+    def __init__(self, client=None, criterion: str = "quality", use_reference: bool = True):
         super().__init__(f"llm_judge_{criterion}", MetricType.QUALITY)
         self.client = client
         self.criterion = criterion
@@ -457,19 +433,14 @@ class LLMJudgeMetric(BaseMetric):
         if self.client is None:
             try:
                 from .client import create_client
+
                 self.client = create_client()
             except Exception:
-                raise RuntimeError(
-                    "LLM client not available. "
-                    "Please provide a client."
-                )
+                raise RuntimeError("LLM client not available. " "Please provide a client.")
         return self.client
 
     def _create_judge_prompt(
-        self,
-        prediction: str,
-        reference: Optional[str],
-        criterion: str
+        self, prediction: str, reference: Optional[str], criterion: str
     ) -> str:
         """Judge 프롬프트 생성"""
         if criterion == "quality":
@@ -518,9 +489,7 @@ class LLMJudgeMetric(BaseMetric):
 
         # Judge 프롬프트 생성
         prompt = self._create_judge_prompt(
-            prediction,
-            reference if self.use_reference else None,
-            self.criterion
+            prediction, reference if self.use_reference else None, self.criterion
         )
 
         # LLM 평가
@@ -528,12 +497,12 @@ class LLMJudgeMetric(BaseMetric):
         judge_output = response.content
 
         # 점수 추출
-        score_match = re.search(r'SCORE:\s*([\d.]+)', judge_output)
+        score_match = re.search(r"SCORE:\s*([\d.]+)", judge_output)
         if score_match:
             score = float(score_match.group(1))
         else:
             # 폴백: 0-10 스케일 찾기
-            score_match = re.search(r'(\d+(?:\.\d+)?)\s*(?:out of|/)\s*(?:10|1)', judge_output)
+            score_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:out of|/)\s*(?:10|1)", judge_output)
             if score_match:
                 score = float(score_match.group(1))
                 if score > 1:
@@ -542,18 +511,19 @@ class LLMJudgeMetric(BaseMetric):
                 score = 0.5  # 기본값
 
         # 설명 추출
-        explanation_match = re.search(r'EXPLANATION:\s*(.+)', judge_output, re.DOTALL)
+        explanation_match = re.search(r"EXPLANATION:\s*(.+)", judge_output, re.DOTALL)
         explanation = explanation_match.group(1).strip() if explanation_match else judge_output
 
         return EvaluationResult(
             metric_name=self.name,
             score=score,
             metadata={"criterion": self.criterion},
-            explanation=explanation
+            explanation=explanation,
         )
 
 
 # ===== RAG-Specific Metrics =====
+
 
 class AnswerRelevanceMetric(BaseMetric):
     """
@@ -576,11 +546,7 @@ class AnswerRelevanceMetric(BaseMetric):
         answer = prediction
 
         # LLM-as-judge 사용
-        judge = LLMJudgeMetric(
-            client=self.client,
-            criterion="relevance",
-            use_reference=True
-        )
+        judge = LLMJudgeMetric(client=self.client, criterion="relevance", use_reference=True)
 
         result = judge.compute(answer, question)
         result.metric_name = self.name
@@ -599,11 +565,7 @@ class ContextPrecisionMetric(BaseMetric):
         super().__init__("context_precision", MetricType.RAG)
 
     def compute(
-        self,
-        prediction: str,
-        reference: str,
-        contexts: Optional[List[str]] = None,
-        **kwargs
+        self, prediction: str, reference: str, contexts: Optional[List[str]] = None, **kwargs
     ) -> EvaluationResult:
         """
         Args:
@@ -613,9 +575,7 @@ class ContextPrecisionMetric(BaseMetric):
         """
         if not contexts:
             return EvaluationResult(
-                metric_name=self.name,
-                score=0.0,
-                metadata={"error": "No contexts provided"}
+                metric_name=self.name, score=0.0, metadata={"error": "No contexts provided"}
             )
 
         # 각 컨텍스트가 답변 생성에 사용되었는지 확인
@@ -635,10 +595,7 @@ class ContextPrecisionMetric(BaseMetric):
         return EvaluationResult(
             metric_name=self.name,
             score=precision,
-            metadata={
-                "total_contexts": len(contexts),
-                "relevant_contexts": relevant_count
-            }
+            metadata={"total_contexts": len(contexts), "relevant_contexts": relevant_count},
         )
 
 
@@ -658,17 +615,14 @@ class FaithfulnessMetric(BaseMetric):
         if self.client is None:
             try:
                 from .client import create_client
+
                 self.client = create_client()
             except Exception:
                 raise RuntimeError("LLM client not available")
         return self.client
 
     def compute(
-        self,
-        prediction: str,
-        reference: str,
-        contexts: Optional[List[str]] = None,
-        **kwargs
+        self, prediction: str, reference: str, contexts: Optional[List[str]] = None, **kwargs
     ) -> EvaluationResult:
         """
         Args:
@@ -678,9 +632,7 @@ class FaithfulnessMetric(BaseMetric):
         """
         if not contexts:
             return EvaluationResult(
-                metric_name=self.name,
-                score=0.0,
-                metadata={"error": "No contexts provided"}
+                metric_name=self.name, score=0.0, metadata={"error": "No contexts provided"}
             )
 
         client = self._get_client()
@@ -699,17 +651,16 @@ class FaithfulnessMetric(BaseMetric):
         output = response.content
 
         # 점수 추출
-        score_match = re.search(r'SCORE:\s*([\d.]+)', output)
+        score_match = re.search(r"SCORE:\s*([\d.]+)", output)
         score = float(score_match.group(1)) if score_match else 0.5
 
         return EvaluationResult(
-            metric_name=self.name,
-            score=score,
-            metadata={"contexts_count": len(contexts)}
+            metric_name=self.name, score=score, metadata={"contexts_count": len(contexts)}
         )
 
 
 # ===== Custom Metrics =====
+
 
 class CustomMetric(BaseMetric):
     """
@@ -722,7 +673,7 @@ class CustomMetric(BaseMetric):
         self,
         name: str,
         compute_fn: Callable[[str, str], float],
-        metric_type: MetricType = MetricType.CUSTOM
+        metric_type: MetricType = MetricType.CUSTOM,
     ):
         super().__init__(name, metric_type)
         self.compute_fn = compute_fn
@@ -730,14 +681,11 @@ class CustomMetric(BaseMetric):
     def compute(self, prediction: str, reference: str, **kwargs) -> EvaluationResult:
         score = self.compute_fn(prediction, reference)
 
-        return EvaluationResult(
-            metric_name=self.name,
-            score=score,
-            metadata={"type": "custom"}
-        )
+        return EvaluationResult(metric_name=self.name, score=score, metadata={"type": "custom"})
 
 
 # ===== Evaluator =====
+
 
 class Evaluator:
     """
@@ -749,17 +697,12 @@ class Evaluator:
     def __init__(self, metrics: Optional[List[BaseMetric]] = None):
         self.metrics = metrics or []
 
-    def add_metric(self, metric: BaseMetric) -> 'Evaluator':
+    def add_metric(self, metric: BaseMetric) -> "Evaluator":
         """메트릭 추가"""
         self.metrics.append(metric)
         return self
 
-    def evaluate(
-        self,
-        prediction: str,
-        reference: str,
-        **kwargs
-    ) -> BatchEvaluationResult:
+    def evaluate(self, prediction: str, reference: str, **kwargs) -> BatchEvaluationResult:
         """모든 메트릭으로 평가"""
         results = []
 
@@ -769,11 +712,9 @@ class Evaluator:
                 results.append(result)
             except Exception as e:
                 # 에러가 나도 다른 메트릭은 계속 실행
-                results.append(EvaluationResult(
-                    metric_name=metric.name,
-                    score=0.0,
-                    metadata={"error": str(e)}
-                ))
+                results.append(
+                    EvaluationResult(metric_name=metric.name, score=0.0, metadata={"error": str(e)})
+                )
 
         if not results:
             average_score = 0.0
@@ -781,16 +722,11 @@ class Evaluator:
             average_score = sum(r.score for r in results) / len(results)
 
         return BatchEvaluationResult(
-            results=results,
-            average_score=average_score,
-            metadata={"metrics_count": len(results)}
+            results=results, average_score=average_score, metadata={"metrics_count": len(results)}
         )
 
     def batch_evaluate(
-        self,
-        predictions: List[str],
-        references: List[str],
-        **kwargs
+        self, predictions: List[str], references: List[str], **kwargs
     ) -> List[BatchEvaluationResult]:
         """배치 평가"""
         if len(predictions) != len(references):
@@ -806,11 +742,9 @@ class Evaluator:
 
 # ===== 유틸리티 함수 =====
 
+
 def evaluate_text(
-    prediction: str,
-    reference: str,
-    metrics: Optional[List[str]] = None,
-    **kwargs
+    prediction: str, reference: str, metrics: Optional[List[str]] = None, **kwargs
 ) -> BatchEvaluationResult:
     """
     간편한 텍스트 평가
@@ -843,11 +777,7 @@ def evaluate_text(
 
 
 def evaluate_rag(
-    question: str,
-    answer: str,
-    contexts: List[str],
-    ground_truth: Optional[str] = None,
-    **kwargs
+    question: str, answer: str, contexts: List[str], ground_truth: Optional[str] = None, **kwargs
 ) -> BatchEvaluationResult:
     """
     RAG 시스템 평가
@@ -875,10 +805,7 @@ def evaluate_rag(
         evaluator.add_metric(ROUGEMetric("rouge-l"))
 
     return evaluator.evaluate(
-        prediction=answer,
-        reference=ground_truth or question,
-        contexts=contexts,
-        **kwargs
+        prediction=answer, reference=ground_truth or question, contexts=contexts, **kwargs
     )
 
 

@@ -34,10 +34,7 @@ class OpenAIProvider(BaseLLMProvider):
             raise ValueError("OpenAI is not available. Please set OPENAI_API_KEY")
 
         # AsyncOpenAI 클라이언트 직접 생성
-        self.client = AsyncOpenAI(
-            api_key=api_key,
-            timeout=300.0  # 5분 타임아웃
-        )
+        self.client = AsyncOpenAI(api_key=api_key, timeout=300.0)  # 5분 타임아웃
         self.default_model = "gpt-4o-mini"
 
         # 모델 목록 캐싱 (성능 최적화)
@@ -84,9 +81,7 @@ class OpenAIProvider(BaseLLMProvider):
             if param_config["supports_temperature"]:
                 request_params["temperature"] = temperature
             else:
-                logger.debug(
-                    f"Model {model_name} does not support temperature, skipping"
-                )
+                logger.debug(f"Model {model_name} does not support temperature, skipping")
 
             # max_tokens/max_completion_tokens: 모델에 맞게 처리
             if max_tokens is not None:
@@ -124,6 +119,7 @@ class OpenAIProvider(BaseLLMProvider):
         # ModelConfig에서 먼저 확인 (정확한 이름) - 선택적 의존성
         try:
             from src.models.model_config import ModelConfigManager
+
             config = ModelConfigManager.get_model_config(model)
             if config:
                 return {
@@ -150,6 +146,7 @@ class OpenAIProvider(BaseLLMProvider):
             logger.debug(f"Extracted base model from {model}: {base_model}")
             try:
                 from src.models.model_config import ModelConfigManager
+
                 config = ModelConfigManager.get_model_config(base_model)
                 if config:
                     logger.debug(
@@ -170,22 +167,16 @@ class OpenAIProvider(BaseLLMProvider):
         model_for_pattern = base_model if base_model != model else model
         model_lower = model_for_pattern.lower()
 
-        logger.debug(
-            f"Using pattern-based inference for {model} (base: {model_for_pattern})"
-        )
+        logger.debug(f"Using pattern-based inference for {model} (base: {model_for_pattern})")
 
         # gpt-5, gpt-4.1 시리즈는 max_completion_tokens 사용
         uses_max_completion_tokens = "gpt-5" in model_lower or "gpt-4.1" in model_lower
 
         # nano, mini, o3, o4는 temperature 미지원 (기본값 1만 지원)
-        supports_temperature = not any(
-            x in model_lower for x in ["nano", "mini", "o3", "o4"]
-        )
+        supports_temperature = not any(x in model_lower for x in ["nano", "mini", "o3", "o4"])
 
         # max_tokens 지원 여부 (nano, gpt-5, gpt-4.1는 max_tokens 미지원)
-        supports_max_tokens = not any(
-            x in model_lower for x in ["nano", "gpt-5", "gpt-4.1"]
-        )
+        supports_max_tokens = not any(x in model_lower for x in ["nano", "gpt-5", "gpt-4.1"])
 
         logger.debug(
             f"Pattern-based config for {model}: temp={supports_temperature}, "
@@ -237,9 +228,7 @@ class OpenAIProvider(BaseLLMProvider):
             if param_config["supports_temperature"]:
                 request_params["temperature"] = temperature
             else:
-                logger.debug(
-                    f"Model {model_name} does not support temperature, skipping"
-                )
+                logger.debug(f"Model {model_name} does not support temperature, skipping")
 
             # max_tokens/max_completion_tokens: 모델에 맞게 처리
             if max_tokens is not None:
@@ -281,9 +270,7 @@ class OpenAIProvider(BaseLLMProvider):
             and self._models_cache_time is not None
             and (current_time - self._models_cache_time) < self._models_cache_ttl
         ):
-            logger.debug(
-                f"Using cached OpenAI models: {len(self._models_cache)} models"
-            )
+            logger.debug(f"Using cached OpenAI models: {len(self._models_cache)} models")
             return self._models_cache
 
         try:
@@ -298,9 +285,7 @@ class OpenAIProvider(BaseLLMProvider):
             logger.debug(f"OpenAI API models: {len(model_ids)} models found (cached)")
             return model_ids
         except Exception as e:
-            logger.warning(
-                f"Failed to fetch OpenAI models from API: {e}, using default list"
-            )
+            logger.warning(f"Failed to fetch OpenAI models from API: {e}, using default list")
             # API 호출 실패 시 기본 목록 반환
             default_models = [
                 "gpt-4o",

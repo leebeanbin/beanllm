@@ -15,6 +15,7 @@ logger = get_logger(__name__)
 @dataclass
 class ScannedModel:
     """API에서 스캔된 모델 정보"""
+
     model_id: str
     provider: str
     created_at: Optional[str] = None
@@ -78,12 +79,14 @@ class ModelScanner:
             for model in response.data:
                 # 채팅 모델만 필터링
                 if self._is_chat_model(model.id):
-                    models.append(ScannedModel(
-                        model_id=model.id,
-                        provider="openai",
-                        created_at=str(model.created) if hasattr(model, 'created') else None,
-                        raw_data=model.model_dump() if hasattr(model, 'model_dump') else None
-                    ))
+                    models.append(
+                        ScannedModel(
+                            model_id=model.id,
+                            provider="openai",
+                            created_at=str(model.created) if hasattr(model, "created") else None,
+                            raw_data=model.model_dump() if hasattr(model, "model_dump") else None,
+                        )
+                    )
 
             logger.info(f"✅ OpenAI: {len(models)} chat models found")
             return models
@@ -100,9 +103,17 @@ class ModelScanner:
         채팅 모델인지 확인 (embedding, tts, whisper 등 제외)
         """
         excluded = [
-            "embedding", "tts", "dall-e", "whisper",
-            "codex", "audio", "realtime", "image",
-            "moderation", "diarize", "transcribe"
+            "embedding",
+            "tts",
+            "dall-e",
+            "whisper",
+            "codex",
+            "audio",
+            "realtime",
+            "image",
+            "moderation",
+            "diarize",
+            "transcribe",
         ]
         return not any(x in model_id.lower() for x in excluded)
 
@@ -118,13 +129,7 @@ class ModelScanner:
             "claude-3-haiku-20240307",
         ]
 
-        models = [
-            ScannedModel(
-                model_id=m,
-                provider="anthropic"
-            )
-            for m in official_models
-        ]
+        models = [ScannedModel(model_id=m, provider="anthropic") for m in official_models]
 
         logger.info(f"✅ Anthropic: {len(models)} models (official list)")
         return models
@@ -144,11 +149,11 @@ class ModelScanner:
                 # "models/gemini-2.5-flash" → "gemini-2.5-flash"
                 model_id = model.name.split("/")[-1] if "/" in model.name else model.name
 
-                models.append(ScannedModel(
-                    model_id=model_id,
-                    provider="google",
-                    raw_data={"name": model.name}
-                ))
+                models.append(
+                    ScannedModel(
+                        model_id=model_id, provider="google", raw_data={"name": model.name}
+                    )
+                )
 
             logger.info(f"✅ Gemini: {len(models)} models found")
             return models
@@ -171,11 +176,9 @@ class ModelScanner:
 
                 models = []
                 for model in data.get("models", []):
-                    models.append(ScannedModel(
-                        model_id=model["name"],
-                        provider="ollama",
-                        raw_data=model
-                    ))
+                    models.append(
+                        ScannedModel(model_id=model["name"], provider="ollama", raw_data=model)
+                    )
 
                 logger.info(f"✅ Ollama: {len(models)} local models found")
                 return models
@@ -195,11 +198,13 @@ class ModelScanner:
             models = []
             for model in response.data:
                 if self._is_chat_model(model.id):
-                    models.append(ScannedModel(
-                        model_id=model.id,
-                        provider="openai",
-                        created_at=str(model.created) if hasattr(model, 'created') else None,
-                    ))
+                    models.append(
+                        ScannedModel(
+                            model_id=model.id,
+                            provider="openai",
+                            created_at=str(model.created) if hasattr(model, "created") else None,
+                        )
+                    )
 
             return models
 

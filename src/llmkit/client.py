@@ -2,6 +2,7 @@
 Client - Unified LLM Interface
 모든 Provider를 통일된 방식으로 사용
 """
+
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Optional
 
@@ -16,6 +17,7 @@ logger = get_logger(__name__)
 @dataclass
 class ChatResponse:
     """채팅 응답"""
+
     content: str
     model: str
     provider: str
@@ -48,11 +50,7 @@ class Client:
     """
 
     def __init__(
-        self,
-        model: str,
-        provider: Optional[str] = None,
-        api_key: Optional[str] = None,
-        **kwargs
+        self, model: str, provider: Optional[str] = None, api_key: Optional[str] = None, **kwargs
     ):
         """
         Args:
@@ -84,7 +82,7 @@ class Client:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ) -> ChatResponse:
         """
         채팅 완료 (비스트리밍)
@@ -109,11 +107,7 @@ class Client:
         """
         # 파라미터 준비
         params = self._prepare_parameters(
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stream=False,
-            **kwargs
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, stream=False, **kwargs
         )
 
         logger.debug(f"Calling {self.provider}/{self.model} with params: {params}")
@@ -121,10 +115,7 @@ class Client:
         try:
             # Provider 호출
             response = await self._provider_instance.chat(
-                messages=messages,
-                model=self.model,
-                system=system,
-                **params
+                messages=messages, model=self.model, system=system, **params
             )
 
             return ChatResponse(
@@ -133,7 +124,7 @@ class Client:
                 provider=self.provider,
                 usage=response.get("usage"),
                 finish_reason=response.get("finish_reason"),
-                raw_response=response
+                raw_response=response,
             )
 
         except Exception as e:
@@ -147,7 +138,7 @@ class Client:
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         top_p: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ) -> AsyncIterator[str]:
         """
         채팅 스트리밍
@@ -171,11 +162,7 @@ class Client:
         """
         # 파라미터 준비
         params = self._prepare_parameters(
-            temperature=temperature,
-            max_tokens=max_tokens,
-            top_p=top_p,
-            stream=True,
-            **kwargs
+            temperature=temperature, max_tokens=max_tokens, top_p=top_p, stream=True, **kwargs
         )
 
         logger.debug(f"Streaming {self.provider}/{self.model} with params: {params}")
@@ -183,10 +170,7 @@ class Client:
         try:
             # Provider 호출 (스트리밍)
             async for chunk in self._provider_instance.stream_chat(
-                messages=messages,
-                model=self.model,
-                system=system,
-                **params
+                messages=messages, model=self.model, system=system, **params
             ):
                 yield chunk
 
@@ -214,17 +198,21 @@ class Client:
     def _create_provider(self, provider: str):
         """Provider 인스턴스 생성"""
         try:
-            if provider == 'openai':
+            if provider == "openai":
                 from ._source_providers.openai_provider import OpenAIProvider
+
                 return OpenAIProvider()
-            elif provider == 'anthropic':
+            elif provider == "anthropic":
                 from ._source_providers.claude_provider import ClaudeProvider
+
                 return ClaudeProvider()
-            elif provider == 'google':
+            elif provider == "google":
                 from ._source_providers.gemini_provider import GeminiProvider
+
                 return GeminiProvider()
-            elif provider == 'ollama':
+            elif provider == "ollama":
                 from ._source_providers.ollama_provider import OllamaProvider
+
                 return OllamaProvider()
             else:
                 raise ProviderError(f"Unknown provider: {provider}")
@@ -234,9 +222,7 @@ class Client:
                 f"Make sure the required SDK is installed."
             )
         except Exception as e:
-            raise ProviderError(
-                f"Failed to initialize provider '{provider}': {e}"
-            )
+            raise ProviderError(f"Failed to initialize provider '{provider}': {e}")
 
     def _detect_provider(self, model: str) -> str:
         """모델 ID로 Provider 자동 감지"""
@@ -253,14 +239,14 @@ class Client:
         # 패턴 기반 감지
         model_lower = model.lower()
 
-        if any(x in model_lower for x in ['gpt', 'o1', 'o3', 'o4']):
-            return 'openai'
-        elif 'claude' in model_lower:
-            return 'anthropic'
-        elif 'gemini' in model_lower:
-            return 'google'
+        if any(x in model_lower for x in ["gpt", "o1", "o3", "o4"]):
+            return "openai"
+        elif "claude" in model_lower:
+            return "anthropic"
+        elif "gemini" in model_lower:
+            return "google"
         else:
-            return 'ollama'  # 기본값
+            return "ollama"  # 기본값
 
     def __repr__(self) -> str:
         return f"Client(provider={self.provider!r}, model={self.model!r})"
@@ -268,10 +254,7 @@ class Client:
 
 # 편의 함수
 def create_client(
-    model: str,
-    provider: Optional[str] = None,
-    api_key: Optional[str] = None,
-    **kwargs
+    model: str, provider: Optional[str] = None, api_key: Optional[str] = None, **kwargs
 ) -> Client:
     """
     Client 생성 (편의 함수)

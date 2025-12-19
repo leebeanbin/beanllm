@@ -2,6 +2,7 @@
 Text Splitters - Smart Defaults, Pythonic
 llmkit 방식: 자동 최적화 + 간단한 API
 """
+
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional
 
@@ -19,7 +20,7 @@ class BaseTextSplitter(ABC):
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         length_function: Callable[[str], int] = len,
-        keep_separator: bool = True
+        keep_separator: bool = True,
     ):
         """
         Args:
@@ -56,9 +57,7 @@ class BaseTextSplitter(ABC):
         return self.create_documents(texts, metadatas)
 
     def create_documents(
-        self,
-        texts: List[str],
-        metadatas: Optional[List[dict]] = None
+        self, texts: List[str], metadatas: Optional[List[dict]] = None
     ) -> List[Document]:
         """
         텍스트에서 문서 생성
@@ -78,10 +77,7 @@ class BaseTextSplitter(ABC):
             for chunk in self.split_text(text):
                 metadata = _metadatas[i].copy()
                 metadata["chunk"] = index
-                documents.append(Document(
-                    content=chunk,
-                    metadata=metadata
-                ))
+                documents.append(Document(content=chunk, metadata=metadata))
                 index += 1
 
         return documents
@@ -156,7 +152,7 @@ class CharacterTextSplitter(BaseTextSplitter):
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         length_function: Callable[[str], int] = len,
-        keep_separator: bool = False
+        keep_separator: bool = False,
     ):
         """
         Args:
@@ -210,7 +206,7 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         length_function: Callable[[str], int] = len,
-        keep_separator: bool = True
+        keep_separator: bool = True,
     ):
         """
         Args:
@@ -225,10 +221,10 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
         # 스마트 기본값
         self.separators = separators or [
             "\n\n",  # 단락
-            "\n",    # 줄
-            ". ",    # 문장
-            " ",     # 단어
-            ""       # 문자
+            "\n",  # 줄
+            ". ",  # 문장
+            " ",  # 단어
+            "",  # 문자
         ]
 
     def split_text(self, text: str) -> List[str]:
@@ -246,7 +242,7 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
 
             if _separator in text:
                 separator = _separator
-                new_separators = self.separators[i + 1:]
+                new_separators = self.separators[i + 1 :]
                 break
 
         # 분할
@@ -278,7 +274,7 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
                         chunk_size=self.chunk_size,
                         chunk_overlap=self.chunk_overlap,
                         length_function=self.length_function,
-                        keep_separator=self.keep_separator
+                        keep_separator=self.keep_separator,
                     )
                     final_chunks.extend(other_splitter.split_text(split))
                 else:
@@ -328,7 +324,7 @@ class TokenTextSplitter(BaseTextSplitter):
         encoding_name: str = "cl100k_base",
         model_name: Optional[str] = None,
         chunk_size: int = 1000,
-        chunk_overlap: int = 200
+        chunk_overlap: int = 200,
     ):
         """
         Args:
@@ -351,9 +347,7 @@ class TokenTextSplitter(BaseTextSplitter):
             self.tokenizer = tiktoken.get_encoding(encoding_name)
 
         super().__init__(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            length_function=self._token_length
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap, length_function=self._token_length
         )
 
     def _token_length(self, text: str) -> int:
@@ -396,11 +390,7 @@ class MarkdownHeaderTextSplitter:
         ```
     """
 
-    def __init__(
-        self,
-        headers_to_split_on: List[tuple[str, str]],
-        return_each_line: bool = False
-    ):
+    def __init__(self, headers_to_split_on: List[tuple[str, str]], return_each_line: bool = False):
         """
         Args:
             headers_to_split_on: (마크다운 헤더, 메타데이터 키) 튜플 리스트
@@ -423,10 +413,11 @@ class MarkdownHeaderTextSplitter:
                 if line.startswith(header + " "):
                     # 이전 청크 저장
                     if current_chunk:
-                        chunks.append(Document(
-                            content="\n".join(current_chunk),
-                            metadata=current_metadata.copy()
-                        ))
+                        chunks.append(
+                            Document(
+                                content="\n".join(current_chunk), metadata=current_metadata.copy()
+                            )
+                        )
                         current_chunk = []
 
                     # 메타데이터 업데이트
@@ -438,17 +429,13 @@ class MarkdownHeaderTextSplitter:
                 current_chunk.append(line)
 
                 if self.return_each_line and line.strip():
-                    chunks.append(Document(
-                        content=line,
-                        metadata=current_metadata.copy()
-                    ))
+                    chunks.append(Document(content=line, metadata=current_metadata.copy()))
 
         # 마지막 청크
         if current_chunk and not self.return_each_line:
-            chunks.append(Document(
-                content="\n".join(current_chunk),
-                metadata=current_metadata.copy()
-            ))
+            chunks.append(
+                Document(content="\n".join(current_chunk), metadata=current_metadata.copy())
+            )
 
         return chunks
 
@@ -497,7 +484,7 @@ class TextSplitter:
         "character": CharacterTextSplitter,
         "recursive": RecursiveCharacterTextSplitter,
         "token": TokenTextSplitter,
-        "markdown": MarkdownHeaderTextSplitter
+        "markdown": MarkdownHeaderTextSplitter,
     }
 
     @classmethod
@@ -509,7 +496,7 @@ class TextSplitter:
         chunk_overlap: int = 200,
         separator: Optional[str] = None,
         separators: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> List[Document]:
         """
         문서 분할 (스마트 기본값 + 편리한 커스터마이징)
@@ -550,30 +537,23 @@ class TextSplitter:
             # 단일 구분자 → character 전략으로 자동 전환
             if strategy == "recursive":
                 strategy = "character"
-            kwargs['separator'] = separator
+            kwargs["separator"] = separator
 
         if separators is not None:
             # 여러 구분자 → recursive 전략 (또는 유지)
             if strategy == "character":
                 strategy = "recursive"
-            kwargs['separators'] = separators
+            kwargs["separators"] = separators
 
         splitter = cls.create(
-            strategy=strategy,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            **kwargs
+            strategy=strategy, chunk_size=chunk_size, chunk_overlap=chunk_overlap, **kwargs
         )
 
         return splitter.split_documents(documents)
 
     @classmethod
     def create(
-        cls,
-        strategy: str = "recursive",
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
-        **kwargs
+        cls, strategy: str = "recursive", chunk_size: int = 1000, chunk_overlap: int = 200, **kwargs
     ) -> BaseTextSplitter:
         """
         Splitter 생성
@@ -597,11 +577,7 @@ class TextSplitter:
         if strategy == "markdown":
             return splitter_class(**kwargs)
 
-        return splitter_class(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            **kwargs
-        )
+        return splitter_class(chunk_size=chunk_size, chunk_overlap=chunk_overlap, **kwargs)
 
     # 전략별 팩토리 메서드 (쉬운 사용!)
 
@@ -611,7 +587,7 @@ class TextSplitter:
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
         separators: Optional[List[str]] = None,
-        **kwargs
+        **kwargs,
     ) -> RecursiveCharacterTextSplitter:
         """
         Recursive 전략 (권장, 가장 똑똑함)
@@ -643,19 +619,12 @@ class TextSplitter:
             ```
         """
         return RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            separators=separators,
-            **kwargs
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap, separators=separators, **kwargs
         )
 
     @classmethod
     def character(
-        cls,
-        separator: str = "\n\n",
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
-        **kwargs
+        cls, separator: str = "\n\n", chunk_size: int = 1000, chunk_overlap: int = 200, **kwargs
     ) -> CharacterTextSplitter:
         """
         Character 전략 (단순, 빠름)
@@ -684,10 +653,7 @@ class TextSplitter:
             ```
         """
         return CharacterTextSplitter(
-            separator=separator,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            **kwargs
+            separator=separator, chunk_size=chunk_size, chunk_overlap=chunk_overlap, **kwargs
         )
 
     @classmethod
@@ -697,7 +663,7 @@ class TextSplitter:
         chunk_overlap: int = 200,
         encoding_name: str = "cl100k_base",
         model_name: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> TokenTextSplitter:
         """
         Token 전략 (정확한 토큰 수 제어)
@@ -737,7 +703,7 @@ class TextSplitter:
             chunk_overlap=chunk_overlap,
             encoding_name=encoding_name,
             model_name=model_name,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
@@ -745,7 +711,7 @@ class TextSplitter:
         cls,
         headers_to_split_on: Optional[List[tuple[str, str]]] = None,
         return_each_line: bool = False,
-        **kwargs
+        **kwargs,
     ) -> MarkdownHeaderTextSplitter:
         """
         Markdown 전략 (헤더 기준 분할)
@@ -784,9 +750,7 @@ class TextSplitter:
             ]
 
         return MarkdownHeaderTextSplitter(
-            headers_to_split_on=headers_to_split_on,
-            return_each_line=return_each_line,
-            **kwargs
+            headers_to_split_on=headers_to_split_on, return_each_line=return_each_line, **kwargs
         )
 
 
@@ -798,7 +762,7 @@ def split_documents(
     strategy: str = "recursive",
     separator: Optional[str] = None,
     separators: Optional[List[str]] = None,
-    **kwargs
+    **kwargs,
 ) -> List[Document]:
     """
     문서 분할 편의 함수
@@ -834,5 +798,5 @@ def split_documents(
         chunk_overlap=chunk_overlap,
         separator=separator,
         separators=separators,
-        **kwargs
+        **kwargs,
     )

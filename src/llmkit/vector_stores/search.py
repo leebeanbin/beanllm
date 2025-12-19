@@ -2,6 +2,7 @@
 Advanced search algorithms
 Hybrid, MMR, Re-ranking 등
 """
+
 from typing import Dict, List, Optional, Tuple
 
 from .base import VectorSearchResult
@@ -12,11 +13,7 @@ class SearchAlgorithms:
 
     @staticmethod
     def hybrid_search(
-        vector_store,
-        query: str,
-        k: int = 4,
-        alpha: float = 0.5,
-        **kwargs
+        vector_store, query: str, k: int = 4, alpha: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """
         Hybrid Search (벡터 + 키워드 검색)
@@ -38,20 +35,12 @@ class SearchAlgorithms:
         keyword_results = SearchAlgorithms._keyword_search(vector_store, query, k=k * 2)
 
         # 3. 점수 결합 (RRF)
-        combined = SearchAlgorithms._combine_results(
-            vector_results,
-            keyword_results,
-            alpha=alpha
-        )
+        combined = SearchAlgorithms._combine_results(vector_results, keyword_results, alpha=alpha)
 
         return combined[:k]
 
     @staticmethod
-    def _keyword_search(
-        vector_store,
-        query: str,
-        k: int = 10
-    ) -> List[VectorSearchResult]:
+    def _keyword_search(vector_store, query: str, k: int = 10) -> List[VectorSearchResult]:
         """
         키워드 기반 검색 (BM25 스타일)
 
@@ -65,7 +54,7 @@ class SearchAlgorithms:
     def _combine_results(
         vector_results: List[VectorSearchResult],
         keyword_results: List[VectorSearchResult],
-        alpha: float = 0.5
+        alpha: float = 0.5,
     ) -> List[VectorSearchResult]:
         """
         벡터와 키워드 결과 결합 (RRF - Reciprocal Rank Fusion)
@@ -104,11 +93,11 @@ class SearchAlgorithms:
             key_score = (1 - alpha) / (k_constant + key_rank) if key_rank else 0
             total_score = vec_score + key_score
 
-            scored_results.append(VectorSearchResult(
-                document=result.document,
-                score=total_score,
-                metadata=result.metadata
-            ))
+            scored_results.append(
+                VectorSearchResult(
+                    document=result.document, score=total_score, metadata=result.metadata
+                )
+            )
 
         # 점수로 정렬
         scored_results.sort(key=lambda x: x.score, reverse=True)
@@ -119,7 +108,7 @@ class SearchAlgorithms:
         query: str,
         results: List[VectorSearchResult],
         model: Optional[str] = None,
-        top_k: Optional[int] = None
+        top_k: Optional[int] = None,
     ) -> List[VectorSearchResult]:
         """
         Re-ranking with Cross-encoder
@@ -139,10 +128,7 @@ class SearchAlgorithms:
         try:
             from sentence_transformers import CrossEncoder
         except ImportError:
-            raise ImportError(
-                "sentence-transformers 필요:\n"
-                "pip install sentence-transformers"
-            )
+            raise ImportError("sentence-transformers 필요:\n" "pip install sentence-transformers")
 
         # 모델 로드
         model_name = model or "cross-encoder/ms-marco-MiniLM-L-6-v2"
@@ -157,11 +143,11 @@ class SearchAlgorithms:
         # 점수로 재정렬
         reranked_results = []
         for result, score in zip(results, scores):
-            reranked_results.append(VectorSearchResult(
-                document=result.document,
-                score=float(score),
-                metadata=result.metadata
-            ))
+            reranked_results.append(
+                VectorSearchResult(
+                    document=result.document, score=float(score), metadata=result.metadata
+                )
+            )
 
         reranked_results.sort(key=lambda x: x.score, reverse=True)
 
@@ -171,12 +157,7 @@ class SearchAlgorithms:
 
     @staticmethod
     def mmr_search(
-        vector_store,
-        query: str,
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_param: float = 0.5,
-        **kwargs
+        vector_store, query: str, k: int = 4, fetch_k: int = 20, lambda_param: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """
         MMR (Maximal Marginal Relevance) 검색 - 다양성 고려
@@ -206,8 +187,7 @@ class SearchAlgorithms:
 
         # 후보 벡터들
         candidate_vecs = [
-            vector_store.embedding_function([c.document.content])[0]
-            for c in candidates
+            vector_store.embedding_function([c.document.content])[0] for c in candidates
         ]
 
         # MMR 알고리즘
@@ -215,7 +195,7 @@ class SearchAlgorithms:
         remaining_indices = list(range(len(candidates)))
 
         for _ in range(min(k, len(candidates))):
-            best_score = float('-inf')
+            best_score = float("-inf")
             best_idx = None
 
             for idx in remaining_indices:
@@ -226,8 +206,7 @@ class SearchAlgorithms:
                 if selected_indices:
                     diversity = max(
                         vector_store._cosine_similarity(
-                            candidate_vecs[idx],
-                            candidate_vecs[selected_idx]
+                            candidate_vecs[idx], candidate_vecs[selected_idx]
                         )
                         for selected_idx in selected_indices
                     )
@@ -258,11 +237,7 @@ class AdvancedSearchMixin:
     """
 
     def hybrid_search(
-        self,
-        query: str,
-        k: int = 4,
-        alpha: float = 0.5,
-        **kwargs
+        self, query: str, k: int = 4, alpha: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """Hybrid Search (벡터 + 키워드)"""
         return SearchAlgorithms.hybrid_search(self, query, k, alpha, **kwargs)
@@ -272,18 +247,13 @@ class AdvancedSearchMixin:
         query: str,
         results: List[VectorSearchResult],
         model: Optional[str] = None,
-        top_k: Optional[int] = None
+        top_k: Optional[int] = None,
     ) -> List[VectorSearchResult]:
         """Re-ranking with Cross-encoder"""
         return SearchAlgorithms.rerank(query, results, model, top_k)
 
     def mmr_search(
-        self,
-        query: str,
-        k: int = 4,
-        fetch_k: int = 20,
-        lambda_param: float = 0.5,
-        **kwargs
+        self, query: str, k: int = 4, fetch_k: int = 20, lambda_param: float = 0.5, **kwargs
     ) -> List[VectorSearchResult]:
         """MMR 검색 (다양성 고려)"""
         return SearchAlgorithms.mmr_search(self, query, k, fetch_k, lambda_param, **kwargs)

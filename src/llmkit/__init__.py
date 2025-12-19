@@ -652,10 +652,11 @@ get_model_registry = get_registry
 def _check_optional_dependencies():
     """선택적 의존성 확인 및 안내 (디자인 시스템 적용)"""
     import sys
-    
+
     # UI 모듈 import (에러 발생해도 import는 성공)
     try:
         from .ui import InfoPattern
+
         use_ui = True
     except ImportError:
         use_ui = False
@@ -671,9 +672,9 @@ def _check_optional_dependencies():
     if find_spec("ollama") is None:
         missing.append("ollama")
 
-    if missing and not hasattr(sys, '_llmkit_install_warned'):
+    if missing and not hasattr(sys, "_llmkit_install_warned"):
         sys._llmkit_install_warned = True
-        
+
         if use_ui:
             # 디자인 시스템 사용
             install_commands = []
@@ -682,18 +683,17 @@ def _check_optional_dependencies():
                     install_commands.append("pip install llmkit[gemini]")
                 elif pkg == "ollama":
                     install_commands.append("pip install llmkit[ollama]")
-            
+
             InfoPattern.render(
                 "Some provider SDKs are not installed",
-                details=[
-                    f"Install: {cmd}" for cmd in install_commands
-                ] + ["Or install all: pip install llmkit[all]"]
+                details=[f"Install: {cmd}" for cmd in install_commands]
+                + ["Or install all: pip install llmkit[all]"],
             )
         else:
             # 기본 출력 (UI 없을 때)
-            print("\n" + "="*60)
+            print("\n" + "=" * 60)
             print("📦 llmkit - Optional Provider SDKs")
-            print("="*60)
+            print("=" * 60)
             print("\nℹ️  Some provider SDKs are not installed:")
             for pkg in missing:
                 if pkg == "gemini":
@@ -702,7 +702,7 @@ def _check_optional_dependencies():
                     print("  • Ollama: pip install llmkit[ollama]")
             print("\nOr install all providers:")
             print("  pip install llmkit[all]")
-            print("\n" + "="*60 + "\n")
+            print("\n" + "=" * 60 + "\n")
 
 
 def _print_welcome_banner():
@@ -712,33 +712,31 @@ def _print_welcome_banner():
     # 환경변수로 제어 (기본값: False)
     if not os.getenv("LLMKIT_SHOW_BANNER", "false").lower() == "true":
         return
-    
+
     try:
         from .ui import OnboardingPattern, print_logo
     except ImportError:
         return  # UI 없으면 출력 안 함
-    
+
     # 로고 출력
     print_logo(style="minimal", color="magenta")
-    
+
     # 온보딩 패턴
     OnboardingPattern.render(
         "Welcome to llmkit!",
         steps=[
             {
                 "title": "Set environment variables",
-                "description": "export OPENAI_API_KEY='your-key'"
+                "description": "export OPENAI_API_KEY='your-key'",
             },
             {
                 "title": "Try it out",
-                "description": "from llmkit import get_registry; r = get_registry()"
+                "description": "from llmkit import get_registry; r = get_registry()",
             },
-            {
-                "title": "Use CLI",
-                "description": "llmkit list"
-            }
-        ]
+            {"title": "Use CLI", "description": "llmkit list"},
+        ],
     )
+
 
 # 패키지 import 시 확인 (경고만, 에러 아님)
 try:

@@ -2,6 +2,7 @@
 Console Utilities
 터미널 콘솔 유틸리티
 """
+
 from typing import Optional
 
 from rich.console import Console
@@ -25,4 +26,3 @@ def styled_print(text: str, style: str = ""):
         console.print(f"[{style}]{text}[/{style}]")
     else:
         console.print(text)
-

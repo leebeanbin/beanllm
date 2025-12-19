@@ -2,6 +2,7 @@
 Terminal UI Design System
 터미널 기반 제품의 시각 아이덴티티 + UI 패턴
 """
+
 from .components import (
     Badge,
     CommandBlock,
@@ -53,4 +54,3 @@ __all__ = [
     "get_console",
     "styled_print",
 ]
-

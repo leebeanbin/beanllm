@@ -73,6 +73,7 @@ from pydantic import BaseModel
 # Part 1: Dynamic Schema Generation
 # ============================================================================
 
+
 class SchemaGenerator:
     """
     동적 스키마 생성기
@@ -142,7 +143,7 @@ class SchemaGenerator:
             "type": "object",
             "properties": properties,
             "required": required,
-            "description": func.__doc__ or f"Schema for {func.__name__}"
+            "description": func.__doc__ or f"Schema for {func.__name__}",
         }
 
     @classmethod
@@ -162,10 +163,7 @@ class SchemaGenerator:
         if origin is list:
             args = get_args(type_hint)
             if args:
-                return {
-                    "type": "array",
-                    "items": cls._type_to_schema(args[0])
-                }
+                return {"type": "array", "items": cls._type_to_schema(args[0])}
             return {"type": "array"}
 
         # Handle Dict[K, V]
@@ -178,10 +176,7 @@ class SchemaGenerator:
 
         # Enum
         if isinstance(type_hint, type) and issubclass(type_hint, Enum):
-            return {
-                "type": "string",
-                "enum": [e.value for e in type_hint]
-            }
+            return {"type": "string", "enum": [e.value for e in type_hint]}
 
         # Fallback
         return {"type": "object"}
@@ -203,6 +198,7 @@ class SchemaGenerator:
 # ============================================================================
 # Part 2: Tool Validator
 # ============================================================================
+
 
 class ToolValidator:
     """
@@ -253,7 +249,9 @@ class ToolValidator:
         return True, None
 
     @staticmethod
-    def _validate_field(value: Any, schema: Dict[str, Any], field_name: str) -> tuple[bool, Optional[str]]:
+    def _validate_field(
+        value: Any, schema: Dict[str, Any], field_name: str
+    ) -> tuple[bool, Optional[str]]:
         """개별 필드 검증"""
         expected_type = schema.get("type")
 
@@ -269,7 +267,10 @@ class ToolValidator:
         if expected_type in type_check_map:
             expected_python_type = type_check_map[expected_type]
             if not isinstance(value, expected_python_type):
-                return False, f"Field '{field_name}' must be of type {expected_type}, got {type(value).__name__}"
+                return (
+                    False,
+                    f"Field '{field_name}' must be of type {expected_type}, got {type(value).__name__}",
+                )
 
         # Enum validation
         if "enum" in schema:
@@ -286,7 +287,9 @@ class ToolValidator:
         # Array items validation
         if expected_type == "array" and "items" in schema:
             for i, item in enumerate(value):
-                is_valid, error = ToolValidator._validate_field(item, schema["items"], f"{field_name}[{i}]")
+                is_valid, error = ToolValidator._validate_field(
+                    item, schema["items"], f"{field_name}[{i}]"
+                )
                 if not is_valid:
                     return False, error
 
@@ -297,8 +300,10 @@ class ToolValidator:
 # Part 3: External API Integration
 # ============================================================================
 
+
 class APIProtocol(Enum):
     """API 프로토콜"""
+
     REST = "rest"
     GRAPHQL = "graphql"
 
@@ -306,6 +311,7 @@ class APIProtocol(Enum):
 @dataclass
 class APIConfig:
     """API 설정"""
+
     base_url: str
     protocol: APIProtocol = APIProtocol.REST
     auth_type: Optional[str] = None  # "bearer", "api_key", "basic"
@@ -355,6 +361,7 @@ class ExternalAPITool:
             self.session.headers["X-API-Key"] = self.config.auth_value
         elif self.config.auth_type == "basic":
             from requests.auth import HTTPBasicAuth
+
             username, password = self.config.auth_value.split(":", 1)
             self.session.auth = HTTPBasicAuth(username, password)
 
@@ -382,7 +389,7 @@ class ExternalAPITool:
         method: str = "GET",
         params: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         API 호출 (동기)
@@ -413,7 +420,7 @@ class ExternalAPITool:
                     params=params,
                     json=data,
                     timeout=self.config.timeout,
-                    **kwargs
+                    **kwargs,
                 )
                 response.raise_for_status()
                 return response.json()
@@ -423,7 +430,7 @@ class ExternalAPITool:
                     raise
 
                 # Exponential backoff: 2^attempt seconds
-                wait_time = min(30, 2 ** attempt)
+                wait_time = min(30, 2**attempt)
                 time.sleep(wait_time)
 
         raise RuntimeError("Unexpected error in retry logic")
@@ -434,7 +441,7 @@ class ExternalAPITool:
         method: str = "GET",
         params: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         API 호출 (비동기)
@@ -458,12 +465,7 @@ class ExternalAPITool:
             for attempt in range(self.config.max_retries):
                 try:
                     response = await client.request(
-                        method=method,
-                        url=url,
-                        params=params,
-                        json=data,
-                        headers=headers,
-                        **kwargs
+                        method=method, url=url, params=params, json=data, headers=headers, **kwargs
                     )
                     response.raise_for_status()
                     return response.json()
@@ -472,15 +474,13 @@ class ExternalAPITool:
                     if attempt == self.config.max_retries - 1:
                         raise
 
-                    wait_time = min(30, 2 ** attempt)
+                    wait_time = min(30, 2**attempt)
                     await asyncio.sleep(wait_time)
 
         raise RuntimeError("Unexpected error in retry logic")
 
     def call_graphql(
-        self,
-        query: str,
-        variables: Optional[Dict[str, Any]] = None
+        self, query: str, variables: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """
         GraphQL 쿼리 실행
@@ -496,16 +496,13 @@ class ExternalAPITool:
         if variables:
             payload["variables"] = variables
 
-        return self.call(
-            endpoint="/graphql",
-            method="POST",
-            data=payload
-        )
+        return self.call(endpoint="/graphql", method="POST", data=payload)
 
 
 # ============================================================================
 # Part 4: Tool Composition and Chaining
 # ============================================================================
+
 
 class ToolChain:
     """
@@ -568,9 +565,7 @@ class ToolChain:
 
     @staticmethod
     async def execute_parallel(
-        tools: List[Callable],
-        inputs: Union[Any, List[Any]],
-        aggregate: Optional[Callable] = None
+        tools: List[Callable], inputs: Union[Any, List[Any]], aggregate: Optional[Callable] = None
     ) -> Union[List[Any], Any]:
         """
         병렬 도구 실행
@@ -615,6 +610,7 @@ class ToolChain:
 # Part 5: Advanced Tool Decorator
 # ============================================================================
 
+
 def tool(
     name: Optional[str] = None,
     description: Optional[str] = None,
@@ -622,7 +618,7 @@ def tool(
     validate: bool = True,
     retry: int = 1,
     cache: bool = False,
-    cache_ttl: int = 300
+    cache_ttl: int = 300,
 ):
     """
     고급 도구 데코레이터
@@ -649,6 +645,7 @@ def tool(
         >>> add.schema
         {'type': 'object', 'properties': {...}, ...}
     """
+
     def decorator(func: Callable) -> Callable:
         # Generate schema
         func_schema = schema or SchemaGenerator.from_function(func)
@@ -695,7 +692,7 @@ def tool(
                 except Exception as e:
                     last_exception = e
                     if attempt < retry - 1:
-                        wait_time = 2 ** attempt
+                        wait_time = 2**attempt
                         time.sleep(wait_time)
 
             raise last_exception
@@ -714,6 +711,7 @@ def tool(
 # ============================================================================
 # Part 6: Tool Registry
 # ============================================================================
+
 
 class ToolRegistry:
     """
@@ -741,7 +739,7 @@ class ToolRegistry:
         func: Callable,
         name: Optional[str] = None,
         schema: Optional[Dict[str, Any]] = None,
-        **metadata
+        **metadata,
     ):
         """
         도구 등록
@@ -759,7 +757,7 @@ class ToolRegistry:
         self._schemas[tool_name] = tool_schema
         self._metadata[tool_name] = {
             "description": getattr(func, "tool_description", func.__doc__ or ""),
-            **metadata
+            **metadata,
         }
 
     def get(self, name: str) -> Optional[Callable]:
@@ -803,14 +801,16 @@ class ToolRegistry:
         """
         tools = []
         for name in self._tools:
-            tools.append({
-                "type": "function",
-                "function": {
-                    "name": name,
-                    "description": self._metadata[name].get("description", ""),
-                    "parameters": self._schemas[name]
+            tools.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": name,
+                        "description": self._metadata[name].get("description", ""),
+                        "parameters": self._schemas[name],
+                    },
                 }
-            })
+            )
         return tools
 
 

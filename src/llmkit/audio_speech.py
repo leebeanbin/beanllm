@@ -67,6 +67,7 @@ except ImportError:
 # Part 1: Audio Data Structures
 # ============================================================================
 
+
 @dataclass
 class AudioSegment:
     """
@@ -80,6 +81,7 @@ class AudioSegment:
         channels: 채널 수 (1=mono, 2=stereo)
         metadata: 추가 메타데이터
     """
+
     audio_data: bytes
     sample_rate: int = 16000
     duration: float = 0.0
@@ -88,19 +90,19 @@ class AudioSegment:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_file(cls, file_path: Union[str, Path]) -> 'AudioSegment':
+    def from_file(cls, file_path: Union[str, Path]) -> "AudioSegment":
         """파일에서 AudioSegment 생성"""
         file_path = Path(file_path)
 
         if not file_path.exists():
             raise FileNotFoundError(f"Audio file not found: {file_path}")
 
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             audio_data = f.read()
 
         # WAV 파일인 경우 메타데이터 추출
-        if file_path.suffix.lower() == '.wav':
-            with wave.open(str(file_path), 'rb') as wav_file:
+        if file_path.suffix.lower() == ".wav":
+            with wave.open(str(file_path), "rb") as wav_file:
                 sample_rate = wav_file.getframerate()
                 channels = wav_file.getnchannels()
                 frames = wav_file.getnframes()
@@ -110,27 +112,27 @@ class AudioSegment:
                 audio_data=audio_data,
                 sample_rate=sample_rate,
                 duration=duration,
-                format='wav',
+                format="wav",
                 channels=channels,
-                metadata={'file_path': str(file_path)}
+                metadata={"file_path": str(file_path)},
             )
         else:
             # 다른 포맷은 기본값 사용
             return cls(
                 audio_data=audio_data,
-                format=file_path.suffix.lstrip('.'),
-                metadata={'file_path': str(file_path)}
+                format=file_path.suffix.lstrip("."),
+                metadata={"file_path": str(file_path)},
             )
 
     def to_file(self, file_path: Union[str, Path]):
         """파일로 저장"""
         file_path = Path(file_path)
-        with open(file_path, 'wb') as f:
+        with open(file_path, "wb") as f:
             f.write(self.audio_data)
 
     def to_base64(self) -> str:
         """Base64 인코딩"""
-        return base64.b64encode(self.audio_data).decode('utf-8')
+        return base64.b64encode(self.audio_data).decode("utf-8")
 
 
 @dataclass
@@ -146,6 +148,7 @@ class TranscriptionSegment:
         language: 언어 코드
         speaker: 화자 ID (선택)
     """
+
     text: str
     start: float = 0.0
     end: float = 0.0
@@ -170,6 +173,7 @@ class TranscriptionResult:
         model: 사용된 모델
         metadata: 추가 메타데이터
     """
+
     text: str
     segments: List[TranscriptionSegment] = field(default_factory=list)
     language: Optional[str] = None
@@ -185,8 +189,10 @@ class TranscriptionResult:
 # Part 2: Speech-to-Text (Whisper)
 # ============================================================================
 
+
 class WhisperModel(Enum):
     """Whisper 모델 크기"""
+
     TINY = "tiny"
     BASE = "base"
     SMALL = "small"
@@ -222,7 +228,7 @@ class WhisperSTT:
         self,
         model: Union[str, WhisperModel] = WhisperModel.BASE,
         device: Optional[str] = None,
-        language: Optional[str] = None
+        language: Optional[str] = None,
     ):
         """
         Args:
@@ -245,11 +251,11 @@ class WhisperSTT:
 
         try:
             import whisper
+
             self._model = whisper.load_model(self.model_name, device=self.device)
         except ImportError:
             raise ImportError(
-                "openai-whisper not installed. "
-                "Install with: pip install openai-whisper"
+                "openai-whisper not installed. " "Install with: pip install openai-whisper"
             )
 
     def transcribe(
@@ -257,7 +263,7 @@ class WhisperSTT:
         audio: Union[str, Path, AudioSegment, bytes],
         language: Optional[str] = None,
         task: str = "transcribe",
-        **kwargs
+        **kwargs,
     ) -> TranscriptionResult:
         """
         음성을 텍스트로 변환
@@ -283,12 +289,12 @@ class WhisperSTT:
             audio_path = str(audio)
         elif isinstance(audio, AudioSegment):
             # 임시 파일로 저장
-            with tempfile.NamedTemporaryFile(suffix=f'.{audio.format}', delete=False) as f:
+            with tempfile.NamedTemporaryFile(suffix=f".{audio.format}", delete=False) as f:
                 f.write(audio.audio_data)
                 audio_path = f.name
         elif isinstance(audio, bytes):
             # bytes를 임시 파일로 저장
-            with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as f:
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as f:
                 f.write(audio)
                 audio_path = f.name
         else:
@@ -297,24 +303,22 @@ class WhisperSTT:
         # 전사 실행
         language = language or self.language
 
-        options = {
-            'language': language,
-            'task': task,
-            **kwargs
-        }
+        options = {"language": language, "task": task, **kwargs}
 
         result = self._model.transcribe(audio_path, **options)
 
         # 결과 변환
         segments = []
-        for seg in result.get('segments', []):
-            segments.append(TranscriptionSegment(
-                text=seg['text'].strip(),
-                start=seg['start'],
-                end=seg['end'],
-                confidence=seg.get('confidence', 1.0),
-                language=result.get('language')
-            ))
+        for seg in result.get("segments", []):
+            segments.append(
+                TranscriptionSegment(
+                    text=seg["text"].strip(),
+                    start=seg["start"],
+                    end=seg["end"],
+                    confidence=seg.get("confidence", 1.0),
+                    language=result.get("language"),
+                )
+            )
 
         # 임시 파일 정리
         if isinstance(audio, (AudioSegment, bytes)):
@@ -324,12 +328,12 @@ class WhisperSTT:
                 pass
 
         return TranscriptionResult(
-            text=result['text'].strip(),
+            text=result["text"].strip(),
             segments=segments,
-            language=result.get('language'),
-            duration=result.get('duration', 0.0),
+            language=result.get("language"),
+            duration=result.get("duration", 0.0),
             model=self.model_name,
-            metadata=result
+            metadata=result,
         )
 
     async def transcribe_async(
@@ -337,26 +341,21 @@ class WhisperSTT:
         audio: Union[str, Path, AudioSegment, bytes],
         language: Optional[str] = None,
         task: str = "transcribe",
-        **kwargs
+        **kwargs,
     ) -> TranscriptionResult:
         """비동기 전사"""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            self.transcribe,
-            audio,
-            language,
-            task,
-            **kwargs
-        )
+        return await loop.run_in_executor(None, self.transcribe, audio, language, task, **kwargs)
 
 
 # ============================================================================
 # Part 3: Text-to-Speech
 # ============================================================================
 
+
 class TTSProvider(Enum):
     """TTS 제공자"""
+
     OPENAI = "openai"
     GOOGLE = "google"
     AZURE = "azure"
@@ -389,7 +388,7 @@ class TextToSpeech:
         provider: Union[str, TTSProvider] = TTSProvider.OPENAI,
         api_key: Optional[str] = None,
         model: Optional[str] = None,
-        voice: Optional[str] = None
+        voice: Optional[str] = None,
     ):
         """
         Args:
@@ -407,11 +406,7 @@ class TextToSpeech:
         self.voice = voice
 
     def synthesize(
-        self,
-        text: str,
-        voice: Optional[str] = None,
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """
         텍스트를 음성으로 변환
@@ -444,11 +439,7 @@ class TextToSpeech:
             raise ValueError(f"Unsupported provider: {self.provider}")
 
     def _synthesize_openai(
-        self,
-        text: str,
-        voice: str = "alloy",
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: str = "alloy", speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """OpenAI TTS"""
         try:
@@ -459,11 +450,7 @@ class TextToSpeech:
         client = OpenAI(api_key=self.api_key)
 
         response = client.audio.speech.create(
-            model=self.model or "tts-1",
-            voice=voice,
-            input=text,
-            speed=speed,
-            **kwargs
+            model=self.model or "tts-1", voice=voice, input=text, speed=speed, **kwargs
         )
 
         # Response is audio bytes
@@ -472,28 +459,19 @@ class TextToSpeech:
         return AudioSegment(
             audio_data=audio_data,
             sample_rate=24000,  # OpenAI TTS default
-            format='mp3',
-            metadata={
-                'provider': 'openai',
-                'voice': voice,
-                'model': self.model or 'tts-1'
-            }
+            format="mp3",
+            metadata={"provider": "openai", "voice": voice, "model": self.model or "tts-1"},
         )
 
     def _synthesize_google(
-        self,
-        text: str,
-        voice: Optional[str] = None,
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """Google Cloud TTS"""
         try:
             from google.cloud import texttospeech
         except ImportError:
             raise ImportError(
-                "google-cloud-texttospeech not installed. "
-                "pip install google-cloud-texttospeech"
+                "google-cloud-texttospeech not installed. " "pip install google-cloud-texttospeech"
             )
 
         client = texttospeech.TextToSpeechClient()
@@ -502,34 +480,26 @@ class TextToSpeech:
 
         # Voice parameters
         voice_params = texttospeech.VoiceSelectionParams(
-            language_code=kwargs.get('language_code', 'en-US'),
-            name=voice
+            language_code=kwargs.get("language_code", "en-US"), name=voice
         )
 
         # Audio config
         audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3,
-            speaking_rate=speed
+            audio_encoding=texttospeech.AudioEncoding.MP3, speaking_rate=speed
         )
 
         response = client.synthesize_speech(
-            input=synthesis_input,
-            voice=voice_params,
-            audio_config=audio_config
+            input=synthesis_input, voice=voice_params, audio_config=audio_config
         )
 
         return AudioSegment(
             audio_data=response.audio_content,
-            format='mp3',
-            metadata={'provider': 'google', 'voice': voice}
+            format="mp3",
+            metadata={"provider": "google", "voice": voice},
         )
 
     def _synthesize_azure(
-        self,
-        text: str,
-        voice: Optional[str] = None,
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """Azure TTS"""
         try:
@@ -541,8 +511,7 @@ class TextToSpeech:
             )
 
         speech_config = speechsdk.SpeechConfig(
-            subscription=self.api_key,
-            region=kwargs.get('region', 'eastus')
+            subscription=self.api_key, region=kwargs.get("region", "eastus")
         )
 
         if voice:
@@ -550,28 +519,21 @@ class TextToSpeech:
 
         # Synthesize to in-memory stream
         audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=False)
-        synthesizer = speechsdk.SpeechSynthesizer(
-            speech_config=speech_config,
-            audio_config=None
-        )
+        synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
 
         result = synthesizer.speak_text_async(text).get()
 
         if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
             return AudioSegment(
                 audio_data=result.audio_data,
-                format='wav',
-                metadata={'provider': 'azure', 'voice': voice}
+                format="wav",
+                metadata={"provider": "azure", "voice": voice},
             )
         else:
             raise RuntimeError(f"Azure TTS failed: {result.reason}")
 
     def _synthesize_elevenlabs(
-        self,
-        text: str,
-        voice: Optional[str] = None,
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """ElevenLabs TTS"""
         import requests
@@ -584,16 +546,16 @@ class TextToSpeech:
         headers = {
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
-            "xi-api-key": self.api_key
+            "xi-api-key": self.api_key,
         }
 
         data = {
             "text": text,
             "model_id": self.model or "eleven_monolingual_v1",
             "voice_settings": {
-                "stability": kwargs.get('stability', 0.5),
-                "similarity_boost": kwargs.get('similarity_boost', 0.5)
-            }
+                "stability": kwargs.get("stability", 0.5),
+                "similarity_boost": kwargs.get("similarity_boost", 0.5),
+            },
         }
 
         response = requests.post(url, json=data, headers=headers)
@@ -601,31 +563,22 @@ class TextToSpeech:
 
         return AudioSegment(
             audio_data=response.content,
-            format='mp3',
-            metadata={'provider': 'elevenlabs', 'voice': voice}
+            format="mp3",
+            metadata={"provider": "elevenlabs", "voice": voice},
         )
 
     async def synthesize_async(
-        self,
-        text: str,
-        voice: Optional[str] = None,
-        speed: float = 1.0,
-        **kwargs
+        self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
     ) -> AudioSegment:
         """비동기 음성 합성"""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            self.synthesize,
-            text,
-            voice,
-            speed
-        )
+        return await loop.run_in_executor(None, self.synthesize, text, voice, speed)
 
 
 # ============================================================================
 # Part 4: Audio RAG
 # ============================================================================
+
 
 class AudioRAG:
     """
@@ -642,12 +595,7 @@ class AudioRAG:
     5. Generate response with LLM
     """
 
-    def __init__(
-        self,
-        stt: Optional[WhisperSTT] = None,
-        vector_store = None,
-        embedding_model = None
-    ):
+    def __init__(self, stt: Optional[WhisperSTT] = None, vector_store=None, embedding_model=None):
         """
         Args:
             stt: Speech-to-Text 모델
@@ -663,7 +611,7 @@ class AudioRAG:
         self,
         audio: Union[str, Path, AudioSegment],
         audio_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> TranscriptionResult:
         """
         오디오를 전사하고 RAG 시스템에 추가
@@ -699,13 +647,13 @@ class AudioRAG:
                 doc = Document(
                     content=segment.text,
                     metadata={
-                        'audio_id': audio_id,
-                        'segment_id': i,
-                        'start': segment.start,
-                        'end': segment.end,
-                        'language': segment.language,
-                        **(metadata or {})
-                    }
+                        "audio_id": audio_id,
+                        "segment_id": i,
+                        "start": segment.start,
+                        "end": segment.end,
+                        "language": segment.language,
+                        **(metadata or {}),
+                    },
                 )
                 documents.append(doc)
 
@@ -717,7 +665,7 @@ class AudioRAG:
         self,
         audio: Union[str, Path, AudioSegment],
         audio_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> TranscriptionResult:
         """비동기 오디오 추가"""
         # 전사
@@ -742,13 +690,13 @@ class AudioRAG:
                 doc = Document(
                     content=segment.text,
                     metadata={
-                        'audio_id': audio_id,
-                        'segment_id': i,
-                        'start': segment.start,
-                        'end': segment.end,
-                        'language': segment.language,
-                        **(metadata or {})
-                    }
+                        "audio_id": audio_id,
+                        "segment_id": i,
+                        "start": segment.start,
+                        "end": segment.end,
+                        "language": segment.language,
+                        **(metadata or {}),
+                    },
                 )
                 documents.append(doc)
 
@@ -756,12 +704,7 @@ class AudioRAG:
 
         return transcription
 
-    def search(
-        self,
-        query: str,
-        top_k: int = 5,
-        **kwargs
-    ) -> List[Dict[str, Any]]:
+    def search(self, query: str, top_k: int = 5, **kwargs) -> List[Dict[str, Any]]:
         """
         쿼리로 관련 음성 세그먼트 검색
 
@@ -779,37 +722,31 @@ class AudioRAG:
             for audio_id, transcription in self._transcriptions.items():
                 for i, segment in enumerate(transcription.segments):
                     if query.lower() in segment.text.lower():
-                        results.append({
-                            'audio_id': audio_id,
-                            'segment': segment,
-                            'score': 1.0
-                        })
+                        results.append({"audio_id": audio_id, "segment": segment, "score": 1.0})
 
             return results[:top_k]
 
         # Vector search
-        search_results = self.vector_store.search(
-            query,
-            k=top_k,
-            **kwargs
-        )
+        search_results = self.vector_store.search(query, k=top_k, **kwargs)
 
         results = []
         for result in search_results:
             metadata = result.metadata
-            audio_id = metadata.get('audio_id')
-            segment_id = metadata.get('segment_id')
+            audio_id = metadata.get("audio_id")
+            segment_id = metadata.get("segment_id")
 
             if audio_id in self._transcriptions:
                 transcription = self._transcriptions[audio_id]
                 segment = transcription.segments[segment_id]
 
-                results.append({
-                    'audio_id': audio_id,
-                    'segment': segment,
-                    'score': result.score,
-                    'text': result.content
-                })
+                results.append(
+                    {
+                        "audio_id": audio_id,
+                        "segment": segment,
+                        "score": result.score,
+                        "text": result.content,
+                    }
+                )
 
         return results
 
@@ -826,11 +763,12 @@ class AudioRAG:
 # Convenience Functions
 # ============================================================================
 
+
 def transcribe_audio(
     audio: Union[str, Path, AudioSegment, bytes],
     model: str = "base",
     language: Optional[str] = None,
-    **kwargs
+    **kwargs,
 ) -> TranscriptionResult:
     """
     간편한 음성 전사 함수
@@ -857,7 +795,7 @@ def text_to_speech(
     provider: str = "openai",
     voice: Optional[str] = None,
     output_file: Optional[Union[str, Path]] = None,
-    **kwargs
+    **kwargs,
 ) -> AudioSegment:
     """
     간편한 TTS 함수

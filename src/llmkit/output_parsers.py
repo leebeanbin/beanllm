@@ -2,6 +2,7 @@
 Output Parsers - Structured Output from LLM
 LLM 출력을 구조화된 데이터로 변환
 """
+
 import json
 import re
 from abc import ABC, abstractmethod
@@ -11,6 +12,7 @@ from typing import Any, Dict, List, Optional, Type, TypeVar
 
 try:
     from pydantic import BaseModel, ValidationError
+
     HAS_PYDANTIC = True
 except ImportError:
     HAS_PYDANTIC = False
@@ -21,11 +23,12 @@ from .utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class OutputParserException(Exception):
     """Output Parser 예외"""
+
     def __init__(self, message: str, llm_output: Optional[str] = None):
         super().__init__(message)
         self.llm_output = llm_output
@@ -138,20 +141,11 @@ class PydanticOutputParser(BaseOutputParser):
             return self.pydantic_object(**data)
 
         except json.JSONDecodeError as e:
-            raise OutputParserException(
-                f"Failed to parse JSON: {e}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Failed to parse JSON: {e}", llm_output=text)
         except ValidationError as e:
-            raise OutputParserException(
-                f"Failed to validate Pydantic model: {e}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Failed to validate Pydantic model: {e}", llm_output=text)
         except Exception as e:
-            raise OutputParserException(
-                f"Failed to parse output: {e}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Failed to parse output: {e}", llm_output=text)
 
     def _extract_json(self, text: str) -> str:
         """텍스트에서 JSON 추출"""
@@ -266,10 +260,7 @@ class JSONOutputParser(BaseOutputParser):
             return json.loads(json_text)
 
         except json.JSONDecodeError as e:
-            raise OutputParserException(
-                f"Failed to parse JSON: {e}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Failed to parse JSON: {e}", llm_output=text)
 
     def _extract_json(self, text: str) -> str:
         """텍스트에서 JSON 추출"""
@@ -455,10 +446,7 @@ class DatetimeOutputParser(BaseOutputParser):
             return datetime.strptime(text, self.format)
 
         except ValueError as e:
-            raise OutputParserException(
-                f"Failed to parse datetime: {e}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Failed to parse datetime: {e}", llm_output=text)
 
     def get_format_instructions(self) -> str:
         return f"""Output must be a datetime string in the format: {self.format}
@@ -526,8 +514,7 @@ class EnumOutputParser(BaseOutputParser):
         # 실패
         valid_values = [m.value for m in self.enum_class]
         raise OutputParserException(
-            f"Invalid enum value: {text}. Valid values: {valid_values}",
-            llm_output=text
+            f"Invalid enum value: {text}. Valid values: {valid_values}", llm_output=text
         )
 
     def get_format_instructions(self) -> str:
@@ -578,10 +565,7 @@ class BooleanOutputParser(BaseOutputParser):
         elif text in self.FALSE_VALUES:
             return False
         else:
-            raise OutputParserException(
-                f"Cannot parse as boolean: {text}",
-                llm_output=text
-            )
+            raise OutputParserException(f"Cannot parse as boolean: {text}", llm_output=text)
 
     def get_format_instructions(self) -> str:
         return """Output must be a boolean value.
@@ -623,7 +607,7 @@ class RetryOutputParser(BaseOutputParser):
         self,
         parser: BaseOutputParser,
         client: Any,  # Client 타입, circular import 방지
-        max_retries: int = 3
+        max_retries: int = 3,
     ):
         """
         Args:
@@ -639,11 +623,7 @@ class RetryOutputParser(BaseOutputParser):
         """기본 파서로 파싱"""
         return self.parser.parse(text)
 
-    async def parse_with_retry(
-        self,
-        text: str,
-        prompt_template: Optional[str] = None
-    ) -> Any:
+    async def parse_with_retry(self, text: str, prompt_template: Optional[str] = None) -> Any:
         """
         파싱 재시도
 
@@ -664,8 +644,7 @@ class RetryOutputParser(BaseOutputParser):
             except OutputParserException as e:
                 if attempt >= self.max_retries:
                     raise OutputParserException(
-                        f"Failed after {self.max_retries} retries: {e}",
-                        llm_output=text
+                        f"Failed after {self.max_retries} retries: {e}", llm_output=text
                     )
 
                 # 재시도 프롬프트
@@ -675,22 +654,17 @@ class RetryOutputParser(BaseOutputParser):
                 retry_prompt = prompt_template.format(
                     completion=text,
                     error=str(e),
-                    instructions=self.parser.get_format_instructions()
+                    instructions=self.parser.get_format_instructions(),
                 )
 
                 # LLM 재요청
                 logger.info(f"Retry attempt {attempt + 1}/{self.max_retries}")
-                response = await self.client.chat([
-                    {"role": "user", "content": retry_prompt}
-                ])
+                response = await self.client.chat([{"role": "user", "content": retry_prompt}])
 
                 text = response.content
 
         # Should not reach here
-        raise OutputParserException(
-            "Unexpected error in retry logic",
-            llm_output=text
-        )
+        raise OutputParserException("Unexpected error in retry logic", llm_output=text)
 
     def _get_default_retry_prompt(self) -> str:
         return """Your previous output was invalid:

@@ -2,6 +2,7 @@
 Document Loaders - Auto-detecting, Pythonic
 llmkit 방식: 자동 감지 + 간단한 API
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -19,6 +20,7 @@ class Document:
 
     참고: LangChain의 Document 구조에서 영감을 받았습니다.
     """
+
     content: str
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -60,10 +62,7 @@ class TextLoader(BaseDocumentLoader):
     """
 
     def __init__(
-        self,
-        file_path: Union[str, Path],
-        encoding: str = "utf-8",
-        autodetect_encoding: bool = True
+        self, file_path: Union[str, Path], encoding: str = "utf-8", autodetect_encoding: bool = True
     ):
         """
         Args:
@@ -79,13 +78,12 @@ class TextLoader(BaseDocumentLoader):
         """파일 로딩"""
         try:
             content = self._read_file()
-            return [Document(
-                content=content,
-                metadata={
-                    "source": str(self.file_path),
-                    "encoding": self.encoding
-                }
-            )]
+            return [
+                Document(
+                    content=content,
+                    metadata={"source": str(self.file_path), "encoding": self.encoding},
+                )
+            ]
         except Exception as e:
             logger.error(f"Failed to load {self.file_path}: {e}")
             raise
@@ -99,13 +97,13 @@ class TextLoader(BaseDocumentLoader):
         # 인코딩 자동 감지
         if self.autodetect_encoding:
             try:
-                with open(self.file_path, 'r', encoding=self.encoding) as f:
+                with open(self.file_path, "r", encoding=self.encoding) as f:
                     return f.read()
             except UnicodeDecodeError:
                 # UTF-8 실패 시 다른 인코딩 시도
-                for encoding in ['cp949', 'euc-kr', 'latin-1']:
+                for encoding in ["cp949", "euc-kr", "latin-1"]:
                     try:
-                        with open(self.file_path, 'r', encoding=encoding) as f:
+                        with open(self.file_path, "r", encoding=encoding) as f:
                             content = f.read()
                             self.encoding = encoding
                             logger.info(f"Auto-detected encoding: {encoding}")
@@ -114,7 +112,7 @@ class TextLoader(BaseDocumentLoader):
                         continue
                 raise
         else:
-            with open(self.file_path, 'r', encoding=self.encoding) as f:
+            with open(self.file_path, "r", encoding=self.encoding) as f:
                 return f.read()
 
 
@@ -138,7 +136,7 @@ class PDFLoader(BaseDocumentLoader):
         self,
         file_path: Union[str, Path],
         pages: Optional[List[int]] = None,
-        password: Optional[str] = None
+        password: Optional[str] = None,
     ):
         """
         Args:
@@ -153,11 +151,11 @@ class PDFLoader(BaseDocumentLoader):
         # pypdf 확인
         try:
             import pypdf
+
             self.pypdf = pypdf
         except ImportError:
             raise ImportError(
-                "pypdf is required for PDFLoader. "
-                "Install it with: pip install pypdf"
+                "pypdf is required for PDFLoader. " "Install it with: pip install pypdf"
             )
 
     def load(self) -> List[Document]:
@@ -165,7 +163,7 @@ class PDFLoader(BaseDocumentLoader):
         documents = []
 
         try:
-            with open(self.file_path, 'rb') as f:
+            with open(self.file_path, "rb") as f:
                 pdf_reader = self.pypdf.PdfReader(f, password=self.password)
 
                 # 페이지 선택
@@ -179,14 +177,16 @@ class PDFLoader(BaseDocumentLoader):
                     page = pdf_reader.pages[page_num]
                     text = page.extract_text()
 
-                    documents.append(Document(
-                        content=text,
-                        metadata={
-                            "source": str(self.file_path),
-                            "page": page_num,
-                            "total_pages": len(pdf_reader.pages)
-                        }
-                    ))
+                    documents.append(
+                        Document(
+                            content=text,
+                            metadata={
+                                "source": str(self.file_path),
+                                "page": page_num,
+                                "total_pages": len(pdf_reader.pages),
+                            },
+                        )
+                    )
 
             logger.info(f"Loaded {len(documents)} pages from {self.file_path}")
             return documents
@@ -222,7 +222,7 @@ class CSVLoader(BaseDocumentLoader):
         file_path: Union[str, Path],
         content_columns: Optional[List[str]] = None,
         metadata_columns: Optional[List[str]] = None,
-        encoding: str = "utf-8"
+        encoding: str = "utf-8",
     ):
         """
         Args:
@@ -243,7 +243,7 @@ class CSVLoader(BaseDocumentLoader):
         documents = []
 
         try:
-            with open(self.file_path, 'r', encoding=self.encoding) as f:
+            with open(self.file_path, "r", encoding=self.encoding) as f:
                 reader = csv.DictReader(f)
 
                 for i, row in enumerate(reader):
@@ -260,20 +260,14 @@ class CSVLoader(BaseDocumentLoader):
                         content = "\n".join([f"{k}: {v}" for k, v in row.items()])
 
                     # Metadata
-                    metadata = {
-                        "source": str(self.file_path),
-                        "row": i
-                    }
+                    metadata = {"source": str(self.file_path), "row": i}
 
                     if self.metadata_columns:
                         for col in self.metadata_columns:
                             if col in row:
                                 metadata[col] = row[col]
 
-                    documents.append(Document(
-                        content=content,
-                        metadata=metadata
-                    ))
+                    documents.append(Document(content=content, metadata=metadata))
 
             logger.info(f"Loaded {len(documents)} rows from {self.file_path}")
             return documents
@@ -286,26 +280,21 @@ class CSVLoader(BaseDocumentLoader):
         """지연 로딩"""
         import csv
 
-        with open(self.file_path, 'r', encoding=self.encoding) as f:
+        with open(self.file_path, "r", encoding=self.encoding) as f:
             reader = csv.DictReader(f)
 
             for i, row in enumerate(reader):
                 # Content
                 if self.content_columns:
                     content_parts = [
-                        f"{col}: {row.get(col, '')}"
-                        for col in self.content_columns
-                        if col in row
+                        f"{col}: {row.get(col, '')}" for col in self.content_columns if col in row
                     ]
                     content = "\n".join(content_parts)
                 else:
                     content = "\n".join([f"{k}: {v}" for k, v in row.items()])
 
                 # Metadata
-                metadata = {
-                    "source": str(self.file_path),
-                    "row": i
-                }
+                metadata = {"source": str(self.file_path), "row": i}
 
                 if self.metadata_columns:
                     for col in self.metadata_columns:
@@ -337,7 +326,7 @@ class DirectoryLoader(BaseDocumentLoader):
         path: Union[str, Path],
         glob: str = "**/*",
         exclude: Optional[List[str]] = None,
-        recursive: bool = True
+        recursive: bool = True,
     ):
         """
         Args:
@@ -424,31 +413,28 @@ class DocumentLoader:
 
     # 확장자별 로더 매핑
     LOADERS = {
-        '.txt': TextLoader,
-        '.md': TextLoader,
-        '.pdf': PDFLoader,
-        '.csv': CSVLoader,
+        ".txt": TextLoader,
+        ".md": TextLoader,
+        ".pdf": PDFLoader,
+        ".csv": CSVLoader,
         # 추가 가능
     }
 
     # 타입 이름별 로더 매핑 (명시적 선택용)
     LOADER_TYPES = {
-        'text': TextLoader,
-        'txt': TextLoader,
-        'markdown': TextLoader,
-        'md': TextLoader,
-        'pdf': PDFLoader,
-        'csv': CSVLoader,
-        'directory': DirectoryLoader,
-        'dir': DirectoryLoader,
+        "text": TextLoader,
+        "txt": TextLoader,
+        "markdown": TextLoader,
+        "md": TextLoader,
+        "pdf": PDFLoader,
+        "csv": CSVLoader,
+        "directory": DirectoryLoader,
+        "dir": DirectoryLoader,
     }
 
     @classmethod
     def load(
-        cls,
-        source: Union[str, Path],
-        loader_type: Optional[str] = None,
-        **kwargs
+        cls, source: Union[str, Path], loader_type: Optional[str] = None, **kwargs
     ) -> List[Document]:
         """
         문서 로딩 (자동 감지 또는 명시적 지정)
@@ -481,10 +467,7 @@ class DocumentLoader:
 
     @classmethod
     def get_loader(
-        cls,
-        source: Union[str, Path],
-        loader_type: Optional[str] = None,
-        **kwargs
+        cls, source: Union[str, Path], loader_type: Optional[str] = None, **kwargs
     ) -> Optional[BaseDocumentLoader]:
         """
         적절한 로더 선택 (자동 감지 또는 명시적 지정)
@@ -506,7 +489,9 @@ class DocumentLoader:
                 loader_class = cls.LOADER_TYPES[loader_type_lower]
                 return loader_class(path, **kwargs)
             else:
-                logger.warning(f"Unknown loader type: {loader_type}, falling back to auto-detection")
+                logger.warning(
+                    f"Unknown loader type: {loader_type}, falling back to auto-detection"
+                )
 
         # 자동 감지
         # 디렉토리
@@ -532,9 +517,7 @@ class DocumentLoader:
 
 # 편의 함수
 def load_documents(
-    source: Union[str, Path],
-    loader_type: Optional[str] = None,
-    **kwargs
+    source: Union[str, Path], loader_type: Optional[str] = None, **kwargs
 ) -> List[Document]:
     """
     문서 로딩 편의 함수

@@ -2,6 +2,7 @@
 Streaming Helpers
 실시간 스트리밍 출력 헬퍼
 """
+
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -23,6 +24,7 @@ console = Console()
 @dataclass
 class StreamStats:
     """스트리밍 통계"""
+
     total_tokens: int = 0
     start_time: Optional[datetime] = None
     end_time: Optional[datetime] = None
@@ -46,6 +48,7 @@ class StreamStats:
 @dataclass
 class StreamResponse:
     """스트리밍 응답 결과"""
+
     content: str
     stats: StreamStats
     metadata: dict = field(default_factory=dict)
@@ -59,7 +62,7 @@ async def stream_response(
     markdown: bool = False,
     show_stats: bool = False,
     panel_title: Optional[str] = None,
-    on_chunk: Optional[Callable[[str], Any]] = None
+    on_chunk: Optional[Callable[[str], Any]] = None,
 ) -> Optional[StreamResponse]:
     """
     스트리밍 응답 출력 헬퍼
@@ -128,11 +131,13 @@ async def stream_response(
                     else:
                         content = Text(current_text)
 
-                    live.update(Panel(
-                        content,
-                        title=f"[bold cyan]{panel_title}[/bold cyan]",
-                        border_style="cyan"
-                    ))
+                    live.update(
+                        Panel(
+                            content,
+                            title=f"[bold cyan]{panel_title}[/bold cyan]",
+                            border_style="cyan",
+                        )
+                    )
 
         elif display and use_rich:
             # Rich 출력 (Panel 없음)
@@ -183,11 +188,7 @@ async def stream_response(
             _display_stats(stats)
 
         if return_output:
-            return StreamResponse(
-                content=final_content,
-                stats=stats,
-                metadata={}
-            )
+            return StreamResponse(content=final_content, stats=stats, metadata={})
 
         return None
 
@@ -205,16 +206,14 @@ def _display_stats(stats: StreamStats):
 [bold cyan]Chunks:[/bold cyan] {stats.chunks}""",
         title="[bold yellow]📊 Statistics[/bold yellow]",
         border_style="yellow",
-        expand=False
+        expand=False,
     )
     console.print()
     console.print(stats_panel)
 
 
 async def stream_print(
-    stream: AsyncIterator[str],
-    markdown: bool = False,
-    panel_title: Optional[str] = None
+    stream: AsyncIterator[str], markdown: bool = False, panel_title: Optional[str] = None
 ) -> str:
     """
     간단한 스트리밍 출력 (짧은 버전)
@@ -230,7 +229,7 @@ async def stream_print(
         display=True,
         use_rich=True,
         markdown=markdown,
-        panel_title=panel_title
+        panel_title=panel_title,
     )
     return result.content if result else ""
 
@@ -244,11 +243,7 @@ async def stream_collect(stream: AsyncIterator[str]) -> str:
         content = await stream_collect(stream)
         ```
     """
-    result = await stream_response(
-        stream,
-        return_output=True,
-        display=False
-    )
+    result = await stream_response(stream, return_output=True, display=False)
     return result.content if result else ""
 
 
@@ -280,17 +275,11 @@ class StreamBuffer:
 
     def get_all(self) -> dict:
         """모든 버퍼 내용"""
-        return {
-            stream_id: "".join(chunks)
-            for stream_id, chunks in self.buffers.items()
-        }
+        return {stream_id: "".join(chunks) for stream_id, chunks in self.buffers.items()}
 
 
 # 편의 함수
-async def pretty_stream(
-    stream: AsyncIterator[str],
-    title: str = "Response"
-) -> StreamResponse:
+async def pretty_stream(stream: AsyncIterator[str], title: str = "Response") -> StreamResponse:
     """
     예쁜 스트리밍 출력 (모든 기능 활성화)
 
@@ -311,5 +300,5 @@ async def pretty_stream(
         use_rich=True,
         markdown=True,
         show_stats=True,
-        panel_title=title
+        panel_title=title,
     )

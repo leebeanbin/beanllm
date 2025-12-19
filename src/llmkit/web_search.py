@@ -59,6 +59,7 @@ from bs4 import BeautifulSoup
 # Part 1: Search Result Data Structures
 # ============================================================================
 
+
 @dataclass
 class SearchResult:
     """
@@ -73,6 +74,7 @@ class SearchResult:
         published_date: 발행일 (선택)
         metadata: 추가 메타데이터
     """
+
     title: str
     url: str
     snippet: str
@@ -98,6 +100,7 @@ class SearchResponse:
         engine: 사용한 검색 엔진
         metadata: 추가 메타데이터
     """
+
     query: str
     results: List[SearchResult]
     total_results: Optional[int] = None
@@ -114,6 +117,7 @@ class SearchResponse:
 
 class SearchEngine(Enum):
     """지원하는 검색 엔진"""
+
     GOOGLE = "google"
     BING = "bing"
     DUCKDUCKGO = "duckduckgo"
@@ -122,6 +126,7 @@ class SearchEngine(Enum):
 # ============================================================================
 # Part 2: Base Search Engine
 # ============================================================================
+
 
 class BaseSearchEngine:
     """
@@ -146,7 +151,7 @@ class BaseSearchEngine:
         api_key: Optional[str] = None,
         max_results: int = 10,
         timeout: int = 10,
-        cache_ttl: int = 3600
+        cache_ttl: int = 3600,
     ):
         """
         Args:
@@ -206,6 +211,7 @@ class BaseSearchEngine:
 # Part 3: Google Custom Search
 # ============================================================================
 
+
 class GoogleSearch(BaseSearchEngine):
     """
     Google Custom Search API 통합
@@ -233,12 +239,7 @@ class GoogleSearch(BaseSearchEngine):
         where M is the transition matrix
     """
 
-    def __init__(
-        self,
-        api_key: str,
-        search_engine_id: str,
-        **kwargs
-    ):
+    def __init__(self, api_key: str, search_engine_id: str, **kwargs):
         """
         Args:
             api_key: Google API 키
@@ -250,11 +251,7 @@ class GoogleSearch(BaseSearchEngine):
         self.base_url = "https://www.googleapis.com/customsearch/v1"
 
     def search(
-        self,
-        query: str,
-        language: str = "en",
-        safe: str = "off",
-        **kwargs
+        self, query: str, language: str = "en", safe: str = "off", **kwargs
     ) -> SearchResponse:
         """
         Google 검색
@@ -283,32 +280,30 @@ class GoogleSearch(BaseSearchEngine):
             "num": min(self.max_results, 10),  # Google API max is 10
             "lr": f"lang_{language}",
             "safe": safe,
-            **kwargs
+            **kwargs,
         }
 
         try:
-            response = requests.get(
-                self.base_url,
-                params=params,
-                timeout=self.timeout
-            )
+            response = requests.get(self.base_url, params=params, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
 
             # Parse results
             results = []
             for item in data.get("items", []):
-                results.append(SearchResult(
-                    title=item.get("title", ""),
-                    url=item.get("link", ""),
-                    snippet=item.get("snippet", ""),
-                    source="google",
-                    score=1.0,  # Google doesn't provide scores
-                    metadata={
-                        "display_link": item.get("displayLink", ""),
-                        "formatted_url": item.get("formattedUrl", "")
-                    }
-                ))
+                results.append(
+                    SearchResult(
+                        title=item.get("title", ""),
+                        url=item.get("link", ""),
+                        snippet=item.get("snippet", ""),
+                        source="google",
+                        score=1.0,  # Google doesn't provide scores
+                        metadata={
+                            "display_link": item.get("displayLink", ""),
+                            "formatted_url": item.get("formattedUrl", ""),
+                        },
+                    )
+                )
 
             search_response = SearchResponse(
                 query=query,
@@ -317,8 +312,10 @@ class GoogleSearch(BaseSearchEngine):
                 search_time=time.time() - start_time,
                 engine="google",
                 metadata={
-                    "search_time_google": float(data.get("searchInformation", {}).get("searchTime", 0))
-                }
+                    "search_time_google": float(
+                        data.get("searchInformation", {}).get("searchTime", 0)
+                    )
+                },
             )
 
             # Cache
@@ -332,15 +329,11 @@ class GoogleSearch(BaseSearchEngine):
                 results=[],
                 search_time=time.time() - start_time,
                 engine="google",
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     async def search_async(
-        self,
-        query: str,
-        language: str = "en",
-        safe: str = "off",
-        **kwargs
+        self, query: str, language: str = "en", safe: str = "off", **kwargs
     ) -> SearchResponse:
         """비동기 검색"""
         cache_key = f"google:{query}:{language}"
@@ -357,7 +350,7 @@ class GoogleSearch(BaseSearchEngine):
             "num": min(self.max_results, 10),
             "lr": f"lang_{language}",
             "safe": safe,
-            **kwargs
+            **kwargs,
         }
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -368,24 +361,26 @@ class GoogleSearch(BaseSearchEngine):
 
                 results = []
                 for item in data.get("items", []):
-                    results.append(SearchResult(
-                        title=item.get("title", ""),
-                        url=item.get("link", ""),
-                        snippet=item.get("snippet", ""),
-                        source="google",
-                        score=1.0,
-                        metadata={
-                            "display_link": item.get("displayLink", ""),
-                            "formatted_url": item.get("formattedUrl", "")
-                        }
-                    ))
+                    results.append(
+                        SearchResult(
+                            title=item.get("title", ""),
+                            url=item.get("link", ""),
+                            snippet=item.get("snippet", ""),
+                            source="google",
+                            score=1.0,
+                            metadata={
+                                "display_link": item.get("displayLink", ""),
+                                "formatted_url": item.get("formattedUrl", ""),
+                            },
+                        )
+                    )
 
                 search_response = SearchResponse(
                     query=query,
                     results=results,
                     total_results=int(data.get("searchInformation", {}).get("totalResults", 0)),
                     search_time=time.time() - start_time,
-                    engine="google"
+                    engine="google",
                 )
 
                 self._save_to_cache(cache_key, search_response)
@@ -397,13 +392,14 @@ class GoogleSearch(BaseSearchEngine):
                     results=[],
                     search_time=time.time() - start_time,
                     engine="google",
-                    metadata={"error": str(e)}
+                    metadata={"error": str(e)},
                 )
 
 
 # ============================================================================
 # Part 4: Bing Search
 # ============================================================================
+
 
 class BingSearch(BaseSearchEngine):
     """
@@ -438,11 +434,7 @@ class BingSearch(BaseSearchEngine):
         self.base_url = "https://api.bing.microsoft.com/v7.0/search"
 
     def search(
-        self,
-        query: str,
-        market: str = "en-US",
-        safe_search: str = "Moderate",
-        **kwargs
+        self, query: str, market: str = "en-US", safe_search: str = "Moderate", **kwargs
     ) -> SearchResponse:
         """
         Bing 검색
@@ -469,15 +461,12 @@ class BingSearch(BaseSearchEngine):
             "count": self.max_results,
             "mkt": market,
             "safeSearch": safe_search,
-            **kwargs
+            **kwargs,
         }
 
         try:
             response = requests.get(
-                self.base_url,
-                headers=headers,
-                params=params,
-                timeout=self.timeout
+                self.base_url, headers=headers, params=params, timeout=self.timeout
             )
             response.raise_for_status()
             data = response.json()
@@ -485,25 +474,27 @@ class BingSearch(BaseSearchEngine):
             # Parse web pages
             results = []
             for item in data.get("webPages", {}).get("value", []):
-                results.append(SearchResult(
-                    title=item.get("name", ""),
-                    url=item.get("url", ""),
-                    snippet=item.get("snippet", ""),
-                    source="bing",
-                    score=1.0,
-                    published_date=self._parse_date(item.get("dateLastCrawled")),
-                    metadata={
-                        "display_url": item.get("displayUrl", ""),
-                        "language": item.get("language", "")
-                    }
-                ))
+                results.append(
+                    SearchResult(
+                        title=item.get("name", ""),
+                        url=item.get("url", ""),
+                        snippet=item.get("snippet", ""),
+                        source="bing",
+                        score=1.0,
+                        published_date=self._parse_date(item.get("dateLastCrawled")),
+                        metadata={
+                            "display_url": item.get("displayUrl", ""),
+                            "language": item.get("language", ""),
+                        },
+                    )
+                )
 
             search_response = SearchResponse(
                 query=query,
                 results=results,
                 total_results=data.get("webPages", {}).get("totalEstimatedMatches", 0),
                 search_time=time.time() - start_time,
-                engine="bing"
+                engine="bing",
             )
 
             self._save_to_cache(cache_key, search_response)
@@ -515,15 +506,11 @@ class BingSearch(BaseSearchEngine):
                 results=[],
                 search_time=time.time() - start_time,
                 engine="bing",
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     async def search_async(
-        self,
-        query: str,
-        market: str = "en-US",
-        safe_search: str = "Moderate",
-        **kwargs
+        self, query: str, market: str = "en-US", safe_search: str = "Moderate", **kwargs
     ) -> SearchResponse:
         """비동기 검색"""
         cache_key = f"bing:{query}:{market}"
@@ -539,40 +526,38 @@ class BingSearch(BaseSearchEngine):
             "count": self.max_results,
             "mkt": market,
             "safeSearch": safe_search,
-            **kwargs
+            **kwargs,
         }
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
-                response = await client.get(
-                    self.base_url,
-                    headers=headers,
-                    params=params
-                )
+                response = await client.get(self.base_url, headers=headers, params=params)
                 response.raise_for_status()
                 data = response.json()
 
                 results = []
                 for item in data.get("webPages", {}).get("value", []):
-                    results.append(SearchResult(
-                        title=item.get("name", ""),
-                        url=item.get("url", ""),
-                        snippet=item.get("snippet", ""),
-                        source="bing",
-                        score=1.0,
-                        published_date=self._parse_date(item.get("dateLastCrawled")),
-                        metadata={
-                            "display_url": item.get("displayUrl", ""),
-                            "language": item.get("language", "")
-                        }
-                    ))
+                    results.append(
+                        SearchResult(
+                            title=item.get("name", ""),
+                            url=item.get("url", ""),
+                            snippet=item.get("snippet", ""),
+                            source="bing",
+                            score=1.0,
+                            published_date=self._parse_date(item.get("dateLastCrawled")),
+                            metadata={
+                                "display_url": item.get("displayUrl", ""),
+                                "language": item.get("language", ""),
+                            },
+                        )
+                    )
 
                 search_response = SearchResponse(
                     query=query,
                     results=results,
                     total_results=data.get("webPages", {}).get("totalEstimatedMatches", 0),
                     search_time=time.time() - start_time,
-                    engine="bing"
+                    engine="bing",
                 )
 
                 self._save_to_cache(cache_key, search_response)
@@ -584,7 +569,7 @@ class BingSearch(BaseSearchEngine):
                     results=[],
                     search_time=time.time() - start_time,
                     engine="bing",
-                    metadata={"error": str(e)}
+                    metadata={"error": str(e)},
                 )
 
     def _parse_date(self, date_str: Optional[str]) -> Optional[datetime]:
@@ -592,7 +577,7 @@ class BingSearch(BaseSearchEngine):
         if not date_str:
             return None
         try:
-            return datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+            return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
         except:
             return None
 
@@ -600,6 +585,7 @@ class BingSearch(BaseSearchEngine):
 # ============================================================================
 # Part 5: DuckDuckGo Search (No API Key Required!)
 # ============================================================================
+
 
 class DuckDuckGoSearch(BaseSearchEngine):
     """
@@ -626,11 +612,7 @@ class DuckDuckGoSearch(BaseSearchEngine):
         super().__init__(api_key=None, **kwargs)
 
     def search(
-        self,
-        query: str,
-        region: str = "wt-wt",
-        safe_search: str = "moderate",
-        **kwargs
+        self, query: str, region: str = "wt-wt", safe_search: str = "moderate", **kwargs
     ) -> SearchResponse:
         """
         DuckDuckGo 검색
@@ -655,30 +637,31 @@ class DuckDuckGoSearch(BaseSearchEngine):
             from duckduckgo_search import DDGS
 
             with DDGS() as ddgs:
-                raw_results = list(ddgs.text(
-                    query,
-                    region=region,
-                    safesearch=safe_search,
-                    max_results=self.max_results
-                ))
+                raw_results = list(
+                    ddgs.text(
+                        query, region=region, safesearch=safe_search, max_results=self.max_results
+                    )
+                )
 
             results = []
             for item in raw_results:
-                results.append(SearchResult(
-                    title=item.get("title", ""),
-                    url=item.get("href", ""),
-                    snippet=item.get("body", ""),
-                    source="duckduckgo",
-                    score=1.0,
-                    metadata={}
-                ))
+                results.append(
+                    SearchResult(
+                        title=item.get("title", ""),
+                        url=item.get("href", ""),
+                        snippet=item.get("body", ""),
+                        source="duckduckgo",
+                        score=1.0,
+                        metadata={},
+                    )
+                )
 
             search_response = SearchResponse(
                 query=query,
                 results=results,
                 total_results=len(results),
                 search_time=time.time() - start_time,
-                engine="duckduckgo"
+                engine="duckduckgo",
             )
 
             self._save_to_cache(cache_key, search_response)
@@ -690,7 +673,9 @@ class DuckDuckGoSearch(BaseSearchEngine):
                 results=[],
                 search_time=time.time() - start_time,
                 engine="duckduckgo",
-                metadata={"error": "duckduckgo_search not installed. pip install duckduckgo-search"}
+                metadata={
+                    "error": "duckduckgo_search not installed. pip install duckduckgo-search"
+                },
             )
         except Exception as e:
             return SearchResponse(
@@ -698,30 +683,21 @@ class DuckDuckGoSearch(BaseSearchEngine):
                 results=[],
                 search_time=time.time() - start_time,
                 engine="duckduckgo",
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     async def search_async(
-        self,
-        query: str,
-        region: str = "wt-wt",
-        safe_search: str = "moderate",
-        **kwargs
+        self, query: str, region: str = "wt-wt", safe_search: str = "moderate", **kwargs
     ) -> SearchResponse:
         """비동기 검색 (DDG는 동기 라이브러리이므로 thread pool 사용)"""
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None,
-            self.search,
-            query,
-            region,
-            safe_search
-        )
+        return await loop.run_in_executor(None, self.search, query, region, safe_search)
 
 
 # ============================================================================
 # Part 6: Web Scraper (URL에서 콘텐츠 추출)
 # ============================================================================
+
 
 class WebScraper:
     """
@@ -748,93 +724,80 @@ class WebScraper:
             }
         """
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content, "html.parser")
 
             # Remove script and style elements
             for script in soup(["script", "style"]):
                 script.decompose()
 
             # Get title
-            title = soup.find('title')
+            title = soup.find("title")
             title_text = title.string if title else ""
 
             # Get text
-            text = soup.get_text(separator='\n', strip=True)
+            text = soup.get_text(separator="\n", strip=True)
 
             # Get links
-            links = [a.get('href') for a in soup.find_all('a', href=True)]
+            links = [a.get("href") for a in soup.find_all("a", href=True)]
 
             return {
-                'title': title_text,
-                'text': text,
-                'links': links,
-                'metadata': {
-                    'url': url,
-                    'status_code': response.status_code,
-                    'content_type': response.headers.get('Content-Type', '')
-                }
+                "title": title_text,
+                "text": text,
+                "links": links,
+                "metadata": {
+                    "url": url,
+                    "status_code": response.status_code,
+                    "content_type": response.headers.get("Content-Type", ""),
+                },
             }
 
         except Exception as e:
-            return {
-                'title': '',
-                'text': '',
-                'links': [],
-                'metadata': {'error': str(e)}
-            }
+            return {"title": "", "text": "", "links": [], "metadata": {"error": str(e)}}
 
     @staticmethod
     async def scrape_async(url: str, timeout: int = 10) -> Dict[str, Any]:
         """비동기 스크래핑"""
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
             async with httpx.AsyncClient(timeout=timeout) as client:
                 response = await client.get(url, headers=headers)
                 response.raise_for_status()
 
-                soup = BeautifulSoup(response.content, 'html.parser')
+                soup = BeautifulSoup(response.content, "html.parser")
 
                 for script in soup(["script", "style"]):
                     script.decompose()
 
-                title = soup.find('title')
+                title = soup.find("title")
                 title_text = title.string if title else ""
 
-                text = soup.get_text(separator='\n', strip=True)
-                links = [a.get('href') for a in soup.find_all('a', href=True)]
+                text = soup.get_text(separator="\n", strip=True)
+                links = [a.get("href") for a in soup.find_all("a", href=True)]
 
                 return {
-                    'title': title_text,
-                    'text': text,
-                    'links': links,
-                    'metadata': {
-                        'url': url,
-                        'status_code': response.status_code,
-                        'content_type': response.headers.get('Content-Type', '')
-                    }
+                    "title": title_text,
+                    "text": text,
+                    "links": links,
+                    "metadata": {
+                        "url": url,
+                        "status_code": response.status_code,
+                        "content_type": response.headers.get("Content-Type", ""),
+                    },
                 }
 
         except Exception as e:
-            return {
-                'title': '',
-                'text': '',
-                'links': [],
-                'metadata': {'error': str(e)}
-            }
+            return {"title": "", "text": "", "links": [], "metadata": {"error": str(e)}}
 
 
 # ============================================================================
 # Part 7: Unified Search Interface
 # ============================================================================
+
 
 class WebSearch:
     """
@@ -849,7 +812,7 @@ class WebSearch:
         google_search_engine_id: Optional[str] = None,
         bing_api_key: Optional[str] = None,
         default_engine: SearchEngine = SearchEngine.DUCKDUCKGO,
-        max_results: int = 10
+        max_results: int = 10,
     ):
         """
         Args:
@@ -866,29 +829,21 @@ class WebSearch:
             self.engines[SearchEngine.GOOGLE] = GoogleSearch(
                 api_key=google_api_key,
                 search_engine_id=google_search_engine_id,
-                max_results=max_results
+                max_results=max_results,
             )
 
         if bing_api_key:
             self.engines[SearchEngine.BING] = BingSearch(
-                api_key=bing_api_key,
-                max_results=max_results
+                api_key=bing_api_key, max_results=max_results
             )
 
         # DuckDuckGo always available (no API key needed)
-        self.engines[SearchEngine.DUCKDUCKGO] = DuckDuckGoSearch(
-            max_results=max_results
-        )
+        self.engines[SearchEngine.DUCKDUCKGO] = DuckDuckGoSearch(max_results=max_results)
 
         self.default_engine = default_engine
         self.scraper = WebScraper()
 
-    def search(
-        self,
-        query: str,
-        engine: Optional[SearchEngine] = None,
-        **kwargs
-    ) -> SearchResponse:
+    def search(self, query: str, engine: Optional[SearchEngine] = None, **kwargs) -> SearchResponse:
         """
         검색 실행
 
@@ -908,10 +863,7 @@ class WebSearch:
         return self.engines[engine].search(query, **kwargs)
 
     async def search_async(
-        self,
-        query: str,
-        engine: Optional[SearchEngine] = None,
-        **kwargs
+        self, query: str, engine: Optional[SearchEngine] = None, **kwargs
     ) -> SearchResponse:
         """비동기 검색"""
         engine = engine or self.default_engine
@@ -921,12 +873,7 @@ class WebSearch:
 
         return await self.engines[engine].search_async(query, **kwargs)
 
-    def search_and_scrape(
-        self,
-        query: str,
-        max_scrape: int = 3,
-        **kwargs
-    ) -> List[Dict[str, Any]]:
+    def search_and_scrape(self, query: str, max_scrape: int = 3, **kwargs) -> List[Dict[str, Any]]:
         """
         검색 후 상위 결과 스크래핑
 
@@ -943,34 +890,24 @@ class WebSearch:
         scraped = []
         for result in search_results.results[:max_scrape]:
             content = self.scraper.scrape(result.url)
-            scraped.append({
-                'search_result': result,
-                'content': content
-            })
+            scraped.append({"search_result": result, "content": content})
 
         return scraped
 
     async def search_and_scrape_async(
-        self,
-        query: str,
-        max_scrape: int = 3,
-        **kwargs
+        self, query: str, max_scrape: int = 3, **kwargs
     ) -> List[Dict[str, Any]]:
         """비동기 검색 및 스크래핑"""
         search_results = await self.search_async(query, **kwargs)
 
         tasks = [
-            self.scraper.scrape_async(result.url)
-            for result in search_results.results[:max_scrape]
+            self.scraper.scrape_async(result.url) for result in search_results.results[:max_scrape]
         ]
 
         contents = await asyncio.gather(*tasks)
 
         return [
-            {
-                'search_result': result,
-                'content': content
-            }
+            {"search_result": result, "content": content}
             for result, content in zip(search_results.results[:max_scrape], contents)
         ]
 
@@ -979,11 +916,9 @@ class WebSearch:
 # Convenience Functions
 # ============================================================================
 
+
 def search_web(
-    query: str,
-    engine: str = "duckduckgo",
-    max_results: int = 10,
-    **config
+    query: str, engine: str = "duckduckgo", max_results: int = 10, **config
 ) -> SearchResponse:
     """
     간편한 웹 검색 함수
@@ -1009,7 +944,7 @@ def search_web(
         google_search_engine_id=config.get("google_search_engine_id"),
         bing_api_key=config.get("bing_api_key"),
         default_engine=engine_enum,
-        max_results=max_results
+        max_results=max_results,
     )
 
     return searcher.search(query)

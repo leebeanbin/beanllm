@@ -2,14 +2,20 @@
 Provider Factory
 제공자 팩토리
 """
+
 from typing import List, Optional
 
 from .config import Config
 
 
 class ProviderFactory:
-    PROVIDER_PRIORITY = [("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY"), ("google", "GEMINI_API_KEY"), ("ollama", "OLLAMA_HOST")]
-    
+    PROVIDER_PRIORITY = [
+        ("openai", "OPENAI_API_KEY"),
+        ("anthropic", "ANTHROPIC_API_KEY"),
+        ("google", "GEMINI_API_KEY"),
+        ("ollama", "OLLAMA_HOST"),
+    ]
+
     @classmethod
     def get_available_providers(cls) -> List[str]:
         available = []
@@ -26,11 +32,11 @@ class ProviderFactory:
             except Exception:
                 pass
         return available
-    
+
     @classmethod
     def is_provider_available(cls, provider_name: str) -> bool:
         return provider_name in cls.get_available_providers()
-    
+
     @classmethod
     def get_default_provider(cls) -> Optional[str]:
         available = cls.get_available_providers()

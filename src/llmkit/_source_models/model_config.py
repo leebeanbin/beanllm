@@ -24,7 +24,9 @@ class ModelConfig:
     # 파라미터 지원 정보 (2025년 12월 15일 기준)
     supports_temperature: bool = True  # temperature 파라미터 지원 여부
     supports_max_tokens: bool = True  # max_tokens 파라미터 지원 여부
-    uses_max_completion_tokens: bool = False  # max_completion_tokens 사용 여부 (gpt-5, gpt-4.1 시리즈)
+    uses_max_completion_tokens: bool = (
+        False  # max_completion_tokens 사용 여부 (gpt-5, gpt-4.1 시리즈)
+    )
 
 
 class ModelConfigManager:
@@ -340,7 +342,9 @@ class ModelConfigManager:
         return cls.get_models_by_type("llm")
 
     @classmethod
-    def get_default_model(cls, provider: Optional[LLMProvider] = None, model_type: str = "llm") -> Optional[str]:
+    def get_default_model(
+        cls, provider: Optional[LLMProvider] = None, model_type: str = "llm"
+    ) -> Optional[str]:
         """기본 모델 조회"""
         if provider:
             models = cls.get_models_by_provider(provider)

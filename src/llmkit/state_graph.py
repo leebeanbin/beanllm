@@ -2,6 +2,7 @@
 StateGraph - LangGraph-style TypedDict State + Checkpointing
 타입 안전 상태 관리 및 체크포인팅 지원
 """
+
 import copy
 import json
 from dataclasses import dataclass, field
@@ -21,12 +22,13 @@ from typing import (
 )
 
 # Type variables
-StateType = TypeVar('StateType', bound=Dict[str, Any])
+StateType = TypeVar("StateType", bound=Dict[str, Any])
 
 
 @dataclass
 class GraphConfig:
     """그래프 설정"""
+
     max_iterations: int = 100  # 무한 루프 방지
     enable_checkpointing: bool = False
     checkpoint_dir: Optional[Path] = None
@@ -36,6 +38,7 @@ class GraphConfig:
 @dataclass
 class NodeExecution:
     """노드 실행 기록"""
+
     node_name: str
     input_state: Dict[str, Any]
     output_state: Dict[str, Any]
@@ -46,6 +49,7 @@ class NodeExecution:
 @dataclass
 class GraphExecution:
     """그래프 실행 기록"""
+
     execution_id: str
     start_time: datetime
     end_time: Optional[datetime] = None
@@ -69,7 +73,7 @@ class Checkpoint:
             "execution_id": execution_id,
             "node_name": node_name,
             "state": state,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         with open(checkpoint_file, "w", encoding="utf-8") as f:
@@ -105,6 +109,7 @@ class Checkpoint:
 
 class END:
     """종료 노드 마커"""
+
     pass
 
 
@@ -137,11 +142,7 @@ class StateGraph:
         result = graph.invoke({"input": "hello", "count": 0})
     """
 
-    def __init__(
-        self,
-        state_schema: Optional[type] = None,
-        config: Optional[GraphConfig] = None
-    ):
+    def __init__(self, state_schema: Optional[type] = None, config: Optional[GraphConfig] = None):
         """
         Args:
             state_schema: State TypedDict 클래스 (옵션)
@@ -196,7 +197,7 @@ class StateGraph:
         self,
         from_node: str,
         condition_func: Callable[[StateType], str],
-        edge_mapping: Optional[Dict[str, Union[str, type[END]]]] = None
+        edge_mapping: Optional[Dict[str, Union[str, type[END]]]] = None,
     ):
         """
         조건부 엣지 추가 (동적 라우팅)
@@ -264,9 +265,7 @@ class StateGraph:
             return True
 
     def _get_next_node(
-        self,
-        current_node: str,
-        state: StateType
+        self, current_node: str, state: StateType
     ) -> Optional[Union[str, type[END]]]:
         """다음 노드 결정"""
         # 조건부 엣지 우선
@@ -291,7 +290,7 @@ class StateGraph:
         self,
         initial_state: StateType,
         execution_id: Optional[str] = None,
-        resume_from: Optional[str] = None
+        resume_from: Optional[str] = None,
     ) -> StateType:
         """
         그래프 실행
@@ -315,10 +314,7 @@ class StateGraph:
             execution_id = f"exec_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
         # 실행 기록 시작
-        execution = GraphExecution(
-            execution_id=execution_id,
-            start_time=datetime.now()
-        )
+        execution = GraphExecution(execution_id=execution_id, start_time=datetime.now())
 
         # 상태 복사 (원본 보존)
         state = copy.deepcopy(initial_state)
@@ -355,7 +351,7 @@ class StateGraph:
                         node_name=current_node,
                         input_state=input_state,
                         output_state=state,
-                        timestamp=node_start
+                        timestamp=node_start,
                     )
                     execution.nodes_executed.append(node_execution)
 
@@ -370,7 +366,7 @@ class StateGraph:
                         input_state=state,
                         output_state={},
                         timestamp=node_start,
-                        error=e
+                        error=e,
                     )
                     execution.nodes_executed.append(node_execution)
                     raise
@@ -399,11 +395,7 @@ class StateGraph:
             self.executions.append(execution)
             raise
 
-    def stream(
-        self,
-        initial_state: StateType,
-        execution_id: Optional[str] = None
-    ):
+    def stream(self, initial_state: StateType, execution_id: Optional[str] = None):
         """
         스트리밍 실행 (각 노드 실행 후 상태 반환)
 
@@ -480,9 +472,7 @@ class StateGraph:
 
 # 편의 함수
 def create_state_graph(
-    state_schema: Optional[type] = None,
-    enable_checkpointing: bool = False,
-    debug: bool = False
+    state_schema: Optional[type] = None, enable_checkpointing: bool = False, debug: bool = False
 ) -> StateGraph:
     """
     StateGraph 생성 (간편 함수)
@@ -501,8 +491,5 @@ def create_state_graph(
 
         graph = create_state_graph(MyState, debug=True)
     """
-    config = GraphConfig(
-        enable_checkpointing=enable_checkpointing,
-        debug=debug
-    )
+    config = GraphConfig(enable_checkpointing=enable_checkpointing, debug=debug)
     return StateGraph(state_schema=state_schema, config=config)

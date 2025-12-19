@@ -2,6 +2,7 @@
 Tracer - Request Tracking System
 LangSmith 스타일의 요청 추적 시스템
 """
+
 import json
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class TraceSpan:
     """추적 스팬 (단일 요청)"""
+
     span_id: str
     parent_id: Optional[str]
     name: str
@@ -47,16 +49,17 @@ class TraceSpan:
     def to_dict(self) -> Dict:
         """딕셔너리 변환"""
         d = asdict(self)
-        d['start_time'] = self.start_time.isoformat()
+        d["start_time"] = self.start_time.isoformat()
         if self.end_time:
-            d['end_time'] = self.end_time.isoformat()
-        d['duration_ms'] = self.duration_ms
+            d["end_time"] = self.end_time.isoformat()
+        d["duration_ms"] = self.duration_ms
         return d
 
 
 @dataclass
 class Trace:
     """추적 (여러 스팬의 집합)"""
+
     trace_id: str
     project_name: str
     start_time: datetime
@@ -75,22 +78,19 @@ class Trace:
     @property
     def total_tokens(self) -> int:
         """전체 토큰 수"""
-        return sum(
-            (span.input_tokens or 0) + (span.output_tokens or 0)
-            for span in self.spans
-        )
+        return sum((span.input_tokens or 0) + (span.output_tokens or 0) for span in self.spans)
 
     def to_dict(self) -> Dict:
         """딕셔너리 변환"""
         return {
-            'trace_id': self.trace_id,
-            'project_name': self.project_name,
-            'start_time': self.start_time.isoformat(),
-            'end_time': self.end_time.isoformat() if self.end_time else None,
-            'total_duration_ms': self.total_duration_ms,
-            'total_tokens': self.total_tokens,
-            'spans': [span.to_dict() for span in self.spans],
-            'metadata': self.metadata
+            "trace_id": self.trace_id,
+            "project_name": self.project_name,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "total_duration_ms": self.total_duration_ms,
+            "total_tokens": self.total_tokens,
+            "spans": [span.to_dict() for span in self.spans],
+            "metadata": self.metadata,
         }
 
 
@@ -130,10 +130,7 @@ class Tracer:
     """
 
     def __init__(
-        self,
-        project_name: str = "default",
-        auto_save: bool = False,
-        save_dir: Optional[str] = None
+        self, project_name: str = "default", auto_save: bool = False, save_dir: Optional[str] = None
     ):
         """
         Args:
@@ -152,17 +149,14 @@ class Tracer:
         self.current_trace_id: Optional[str] = None
         self.span_stack: List[str] = []  # 스팬 스택 (nested spans)
 
-    def start_trace(
-        self,
-        metadata: Optional[Dict[str, Any]] = None
-    ) -> Trace:
+    def start_trace(self, metadata: Optional[Dict[str, Any]] = None) -> Trace:
         """새 추적 시작"""
         trace_id = str(uuid.uuid4())
         trace = Trace(
             trace_id=trace_id,
             project_name=self.project_name,
             start_time=datetime.now(),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self.traces[trace_id] = trace
@@ -196,7 +190,7 @@ class Tracer:
         provider: Optional[str] = None,
         model: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
-        tags: Optional[List[str]] = None
+        tags: Optional[List[str]] = None,
     ) -> TraceSpan:
         """스팬 시작"""
         if not self.current_trace_id:
@@ -216,7 +210,7 @@ class Tracer:
             provider=provider,
             model=model,
             metadata=metadata or {},
-            tags=tags or []
+            tags=tags or [],
         )
 
         trace.spans.append(span)
@@ -230,7 +224,7 @@ class Tracer:
         status: str = "success",
         error: Optional[str] = None,
         input_tokens: Optional[int] = None,
-        output_tokens: Optional[int] = None
+        output_tokens: Optional[int] = None,
     ):
         """스팬 종료"""
         if not self.span_stack:
@@ -258,11 +252,7 @@ class Tracer:
         )
 
     def span(
-        self,
-        name: str,
-        provider: Optional[str] = None,
-        model: Optional[str] = None,
-        **kwargs
+        self, name: str, provider: Optional[str] = None, model: Optional[str] = None, **kwargs
     ):
         """
         컨텍스트 매니저로 스팬 사용
@@ -294,7 +284,7 @@ class Tracer:
         filepath = self.save_dir / filename
         filepath.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(trace.to_dict(), f, indent=2, ensure_ascii=False)
 
         logger.info(f"Saved trace to: {filepath}")
@@ -314,13 +304,13 @@ class Tracer:
             return {}
 
         return {
-            'trace_id': trace.trace_id,
-            'project_name': trace.project_name,
-            'total_duration_ms': trace.total_duration_ms,
-            'total_spans': len(trace.spans),
-            'total_tokens': trace.total_tokens,
-            'success_spans': sum(1 for s in trace.spans if s.status == "success"),
-            'error_spans': sum(1 for s in trace.spans if s.status == "error"),
+            "trace_id": trace.trace_id,
+            "project_name": trace.project_name,
+            "total_duration_ms": trace.total_duration_ms,
+            "total_spans": len(trace.spans),
+            "total_tokens": trace.total_tokens,
+            "success_spans": sum(1 for s in trace.spans if s.status == "success"),
+            "error_spans": sum(1 for s in trace.spans if s.status == "error"),
         }
 
     def clear(self):
@@ -333,7 +323,9 @@ class Tracer:
 class _SpanContext:
     """스팬 컨텍스트 매니저"""
 
-    def __init__(self, tracer: Tracer, name: str, provider: Optional[str], model: Optional[str], **kwargs):
+    def __init__(
+        self, tracer: Tracer, name: str, provider: Optional[str], model: Optional[str], **kwargs
+    ):
         self.tracer = tracer
         self.name = name
         self.provider = provider
@@ -343,10 +335,7 @@ class _SpanContext:
 
     def __enter__(self):
         self.span = self.tracer.start_span(
-            self.name,
-            provider=self.provider,
-            model=self.model,
-            **self.kwargs
+            self.name, provider=self.provider, model=self.model, **self.kwargs
         )
         return self.span
 
@@ -370,9 +359,7 @@ def get_tracer(project_name: str = "default") -> Tracer:
 
 
 def enable_tracing(
-    project_name: str = "default",
-    auto_save: bool = True,
-    save_dir: Optional[str] = None
+    project_name: str = "default", auto_save: bool = True, save_dir: Optional[str] = None
 ):
     """
     추적 활성화
@@ -390,9 +377,5 @@ def enable_tracing(
         ```
     """
     global _global_tracer
-    _global_tracer = Tracer(
-        project_name=project_name,
-        auto_save=auto_save,
-        save_dir=save_dir
-    )
+    _global_tracer = Tracer(project_name=project_name, auto_save=auto_save, save_dir=save_dir)
     logger.info(f"Tracing enabled for project: {project_name}")

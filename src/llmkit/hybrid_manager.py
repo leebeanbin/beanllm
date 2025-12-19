@@ -2,6 +2,7 @@
 Hybrid Model Manager
 API 스캔 + 로컬 메타데이터 + 패턴 추론 통합
 """
+
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class HybridModelInfo:
     """통합 모델 정보"""
+
     model_id: str
     provider: str
     display_name: str
@@ -59,10 +61,10 @@ class HybridModelManager:
         self.scanner = ModelScanner()
         self.inferrer = MetadataInferrer()
         self.models: Dict[str, Dict[str, HybridModelInfo]] = {
-            'openai': {},
-            'anthropic': {},
-            'google': {},
-            'ollama': {}
+            "openai": {},
+            "anthropic": {},
+            "google": {},
+            "ollama": {},
         }
         self._loaded = False
 
@@ -90,7 +92,7 @@ class HybridModelManager:
         logger.info("Loading local metadata...")
 
         for model_id, config in MODELS.items():
-            provider = config.get('provider', 'unknown')
+            provider = config.get("provider", "unknown")
 
             if provider not in self.models:
                 continue
@@ -98,16 +100,16 @@ class HybridModelManager:
             model_info = HybridModelInfo(
                 model_id=model_id,
                 provider=provider,
-                display_name=config.get('model_name', model_id),
-                supports_streaming=config.get('supports_streaming', True),
-                supports_temperature=config.get('supports_temperature', True),
-                supports_max_tokens=config.get('supports_max_tokens', True),
-                uses_max_completion_tokens=config.get('uses_max_completion_tokens', False),
-                max_tokens=config.get('max_tokens'),
-                tier=config.get('tier'),
-                speed=config.get('speed'),
+                display_name=config.get("model_name", model_id),
+                supports_streaming=config.get("supports_streaming", True),
+                supports_temperature=config.get("supports_temperature", True),
+                supports_max_tokens=config.get("supports_max_tokens", True),
+                uses_max_completion_tokens=config.get("uses_max_completion_tokens", False),
+                max_tokens=config.get("max_tokens"),
+                tier=config.get("tier"),
+                speed=config.get("speed"),
                 source="local",
-                inference_confidence=1.0
+                inference_confidence=1.0,
             )
 
             self.models[provider][model_id] = model_info
@@ -141,27 +143,33 @@ class HybridModelManager:
                         model_id=model_id,
                         provider=provider,
                         display_name=scanned_model.display_name or model_id,
-                        supports_streaming=inferred.get('supports_streaming', True),
-                        supports_temperature=inferred.get('supports_temperature', True),
-                        supports_max_tokens=inferred.get('supports_max_tokens', True),
-                        uses_max_completion_tokens=inferred.get('uses_max_completion_tokens', False),
-                        max_tokens=inferred.get('max_tokens'),
-                        tier=inferred.get('tier'),
-                        speed=inferred.get('speed'),
+                        supports_streaming=inferred.get("supports_streaming", True),
+                        supports_temperature=inferred.get("supports_temperature", True),
+                        supports_max_tokens=inferred.get("supports_max_tokens", True),
+                        uses_max_completion_tokens=inferred.get(
+                            "uses_max_completion_tokens", False
+                        ),
+                        max_tokens=inferred.get("max_tokens"),
+                        tier=inferred.get("tier"),
+                        speed=inferred.get("speed"),
                         source="inferred",
-                        inference_confidence=inferred.get('inference_confidence', 0.0),
-                        matched_patterns=inferred.get('matched_patterns', []),
+                        inference_confidence=inferred.get("inference_confidence", 0.0),
+                        matched_patterns=inferred.get("matched_patterns", []),
                         discovered_at=datetime.now().isoformat(),
-                        last_seen=datetime.now().isoformat()
+                        last_seen=datetime.now().isoformat(),
                     )
 
                     self.models[provider][model_id] = model_info
-                    logger.info(f"New model discovered: {provider}/{model_id} (confidence: {model_info.inference_confidence:.2f})")
+                    logger.info(
+                        f"New model discovered: {provider}/{model_id} (confidence: {model_info.inference_confidence:.2f})"
+                    )
 
         except Exception as e:
             logger.error(f"Error scanning APIs: {e}")
 
-    def get_model_info(self, model_id: str, provider: Optional[str] = None) -> Optional[HybridModelInfo]:
+    def get_model_info(
+        self, model_id: str, provider: Optional[str] = None
+    ) -> Optional[HybridModelInfo]:
         """
         모델 정보 가져오기
 
@@ -204,20 +212,14 @@ class HybridModelManager:
         if not self._loaded:
             raise RuntimeError("Manager not loaded. Call await load() first.")
 
-        return [
-            model for model in self.get_all_models()
-            if model.source == "inferred"
-        ]
+        return [model for model in self.get_all_models() if model.source == "inferred"]
 
     def get_local_models(self) -> List[HybridModelInfo]:
         """로컬 모델 목록 (source="local")"""
         if not self._loaded:
             raise RuntimeError("Manager not loaded. Call await load() first.")
 
-        return [
-            model for model in self.get_all_models()
-            if model.source == "local"
-        ]
+        return [model for model in self.get_all_models() if model.source == "local"]
 
     def get_total_count(self) -> int:
         """전체 모델 수"""
@@ -225,17 +227,14 @@ class HybridModelManager:
 
     def get_provider_counts(self) -> Dict[str, int]:
         """Provider별 모델 수"""
-        return {
-            provider: len(models)
-            for provider, models in self.models.items()
-        }
+        return {provider: len(models) for provider, models in self.models.items()}
 
     def search_models(
         self,
         query: str,
         provider: Optional[str] = None,
         source: Optional[str] = None,
-        min_confidence: float = 0.0
+        min_confidence: float = 0.0,
     ) -> List[HybridModelInfo]:
         """
         모델 검색
@@ -277,10 +276,7 @@ class HybridModelManager:
             raise RuntimeError("Manager not loaded. Call await load() first.")
 
         return {
-            provider: {
-                model_id: asdict(model_info)
-                for model_id, model_info in models.items()
-            }
+            provider: {model_id: asdict(model_info) for model_id, model_info in models.items()}
             for provider, models in self.models.items()
         }
 
@@ -296,12 +292,13 @@ class HybridModelManager:
         return {
             "total": len(all_models),
             "by_provider": self.get_provider_counts(),
-            "by_source": {
-                "local": len(local_models),
-                "inferred": len(new_models)
-            },
+            "by_source": {"local": len(local_models), "inferred": len(new_models)},
             "new_models": len(new_models),
-            "avg_confidence": sum(m.inference_confidence for m in all_models) / len(all_models) if all_models else 0.0
+            "avg_confidence": (
+                sum(m.inference_confidence for m in all_models) / len(all_models)
+                if all_models
+                else 0.0
+            ),
         }
 
 

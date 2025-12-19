@@ -2,6 +2,7 @@
 RAG Chain - 완전한 RAG를 한 줄로
 간단하지만 강력한 질문-답변 시스템
 """
+
 import asyncio
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +18,7 @@ from .vector_stores import VectorSearchResult, from_documents
 @dataclass
 class RAGResponse:
     """RAG 응답"""
+
     answer: str
     sources: List[VectorSearchResult]
     metadata: Dict[str, Any]
@@ -54,7 +56,7 @@ Answer:"""
         vector_store,
         llm: Optional[Client] = None,
         prompt_template: Optional[str] = None,
-        retriever_config: Optional[Dict[str, Any]] = None
+        retriever_config: Optional[Dict[str, Any]] = None,
     ):
         """
         Args:
@@ -77,8 +79,8 @@ Answer:"""
         embedding_model: str = "text-embedding-3-small",
         vector_store_provider: Optional[str] = None,
         llm_model: str = "gpt-4o-mini",
-        **kwargs
-    ) -> 'RAGChain':
+        **kwargs,
+    ) -> "RAGChain":
         """
         문서에서 직접 RAG 생성 (가장 간단!)
 
@@ -102,21 +104,13 @@ Answer:"""
             documents = source
 
         # 2. 텍스트 분할
-        chunks = TextSplitter.split(
-            documents,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap
-        )
+        chunks = TextSplitter.split(documents, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
         # 3. 임베딩 및 Vector Store
         embed = Embedding(model=embedding_model)
         embed_func = embed.embed_sync
 
-        vector_store = from_documents(
-            chunks,
-            embed_func,
-            provider=vector_store_provider
-        )
+        vector_store = from_documents(chunks, embed_func, provider=vector_store_provider)
 
         # 4. LLM
         llm = Client(model=llm_model)
@@ -130,7 +124,7 @@ Answer:"""
         rerank: bool = False,
         mmr: bool = False,
         hybrid: bool = False,
-        **kwargs
+        **kwargs,
     ) -> List[VectorSearchResult]:
         """
         문서 검색
@@ -148,23 +142,11 @@ Answer:"""
         """
         # 검색 방법 선택
         if hybrid:
-            results = self.vector_store.hybrid_search(
-                query,
-                k=k * 2 if rerank else k,
-                **kwargs
-            )
+            results = self.vector_store.hybrid_search(query, k=k * 2 if rerank else k, **kwargs)
         elif mmr:
-            results = self.vector_store.mmr_search(
-                query,
-                k=k * 2 if rerank else k,
-                **kwargs
-            )
+            results = self.vector_store.mmr_search(query, k=k * 2 if rerank else k, **kwargs)
         else:
-            results = self.vector_store.similarity_search(
-                query,
-                k=k * 2 if rerank else k,
-                **kwargs
-            )
+            results = self.vector_store.similarity_search(query, k=k * 2 if rerank else k, **kwargs)
 
         # 재순위화
         if rerank:
@@ -180,17 +162,12 @@ Answer:"""
         """검색 결과에서 컨텍스트 생성"""
         context_parts = []
         for i, result in enumerate(results, 1):
-            context_parts.append(
-                f"[{i}] {result.document.content}"
-            )
+            context_parts.append(f"[{i}] {result.document.content}")
         return "\n\n".join(context_parts)
 
     def _build_prompt(self, query: str, context: str) -> str:
         """프롬프트 생성"""
-        return self.prompt_template.format(
-            context=context,
-            question=query
-        )
+        return self.prompt_template.format(context=context, question=query)
 
     def query(
         self,
@@ -201,7 +178,7 @@ Answer:"""
         mmr: bool = False,
         hybrid: bool = False,
         model: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Union[str, Tuple[str, List[VectorSearchResult]]]:
         """
         질문에 답변
@@ -233,14 +210,7 @@ Answer:"""
             answer = rag.query("AI", k=10, rerank=True, mmr=True)
         """
         # 1. 검색
-        results = self.retrieve(
-            question,
-            k=k,
-            rerank=rerank,
-            mmr=mmr,
-            hybrid=hybrid,
-            **kwargs
-        )
+        results = self.retrieve(question, k=k, rerank=rerank, mmr=mmr, hybrid=hybrid, **kwargs)
 
         # 2. 컨텍스트 생성
         context = self._build_context(results)
@@ -271,7 +241,7 @@ Answer:"""
         mmr: bool = False,
         hybrid: bool = False,
         model: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Iterator[str]:
         """
         스트리밍 답변
@@ -297,14 +267,7 @@ Answer:"""
                 print(chunk, end="", flush=True)
         """
         # 1. 검색
-        results = self.retrieve(
-            question,
-            k=k,
-            rerank=rerank,
-            mmr=mmr,
-            hybrid=hybrid,
-            **kwargs
-        )
+        results = self.retrieve(question, k=k, rerank=rerank, mmr=mmr, hybrid=hybrid, **kwargs)
 
         # 2. 컨텍스트 생성
         context = self._build_context(results)
@@ -323,11 +286,7 @@ Answer:"""
                 yield chunk.content
 
     def batch_query(
-        self,
-        questions: List[str],
-        k: int = 4,
-        model: Optional[str] = None,
-        **kwargs
+        self, questions: List[str], k: int = 4, model: Optional[str] = None, **kwargs
     ) -> List[str]:
         """
         여러 질문에 대해 배치 답변
@@ -360,7 +319,7 @@ Answer:"""
         k: int = 4,
         include_sources: bool = False,
         model: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Union[str, Tuple[str, List[VectorSearchResult]]]:
         """
         비동기 질의 (간단한 구현)
@@ -377,8 +336,7 @@ Answer:"""
         """
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
-            None,
-            lambda: self.query(question, k, include_sources, model=model, **kwargs)
+            None, lambda: self.query(question, k, include_sources, model=model, **kwargs)
         )
 
 
@@ -409,10 +367,7 @@ class RAGBuilder:
         self.chunk_size = 500
         self.chunk_overlap = 50
 
-    def load_documents(
-        self,
-        source: Union[str, Path, List[Document]]
-    ) -> 'RAGBuilder':
+    def load_documents(self, source: Union[str, Path, List[Document]]) -> "RAGBuilder":
         """문서 로딩"""
         if isinstance(source, (str, Path)):
             self.documents = DocumentLoader.load(source)
@@ -420,38 +375,33 @@ class RAGBuilder:
             self.documents = source
         return self
 
-    def split_text(
-        self,
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
-        **kwargs
-    ) -> 'RAGBuilder':
+    def split_text(self, chunk_size: int = 500, chunk_overlap: int = 50, **kwargs) -> "RAGBuilder":
         """텍스트 분할"""
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         return self
 
-    def embed_with(self, embedding) -> 'RAGBuilder':
+    def embed_with(self, embedding) -> "RAGBuilder":
         """임베딩 설정"""
         self.embedding = embedding
         return self
 
-    def store_in(self, vector_store) -> 'RAGBuilder':
+    def store_in(self, vector_store) -> "RAGBuilder":
         """Vector Store 설정"""
         self.vector_store = vector_store
         return self
 
-    def use_llm(self, llm_client: Client) -> 'RAGBuilder':
+    def use_llm(self, llm_client: Client) -> "RAGBuilder":
         """LLM 설정"""
         self.llm_client = llm_client
         return self
 
-    def with_prompt(self, template: str) -> 'RAGBuilder':
+    def with_prompt(self, template: str) -> "RAGBuilder":
         """프롬프트 템플릿 설정"""
         self.prompt_template = template
         return self
 
-    def with_retriever_config(self, **config) -> 'RAGBuilder':
+    def with_retriever_config(self, **config) -> "RAGBuilder":
         """검색 설정"""
         self.retriever_config.update(config)
         return self
@@ -465,9 +415,7 @@ class RAGBuilder:
         # 청크 생성
         if self.chunks is None:
             self.chunks = TextSplitter.split(
-                self.documents,
-                chunk_size=self.chunk_size,
-                chunk_overlap=self.chunk_overlap
+                self.documents, chunk_size=self.chunk_size, chunk_overlap=self.chunk_overlap
             )
 
         # 임베딩 기본값
@@ -491,7 +439,7 @@ class RAGBuilder:
             vector_store=self.vector_store,
             llm=self.llm_client,
             prompt_template=self.prompt_template,
-            retriever_config=self.retriever_config
+            retriever_config=self.retriever_config,
         )
 
 
@@ -501,7 +449,7 @@ def create_rag(
     chunk_size: int = 500,
     embedding_model: str = "text-embedding-3-small",
     llm_model: str = "gpt-4o-mini",
-    **kwargs
+    **kwargs,
 ) -> RAGChain:
     """
     간단한 RAG 생성
@@ -525,7 +473,7 @@ def create_rag(
         chunk_size=chunk_size,
         embedding_model=embedding_model,
         llm_model=llm_model,
-        **kwargs
+        **kwargs,
     )
 
 

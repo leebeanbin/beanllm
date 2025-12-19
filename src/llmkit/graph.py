@@ -2,6 +2,7 @@
 Graph System - LangGraph-style Workflow
 노드 기반 워크플로우 with 자동 캐싱, 평가, 조건부 분기
 """
+
 import asyncio
 import hashlib
 import json
@@ -16,7 +17,7 @@ from .utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 @dataclass
@@ -26,6 +27,7 @@ class GraphState:
 
     노드 간 데이터 전달용
     """
+
     data: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
@@ -112,7 +114,7 @@ class NodeCache:
             "hits": self.hits,
             "misses": self.misses,
             "hit_rate": hit_rate,
-            "size": len(self.cache)
+            "size": len(self.cache),
         }
 
 
@@ -121,12 +123,7 @@ class BaseNode(ABC):
     노드 베이스 클래스
     """
 
-    def __init__(
-        self,
-        name: str,
-        cache: bool = False,
-        description: Optional[str] = None
-    ):
+    def __init__(self, name: str, cache: bool = False, description: Optional[str] = None):
         """
         Args:
             name: 노드 이름
@@ -170,7 +167,7 @@ class FunctionNode(BaseNode):
         name: str,
         func: Callable[[GraphState], Union[Dict[str, Any], Any]],
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -217,7 +214,7 @@ class AgentNode(BaseNode):
         input_key: str = "input",
         output_key: str = "output",
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -243,7 +240,7 @@ class AgentNode(BaseNode):
         return {
             self.output_key: result.answer,
             f"{self.output_key}_steps": result.total_steps,
-            f"{self.output_key}_success": result.success
+            f"{self.output_key}_success": result.success,
         }
 
 
@@ -275,7 +272,7 @@ class LLMNode(BaseNode):
         output_key: str = "output",
         cache: bool = False,
         parser: Optional[BaseOutputParser] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -304,9 +301,7 @@ class LLMNode(BaseNode):
         prompt = self.template.format(**template_vars)
 
         # LLM 호출
-        response = await self.client.chat([
-            {"role": "user", "content": prompt}
-        ])
+        response = await self.client.chat([{"role": "user", "content": prompt}])
 
         # 파싱
         output = response.content
@@ -343,7 +338,7 @@ class GraderNode(BaseNode):
         output_key: str = "grade",
         scale: int = 10,
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -381,9 +376,7 @@ Return in format:
 Score: [number]
 Explanation: [text]"""
 
-        response = await self.client.chat([
-            {"role": "user", "content": prompt}
-        ])
+        response = await self.client.chat([{"role": "user", "content": prompt}])
 
         # 점수 추출
         content = response.content
@@ -397,7 +390,7 @@ Explanation: [text]"""
         return {
             self.output_key: score,
             f"{self.output_key}_explanation": explanation,
-            f"{self.output_key}_max": self.scale
+            f"{self.output_key}_max": self.scale,
         }
 
 
@@ -435,7 +428,7 @@ class ConditionalNode(BaseNode):
         true_node: Optional[BaseNode] = None,
         false_node: Optional[BaseNode] = None,
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -462,10 +455,7 @@ class ConditionalNode(BaseNode):
         selected_node = self.true_node if condition_result else self.false_node
 
         if selected_node is None:
-            return {
-                f"{self.name}_condition": condition_result,
-                f"{self.name}_executed": None
-            }
+            return {f"{self.name}_condition": condition_result, f"{self.name}_executed": None}
 
         # 선택된 노드 실행
         result = await selected_node.execute(state)
@@ -513,7 +503,7 @@ class LoopNode(BaseNode):
         termination_condition: Callable[[GraphState], bool],
         max_iterations: int = 10,
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -553,7 +543,7 @@ class LoopNode(BaseNode):
         return {
             f"{self.name}_iterations": iterations,
             f"{self.name}_terminated": self.termination_condition(state),
-            f"{self.name}_results": loop_results
+            f"{self.name}_results": loop_results,
         }
 
 
@@ -594,7 +584,7 @@ class ParallelNode(BaseNode):
         child_nodes: List[BaseNode],
         aggregate_strategy: str = "merge",
         cache: bool = False,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Args:
@@ -620,10 +610,7 @@ class ParallelNode(BaseNode):
 
         if self.aggregate_strategy == "first":
             # 첫 번째 완료된 것만 사용
-            done, pending = await asyncio.wait(
-                tasks,
-                return_when=asyncio.FIRST_COMPLETED
-            )
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
             # 나머지 취소
             for task in pending:
                 task.cancel()
@@ -632,7 +619,7 @@ class ParallelNode(BaseNode):
             return {
                 **result,
                 f"{self.name}_completed": 1,
-                f"{self.name}_total": len(self.child_nodes)
+                f"{self.name}_total": len(self.child_nodes),
             }
 
         else:
@@ -641,10 +628,7 @@ class ParallelNode(BaseNode):
 
             if self.aggregate_strategy == "list":
                 # 리스트로 반환
-                return {
-                    f"{self.name}_results": results,
-                    f"{self.name}_count": len(results)
-                }
+                return {f"{self.name}_results": results, f"{self.name}_count": len(results)}
 
             elif self.aggregate_strategy == "merge":
                 # 모든 결과를 하나의 dict로 병합
@@ -718,13 +702,7 @@ class Graph:
         self.nodes[node.name] = node
         logger.info(f"Added node: {node.name}")
 
-    def add_function_node(
-        self,
-        name: str,
-        func: Callable,
-        cache: bool = False,
-        **kwargs
-    ):
+    def add_function_node(self, name: str, func: Callable, cache: bool = False, **kwargs):
         """함수 노드 추가"""
         node = FunctionNode(name, func, cache=cache, **kwargs)
         self.add_node(node)
@@ -736,7 +714,7 @@ class Graph:
         input_key: str = "input",
         output_key: str = "output",
         cache: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """Agent 노드 추가"""
         node = AgentNode(name, agent, input_key, output_key, cache=cache, **kwargs)
@@ -751,12 +729,11 @@ class Graph:
         output_key: str = "output",
         cache: bool = False,
         parser: Optional[BaseOutputParser] = None,
-        **kwargs
+        **kwargs,
     ):
         """LLM 노드 추가"""
         node = LLMNode(
-            name, client, template, input_keys, output_key,
-            cache=cache, parser=parser, **kwargs
+            name, client, template, input_keys, output_key, cache=cache, parser=parser, **kwargs
         )
         self.add_node(node)
 
@@ -769,12 +746,11 @@ class Graph:
         output_key: str = "grade",
         scale: int = 10,
         cache: bool = False,
-        **kwargs
+        **kwargs,
     ):
         """Grader 노드 추가"""
         node = GraderNode(
-            name, client, criteria, input_key, output_key, scale,
-            cache=cache, **kwargs
+            name, client, criteria, input_key, output_key, scale, cache=cache, **kwargs
         )
         self.add_node(node)
 
@@ -785,11 +761,7 @@ class Graph:
         self.edges[from_node].append(to_node)
         logger.debug(f"Added edge: {from_node} -> {to_node}")
 
-    def add_conditional_edge(
-        self,
-        from_node: str,
-        condition: Callable[[GraphState], str]
-    ):
+    def add_conditional_edge(self, from_node: str, condition: Callable[[GraphState], str]):
         """
         조건부 엣지 추가
 
@@ -805,9 +777,7 @@ class Graph:
         self.entry_point = node_name
 
     async def run(
-        self,
-        initial_state: Union[Dict[str, Any], GraphState],
-        verbose: bool = False
+        self, initial_state: Union[Dict[str, Any], GraphState], verbose: bool = False
     ) -> GraphState:
         """
         그래프 실행
@@ -927,11 +897,7 @@ class Graph:
 
 
 # 편의 함수
-def create_simple_graph(
-    nodes: List[tuple],
-    edges: List[tuple],
-    enable_cache: bool = True
-) -> Graph:
+def create_simple_graph(nodes: List[tuple], edges: List[tuple], enable_cache: bool = True) -> Graph:
     """
     간단한 그래프 생성
 

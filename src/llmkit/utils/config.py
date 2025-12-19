@@ -2,6 +2,7 @@
 Environment Configuration
 환경변수 관리 (독립적)
 """
+
 import os
 from pathlib import Path
 from typing import Optional
@@ -9,6 +10,7 @@ from typing import Optional
 # dotenv 선택적 로드
 try:
     from dotenv import load_dotenv
+
     env_path = Path(__file__).parent.parent.parent / ".env"
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)

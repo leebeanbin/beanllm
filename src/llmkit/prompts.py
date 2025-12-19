@@ -15,14 +15,16 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 class TemplateFormat(Enum):
     """템플릿 포맷"""
+
     F_STRING = "f-string"  # {variable}
-    JINJA2 = "jinja2"      # {{ variable }}
+    JINJA2 = "jinja2"  # {{ variable }}
     MUSTACHE = "mustache"  # {{variable}}
 
 
 @dataclass
 class PromptExample:
     """Few-shot 예제"""
+
     input: str
     output: str
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -74,7 +76,7 @@ class PromptTemplate(BasePromptTemplate):
         input_variables: Optional[List[str]] = None,
         template_format: TemplateFormat = TemplateFormat.F_STRING,
         validate_template: bool = True,
-        partial_variables: Optional[Dict[str, Any]] = None
+        partial_variables: Optional[Dict[str, Any]] = None,
     ):
         self.template = template
         self.template_format = template_format
@@ -94,13 +96,13 @@ class PromptTemplate(BasePromptTemplate):
         """템플릿에서 변수 자동 추출"""
         if self.template_format == TemplateFormat.F_STRING:
             # {variable} 형식
-            pattern = r'\{(\w+)\}'
+            pattern = r"\{(\w+)\}"
         elif self.template_format == TemplateFormat.JINJA2:
             # {{ variable }} 형식
-            pattern = r'\{\{\s*(\w+)\s*\}\}'
+            pattern = r"\{\{\s*(\w+)\s*\}\}"
         else:
             # {{variable}} 형식 (Mustache)
-            pattern = r'\{\{(\w+)\}\}'
+            pattern = r"\{\{(\w+)\}\}"
 
         matches = re.findall(pattern, self.template)
         return list(set(matches))  # 중복 제거
@@ -113,8 +115,7 @@ class PromptTemplate(BasePromptTemplate):
 
         if extracted != declared:
             raise ValueError(
-                f"Template variables mismatch. "
-                f"Extracted: {extracted}, Declared: {declared}"
+                f"Template variables mismatch. " f"Extracted: {extracted}, Declared: {declared}"
             )
 
     def format(self, **kwargs) -> str:
@@ -123,10 +124,7 @@ class PromptTemplate(BasePromptTemplate):
         all_vars = {**self.partial_variables, **kwargs}
 
         # 입력 검증 (partial 제외)
-        required_vars = [
-            v for v in self.input_variables
-            if v not in self.partial_variables
-        ]
+        required_vars = [v for v in self.input_variables if v not in self.partial_variables]
 
         missing = set(required_vars) - set(kwargs.keys())
         if missing:
@@ -139,6 +137,7 @@ class PromptTemplate(BasePromptTemplate):
             # Jinja2 지원 (선택적)
             try:
                 from jinja2 import Template
+
                 return Template(self.template).render(**all_vars)
             except ImportError:
                 # Jinja2 없으면 간단한 치환
@@ -155,12 +154,9 @@ class PromptTemplate(BasePromptTemplate):
 
     def get_input_variables(self) -> List[str]:
         """입력 변수 목록 반환 (partial 제외)"""
-        return [
-            v for v in self.input_variables
-            if v not in self.partial_variables
-        ]
+        return [v for v in self.input_variables if v not in self.partial_variables]
 
-    def partial(self, **kwargs) -> 'PromptTemplate':
+    def partial(self, **kwargs) -> "PromptTemplate":
         """일부 변수를 미리 채운 새 템플릿 반환"""
         new_partial = {**self.partial_variables, **kwargs}
         return PromptTemplate(
@@ -168,7 +164,7 @@ class PromptTemplate(BasePromptTemplate):
             input_variables=self.input_variables,
             template_format=self.template_format,
             validate_template=False,
-            partial_variables=new_partial
+            partial_variables=new_partial,
         )
 
 
@@ -202,7 +198,7 @@ class FewShotPromptTemplate(BasePromptTemplate):
         input_variables: Optional[List[str]] = None,
         example_separator: str = "\n\n",
         max_examples: Optional[int] = None,
-        example_selector: Optional[Callable] = None
+        example_selector: Optional[Callable] = None,
     ):
         self.examples = examples
         self.example_template = example_template
@@ -220,7 +216,7 @@ class FewShotPromptTemplate(BasePromptTemplate):
 
     def _extract_suffix_variables(self) -> List[str]:
         """suffix에서 변수 추출"""
-        pattern = r'\{(\w+)\}'
+        pattern = r"\{(\w+)\}"
         matches = re.findall(pattern, self.suffix)
         return list(set(matches))
 
@@ -234,15 +230,12 @@ class FewShotPromptTemplate(BasePromptTemplate):
 
         # max_examples 제한
         if self.max_examples:
-            selected_examples = selected_examples[:self.max_examples]
+            selected_examples = selected_examples[: self.max_examples]
 
         # 예제 포맷팅
         formatted_examples = []
         for example in selected_examples:
-            formatted = self.example_template.format(
-                input=example.input,
-                output=example.output
-            )
+            formatted = self.example_template.format(input=example.input, output=example.output)
             formatted_examples.append(formatted)
 
         # 전체 프롬프트 조립
@@ -270,6 +263,7 @@ class FewShotPromptTemplate(BasePromptTemplate):
 @dataclass
 class ChatMessage:
     """채팅 메시지"""
+
     role: str  # "system", "user", "assistant"
     content: str
     name: Optional[str] = None
@@ -296,9 +290,7 @@ class ChatPromptTemplate(BasePromptTemplate):
     """
 
     def __init__(
-        self,
-        messages: List[Union[ChatMessage, tuple]],
-        input_variables: Optional[List[str]] = None
+        self, messages: List[Union[ChatMessage, tuple]], input_variables: Optional[List[str]] = None
     ):
         # tuple을 ChatMessage로 변환
         self.messages = []
@@ -320,7 +312,7 @@ class ChatPromptTemplate(BasePromptTemplate):
         """모든 메시지에서 변수 추출"""
         variables = set()
         for msg in self.messages:
-            pattern = r'\{(\w+)\}'
+            pattern = r"\{(\w+)\}"
             matches = re.findall(pattern, msg.content)
             variables.update(matches)
         return list(variables)
@@ -328,22 +320,16 @@ class ChatPromptTemplate(BasePromptTemplate):
     def format(self, **kwargs) -> str:
         """문자열로 포맷팅 (간단한 표현)"""
         formatted_messages = self.format_messages(**kwargs)
-        return "\n\n".join(
-            f"{msg.role.upper()}: {msg.content}"
-            for msg in formatted_messages
-        )
+        return "\n\n".join(f"{msg.role.upper()}: {msg.content}" for msg in formatted_messages)
 
     def format_messages(self, **kwargs) -> List[ChatMessage]:
         """ChatMessage 리스트로 포맷팅"""
         formatted = []
         for msg in self.messages:
             content = msg.content.format(**kwargs)
-            formatted.append(ChatMessage(
-                role=msg.role,
-                content=content,
-                name=msg.name,
-                metadata=msg.metadata
-            ))
+            formatted.append(
+                ChatMessage(role=msg.role, content=content, name=msg.name, metadata=msg.metadata)
+            )
         return formatted
 
     def to_dict_messages(self, **kwargs) -> List[Dict[str, Any]]:
@@ -355,12 +341,12 @@ class ChatPromptTemplate(BasePromptTemplate):
         return self.input_variables
 
     @classmethod
-    def from_messages(cls, messages: List[Union[tuple, ChatMessage]]) -> 'ChatPromptTemplate':
+    def from_messages(cls, messages: List[Union[tuple, ChatMessage]]) -> "ChatPromptTemplate":
         """메시지 리스트로부터 생성"""
         return cls(messages=messages)
 
     @classmethod
-    def from_template(cls, template: str, role: str = "user") -> 'ChatPromptTemplate':
+    def from_template(cls, template: str, role: str = "user") -> "ChatPromptTemplate":
         """단일 템플릿으로부터 생성"""
         return cls(messages=[(role, template)])
 
@@ -397,12 +383,12 @@ class PromptComposer:
         self.templates: List[BasePromptTemplate] = []
         self.separator = "\n\n"
 
-    def add_template(self, template: BasePromptTemplate) -> 'PromptComposer':
+    def add_template(self, template: BasePromptTemplate) -> "PromptComposer":
         """템플릿 추가"""
         self.templates.append(template)
         return self
 
-    def add_text(self, text: str) -> 'PromptComposer':
+    def add_text(self, text: str) -> "PromptComposer":
         """고정 텍스트 추가"""
         template = PromptTemplate(template=text, input_variables=[])
         self.templates.append(template)
@@ -414,15 +400,12 @@ class PromptComposer:
         for template in self.templates:
             # 필요한 변수만 전달
             required_vars = template.get_input_variables()
-            filtered_kwargs = {
-                k: v for k, v in kwargs.items()
-                if k in required_vars
-            }
+            filtered_kwargs = {k: v for k, v in kwargs.items() if k in required_vars}
             parts.append(template.format(**filtered_kwargs))
 
         return self.separator.join(parts)
 
-    def set_separator(self, separator: str) -> 'PromptComposer':
+    def set_separator(self, separator: str) -> "PromptComposer":
         """구분자 설정"""
         self.separator = separator
         return self
@@ -448,8 +431,9 @@ class PromptOptimizer:
         return f"{prompt}\n\nConstraints:\n{constraint_text}"
 
     @staticmethod
-    def add_output_format(prompt: str, format_description: str,
-                         example: Optional[str] = None) -> str:
+    def add_output_format(
+        prompt: str, format_description: str, example: Optional[str] = None
+    ) -> str:
         """출력 포맷 명시"""
         result = f"{prompt}\n\nOutput Format:\n{format_description}"
         if example:
@@ -478,58 +462,38 @@ class PromptOptimizer:
     def add_role_context(prompt: str, role: str, expertise: List[str]) -> str:
         """역할 컨텍스트 추가"""
         expertise_text = ", ".join(expertise)
-        role_prompt = (
-            f"You are a {role} with expertise in {expertise_text}.\n\n"
-            f"{prompt}"
-        )
+        role_prompt = f"You are a {role} with expertise in {expertise_text}.\n\n" f"{prompt}"
         return role_prompt
 
 
 # ===== 유틸리티 함수 =====
 
+
 def create_prompt_template(
-    template: str,
-    input_variables: Optional[List[str]] = None,
-    **kwargs
+    template: str, input_variables: Optional[List[str]] = None, **kwargs
 ) -> PromptTemplate:
     """간편한 PromptTemplate 생성"""
-    return PromptTemplate(
-        template=template,
-        input_variables=input_variables,
-        **kwargs
-    )
+    return PromptTemplate(template=template, input_variables=input_variables, **kwargs)
 
 
-def create_chat_template(
-    messages: List[Union[tuple, ChatMessage]]
-) -> ChatPromptTemplate:
+def create_chat_template(messages: List[Union[tuple, ChatMessage]]) -> ChatPromptTemplate:
     """간편한 ChatPromptTemplate 생성"""
     return ChatPromptTemplate.from_messages(messages)
 
 
 def create_few_shot_template(
-    examples: List[PromptExample],
-    example_format: str,
-    prefix: str = "",
-    suffix: str = "",
-    **kwargs
+    examples: List[PromptExample], example_format: str, prefix: str = "", suffix: str = "", **kwargs
 ) -> FewShotPromptTemplate:
     """간편한 FewShotPromptTemplate 생성"""
-    example_template = PromptTemplate(
-        template=example_format,
-        input_variables=["input", "output"]
-    )
+    example_template = PromptTemplate(template=example_format, input_variables=["input", "output"])
 
     return FewShotPromptTemplate(
-        examples=examples,
-        example_template=example_template,
-        prefix=prefix,
-        suffix=suffix,
-        **kwargs
+        examples=examples, example_template=example_template, prefix=prefix, suffix=suffix, **kwargs
     )
 
 
 # ===== 사전 정의된 템플릿 =====
+
 
 class PredefinedTemplates:
     """자주 사용되는 템플릿 모음"""
@@ -539,7 +503,7 @@ class PredefinedTemplates:
         """번역 템플릿"""
         return PromptTemplate(
             template="Translate the following text from {source_lang} to {target_lang}:\n\n{text}",
-            input_variables=["source_lang", "target_lang", "text"]
+            input_variables=["source_lang", "target_lang", "text"],
         )
 
     @staticmethod
@@ -547,24 +511,31 @@ class PredefinedTemplates:
         """요약 템플릿"""
         return PromptTemplate(
             template="Summarize the following text in {max_sentences} sentences:\n\n{text}",
-            input_variables=["text", "max_sentences"]
+            input_variables=["text", "max_sentences"],
         )
 
     @staticmethod
     def question_answering() -> ChatPromptTemplate:
         """QA 템플릿"""
-        return ChatPromptTemplate.from_messages([
-            ("system", "You are a helpful assistant that answers questions based on the given context."),
-            ("user", "Context: {context}\n\nQuestion: {question}\n\nAnswer:")
-        ])
+        return ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    "You are a helpful assistant that answers questions based on the given context.",
+                ),
+                ("user", "Context: {context}\n\nQuestion: {question}\n\nAnswer:"),
+            ]
+        )
 
     @staticmethod
     def code_generation() -> ChatPromptTemplate:
         """코드 생성 템플릿"""
-        return ChatPromptTemplate.from_messages([
-            ("system", "You are an expert {language} programmer."),
-            ("user", "Write {language} code to {task}.\n\nRequirements:\n{requirements}")
-        ])
+        return ChatPromptTemplate.from_messages(
+            [
+                ("system", "You are an expert {language} programmer."),
+                ("user", "Write {language} code to {task}.\n\nRequirements:\n{requirements}"),
+            ]
+        )
 
     @staticmethod
     def chain_of_thought() -> PromptTemplate:
@@ -578,27 +549,33 @@ class PredefinedTemplates:
                 "3. Then, let's work through the solution\n"
                 "4. Finally, let's verify our answer"
             ),
-            input_variables=["question"]
+            input_variables=["question"],
         )
 
     @staticmethod
     def react_agent() -> ChatPromptTemplate:
         """ReAct Agent 템플릿"""
-        return ChatPromptTemplate.from_messages([
-            ("system", (
-                "You are a helpful assistant that uses tools to answer questions.\n"
-                "Use the following format:\n\n"
-                "Thought: Consider what to do\n"
-                "Action: The action to take\n"
-                "Observation: The result of the action\n"
-                "... (repeat as needed)\n"
-                "Final Answer: The final answer"
-            )),
-            ("user", "{input}\n\nAvailable tools: {tools}")
-        ])
+        return ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    (
+                        "You are a helpful assistant that uses tools to answer questions.\n"
+                        "Use the following format:\n\n"
+                        "Thought: Consider what to do\n"
+                        "Action: The action to take\n"
+                        "Observation: The result of the action\n"
+                        "... (repeat as needed)\n"
+                        "Final Answer: The final answer"
+                    ),
+                ),
+                ("user", "{input}\n\nAvailable tools: {tools}"),
+            ]
+        )
 
 
 # ===== 예제 선택기 =====
+
 
 class ExampleSelector:
     """Few-shot 예제 선택 전략"""
@@ -608,7 +585,7 @@ class ExampleSelector:
         examples: List[PromptExample],
         input_data: Dict[str, Any],
         top_k: int = 3,
-        similarity_fn: Optional[Callable] = None
+        similarity_fn: Optional[Callable] = None,
     ) -> List[PromptExample]:
         """유사도 기반 예제 선택"""
         if similarity_fn is None:
@@ -640,10 +617,7 @@ class ExampleSelector:
         return [ex for _, ex in scored_examples[:top_k]]
 
     @staticmethod
-    def length_based(
-        examples: List[PromptExample],
-        max_length: int
-    ) -> List[PromptExample]:
+    def length_based(examples: List[PromptExample], max_length: int) -> List[PromptExample]:
         """길이 제한 기반 예제 선택"""
         selected = []
         current_length = 0
@@ -659,16 +633,15 @@ class ExampleSelector:
         return selected
 
     @staticmethod
-    def random(
-        examples: List[PromptExample],
-        k: int
-    ) -> List[PromptExample]:
+    def random(examples: List[PromptExample], k: int) -> List[PromptExample]:
         """랜덤 선택"""
         import random
+
         return random.sample(examples, min(k, len(examples)))
 
 
 # ===== 고급 기능 =====
+
 
 class PromptVersioning:
     """프롬프트 버전 관리"""
@@ -741,7 +714,7 @@ class PromptCache:
             "misses": self.misses,
             "hit_rate": hit_rate,
             "cache_size": len(self.cache),
-            "max_size": self.max_size
+            "max_size": self.max_size,
         }
 
     def clear(self) -> None:
@@ -755,11 +728,7 @@ class PromptCache:
 _global_cache = PromptCache()
 
 
-def get_cached_prompt(
-    template: BasePromptTemplate,
-    use_cache: bool = True,
-    **kwargs
-) -> str:
+def get_cached_prompt(template: BasePromptTemplate, use_cache: bool = True, **kwargs) -> str:
     """캐시를 사용한 프롬프트 생성"""
     if not use_cache:
         return template.format(**kwargs)

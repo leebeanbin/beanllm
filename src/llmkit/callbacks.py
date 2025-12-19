@@ -2,6 +2,7 @@
 Callbacks - 이벤트 핸들링 시스템
 LLM, Agent, Chain 실행 중 이벤트 처리
 """
+
 import time
 from abc import ABC
 from dataclasses import dataclass, field
@@ -12,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional
 @dataclass
 class CallbackEvent:
     """콜백 이벤트"""
+
     event_type: str  # start, end, error, token, etc.
     timestamp: datetime = field(default_factory=datetime.now)
     data: Dict[str, Any] = field(default_factory=dict)
@@ -24,129 +26,59 @@ class BaseCallback(ABC):
     모든 콜백은 이 클래스를 상속받아 구현
     """
 
-    def on_llm_start(
-        self,
-        model: str,
-        messages: List[Dict[str, Any]],
-        **kwargs
-    ):
+    def on_llm_start(self, model: str, messages: List[Dict[str, Any]], **kwargs):
         """LLM 호출 시작"""
         pass
 
-    def on_llm_end(
-        self,
-        model: str,
-        response: str,
-        tokens_used: Optional[int] = None,
-        **kwargs
-    ):
+    def on_llm_end(self, model: str, response: str, tokens_used: Optional[int] = None, **kwargs):
         """LLM 호출 종료"""
         pass
 
-    def on_llm_error(
-        self,
-        model: str,
-        error: Exception,
-        **kwargs
-    ):
+    def on_llm_error(self, model: str, error: Exception, **kwargs):
         """LLM 호출 에러"""
         pass
 
-    def on_llm_token(
-        self,
-        token: str,
-        **kwargs
-    ):
+    def on_llm_token(self, token: str, **kwargs):
         """LLM 토큰 생성 (스트리밍)"""
         pass
 
-    def on_agent_start(
-        self,
-        agent_name: str,
-        task: str,
-        **kwargs
-    ):
+    def on_agent_start(self, agent_name: str, task: str, **kwargs):
         """Agent 실행 시작"""
         pass
 
-    def on_agent_end(
-        self,
-        agent_name: str,
-        result: Any,
-        **kwargs
-    ):
+    def on_agent_end(self, agent_name: str, result: Any, **kwargs):
         """Agent 실행 종료"""
         pass
 
-    def on_agent_error(
-        self,
-        agent_name: str,
-        error: Exception,
-        **kwargs
-    ):
+    def on_agent_error(self, agent_name: str, error: Exception, **kwargs):
         """Agent 실행 에러"""
         pass
 
-    def on_agent_action(
-        self,
-        agent_name: str,
-        action: str,
-        **kwargs
-    ):
+    def on_agent_action(self, agent_name: str, action: str, **kwargs):
         """Agent 액션 (도구 사용 등)"""
         pass
 
-    def on_chain_start(
-        self,
-        chain_name: str,
-        inputs: Dict[str, Any],
-        **kwargs
-    ):
+    def on_chain_start(self, chain_name: str, inputs: Dict[str, Any], **kwargs):
         """Chain 실행 시작"""
         pass
 
-    def on_chain_end(
-        self,
-        chain_name: str,
-        outputs: Dict[str, Any],
-        **kwargs
-    ):
+    def on_chain_end(self, chain_name: str, outputs: Dict[str, Any], **kwargs):
         """Chain 실행 종료"""
         pass
 
-    def on_chain_error(
-        self,
-        chain_name: str,
-        error: Exception,
-        **kwargs
-    ):
+    def on_chain_error(self, chain_name: str, error: Exception, **kwargs):
         """Chain 실행 에러"""
         pass
 
-    def on_tool_start(
-        self,
-        tool_name: str,
-        inputs: Dict[str, Any],
-        **kwargs
-    ):
+    def on_tool_start(self, tool_name: str, inputs: Dict[str, Any], **kwargs):
         """도구 실행 시작"""
         pass
 
-    def on_tool_end(
-        self,
-        tool_name: str,
-        result: Any,
-        **kwargs
-    ):
+    def on_tool_end(self, tool_name: str, result: Any, **kwargs):
         """도구 실행 종료"""
         pass
 
-    def on_tool_error(
-        self,
-        tool_name: str,
-        error: Exception,
-        **kwargs
-    ):
+    def on_tool_error(self, tool_name: str, error: Exception, **kwargs):
         """도구 실행 에러"""
         pass
 
@@ -239,7 +171,7 @@ class CostTrackingCallback(BaseCallback):
         tokens_used: Optional[int] = None,
         input_tokens: Optional[int] = None,
         output_tokens: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ):
         """LLM 호출 종료 시 비용 계산"""
         # 토큰 수
@@ -250,19 +182,20 @@ class CostTrackingCallback(BaseCallback):
         cost = 0.0
         if model in self.PRICING:
             pricing = self.PRICING[model]
-            cost = (
-                (input_tok / 1_000_000) * pricing["input"] +
-                (output_tok / 1_000_000) * pricing["output"]
-            )
+            cost = (input_tok / 1_000_000) * pricing["input"] + (output_tok / 1_000_000) * pricing[
+                "output"
+            ]
 
         # 기록
-        self.calls.append({
-            "model": model,
-            "input_tokens": input_tok,
-            "output_tokens": output_tok,
-            "cost": cost,
-            "timestamp": datetime.now()
-        })
+        self.calls.append(
+            {
+                "model": model,
+                "input_tokens": input_tok,
+                "output_tokens": output_tok,
+                "cost": cost,
+                "timestamp": datetime.now(),
+            }
+        )
 
         self.total_input_tokens += input_tok
         self.total_output_tokens += output_tok
@@ -284,7 +217,7 @@ class CostTrackingCallback(BaseCallback):
             "total_output_tokens": self.total_output_tokens,
             "total_tokens": self.get_total_tokens(),
             "total_cost": self.total_cost,
-            "calls": self.calls
+            "calls": self.calls,
         }
 
     def reset(self):
@@ -326,12 +259,9 @@ class TimingCallback(BaseCallback):
         if call_id and call_id in self.start_times:
             duration = time.time() - self.start_times[call_id]
 
-            self.timings.append({
-                "type": "llm",
-                "model": model,
-                "duration": duration,
-                "timestamp": datetime.now()
-            })
+            self.timings.append(
+                {"type": "llm", "model": model, "duration": duration, "timestamp": datetime.now()}
+            )
 
             del self.start_times[call_id]
 
@@ -343,7 +273,7 @@ class TimingCallback(BaseCallback):
                 "total_time": 0.0,
                 "average_time": 0.0,
                 "min_time": 0.0,
-                "max_time": 0.0
+                "max_time": 0.0,
             }
 
         durations = [t["duration"] for t in self.timings]
@@ -354,7 +284,7 @@ class TimingCallback(BaseCallback):
             "average_time": sum(durations) / len(durations),
             "min_time": min(durations),
             "max_time": max(durations),
-            "timings": self.timings
+            "timings": self.timings,
         }
 
     def reset(self):
@@ -377,11 +307,7 @@ class StreamingCallback(BaseCallback):
         client = Client(callbacks=[callback])
     """
 
-    def __init__(
-        self,
-        on_token: Optional[Callable[[str], None]] = None,
-        buffer_size: int = 1
-    ):
+    def __init__(self, on_token: Optional[Callable[[str], None]] = None, buffer_size: int = 1):
         """
         Args:
             on_token: 토큰 처리 함수
@@ -430,7 +356,7 @@ class FunctionCallback(BaseCallback):
         on_end: Optional[Callable] = None,
         on_error: Optional[Callable] = None,
         on_token: Optional[Callable] = None,
-        **custom_handlers
+        **custom_handlers,
     ):
         """
         Args:
@@ -445,7 +371,7 @@ class FunctionCallback(BaseCallback):
             "end": on_end,
             "error": on_error,
             "token": on_token,
-            **custom_handlers
+            **custom_handlers,
         }
 
     def on_llm_start(self, model: str, messages: List[Dict[str, Any]], **kwargs):

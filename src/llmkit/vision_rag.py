@@ -2,6 +2,7 @@
 Vision RAG
 이미지를 포함한 멀티모달 RAG 시스템
 """
+
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -44,7 +45,7 @@ Answer:"""
         vector_store,
         vision_embedding: Optional[Union[CLIPEmbedding, MultimodalEmbedding]] = None,
         llm: Optional[Client] = None,
-        prompt_template: Optional[str] = None
+        prompt_template: Optional[str] = None,
     ):
         """
         Args:
@@ -64,8 +65,8 @@ Answer:"""
         source: Union[str, Path],
         generate_captions: bool = True,
         llm_model: str = "gpt-4o",
-        **kwargs
-    ) -> 'VisionRAG':
+        **kwargs,
+    ) -> "VisionRAG":
         """
         이미지에서 직접 Vision RAG 생성
 
@@ -105,19 +106,9 @@ Answer:"""
         # 4. LLM
         llm = Client(model=llm_model)
 
-        return cls(
-            vector_store=vector_store,
-            vision_embedding=vision_embed,
-            llm=llm,
-            **kwargs
-        )
+        return cls(vector_store=vector_store, vision_embedding=vision_embed, llm=llm, **kwargs)
 
-    def retrieve(
-        self,
-        query: str,
-        k: int = 4,
-        **kwargs
-    ) -> List[VectorSearchResult]:
+    def retrieve(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """
         이미지 검색
 
@@ -131,9 +122,7 @@ Answer:"""
         return self.vector_store.similarity_search(query, k=k, **kwargs)
 
     def _build_context(
-        self,
-        results: List[VectorSearchResult],
-        include_images: bool = True
+        self, results: List[VectorSearchResult], include_images: bool = True
     ) -> Union[str, List[Dict[str, Any]]]:
         """
         검색 결과에서 컨텍스트 생성
@@ -163,23 +152,15 @@ Answer:"""
                 # 이미지 + 캡션
                 message = {
                     "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{doc.get_image_base64()}"
-                    }
+                    "image_url": {"url": f"data:image/jpeg;base64,{doc.get_image_base64()}"},
                 }
                 context_messages.append(message)
 
                 if doc.caption:
-                    context_messages.append({
-                        "type": "text",
-                        "text": f"[Image {i}] {doc.caption}"
-                    })
+                    context_messages.append({"type": "text", "text": f"[Image {i}] {doc.caption}"})
             else:
                 # 텍스트만
-                context_messages.append({
-                    "type": "text",
-                    "text": f"[{i}] {doc.content}"
-                })
+                context_messages.append({"type": "text", "text": f"[{i}] {doc.content}"})
 
         return context_messages
 
@@ -189,7 +170,7 @@ Answer:"""
         k: int = 4,
         include_sources: bool = False,
         include_images: bool = True,
-        **kwargs
+        **kwargs,
     ) -> Union[str, tuple]:
         """
         질문에 답변 (이미지 포함)
@@ -223,20 +204,15 @@ Answer:"""
             messages = [
                 {
                     "role": "user",
-                    "content": [
-                        {"type": "text", "text": f"Question: {question}\n\nContext:"}
-                    ] + context + [
-                        {"type": "text", "text": "\nAnswer:"}
-                    ]
+                    "content": [{"type": "text", "text": f"Question: {question}\n\nContext:"}]
+                    + context
+                    + [{"type": "text", "text": "\nAnswer:"}],
                 }
             ]
             response = self.llm.chat(messages)
         else:
             # 텍스트만
-            prompt = self.prompt_template.format(
-                context=context,
-                question=question
-            )
+            prompt = self.prompt_template.format(context=context, question=question)
             response = self.llm.chat(prompt)
 
         answer = response.content
@@ -246,12 +222,7 @@ Answer:"""
             return answer, results
         return answer
 
-    def batch_query(
-        self,
-        questions: List[str],
-        k: int = 4,
-        **kwargs
-    ) -> List[str]:
+    def batch_query(self, questions: List[str], k: int = 4, **kwargs) -> List[str]:
         """
         여러 질문에 대해 배치 답변
 
@@ -292,8 +263,8 @@ class MultimodalRAG(VisionRAG):
         sources: List[Union[str, Path]],
         generate_captions: bool = True,
         llm_model: str = "gpt-4o",
-        **kwargs
-    ) -> 'MultimodalRAG':
+        **kwargs,
+    ) -> "MultimodalRAG":
         """
         여러 소스에서 멀티모달 RAG 생성
 
@@ -335,7 +306,7 @@ class MultimodalRAG(VisionRAG):
 
             # 개별 파일
             else:
-                if source_path.suffix.lower() == '.pdf':
+                if source_path.suffix.lower() == ".pdf":
                     # PDF with images
                     pdf_loader = PDFWithImagesLoader()
                     docs = pdf_loader.load(source_path)
@@ -361,12 +332,7 @@ class MultimodalRAG(VisionRAG):
         # LLM
         llm = Client(model=llm_model)
 
-        return cls(
-            vector_store=vector_store,
-            vision_embedding=multimodal_embed,
-            llm=llm,
-            **kwargs
-        )
+        return cls(vector_store=vector_store, vision_embedding=multimodal_embed, llm=llm, **kwargs)
 
 
 # 편의 함수
@@ -374,7 +340,7 @@ def create_vision_rag(
     source: Union[str, Path, List[Union[str, Path]]],
     generate_captions: bool = True,
     llm_model: str = "gpt-4o",
-    **kwargs
+    **kwargs,
 ) -> Union[VisionRAG, MultimodalRAG]:
     """
     Vision RAG 생성 (간편 함수)
