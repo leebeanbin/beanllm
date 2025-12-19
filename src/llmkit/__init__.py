@@ -3,351 +3,320 @@ llmkit - Unified toolkit for managing and using multiple LLM providers
 환경변수 기반 LLM 모델 활성화 및 관리 패키지
 """
 
-from .registry import ModelRegistry, get_model_registry as get_registry
-from .provider_factory import ProviderFactory
-from .model_info import ModelCapabilityInfo, ProviderInfo
-from .hybrid_manager import HybridModelManager, create_hybrid_manager
-from .inferrer import MetadataInferrer
-from .scanner import ModelScanner
-from .client import Client, create_client, ChatResponse
 from .adapter import ParameterAdapter, adapt_parameters
-from .streaming import (
-    stream_response,
-    stream_print,
-    stream_collect,
-    pretty_stream,
-    StreamResponse,
-    StreamStats,
-    StreamBuffer
+from .agent import Agent, AgentResult, AgentStep, create_agent
+from .audio_speech import (
+    AudioRAG,
+    AudioSegment,
+    TextToSpeech,
+    TranscriptionResult,
+    TranscriptionSegment,
+    TTSProvider,
+    WhisperModel,
+    WhisperSTT,
+    text_to_speech,
+    transcribe_audio,
 )
-from .tracer import (
-    Tracer,
-    get_tracer,
-    enable_tracing,
-    Trace,
-    TraceSpan
-)
-from .tools import (
-    Tool,
-    ToolParameter,
-    ToolRegistry,
-    register_tool,
-    get_tool,
-    get_all_tools
-)
-from .agent import (
-    Agent,
-    AgentStep,
-    AgentResult,
-    create_agent
-)
-from .memory import (
-    BaseMemory,
-    BufferMemory,
-    WindowMemory,
-    TokenMemory,
-    SummaryMemory,
-    ConversationMemory,
-    Message,
-    create_memory
+from .callbacks import (
+    BaseCallback,
+    CallbackEvent,
+    CallbackManager,
+    CostTrackingCallback,
+    FunctionCallback,
+    LoggingCallback,
+    StreamingCallback,
+    TimingCallback,
+    create_callback_manager,
 )
 from .chain import (
     Chain,
-    PromptChain,
-    SequentialChain,
-    ParallelChain,
     ChainBuilder,
     ChainResult,
-    create_chain
+    ParallelChain,
+    PromptChain,
+    SequentialChain,
+    create_chain,
 )
-from .output_parsers import (
-    BaseOutputParser,
-    PydanticOutputParser,
-    JSONOutputParser,
-    CommaSeparatedListOutputParser,
-    NumberedListOutputParser,
-    DatetimeOutputParser,
-    EnumOutputParser,
-    BooleanOutputParser,
-    RetryOutputParser,
-    OutputParserException,
-    parse_json,
-    parse_list,
-    parse_bool,
-)
+from .client import ChatResponse, Client, create_client
 from .document_loaders import (
-    Document,
     BaseDocumentLoader,
-    TextLoader,
-    PDFLoader,
     CSVLoader,
     DirectoryLoader,
+    Document,
     DocumentLoader,
-    load_documents
-)
-from .text_splitters import (
-    BaseTextSplitter,
-    CharacterTextSplitter,
-    RecursiveCharacterTextSplitter,
-    TokenTextSplitter,
-    MarkdownHeaderTextSplitter,
-    TextSplitter,
-    split_documents
+    PDFLoader,
+    TextLoader,
+    load_documents,
 )
 from .embeddings import (
     BaseEmbedding,
-    OpenAIEmbedding,
-    GeminiEmbedding,
-    OllamaEmbedding,
-    VoyageEmbedding,
-    JinaEmbedding,
-    MistralEmbedding,
     CohereEmbedding,
     Embedding,
+    EmbeddingCache,
     EmbeddingResult,
+    GeminiEmbedding,
+    JinaEmbedding,
+    MistralEmbedding,
+    OllamaEmbedding,
+    OpenAIEmbedding,
+    VoyageEmbedding,
     embed,
     embed_sync,
     # Advanced features
     find_hard_negatives,
     mmr_search,
     query_expansion,
-    EmbeddingCache
 )
-from .vector_stores import (
-    BaseVectorStore,
-    ChromaVectorStore,
-    PineconeVectorStore,
-    FAISSVectorStore,
-    QdrantVectorStore,
-    WeaviateVectorStore,
-    VectorStore,
-    VectorStoreBuilder,
-    VectorSearchResult,
-    create_vector_store,
-    from_documents
+from .error_handling import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    CircuitBreakerError,
+    CircuitState,
+    ErrorHandler,
+    ErrorHandlerConfig,
+    ErrorRecord,
+    ErrorTracker,
+    FallbackHandler,
+    LLMKitError,
+    MaxRetriesExceededError,
+    ProviderError,
+    RateLimitConfig,
+    RateLimiter,
+    RateLimitError,
+    RetryConfig,
+    RetryHandler,
+    RetryStrategy,
+    TimeoutError,
+    ValidationError,
+    circuit_breaker,
+    fallback,
+    get_error_tracker,
+    rate_limit,
+    retry,
+    timeout,
+    with_error_handling,
 )
+from .evaluation import (
+    AnswerRelevanceMetric,
+    BaseMetric,
+    BatchEvaluationResult,
+    BLEUMetric,
+    ContextPrecisionMetric,
+    CustomMetric,
+    EvaluationResult,
+    Evaluator,
+    ExactMatchMetric,
+    F1ScoreMetric,
+    FaithfulnessMetric,
+    LLMJudgeMetric,
+    MetricType,
+    ROUGEMetric,
+    SemanticSimilarityMetric,
+    create_evaluator,
+    evaluate_rag,
+    evaluate_text,
+)
+from .finetuning import (
+    BaseFineTuningProvider,
+    DatasetBuilder,
+    DataValidator,
+    FineTuningConfig,
+    FineTuningCostEstimator,
+    FineTuningJob,
+    FineTuningManager,
+    FineTuningMetrics,
+    FineTuningStatus,
+    ModelProvider,
+    OpenAIFineTuningProvider,
+    TrainingExample,
+    create_finetuning_provider,
+    quick_finetune,
+)
+from .graph import (
+    AgentNode,
+    BaseNode,
+    ConditionalNode,
+    FunctionNode,
+    GraderNode,
+    Graph,
+    GraphState,
+    LLMNode,
+    LoopNode,
+    NodeCache,
+    ParallelNode,
+    create_simple_graph,
+)
+from .hybrid_manager import HybridModelManager, create_hybrid_manager
+from .inferrer import MetadataInferrer
+from .memory import (
+    BaseMemory,
+    BufferMemory,
+    ConversationMemory,
+    Message,
+    SummaryMemory,
+    TokenMemory,
+    WindowMemory,
+    create_memory,
+)
+from .ml_models import (
+    BaseMLModel,
+    MLModelFactory,
+    PyTorchModel,
+    SklearnModel,
+    TensorFlowModel,
+    load_ml_model,
+)
+from .model_info import ModelCapabilityInfo, ProviderInfo
+from .multi_agent import (
+    AgentMessage,
+    CommunicationBus,
+    CoordinationStrategy,
+    DebateStrategy,
+    HierarchicalStrategy,
+    MessageType,
+    MultiAgentCoordinator,
+    ParallelStrategy,
+    SequentialStrategy,
+    create_coordinator,
+    quick_debate,
+)
+from .output_parsers import (
+    BaseOutputParser,
+    BooleanOutputParser,
+    CommaSeparatedListOutputParser,
+    DatetimeOutputParser,
+    EnumOutputParser,
+    JSONOutputParser,
+    NumberedListOutputParser,
+    OutputParserException,
+    PydanticOutputParser,
+    RetryOutputParser,
+    parse_bool,
+    parse_json,
+    parse_list,
+)
+from .prompts import (
+    BasePromptTemplate,
+    ChatMessage,
+    ChatPromptTemplate,
+    ExampleSelector,
+    FewShotPromptTemplate,
+    PredefinedTemplates,
+    PromptCache,
+    PromptComposer,
+    PromptExample,
+    PromptOptimizer,
+    PromptTemplate,
+    PromptVersioning,
+    SystemMessageTemplate,
+    TemplateFormat,
+    clear_cache,
+    create_chat_template,
+    create_few_shot_template,
+    create_prompt_template,
+    get_cache_stats,
+    get_cached_prompt,
+)
+from .provider_factory import ProviderFactory
+from .rag_chain import RAG, RAGBuilder, RAGChain, RAGResponse, create_rag
 from .rag_debug import (
-    RAGDebugger,
     EmbeddingInfo,
+    RAGDebugger,
     SimilarityInfo,
-    inspect_embedding,
     compare_texts,
+    inspect_embedding,
+    similarity_heatmap,
     validate_pipeline,
     visualize_embeddings_2d,
-    similarity_heatmap
 )
-from .rag_chain import (
-    RAGChain,
-    RAGBuilder,
-    RAGResponse,
-    create_rag,
-    RAG
-)
+from .registry import ModelRegistry
+from .registry import get_model_registry as get_registry
+from .scanner import ModelScanner
 from .state_graph import (
-    StateGraph,
     END,
     Checkpoint,
     GraphConfig,
     GraphExecution,
     NodeExecution,
-    create_state_graph
+    StateGraph,
+    create_state_graph,
 )
-from .callbacks import (
-    BaseCallback,
-    LoggingCallback,
-    CostTrackingCallback,
-    TimingCallback,
-    StreamingCallback,
-    FunctionCallback,
-    CallbackManager,
-    CallbackEvent,
-    create_callback_manager
+from .streaming import (
+    StreamBuffer,
+    StreamResponse,
+    StreamStats,
+    pretty_stream,
+    stream_collect,
+    stream_print,
+    stream_response,
 )
+from .text_splitters import (
+    BaseTextSplitter,
+    CharacterTextSplitter,
+    MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
+    TextSplitter,
+    TokenTextSplitter,
+    split_documents,
+)
+from .token_counter import (
+    CostEstimate,
+    CostEstimator,
+    ModelContextWindow,
+    ModelPricing,
+    TokenCounter,
+    count_message_tokens,
+    count_tokens,
+    estimate_cost,
+    get_cheapest_model,
+    get_context_window,
+)
+from .tools import Tool, ToolParameter, ToolRegistry, get_all_tools, get_tool, register_tool
+from .tools_advanced import (
+    APIConfig,
+    APIProtocol,
+    ExternalAPITool,
+    SchemaGenerator,
+    ToolChain,
+    ToolValidator,
+    default_registry,
+    tool,
+)
+from .tools_advanced import ToolRegistry as AdvancedToolRegistry
+from .tracer import Trace, Tracer, TraceSpan, enable_tracing, get_tracer
+from .vector_stores import (
+    BaseVectorStore,
+    ChromaVectorStore,
+    FAISSVectorStore,
+    PineconeVectorStore,
+    QdrantVectorStore,
+    VectorSearchResult,
+    VectorStore,
+    VectorStoreBuilder,
+    WeaviateVectorStore,
+    create_vector_store,
+    from_documents,
+)
+from .vision_embeddings import CLIPEmbedding, MultimodalEmbedding, create_vision_embedding
 from .vision_loaders import (
     ImageDocument,
     ImageLoader,
     PDFWithImagesLoader,
     load_images,
-    load_pdf_with_images
+    load_pdf_with_images,
 )
-from .vision_embeddings import (
-    CLIPEmbedding,
-    MultimodalEmbedding,
-    create_vision_embedding
-)
-from .vision_rag import (
-    VisionRAG,
-    MultimodalRAG,
-    create_vision_rag
-)
-from .ml_models import (
-    BaseMLModel,
-    TensorFlowModel,
-    PyTorchModel,
-    SklearnModel,
-    MLModelFactory,
-    load_ml_model
-)
-from .graph import (
-    GraphState,
-    NodeCache,
-    BaseNode,
-    FunctionNode,
-    AgentNode,
-    LLMNode,
-    GraderNode,
-    ConditionalNode,
-    LoopNode,
-    ParallelNode,
-    Graph,
-    create_simple_graph
-)
-from .multi_agent import (
-    MessageType,
-    AgentMessage,
-    CommunicationBus,
-    CoordinationStrategy,
-    SequentialStrategy,
-    ParallelStrategy,
-    HierarchicalStrategy,
-    DebateStrategy,
-    MultiAgentCoordinator,
-    create_coordinator,
-    quick_debate
-)
-from .tools_advanced import (
-    SchemaGenerator,
-    ToolValidator,
-    APIProtocol,
-    APIConfig,
-    ExternalAPITool,
-    ToolChain,
-    tool,
-    ToolRegistry as AdvancedToolRegistry,
-    default_registry
-)
+from .vision_rag import MultimodalRAG, VisionRAG, create_vision_rag
 from .web_search import (
-    SearchResult,
-    SearchResponse,
-    SearchEngine,
     BaseSearchEngine,
-    GoogleSearch,
     BingSearch,
     DuckDuckGoSearch,
+    GoogleSearch,
+    SearchEngine,
+    SearchResponse,
+    SearchResult,
     WebScraper,
     WebSearch,
-    search_web
-)
-from .audio_speech import (
-    AudioSegment,
-    TranscriptionSegment,
-    TranscriptionResult,
-    WhisperModel,
-    WhisperSTT,
-    TTSProvider,
-    TextToSpeech,
-    AudioRAG,
-    transcribe_audio,
-    text_to_speech
-)
-from .token_counter import (
-    TokenCounter,
-    CostEstimator,
-    CostEstimate,
-    ModelPricing,
-    ModelContextWindow,
-    count_tokens,
-    count_message_tokens,
-    estimate_cost,
-    get_cheapest_model,
-    get_context_window
-)
-from .prompts import (
-    TemplateFormat,
-    PromptExample,
-    BasePromptTemplate,
-    PromptTemplate,
-    FewShotPromptTemplate,
-    ChatMessage,
-    ChatPromptTemplate,
-    SystemMessageTemplate,
-    PromptComposer,
-    PromptOptimizer,
-    PredefinedTemplates,
-    ExampleSelector,
-    PromptVersioning,
-    PromptCache,
-    create_prompt_template,
-    create_chat_template,
-    create_few_shot_template,
-    get_cached_prompt,
-    get_cache_stats,
-    clear_cache
-)
-from .evaluation import (
-    MetricType,
-    EvaluationResult,
-    BatchEvaluationResult,
-    BaseMetric,
-    ExactMatchMetric,
-    F1ScoreMetric,
-    BLEUMetric,
-    ROUGEMetric,
-    SemanticSimilarityMetric,
-    LLMJudgeMetric,
-    AnswerRelevanceMetric,
-    ContextPrecisionMetric,
-    FaithfulnessMetric,
-    CustomMetric,
-    Evaluator,
-    evaluate_text,
-    evaluate_rag,
-    create_evaluator
-)
-from .finetuning import (
-    FineTuningStatus,
-    ModelProvider,
-    TrainingExample,
-    FineTuningConfig,
-    FineTuningJob,
-    FineTuningMetrics,
-    BaseFineTuningProvider,
-    OpenAIFineTuningProvider,
-    DatasetBuilder,
-    DataValidator,
-    FineTuningManager,
-    FineTuningCostEstimator,
-    create_finetuning_provider,
-    quick_finetune
-)
-from .error_handling import (
-    LLMKitError,
-    ProviderError,
-    RateLimitError,
-    TimeoutError,
-    ValidationError,
-    CircuitBreakerError,
-    MaxRetriesExceededError,
-    RetryStrategy,
-    RetryConfig,
-    RetryHandler,
-    retry,
-    CircuitState,
-    CircuitBreakerConfig,
-    CircuitBreaker,
-    circuit_breaker,
-    RateLimitConfig,
-    RateLimiter,
-    rate_limit,
-    FallbackHandler,
-    fallback,
-    ErrorRecord,
-    ErrorTracker,
-    get_error_tracker,
-    ErrorHandlerConfig,
-    ErrorHandler,
-    with_error_handling,
-    timeout
+    search_web,
 )
 
 __version__ = "0.1.0"
@@ -686,21 +655,20 @@ def _check_optional_dependencies():
     
     # UI 모듈 import (에러 발생해도 import는 성공)
     try:
-        from .ui import InfoPattern, CommandBlock, get_console
+        from .ui import InfoPattern
         use_ui = True
     except ImportError:
         use_ui = False
 
     missing = []
 
-    try:
-        import google.generativeai
-    except ImportError:
+    # 선택적 의존성 체크 (import 없이)
+    from importlib.util import find_spec
+
+    if find_spec("google.generativeai") is None:
         missing.append("gemini")
 
-    try:
-        import ollama
-    except ImportError:
+    if find_spec("ollama") is None:
         missing.append("ollama")
 
     if missing and not hasattr(sys, '_llmkit_install_warned'):
@@ -729,9 +697,9 @@ def _check_optional_dependencies():
             print("\nℹ️  Some provider SDKs are not installed:")
             for pkg in missing:
                 if pkg == "gemini":
-                    print(f"  • Gemini: pip install llmkit[gemini]")
+                    print("  • Gemini: pip install llmkit[gemini]")
                 elif pkg == "ollama":
-                    print(f"  • Ollama: pip install llmkit[ollama]")
+                    print("  • Ollama: pip install llmkit[ollama]")
             print("\nOr install all providers:")
             print("  pip install llmkit[all]")
             print("\n" + "="*60 + "\n")
@@ -740,14 +708,13 @@ def _check_optional_dependencies():
 def _print_welcome_banner():
     """환영 배너 출력 (선택적, 환경변수로 제어) - 디자인 시스템 적용"""
     import os
-    import sys
-    
+
     # 환경변수로 제어 (기본값: False)
     if not os.getenv("LLMKIT_SHOW_BANNER", "false").lower() == "true":
         return
     
     try:
-        from .ui import print_logo, OnboardingPattern
+        from .ui import OnboardingPattern, print_logo
     except ImportError:
         return  # UI 없으면 출력 안 함
     
