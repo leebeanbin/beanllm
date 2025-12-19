@@ -31,6 +31,10 @@ dependencies = [
     "openai>=1.0.0",  # OpenAI SDK (기본 포함)
     "anthropic>=0.18.0",  # Anthropic Claude SDK (기본 포함)
     "rich>=13.0.0",  # 터미널 UI
+    "beautifulsoup4>=4.12.0",  # Web scraping
+    "requests>=2.31.0",  # HTTP requests
+    "numpy>=1.24.0",  # Numerical operations
+    "tiktoken>=0.5.0",  # Token counting
 ]
 
 # 선택적 의존성
@@ -59,7 +63,6 @@ dev = [
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
-    "numpy>=1.24.0",  # For tests
 ]
 
 [project.urls]
