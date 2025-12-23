@@ -41,7 +41,8 @@ class AudioHandler(BaseHandler):
         Args:
             audio_service: Audio 서비스 (인터페이스에 의존 - DIP)
         """
-        self._audio_service = audio_service
+        super().__init__(audio_service)
+        self._audio_service = audio_service  # BaseHandler._service와 동일하지만 명시적으로 유지
 
     @log_handler_call
     @handle_errors(error_message="Audio transcription failed")
@@ -89,7 +90,7 @@ class AudioHandler(BaseHandler):
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._audio_service.transcribe(request)
+        return await self._call_service("transcribe", request)
 
     @log_handler_call
     @handle_errors(error_message="Audio synthesis failed")
@@ -195,7 +196,7 @@ class AudioHandler(BaseHandler):
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._audio_service.add_audio(request)
+        return await self._call_service("add_audio", request)
 
     @log_handler_call
     @handle_errors(error_message="Audio RAG search failed")
@@ -231,7 +232,7 @@ class AudioHandler(BaseHandler):
         request = AudioRequest(query=query, top_k=top_k, extra_params=kwargs)
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._audio_service.search_audio(request)
+        return await self._call_service("search_audio", request)
 
     @log_handler_call
     @handle_errors(error_message="Audio RAG get_transcription failed")
@@ -288,4 +289,4 @@ class AudioHandler(BaseHandler):
         request = AudioRequest(extra_params=kwargs)
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._audio_service.list_audios(request)
+        return await self._call_service("list_audios", request)

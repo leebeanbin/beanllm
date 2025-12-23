@@ -78,13 +78,13 @@ Answer:"""
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..utils.di_container import get_container
         from ..service.impl.vision_rag_service_impl import VisionRAGServiceImpl
-        
+
         container = get_container()
         service_factory = container.get_service_factory(vector_store=self.vector_store)
-        
+
         # ChatService 생성
         chat_service = service_factory.create_chat_service()
-        
+
         # VisionRAGService 생성 (커스텀 의존성)
         vision_rag_service = VisionRAGServiceImpl(
             vector_store=self.vector_store,

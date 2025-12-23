@@ -42,10 +42,10 @@ class EvaluatorFacade:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
         from ..handler.evaluation_handler import EvaluationHandler
-        
+
         # EvaluationService 생성
         evaluation_service = EvaluationServiceImpl()
-        
+
         # EvaluationHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._evaluation_handler = EvaluationHandler(evaluation_service)
 
@@ -100,7 +100,7 @@ def evaluate_text(
     # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
     from ..handler.evaluation_handler import EvaluationHandler
-    
+
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 
@@ -135,7 +135,7 @@ def evaluate_rag(
     # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
     from ..handler.evaluation_handler import EvaluationHandler
-    
+
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 
@@ -157,7 +157,7 @@ def create_evaluator(metric_names: List[str]) -> Evaluator:
     # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
     from ..handler.evaluation_handler import EvaluationHandler
-    
+
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 

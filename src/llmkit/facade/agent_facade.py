@@ -96,10 +96,10 @@ class Agent:
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..utils.di_container import get_container
-        
+
         container = get_container()
         handler_factory = container.handler_factory
-        
+
         # AgentHandler 생성
         self._agent_handler = handler_factory.create_agent_handler()
 
