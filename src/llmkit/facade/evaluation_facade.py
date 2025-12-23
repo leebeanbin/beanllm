@@ -10,12 +10,7 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, List, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.evaluation.results import BatchEvaluationResult
-from ..handler.evaluation_handler import EvaluationHandler
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
-from .client_facade import SourceProviderFactoryAdapter
 
 if TYPE_CHECKING:
     from ..domain.evaluation.base_metric import BaseMetric
@@ -44,23 +39,14 @@ class EvaluatorFacade:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # EvaluationService 생성
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
-
+        from ..handler.evaluation_handler import EvaluationHandler
+        
+        # EvaluationService 생성
         evaluation_service = EvaluationServiceImpl()
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
-        # EvaluationHandler 생성 (직접 생성)
-
+        
+        # EvaluationHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._evaluation_handler = EvaluationHandler(evaluation_service)
 
     def add_metric(self, metric: "BaseMetric") -> "EvaluatorFacade":
@@ -111,15 +97,11 @@ def evaluate_text(
         reference: 참조 텍스트
         metrics: 사용할 메트릭 이름 리스트 (기본: ["bleu", "rouge", "f1"])
     """
-    # Handler/Service 초기화
-    provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-    service_factory = ServiceFactory(provider_factory=provider_factory)
-
+    # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
-
+    from ..handler.evaluation_handler import EvaluationHandler
+    
     evaluation_service = EvaluationServiceImpl()
-    handler_factory = HandlerFactory(service_factory)
-
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
@@ -150,15 +132,11 @@ def evaluate_rag(
         contexts: 검색된 컨텍스트
         ground_truth: 정답 (있는 경우)
     """
-    # Handler/Service 초기화
-    provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-    service_factory = ServiceFactory(provider_factory=provider_factory)
-
+    # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
-
+    from ..handler.evaluation_handler import EvaluationHandler
+    
     evaluation_service = EvaluationServiceImpl()
-    handler_factory = HandlerFactory(service_factory)
-
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
@@ -176,15 +154,11 @@ def evaluate_rag(
 
 def create_evaluator(metric_names: List[str]) -> Evaluator:
     """간편한 Evaluator 생성"""
-    # Handler/Service 초기화
-    provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-    service_factory = ServiceFactory(provider_factory=provider_factory)
-
+    # Handler/Service 초기화 - DI Container 사용
     from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
-
+    from ..handler.evaluation_handler import EvaluationHandler
+    
     evaluation_service = EvaluationServiceImpl()
-    handler_factory = HandlerFactory(service_factory)
-
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용

@@ -29,12 +29,13 @@ from ..dto.response.finetuning_response import (
     StartTrainingResponse,
 )
 from ..service.finetuning_service import IFinetuningService
+from .base_handler import BaseHandler
 
 if TYPE_CHECKING:
     from ..domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample
 
 
-class FinetuningHandler:
+class FinetuningHandler(BaseHandler):
     """파인튜닝 요청 핸들러"""
 
     def __init__(self, finetuning_service: IFinetuningService):
@@ -42,7 +43,8 @@ class FinetuningHandler:
         Args:
             finetuning_service: 파인튜닝 서비스
         """
-        self._finetuning_service = finetuning_service
+        super().__init__(finetuning_service)
+        self._finetuning_service = finetuning_service  # BaseHandler._service와 동일하지만 명시적으로 유지
 
     @handle_errors(error_message="Prepare data failed")
     @validate_input(

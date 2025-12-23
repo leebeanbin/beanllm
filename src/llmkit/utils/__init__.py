@@ -20,6 +20,9 @@ from .callbacks import (
 from .cli import main
 from .config import Config, EnvConfig
 
+# DI Container
+from .di_container import get_container
+
 # Error Handling
 from .error_handling import (
     CircuitBreaker,
@@ -265,6 +268,8 @@ __all__ = [
     "create_callback_manager",
     # CLI
     "main",
+    # DI Container
+    "get_container",
     # Evaluation Dashboard
     "EvaluationDashboard",
     # RAG Debug - 지연 import로 제공

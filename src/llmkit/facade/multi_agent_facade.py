@@ -9,12 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.multi_agent import AgentMessage, CommunicationBus, MessageType
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
 from ..utils.logger import get_logger
-from .client_facade import SourceProviderFactoryAdapter
 
 logger = get_logger(__name__)
 
@@ -72,11 +68,11 @@ class MultiAgentCoordinator:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         self._multi_agent_handler = handler_factory.create_multi_agent_handler()
 
     def _on_message(self, message: AgentMessage):

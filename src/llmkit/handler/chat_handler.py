@@ -18,9 +18,10 @@ from ..decorators.validation import validate_input
 from ..dto.request.chat_request import ChatRequest
 from ..dto.response.chat_response import ChatResponse
 from ..service.chat_service import IChatService
+from .base_handler import BaseHandler
 
 
-class ChatHandler:
+class ChatHandler(BaseHandler):
     """
     채팅 요청 처리 Handler
 

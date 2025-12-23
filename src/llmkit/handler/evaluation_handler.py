@@ -20,13 +20,14 @@ from ..dto.response.evaluation_response import (
     EvaluationResponse,
 )
 from ..service.evaluation_service import IEvaluationService
+from .base_handler import BaseHandler
 
 if TYPE_CHECKING:
     from ..domain.evaluation.base_metric import BaseMetric
     from ..domain.evaluation.evaluator import Evaluator
 
 
-class EvaluationHandler:
+class EvaluationHandler(BaseHandler):
     """평가 요청 핸들러"""
 
     def __init__(self, evaluation_service: IEvaluationService):
@@ -34,7 +35,8 @@ class EvaluationHandler:
         Args:
             evaluation_service: 평가 서비스
         """
-        self._evaluation_service = evaluation_service
+        super().__init__(evaluation_service)
+        self._evaluation_service = evaluation_service  # BaseHandler._service와 동일하지만 명시적으로 유지
 
     @handle_errors(error_message="Evaluation failed")
     @validate_input(
@@ -123,15 +125,6 @@ class EvaluationHandler:
         return await self._evaluation_service.evaluate_rag(request)
 
     @handle_errors(error_message="Create evaluator failed")
-    @validate_input(
-        required_params=["metric_names"],
-        param_types={"metric_names": list},
-    )
-    async def handle_create_evaluator(self, metric_names: List[str]) -> "Evaluator":
-        """Evaluator 생성 처리"""
-        request = CreateEvaluatorRequest(metric_names=metric_names)
-        return await self._evaluation_service.create_evaluator(request)
-
     @validate_input(
         required_params=["metric_names"],
         param_types={"metric_names": list},

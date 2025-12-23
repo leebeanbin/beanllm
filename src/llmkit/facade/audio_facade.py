@@ -14,10 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.audio import AudioSegment, TranscriptionResult, TTSProvider, WhisperModel
 from ..handler.audio_handler import AudioHandler
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
 from ..utils.logger import get_logger
-from .client_facade import SourceProviderFactoryAdapter
 
 if TYPE_CHECKING:
     from ..embeddings import BaseEmbedding
@@ -61,27 +58,21 @@ class WhisperSTT:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # AudioService 생성
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
         from ..service.impl.audio_service_impl import AudioServiceImpl
-
+        
+        container = get_container()
+        
+        # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             whisper_model=self.model_name,
             whisper_device=self.device,
             whisper_language=self.language,
         )
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
-        # AudioHandler 생성 (직접 생성, ServiceFactory에 audio_service가 없으므로)
-
+        
+        # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
+        from ..handler.audio_handler import AudioHandler
         self._audio_handler = AudioHandler(audio_service)
 
     def transcribe(
@@ -196,25 +187,19 @@ class TextToSpeech:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # AudioService 생성
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
-
+        from ..handler.audio_handler import AudioHandler
+        
+        # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             tts_provider=self.provider,
             tts_api_key=self.api_key,
             tts_model=self.model,
             tts_voice=self.voice,
         )
-
-        # AudioHandler 생성
-
+        
+        # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._audio_handler = AudioHandler(audio_service)
 
     def synthesize(
@@ -318,21 +303,16 @@ class AudioRAG:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # AudioService 생성 (stt, vector_store, embedding_model 포함)
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
-
+        from ..handler.audio_handler import AudioHandler
+        
         # stt에서 설정 가져오기
         whisper_model = self.stt.model_name if hasattr(self.stt, "model_name") else "base"
         whisper_device = self.stt.device if hasattr(self.stt, "device") else None
         whisper_language = self.stt.language if hasattr(self.stt, "language") else None
-
+        
+        # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             whisper_model=whisper_model,
             whisper_device=whisper_device,
@@ -340,9 +320,8 @@ class AudioRAG:
             vector_store=self.vector_store,
             embedding_model=self.embedding_model,
         )
-
-        # AudioHandler 생성
-
+        
+        # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._audio_handler = AudioHandler(audio_service)
 
     def add_audio(

@@ -10,11 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.tools import Tool, ToolRegistry
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
-from .client_facade import SourceProviderFactoryAdapter
 
 
 @dataclass
@@ -98,18 +94,12 @@ class Agent:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(
-            provider_factory=provider_factory,
-        )
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
+        
         # AgentHandler 생성
         self._agent_handler = handler_factory.create_agent_handler()
 

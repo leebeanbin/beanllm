@@ -19,9 +19,10 @@ from ..domain.audio import AudioSegment, TranscriptionResult
 from ..dto.request.audio_request import AudioRequest
 from ..dto.response.audio_response import AudioResponse
 from ..service.audio_service import IAudioService
+from .base_handler import BaseHandler
 
 
-class AudioHandler:
+class AudioHandler(BaseHandler):
     """
     Audio 요청 처리 Handler
 

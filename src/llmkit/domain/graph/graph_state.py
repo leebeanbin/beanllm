@@ -37,3 +37,25 @@ class GraphState:
 
     def __contains__(self, key: str) -> bool:
         return key in self.data
+    
+    def copy(self) -> "GraphState":
+        """
+        상태 복사 (얕은 복사)
+        
+        Returns:
+            새로운 GraphState 인스턴스
+        """
+        return GraphState(
+            data=self.data.copy(),
+            metadata=self.metadata.copy()
+        )
+    
+    def deepcopy(self) -> "GraphState":
+        """
+        상태 깊은 복사 (필요한 경우에만 사용)
+        
+        Returns:
+            새로운 GraphState 인스턴스 (깊은 복사)
+        """
+        import copy
+        return copy.deepcopy(self)

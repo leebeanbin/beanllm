@@ -10,11 +10,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..dto.response.chat_response import ChatResponse
-from ..handler.factory import HandlerFactory
 from ..infrastructure.registry import get_model_registry
-from ..service.factory import ServiceFactory
 
 if TYPE_CHECKING:
     from .._source_providers.base_provider import BaseLLMProvider
@@ -68,19 +65,12 @@ class Client:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성 (기존 _source_providers 사용)
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(
-            provider_factory=provider_factory,
-            parameter_adapter=None,  # 기본 사용
-        )
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
+        
         # ChatHandler 생성
         self._chat_handler = handler_factory.create_chat_handler()
 

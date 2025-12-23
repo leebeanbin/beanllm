@@ -10,10 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
-from .client_facade import Client, SourceProviderFactoryAdapter
+from .client_facade import Client
 
 if TYPE_CHECKING:
     from ..service.types import VectorStoreProtocol
@@ -71,19 +68,13 @@ Answer:"""
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(
-            provider_factory=provider_factory,
-            vector_store=self.vector_store,
-        )
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        service_factory = container.get_service_factory(vector_store=self.vector_store)
+        handler_factory = container.get_handler_factory(service_factory)
+        
         # RAGHandler 생성
         self._rag_handler = handler_factory.create_rag_handler()
 

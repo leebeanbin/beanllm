@@ -9,12 +9,8 @@ from __future__ import annotations
 
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.graph import BaseNode, GraphState, NodeCache
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
 from ..utils.logger import get_logger
-from .client_facade import SourceProviderFactoryAdapter
 
 logger = get_logger(__name__)
 
@@ -74,11 +70,11 @@ class Graph:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         self._graph_handler = handler_factory.create_graph_handler()
 
     def add_node(self, node: BaseNode):

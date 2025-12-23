@@ -10,13 +10,9 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.finetuning.providers import BaseFineTuningProvider, OpenAIFineTuningProvider
 from ..domain.finetuning.types import FineTuningJob, TrainingExample
-from ..handler.factory import HandlerFactory
 from ..handler.finetuning_handler import FinetuningHandler
-from ..service.factory import ServiceFactory
-from .client_facade import SourceProviderFactoryAdapter
 
 if TYPE_CHECKING:
     pass
@@ -40,23 +36,14 @@ class FineTuningManagerFacade:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # FinetuningService 생성
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.finetuning_service_impl import FinetuningServiceImpl
-
+        from ..handler.finetuning_handler import FinetuningHandler
+        
+        # FinetuningService 생성 (커스텀 의존성)
         finetuning_service = FinetuningServiceImpl(provider=self.provider)
-
-        # HandlerFactory 생성
-        handler_factory = HandlerFactory(service_factory)
-
-        # FinetuningHandler 생성 (직접 생성)
-
+        
+        # FinetuningHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._finetuning_handler = FinetuningHandler(finetuning_service)
 
     def prepare_and_upload(
@@ -160,15 +147,10 @@ def quick_finetune(
         파인튜닝 작업
     """
     # Handler/Service 초기화
-    provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-    service_factory = ServiceFactory(provider_factory=provider_factory)
-
     from ..service.impl.finetuning_service_impl import FinetuningServiceImpl
-
+    from ..handler.finetuning_handler import FinetuningHandler
+    
     finetuning_service = FinetuningServiceImpl()
-    handler_factory = HandlerFactory(service_factory)
-
-
     handler = FinetuningHandler(finetuning_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용

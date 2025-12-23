@@ -14,10 +14,8 @@ from typing import Any, Dict, List, Optional, Union
 from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.memory import BaseMemory, BufferMemory, create_memory
 from ..domain.tools import Tool
-from ..handler.factory import HandlerFactory
-from ..service.factory import ServiceFactory
 from ..utils.logger import get_logger
-from .client_facade import Client, SourceProviderFactoryAdapter
+from .client_facade import Client
 
 logger = get_logger(__name__)
 
@@ -67,17 +65,12 @@ class Chain:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입)"""
-        # ProviderFactory 생성
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-
-        # ServiceFactory 생성
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        # HandlerFactory 생성
-
-        handler_factory = HandlerFactory(service_factory)
-
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
+        
         # ChainHandler 생성
         self._chain_handler = handler_factory.create_chain_handler()
 
@@ -137,10 +130,10 @@ class PromptChain:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화"""
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         self._chain_handler = handler_factory.create_chain_handler()
 
     async def run(self, **kwargs) -> ChainResult:
@@ -192,11 +185,11 @@ class SequentialChain:
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화"""
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        """Service 및 Handler 초기화 - DI Container 사용"""
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         self._chain_handler = handler_factory.create_chain_handler()
 
     async def run(self, **kwargs) -> ChainResult:
@@ -261,10 +254,10 @@ class ParallelChain:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화"""
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         self._chain_handler = handler_factory.create_chain_handler()
 
     async def run(self, **kwargs) -> ChainResult:
@@ -392,10 +385,10 @@ class ChainBuilder:
             ChainResult: 실행 결과
         """
         # Handler/Service 초기화
-        provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
-        service_factory = ServiceFactory(provider_factory=provider_factory)
-
-        handler_factory = HandlerFactory(service_factory)
+        from ..utils.di_container import get_container
+        
+        container = get_container()
+        handler_factory = container.handler_factory
         chain_handler = handler_factory.create_chain_handler()
 
         # 적절한 체인 타입 선택
