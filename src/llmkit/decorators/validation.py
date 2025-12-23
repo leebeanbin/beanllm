@@ -49,7 +49,7 @@ def validate_input(
                 # 공통 검증 로직 사용 (DRY)
                 bound_args = _get_bound_args(func, *args, **kwargs)
                 _validate_parameters(bound_args, required_params, param_types, param_ranges)
-                
+
                 # async generator를 직접 반환 (await 사용 안 함)
                 async for item in func(*args, **kwargs):
                     yield item
@@ -63,7 +63,7 @@ def validate_input(
                 # 공통 검증 로직 사용 (DRY)
                 bound_args = _get_bound_args(func, *args, **kwargs)
                 _validate_parameters(bound_args, required_params, param_types, param_ranges)
-                
+
                 # 동기 generator를 직접 반환
                 for item in func(*args, **kwargs):
                     yield item
@@ -76,7 +76,7 @@ def validate_input(
                 # 공통 검증 로직 사용 (DRY)
                 bound_args = _get_bound_args(func, *args, **kwargs)
                 _validate_parameters(bound_args, required_params, param_types, param_ranges)
-                
+
                 return await func(*args, **kwargs)
 
             @functools.wraps(func)
@@ -84,7 +84,7 @@ def validate_input(
                 # 공통 검증 로직 사용 (DRY)
                 bound_args = _get_bound_args(func, *args, **kwargs)
                 _validate_parameters(bound_args, required_params, param_types, param_ranges)
-                
+
                 return func(*args, **kwargs)
 
             # async 함수인지 확인

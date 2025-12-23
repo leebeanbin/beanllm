@@ -1,15 +1,15 @@
 """
-Validation Utils - 검증 로직 공통 함수 (DRY 원칙)
-책임: 중복된 검증 로직을 공통 함수로 추출
+Validation Utils - 검증 공통 로직 (DRY 원칙)
+책임: 검증 로직 중복 제거
 """
 
 import inspect
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 def _get_bound_args(func: Any, *args: Any, **kwargs: Any) -> inspect.BoundArguments:
     """
-    함수 시그니처에서 바인딩된 인자 가져오기 (공통 로직)
+    함수 시그니처에서 파라미터 추출 (공통 로직)
     
     Args:
         func: 함수
@@ -27,12 +27,12 @@ def _get_bound_args(func: Any, *args: Any, **kwargs: Any) -> inspect.BoundArgume
 
 def _validate_parameters(
     bound_args: inspect.BoundArguments,
-    required_params: Optional[List[str]] = None,
-    param_types: Optional[Dict[str, type]] = None,
-    param_ranges: Optional[Dict[str, tuple]] = None,
+    required_params: List[str] = None,
+    param_types: Dict[str, type] = None,
+    param_ranges: Dict[str, tuple] = None,
 ) -> None:
     """
-    파라미터 검증 공통 로직 (DRY 원칙)
+    파라미터 검증 공통 로직 (DRY)
     
     Args:
         bound_args: 바인딩된 인자
@@ -41,8 +41,8 @@ def _validate_parameters(
         param_ranges: 파라미터 범위 딕셔너리 {"param": (min, max)}
     
     Raises:
-        ValueError: 필수 파라미터 누락 또는 범위 오류
-        TypeError: 타입 오류
+        ValueError: 필수 파라미터 누락 또는 범위 위반
+        TypeError: 타입 불일치
     """
     # 필수 파라미터 검증
     if required_params:
@@ -55,11 +55,20 @@ def _validate_parameters(
         for param, expected_type in param_types.items():
             if param in bound_args.arguments:
                 value = bound_args.arguments[param]
-                if value is not None and not isinstance(value, expected_type):
-                    raise TypeError(
-                        f"Parameter '{param}' must be of type {expected_type.__name__}, "
-                        f"got {type(value).__name__}"
-                    )
+                if value is not None:
+                    # 튜플 타입 지원 (여러 타입 허용)
+                    if isinstance(expected_type, tuple):
+                        if not isinstance(value, expected_type):
+                            type_names = ", ".join(t.__name__ for t in expected_type)
+                            raise TypeError(
+                                f"Parameter '{param}' must be one of types ({type_names}), "
+                                f"got {type(value).__name__}"
+                            )
+                    elif not isinstance(value, expected_type):
+                        raise TypeError(
+                            f"Parameter '{param}' must be of type {expected_type.__name__}, "
+                            f"got {type(value).__name__}"
+                        )
     
     # 범위 검증
     if param_ranges:

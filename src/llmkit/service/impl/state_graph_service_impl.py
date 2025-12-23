@@ -80,9 +80,15 @@ class StateGraphServiceImpl(IStateGraphService):
         # 실행 기록 시작 (기존과 동일)
         execution = GraphExecution(execution_id=execution_id, start_time=datetime.now())
 
-        # 상태 복사 (원본 보존) - 최적화: Dict는 얕은 복사로 시작
-        # Dict의 경우 얕은 복사로 충분 (내부 객체는 노드 함수에서 변경될 수 있음)
-        state = dict(request.initial_state) if isinstance(request.initial_state, dict) else copy.deepcopy(request.initial_state)
+        # 상태 복사 (원본 보존) - 최적화: GraphState.copy() 사용
+        from ...domain.graph.graph_state import GraphState
+        
+        if isinstance(request.initial_state, GraphState):
+            state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
+        elif isinstance(request.initial_state, dict):
+            state = dict(request.initial_state)  # Dict는 얕은 복사
+        else:
+            state = copy.deepcopy(request.initial_state)  # 기타 타입은 깊은 복사
 
         # Checkpoint 생성 (기존과 동일)
         checkpoint: Optional[Checkpoint] = None
@@ -112,9 +118,15 @@ class StateGraphServiceImpl(IStateGraphService):
                 node_start = datetime.now()
 
                 try:
-                    # 노드 함수 실행 - 최적화: 실행 기록용으로만 복사 (필요한 경우에만)
-                    # 실행 기록에 저장할 때만 깊은 복사
-                    input_state = dict(state) if isinstance(state, dict) else copy.deepcopy(state)
+                    # 노드 함수 실행 - 최적화: 실행 기록용으로만 복사
+                    from ...domain.graph.graph_state import GraphState
+                    
+                    if isinstance(state, GraphState):
+                        input_state = state.copy()  # GraphState.copy() 사용
+                    elif isinstance(state, dict):
+                        input_state = dict(state)  # Dict는 얕은 복사
+                    else:
+                        input_state = copy.deepcopy(state)  # 기타 타입은 깊은 복사
                     state = node_func(state)
 
                     # 노드 실행 기록 (기존과 동일)
@@ -209,9 +221,17 @@ class StateGraphServiceImpl(IStateGraphService):
             node_func = request.nodes[current_node]
             state = node_func(state)
 
-            # 상태 반환 - 최적화: 스트리밍이므로 얕은 복사로 충분
-            # 사용자가 상태를 변경해도 원본에 영향 없음 (Dict는 얕은 복사)
-            yield (current_node, dict(state) if isinstance(state, dict) else copy.deepcopy(state))
+            # 상태 반환 - 최적화: GraphState.copy() 사용
+            from ...domain.graph.graph_state import GraphState
+            
+            if isinstance(state, GraphState):
+                state_copy = state.copy()  # GraphState.copy() 사용
+            elif isinstance(state, dict):
+                state_copy = dict(state)  # Dict는 얕은 복사
+            else:
+                state_copy = copy.deepcopy(state)  # 기타 타입은 깊은 복사
+            
+            yield (current_node, state_copy)
 
             # 체크포인트 (기존과 동일)
             if checkpoint:

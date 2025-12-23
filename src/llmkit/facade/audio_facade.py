@@ -61,18 +61,19 @@ class WhisperSTT:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..utils.di_container import get_container
         from ..service.impl.audio_service_impl import AudioServiceImpl
-        
+
         container = get_container()
-        
+
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             whisper_model=self.model_name,
             whisper_device=self.device,
             whisper_language=self.language,
         )
-        
+
         # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
         from ..handler.audio_handler import AudioHandler
+
         self._audio_handler = AudioHandler(audio_service)
 
     def transcribe(
@@ -190,7 +191,7 @@ class TextToSpeech:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
         from ..handler.audio_handler import AudioHandler
-        
+
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             tts_provider=self.provider,
@@ -198,7 +199,7 @@ class TextToSpeech:
             tts_model=self.model,
             tts_voice=self.voice,
         )
-        
+
         # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._audio_handler = AudioHandler(audio_service)
 
@@ -306,12 +307,12 @@ class AudioRAG:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
         from ..handler.audio_handler import AudioHandler
-        
+
         # stt에서 설정 가져오기
         whisper_model = self.stt.model_name if hasattr(self.stt, "model_name") else "base"
         whisper_device = self.stt.device if hasattr(self.stt, "device") else None
         whisper_language = self.stt.language if hasattr(self.stt, "language") else None
-        
+
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
             whisper_model=whisper_model,
@@ -320,7 +321,7 @@ class AudioRAG:
             vector_store=self.vector_store,
             embedding_model=self.embedding_model,
         )
-        
+
         # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._audio_handler = AudioHandler(audio_service)
 

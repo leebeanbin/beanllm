@@ -39,10 +39,10 @@ class FineTuningManagerFacade:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.finetuning_service_impl import FinetuningServiceImpl
         from ..handler.finetuning_handler import FinetuningHandler
-        
+
         # FinetuningService 생성 (커스텀 의존성)
         finetuning_service = FinetuningServiceImpl(provider=self.provider)
-        
+
         # FinetuningHandler 생성 (직접 생성 - 커스텀 Service 사용)
         self._finetuning_handler = FinetuningHandler(finetuning_service)
 
@@ -149,7 +149,7 @@ def quick_finetune(
     # Handler/Service 초기화
     from ..service.impl.finetuning_service_impl import FinetuningServiceImpl
     from ..handler.finetuning_handler import FinetuningHandler
-    
+
     finetuning_service = FinetuningServiceImpl()
     handler = FinetuningHandler(finetuning_service)
 
