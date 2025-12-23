@@ -311,13 +311,13 @@ class TestConvenienceFunctions:
 class TestIntegration:
     """통합 테스트"""
 
-    def test_full_pipeline(self):
+    def test_full_pipeline(self, tmp_path):
         """전체 파이프라인 테스트"""
         from llmkit import DocumentLoader, TextSplitter
         from pathlib import Path
 
-        # 1. 문서 생성
-        test_file = Path("test_integration.txt")
+        # 1. 문서 생성 (임시 디렉토리 사용)
+        test_file = tmp_path / "test_integration.txt"
         test_file.write_text("""
 AI and Machine Learning are transforming the world.
 
