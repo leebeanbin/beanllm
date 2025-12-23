@@ -8,7 +8,14 @@ import sys
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
-from anthropic import APIError, APITimeoutError, AsyncAnthropic
+# 선택적 의존성 - 지연 import
+try:
+    from anthropic import APIError, APITimeoutError, AsyncAnthropic
+except ImportError:
+    # anthropic가 설치되지 않은 경우
+    APIError = Exception  # type: ignore
+    APITimeoutError = Exception  # type: ignore
+    AsyncAnthropic = None  # type: ignore
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -27,6 +34,9 @@ class ClaudeProvider(BaseLLMProvider):
 
     def __init__(self, config: Dict = None):
         super().__init__(config or {})
+        if AsyncAnthropic is None:
+            raise ImportError("anthropic package is required. Install it with: pip install anthropic")
+        
         api_key = EnvConfig.ANTHROPIC_API_KEY
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY is required for Claude provider")
@@ -38,7 +48,7 @@ class ClaudeProvider(BaseLLMProvider):
         )
         self.default_model = "claude-3-5-sonnet-20241022"
 
-    @retry(max_attempts=3, exceptions=(APITimeoutError, APIError, Exception))
+    @retry(max_attempts=3, exceptions=(Exception,))
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
@@ -78,7 +88,7 @@ class ClaudeProvider(BaseLLMProvider):
             logger.error(f"Claude stream_chat error: {e}")
             raise ProviderError(f"Claude stream_chat failed: {str(e)}") from e
 
-    @retry(max_attempts=3, exceptions=(APITimeoutError, APIError, Exception))
+    @retry(max_attempts=3, exceptions=(Exception,))
     async def chat(
         self,
         messages: List[Dict[str, str]],

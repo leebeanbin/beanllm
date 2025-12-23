@@ -8,7 +8,13 @@ import sys
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
-from openai import APIError, APITimeoutError, AsyncOpenAI
+# 선택적 의존성
+try:
+    from openai import APIError, APITimeoutError, AsyncOpenAI
+except ImportError:
+    APIError = Exception  # type: ignore
+    APITimeoutError = Exception  # type: ignore
+    AsyncOpenAI = None  # type: ignore
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -27,6 +33,12 @@ class OpenAIProvider(BaseLLMProvider):
 
     def __init__(self, config: Dict = None):
         super().__init__(config or {})
+
+        if AsyncOpenAI is None:
+            raise ImportError(
+                "openai package is required for OpenAIProvider. "
+                "Install it with: pip install openai or poetry add openai"
+            )
 
         # API 키 확인
         api_key = EnvConfig.OPENAI_API_KEY
@@ -118,7 +130,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         # ModelConfig에서 먼저 확인 (정확한 이름) - 선택적 의존성
         try:
-            from src.models.model_config import ModelConfigManager
+            from .._source_models.model_config import ModelConfigManager
 
             config = ModelConfigManager.get_model_config(model)
             if config:
@@ -145,7 +157,7 @@ class OpenAIProvider(BaseLLMProvider):
         if base_model != model:
             logger.debug(f"Extracted base model from {model}: {base_model}")
             try:
-                from src.models.model_config import ModelConfigManager
+                from .._source_models.model_config import ModelConfigManager
 
                 config = ModelConfigManager.get_model_config(base_model)
                 if config:

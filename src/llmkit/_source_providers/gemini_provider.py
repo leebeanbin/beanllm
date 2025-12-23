@@ -8,7 +8,11 @@ import sys
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
-from google import genai
+# 선택적 의존성
+try:
+    from google import genai
+except ImportError:
+    genai = None  # type: ignore
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -27,6 +31,13 @@ class GeminiProvider(BaseLLMProvider):
 
     def __init__(self, config: Dict = None):
         super().__init__(config or {})
+
+        if genai is None:
+            raise ImportError(
+                "google-generativeai package is required for GeminiProvider. "
+                "Install it with: pip install google-generativeai or poetry add google-generativeai"
+            )
+
         api_key = EnvConfig.GEMINI_API_KEY
         if not api_key:
             raise ValueError("GEMINI_API_KEY is required for Gemini provider")

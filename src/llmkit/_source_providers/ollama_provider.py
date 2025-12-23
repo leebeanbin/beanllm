@@ -8,7 +8,11 @@ import sys
 from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
-from ollama import AsyncClient
+# 선택적 의존성
+try:
+    from ollama import AsyncClient
+except ImportError:
+    AsyncClient = None  # type: ignore
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -26,6 +30,11 @@ class OllamaProvider(BaseLLMProvider):
     """Ollama 제공자"""
 
     def __init__(self, config: Dict = None):
+        if AsyncClient is None:
+            raise ImportError(
+                "ollama package is required for OllamaProvider. "
+                "Install it with: pip install ollama"
+            )
         super().__init__(config or {})
         config_dict = config or {}
         host = config_dict.get("host") if config_dict else EnvConfig.OLLAMA_HOST

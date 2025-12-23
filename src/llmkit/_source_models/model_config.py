@@ -6,7 +6,7 @@ Model Configuration
 from dataclasses import dataclass
 from typing import Dict, Optional
 
-from src.models.llm_provider import LLMProvider
+from .llm_provider import LLMProvider
 
 
 @dataclass
@@ -356,7 +356,7 @@ class ModelConfigManager:
                 return "phi3.5"
             elif model_type == "llm":
                 # 사용 가능한 제공자에 따라 기본 모델 선택 (EnvConfig 사용)
-                from src.config.env import EnvConfig
+                from ...utils.config import EnvConfig
 
                 if EnvConfig.ANTHROPIC_API_KEY:
                     return "claude-3-5-sonnet-20241022"

@@ -4,10 +4,28 @@ LLM Providers Package
 """
 
 from .base_provider import BaseLLMProvider, LLMResponse
-from .claude_provider import ClaudeProvider
-from .gemini_provider import GeminiProvider
-from .ollama_provider import OllamaProvider
-from .openai_provider import OpenAIProvider
+
+# 선택적 의존성 - 지연 import
+try:
+    from .claude_provider import ClaudeProvider
+except ImportError:
+    ClaudeProvider = None  # type: ignore
+
+try:
+    from .ollama_provider import OllamaProvider
+except ImportError:
+    OllamaProvider = None  # type: ignore
+
+try:
+    from .gemini_provider import GeminiProvider
+except ImportError:
+    GeminiProvider = None  # type: ignore
+
+try:
+    from .openai_provider import OpenAIProvider
+except ImportError:
+    OpenAIProvider = None  # type: ignore
+
 from .provider_factory import ProviderFactory
 
 __all__ = [

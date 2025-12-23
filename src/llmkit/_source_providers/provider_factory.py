@@ -14,10 +14,27 @@ from utils.config import EnvConfig
 from utils.logger import get_logger
 
 from .base_provider import BaseLLMProvider
-from .claude_provider import ClaudeProvider
-from .gemini_provider import GeminiProvider
-from .ollama_provider import OllamaProvider
-from .openai_provider import OpenAIProvider
+
+# 선택적 의존성
+try:
+    from .claude_provider import ClaudeProvider
+except ImportError:
+    ClaudeProvider = None  # type: ignore
+
+try:
+    from .ollama_provider import OllamaProvider
+except ImportError:
+    OllamaProvider = None  # type: ignore
+
+try:
+    from .gemini_provider import GeminiProvider
+except ImportError:
+    GeminiProvider = None  # type: ignore
+
+try:
+    from .openai_provider import OpenAIProvider
+except ImportError:
+    OpenAIProvider = None  # type: ignore
 
 logger = get_logger(__name__)
 
@@ -25,15 +42,26 @@ logger = get_logger(__name__)
 class ProviderFactory:
     """LLM 제공자 팩토리"""
 
-    # 제공자 우선순위 (환경 변수 확인 순서)
-    PROVIDER_PRIORITY = [
-        ("openai", OpenAIProvider, "OPENAI_API_KEY"),
-        ("claude", ClaudeProvider, "ANTHROPIC_API_KEY"),
-        ("gemini", GeminiProvider, "GEMINI_API_KEY"),
-        ("ollama", OllamaProvider, "OLLAMA_HOST"),  # API 키 없음
-    ]
-
     _instances: dict[str, BaseLLMProvider] = {}
+
+    @classmethod
+    def _get_provider_priority(cls):
+        """동적으로 제공자 우선순위 리스트 생성 (선택적 의존성 처리)"""
+        priority = []
+
+        if OpenAIProvider is not None:
+            priority.append(("openai", OpenAIProvider, "OPENAI_API_KEY"))
+
+        if ClaudeProvider is not None:
+            priority.append(("claude", ClaudeProvider, "ANTHROPIC_API_KEY"))
+
+        if GeminiProvider is not None:
+            priority.append(("gemini", GeminiProvider, "GEMINI_API_KEY"))
+
+        if OllamaProvider is not None:
+            priority.append(("ollama", OllamaProvider, "OLLAMA_HOST"))  # API 키 없음
+
+        return priority
 
     @classmethod
     def get_available_providers(cls) -> List[str]:
@@ -45,7 +73,7 @@ class ProviderFactory:
         """
         available = []
 
-        for name, provider_class, env_key in cls.PROVIDER_PRIORITY:
+        for name, provider_class, env_key in cls._get_provider_priority():
             try:
                 # 환경 변수 확인 (EnvConfig 사용)
                 if name == "ollama":
@@ -91,7 +119,7 @@ class ProviderFactory:
             providers_to_try = [(provider_name, None, None)]
         else:
             # 자동 선택 (환경 변수 기반)
-            providers_to_try = cls.PROVIDER_PRIORITY
+            providers_to_try = cls._get_provider_priority()
 
         # 제공자 생성 시도
         last_error = None

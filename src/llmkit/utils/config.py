@@ -1,6 +1,6 @@
 """
 Environment Configuration
-환경변수 관리 (독립적)
+환경변수 관리 (통합)
 """
 
 import os
@@ -56,3 +56,7 @@ class EnvConfig:
             "ollama": True,  # 항상 가능
         }
         return bool(provider_map.get(provider.lower()))
+
+
+# 하위 호환성을 위한 별칭
+Config = EnvConfig
