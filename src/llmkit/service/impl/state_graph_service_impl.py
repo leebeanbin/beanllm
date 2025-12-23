@@ -208,7 +208,16 @@ class StateGraphServiceImpl(IStateGraphService):
         else:
             execution_id = request.execution_id
 
-        state = copy.deepcopy(request.initial_state)
+        # 상태 복사 - 최적화: GraphState.copy() 사용
+        from ...domain.graph.graph_state import GraphState
+        
+        if isinstance(request.initial_state, GraphState):
+            state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
+        elif isinstance(request.initial_state, dict):
+            state = dict(request.initial_state)  # Dict는 얕은 복사
+        else:
+            state = copy.deepcopy(request.initial_state)  # 기타 타입은 깊은 복사
+        
         current_node = request.entry_point
 
         checkpoint: Optional[Checkpoint] = None
@@ -217,13 +226,11 @@ class StateGraphServiceImpl(IStateGraphService):
 
         iteration = 0
         while current_node != END and iteration < request.max_iterations:
-            # 노드 실행 (기존과 동일)
+            # 노드 실행
             node_func = request.nodes[current_node]
             state = node_func(state)
 
-            # 상태 반환 - 최적화: GraphState.copy() 사용
-            from ...domain.graph.graph_state import GraphState
-            
+            # 상태 반환 - 최적화: GraphState.copy() 사용 (이미 위에서 import됨)
             if isinstance(state, GraphState):
                 state_copy = state.copy()  # GraphState.copy() 사용
             elif isinstance(state, dict):
@@ -232,6 +239,8 @@ class StateGraphServiceImpl(IStateGraphService):
                 state_copy = copy.deepcopy(state)  # 기타 타입은 깊은 복사
             
             yield (current_node, state_copy)
+            
+            iteration += 1
 
             # 체크포인트 (기존과 동일)
             if checkpoint:
