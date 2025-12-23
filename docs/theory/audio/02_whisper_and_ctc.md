@@ -120,18 +120,126 @@ $$
 
 #### 구현 4.1.1: WhisperSTT
 
+**llmkit 구현:**
 ```python
-# audio_speech.py
+# facade/audio_facade.py: WhisperSTT
+# service/impl/audio_service_impl.py: AudioServiceImpl.transcribe()
+# handler/audio_handler.py: AudioHandler.handle_transcribe()
+from typing import Union, Optional
+from pathlib import Path
+import asyncio
+
 class WhisperSTT:
-    def transcribe(self, audio):
+    """
+    Whisper Speech-to-Text: text = Whisper(audio)
+    
+    아키텍처:
+    - Encoder: 오디오 → 특징 벡터 (Mel spectrogram → Transformer)
+    - Decoder: 특징 벡터 → 텍스트 (Transformer → Token sequence)
+    
+    수학적 표현:
+    E = Encoder(Mel(STFT(audio)))  # 오디오 → 특징 벡터
+    text = Decoder(E)               # 특징 벡터 → 텍스트
+    
+    실제 구현:
+    - facade/audio_facade.py: WhisperSTT (사용자 API)
+    - service/impl/audio_service_impl.py: AudioServiceImpl.transcribe() (비즈니스 로직)
+    - handler/audio_handler.py: AudioHandler.handle_transcribe() (입력 검증)
+    - openai-whisper 라이브러리 사용
+    """
+    def __init__(
+        self,
+        model: Union[str, WhisperModel] = WhisperModel.BASE,
+        device: Optional[str] = None,
+        language: Optional[str] = None,
+    ):
         """
-        Whisper 음성 인식
+        Args:
+            model: Whisper 모델 크기 ('tiny', 'base', 'small', 'medium', 'large')
+            device: 디바이스 ('cpu', 'cuda', 'mps')
+            language: 언어 지정 (None이면 자동 감지)
         """
-        inputs = self.processor(audio, return_tensors="pt")
-        with torch.no_grad():
-            generated_ids = self.model.generate(inputs["input_features"])
-        transcription = self.processor.batch_decode(generated_ids)
-        return transcription
+        self.model_name = model
+        self.device = device
+        self.language = language
+        # 내부적으로 AudioHandler와 AudioService 사용
+        self._init_services()
+    
+    def transcribe(
+        self,
+        audio: Union[str, Path, AudioSegment, bytes],
+        language: Optional[str] = None,
+        task: str = "transcribe",
+        **kwargs,
+    ) -> TranscriptionResult:
+        """
+        음성 → 텍스트 변환: text = Whisper(audio)
+        
+        Process:
+        1. Audio preprocessing (16kHz 샘플링, 정규화)
+        2. STFT → Mel spectrogram 변환
+        3. Whisper Encoder (Transformer) → 특징 벡터 E ∈ ℝ^(T×d)
+        4. Whisper Decoder (Transformer) → 텍스트 토큰
+        5. Token decoding → 최종 텍스트
+        
+        실제 구현:
+        - facade/audio_facade.py: WhisperSTT.transcribe()
+        - service/impl/audio_service_impl.py: AudioServiceImpl.transcribe()
+        - openai-whisper 라이브러리 사용
+        """
+        # 동기 메서드이지만 내부적으로는 비동기 사용
+        response = asyncio.run(
+            self._audio_handler.handle_transcribe(
+                audio=audio,
+                language=language or self.language,
+                task=task,
+                model=self.model_name,
+                device=self.device,
+                **kwargs,
+            )
+        )
+        return response.transcription_result
+```
+
+**AudioServiceImpl 구현:**
+```python
+# service/impl/audio_service_impl.py: AudioServiceImpl.transcribe()
+class AudioServiceImpl(IAudioService):
+    """
+    Audio 서비스 구현체: Whisper 전사
+    
+    실제 구현:
+    - service/impl/audio_service_impl.py: AudioServiceImpl
+    - openai-whisper 라이브러리 사용
+    """
+    async def transcribe(self, request: AudioRequest) -> AudioResponse:
+        """
+        음성 전사: text = Whisper(audio)
+        
+        실제 구현:
+        - service/impl/audio_service_impl.py: AudioServiceImpl.transcribe()
+        - openai-whisper의 transcribe() 메서드 사용
+        """
+        self._load_whisper_model()
+        
+        # 오디오 준비
+        audio_path = self._prepare_audio(request.audio)
+        
+        # Whisper 전사 실행
+        result = self._whisper_model.transcribe(
+            audio_path,
+            language=request.language,
+            task=request.task,
+            **request.extra_params or {}
+        )
+        
+        return AudioResponse(
+            transcription_result=TranscriptionResult(
+                text=result["text"],
+                language=result.get("language"),
+                segments=result.get("segments", [])
+            )
+        )
 ```
 
 ---

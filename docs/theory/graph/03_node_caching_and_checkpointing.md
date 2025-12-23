@@ -42,21 +42,167 @@ $$
 
 #### 구현 1.1.1: NodeCache
 
+**llmkit 구현:**
 ```python
-# graph.py: Line 200-280
+# domain/graph/node_cache.py: NodeCache
+# domain/state_graph/checkpoint.py: Checkpoint
+# service/impl/graph_service_impl.py: GraphServiceImpl (캐시 사용)
+import hashlib
+import json
+from typing import Dict, Optional, Any
+
 class NodeCache:
-    def __init__(self):
-        self.cache: Dict[Tuple[str, str], Any] = {}
+    """
+    노드 캐시: Cache(node, state) → result
     
-    def get(self, node_name: str, state: GraphState) -> Optional[Any]:
-        """캐시 조회"""
-        cache_key = self._make_key(node_name, state)
-        return self.cache.get(cache_key)
+    수학적 정의:
+    - Cache: (node_name, state) → result
+    - 캐시 히트: Cache(node, state) ≠ None → 재사용
+    - 캐시 미스: Cache(node, state) = None → 계산 후 저장
     
-    def set(self, node_name: str, state: GraphState, result: Any):
-        """캐시 저장"""
-        cache_key = self._make_key(node_name, state)
-        self.cache[cache_key] = result
+    시간 복잡도:
+    - get: O(1) (해시 테이블)
+    - set: O(1) (해시 테이블)
+    
+    실제 구현:
+    - domain/graph/node_cache.py: NodeCache
+    - service/impl/graph_service_impl.py: GraphServiceImpl (캐시 사용)
+    """
+    def __init__(self, max_size: int = 1000):
+        """
+        Args:
+            max_size: 최대 캐시 크기 (LRU 방식으로 제거)
+        """
+        self.cache: Dict[str, Any] = {}
+        self.max_size = max_size
+        self.hits = 0
+        self.misses = 0
+    
+    def get_key(self, node_name: str, state: Dict[str, Any]) -> str:
+        """
+        캐시 키 생성: key = hash(node_name, state)
+        
+        수학적 표현:
+        - key = hash(node_name, state)
+        - 해시 함수: MD5(JSON(state))
+        
+        실제 구현:
+        - domain/graph/node_cache.py: NodeCache.get_key()
+        """
+        # 상태를 JSON으로 직렬화하여 해시
+        state_json = json.dumps(state, sort_keys=True)
+        hash_value = hashlib.md5(state_json.encode()).hexdigest()
+        return f"{node_name}:{hash_value}"
+    
+    def get(self, node_name: str, state: Dict[str, Any]) -> Optional[Any]:
+        """
+        캐시 조회: O(1)
+        
+        Returns:
+            캐시된 결과 또는 None (미스)
+        """
+        key = self.get_key(node_name, state)
+        if key in self.cache:
+            self.hits += 1
+            return self.cache[key]
+        else:
+            self.misses += 1
+            return None
+    
+    def set(self, node_name: str, state: Dict[str, Any], result: Any):
+        """
+        캐시 저장: O(1)
+        
+        Process:
+        1. 키 생성
+        2. 크기 제한 확인 (LRU 제거)
+        3. 저장
+        """
+        # 크기 제한
+        if len(self.cache) >= self.max_size:
+            # 가장 오래된 항목 제거 (간단한 구현)
+            first_key = next(iter(self.cache))
+            del self.cache[first_key]
+        
+        key = self.get_key(node_name, state)
+        self.cache[key] = result
+    
+    def get_stats(self) -> Dict[str, Any]:
+        """
+        캐시 통계: H = Hits / (Hits + Misses)
+        """
+        total = self.hits + self.misses
+        hit_rate = self.hits / total if total > 0 else 0.0
+        
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": hit_rate,
+            "size": len(self.cache),
+            "max_size": self.max_size,
+        }
+```
+
+**Checkpoint 구현:**
+```python
+# domain/state_graph/checkpoint.py: Checkpoint
+# facade/state_graph_facade.py: StateGraph (체크포인팅 지원)
+class Checkpoint:
+    """
+    체크포인트: Checkpoint = (state, current_node, timestamp)
+    
+    수학적 정의:
+    - Checkpoint_t = (s_t, node_t, t_t)
+    - 용도: 실행 중단 후 재개, 디버깅, 롤백
+    
+    실제 구현:
+    - domain/state_graph/checkpoint.py: Checkpoint
+    - facade/state_graph_facade.py: StateGraph (체크포인팅 지원)
+    """
+    def __init__(self, checkpoint_dir: Optional[Path] = None):
+        """
+        Args:
+            checkpoint_dir: 체크포인트 저장 디렉토리
+        """
+        self.checkpoint_dir = checkpoint_dir or Path(".checkpoints")
+        self.checkpoint_dir.mkdir(exist_ok=True)
+    
+    def save(self, execution_id: str, state: Dict[str, Any], node_name: str):
+        """
+        체크포인트 저장: Checkpoint_t = (s_t, node_t, t_t)
+        
+        실제 구현:
+        - domain/state_graph/checkpoint.py: Checkpoint.save()
+        - JSON 형식으로 저장
+        """
+        checkpoint_file = self.checkpoint_dir / f"{execution_id}_{node_name}.json"
+        
+        checkpoint_data = {
+            "execution_id": execution_id,
+            "node_name": node_name,
+            "state": state,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        with open(checkpoint_file, "w", encoding="utf-8") as f:
+            json.dump(checkpoint_data, f, indent=2, ensure_ascii=False, default=str)
+    
+    def load(self, execution_id: str, node_name: str) -> Optional[Dict[str, Any]]:
+        """
+        체크포인트 로드: state = Load(execution_id, node_name)
+        
+        Returns:
+            저장된 상태 또는 None (없는 경우)
+        """
+        checkpoint_file = self.checkpoint_dir / f"{execution_id}_{node_name}.json"
+        
+        if not checkpoint_file.exists():
+            return None
+        
+        with open(checkpoint_file, "r", encoding="utf-8") as f:
+            checkpoint_data = json.load(f)
+        
+        return checkpoint_data.get("state")
 ```
 
 ---
@@ -103,14 +249,21 @@ $$
 
 #### 구현 3.2.1: Checkpoint
 
+**llmkit 구현:**
 ```python
-# state_graph.py: Line 160-163
+# domain/state_graph/checkpoint.py: Checkpoint
+# facade/state_graph_facade.py: StateGraph (체크포인팅 지원)
 if self.config.enable_checkpointing:
     self.checkpoint = Checkpoint(self.config.checkpoint_dir)
 
 # 실행 중 체크포인트 저장
 if self.checkpoint:
     self.checkpoint.save(execution_id, state, current_node)
+
+# 실제 구현:
+# - domain/state_graph/checkpoint.py: Checkpoint.save()
+# - facade/state_graph_facade.py: StateGraph (체크포인팅 지원)
+# - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke() (체크포인트 저장)
 ```
 
 ---

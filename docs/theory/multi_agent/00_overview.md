@@ -38,18 +38,43 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 43-76
+# domain/multi_agent/communication.py: AgentMessage
+# domain/multi_agent/communication.py: CommunicationBus
 @dataclass
 class AgentMessage:
     """
-    메시지 형식: m = (id, sender, receiver, type, content, timestamp)
+    메시지: m = (id, sender, receiver, type, content, timestamp)
+    
+    수학적 정의:
+    - id: 고유 식별자
+    - sender: 송신자 a_s ∈ A
+    - receiver: 수신자 a_r ∈ A ∪ {None} (None = broadcast)
+    - type: 메시지 타입 (INFORM, REQUEST, RESPONSE 등)
+    - content: 메시지 내용
+    - timestamp: 전송 시간
+    
+    실제 구현:
+    - domain/multi_agent/communication.py: AgentMessage
+    - domain/multi_agent/communication.py: CommunicationBus.publish()
+    - facade/multi_agent_facade.py: MultiAgentCoordinator.send_message()
     """
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
-    sender: str = ""                          # 송신자
-    receiver: Optional[str] = None            # 수신자 (None = broadcast)
+    sender: str = ""                          # 송신자 a_s
+    receiver: Optional[str] = None            # 수신자 a_r (None = broadcast)
     message_type: MessageType = MessageType.INFORM
     content: Any = None                       # 내용
     timestamp: datetime = field(default_factory=datetime.now)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """딕셔너리로 변환 (직렬화)"""
+        return {
+            "id": self.id,
+            "sender": self.sender,
+            "receiver": self.receiver,
+            "message_type": self.message_type.value,
+            "content": self.content,
+            "timestamp": self.timestamp.isoformat(),
+        }
 ```
 
 #### 정의 1.1.2: 메시지 전달 함수
@@ -89,15 +114,36 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 79-161
+# domain/multi_agent/communication.py: CommunicationBus
 class CommunicationBus:
+    """
+    통신 버스: 메시지 전달 시스템
+    
+    수학적 모델:
+    - deliver: M × A → A'
+    - publish: M → void (broadcast)
+    - subscribe: A × Callback → void
+    
+    시간 복잡도:
+    - publish: O(n) where n = number of subscribers
+    - subscribe: O(1)
+    - get_history: O(m) where m = message count
+    """
     def __init__(self, delivery_guarantee: str = "at-most-once"):
         """
         전송 보장 수준:
-        - at-most-once: O(1) 시간, 손실 가능
+        - at-most-once: O(1) 시간, 손실 가능 (기본값)
         - at-least-once: O(n) 시간, 중복 가능
-        - exactly-once: O(n) 시간 + 중복 체크
+        - exactly-once: O(n) 시간 + 중복 체크 (O(1) lookup)
+        
+        실제 구현:
+        - domain/multi_agent/communication.py: CommunicationBus
+        - facade/multi_agent_facade.py: MultiAgentCoordinator (CommunicationBus 사용)
         """
+        self.delivery_guarantee = delivery_guarantee
+        self.subscribers: Dict[str, List[Callable]] = {}  # agent_id → callbacks
+        self.messages: List[AgentMessage] = []  # 메시지 히스토리
+        self.delivered_messages: Set[str] = set()  # exactly-once용
         self.delivery_guarantee = delivery_guarantee
         self.delivered_messages: set = set()  # Exactly-once용
     
@@ -133,30 +179,49 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 105-119
-def subscribe(self, agent_id: str, callback: Callable[[AgentMessage], None]):
+# domain/multi_agent/communication.py: CommunicationBus
+# facade/multi_agent_facade.py: MultiAgentCoordinator
+class CommunicationBus:
     """
-    구독: S ← {e | filter(e)}
+    메시지 버스: Publisher-Subscriber 패턴
+    
+    수학적 표현:
+    - Subscribe: S ← {e | filter(e)}
+    - Publish: P → {e₁, e₂, ..., eₙ}
+    
+    실제 구현:
+    - domain/multi_agent/communication.py: CommunicationBus
+    - facade/multi_agent_facade.py: MultiAgentCoordinator
     """
-    if agent_id not in self.subscribers:
-        self.subscribers[agent_id] = []
-    self.subscribers[agent_id].append(callback)
+    def subscribe(self, agent_id: str, callback: Callable[[AgentMessage], None]):
+        """
+        구독: S ← {e | filter(e)}
+        
+        실제 구현:
+        - domain/multi_agent/communication.py: CommunicationBus.subscribe()
+        """
+        if agent_id not in self.subscribers:
+            self.subscribers[agent_id] = []
+        self.subscribers[agent_id].append(callback)
 
-async def publish(self, message: AgentMessage):
-    """
-    발행: P → {e₁, e₂, ..., eₙ}
-    """
-    if message.receiver:
-        # Unicast: 1:1
-        if message.receiver in self.subscribers:
-            for callback in self.subscribers[message.receiver]:
-                await callback(message)
-    else:
-        # Broadcast: 1:N
-        for agent_id, callbacks in self.subscribers.items():
-            if agent_id != message.sender:
-                for callback in callbacks:
+    async def publish(self, message: AgentMessage):
+        """
+        발행: P → {e₁, e₂, ..., eₙ}
+        
+        실제 구현:
+        - domain/multi_agent/communication.py: CommunicationBus.publish()
+        """
+        if message.receiver:
+            # Unicast: 1:1
+            if message.receiver in self.subscribers:
+                for callback in self.subscribers[message.receiver]:
                     await callback(message)
+        else:
+            # Broadcast: 1:N
+            for agent_id, callbacks in self.subscribers.items():
+                if agent_id != message.sender:
+                    for callback in callbacks:
+                        await callback(message)
 ```
 
 ---
@@ -181,12 +246,17 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 196-231
+# domain/multi_agent/strategies.py: SequentialStrategy
+# service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_sequential()
 class SequentialStrategy(CoordinationStrategy):
     """
     순차 실행: fₙ ∘ fₙ₋₁ ∘ ... ∘ f₁(task)
     
     시간 복잡도: O(Σ Tᵢ)
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: SequentialStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_sequential()
     """
     async def execute(
         self,
@@ -310,13 +380,18 @@ n │     ★ (이상적: S = n)
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 234-330
+# domain/multi_agent/strategies.py: ParallelStrategy
+# service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_parallel()
 class ParallelStrategy(CoordinationStrategy):
     """
     병렬 실행: {f₁(task), f₂(task), ..., fₙ(task)} 동시 실행
     
     시간 복잡도: O(max(T₁, T₂, ..., Tₙ))
     속도 향상: S = T_sequential / T_parallel
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: ParallelStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_parallel()
     """
     async def execute(
         self,
@@ -366,7 +441,8 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 333-432
+# domain/multi_agent/strategies.py: HierarchicalStrategy
+# service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_hierarchical()
 class HierarchicalStrategy(CoordinationStrategy):
     """
     계층적 구조:
@@ -375,6 +451,10 @@ class HierarchicalStrategy(CoordinationStrategy):
              └─ worker₃
     
     시간 복잡도: O(d × T_max)
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: HierarchicalStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_hierarchical()
     """
     def __init__(self, manager_agent: Agent):
         self.manager = manager_agent
@@ -418,11 +498,14 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 295-307
+# domain/multi_agent/strategies.py: ParallelStrategy (aggregation="vote")
 if self.aggregation == "vote":
     """
     다수결 투표:
     consensus = argmax_v Σ 1[vote(a) = v]
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: ParallelStrategy (aggregation="vote")
     """
     from collections import Counter
     vote_counts = Counter([r.answer for r in results])
@@ -459,11 +542,14 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 309-323
+# domain/multi_agent/strategies.py: ParallelStrategy (aggregation="consensus")
 elif self.aggregation == "consensus":
     """
     합의: 모든 에이전트가 같은 답변
     ∀ aᵢ, aⱼ: decision(aᵢ) = decision(aⱼ)
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: ParallelStrategy (aggregation="consensus")
     """
     answers = [r.answer for r in results]
     if len(set(answers)) == 1:

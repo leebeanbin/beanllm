@@ -39,22 +39,63 @@ $$
 
 **llmkit 구현:**
 ```python
-# tools.py: Line 25-46
+# domain/tools/tool.py: Tool
+# domain/tools/advanced/decorator.py: @tool 데코레이터
 @dataclass
 class Tool:
     """
-    도구 정의: Tool = (name, description, parameters, function)
+    도구: Tool = (name, description, parameters, function)
+    
+    수학적 정의:
+    - name: 도구 식별자
+    - description: 도구 설명 (LLM이 선택할 때 사용)
+    - parameters: 파라미터 스키마 (JSON Schema 형식)
+    - function: 실행 함수 f: Parameters → Result
+    
+    실제 구현:
+    - domain/tools/tool.py: Tool (기본 도구 클래스)
+    - domain/tools/advanced/decorator.py: @tool 데코레이터 (함수 → Tool 변환)
+    - facade/agent_facade.py: Agent (도구 사용 에이전트)
     """
     name: str
     description: str
-    parameters: List[ToolParameter]
+    parameters: List[ToolParameter]  # 또는 Dict[str, Any] (JSON Schema)
     function: Callable
     
     def execute(self, params: Dict[str, Any]) -> Any:
         """
         도구 실행: f(params)
+        
+        수학적 표현: result = f(params)
+        
+        실제 구현:
+        - domain/tools/tool.py: Tool.execute()
+        - 파라미터 검증 후 함수 실행
+        - 오류 처리 및 재시도 지원
         """
-        return self.function(**params)
+        # 파라미터 검증
+        validated_params = self._validate_params(params)
+        
+        # 함수 실행
+        return self.function(**validated_params)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """JSON Schema 형식으로 변환 (LLM에 전달)"""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    param.name: {
+                        "type": param.type,
+                        "description": param.description
+                    }
+                    for param in self.parameters
+                },
+                "required": [p.name for p in self.parameters if p.required]
+            }
+        }
 ```
 
 ---
@@ -71,11 +112,14 @@ $$
 
 **llmkit 구현:**
 ```python
-# tools.py: Line 15-23
+# domain/tools/tool.py: ToolParameter
 @dataclass
 class ToolParameter:
     """
     파라미터 스키마: (name, type, description, required)
+    
+    실제 구현:
+    - domain/tools/tool.py: ToolParameter
     """
     name: str
     type: str  # string, number, boolean, object, array
@@ -170,13 +214,18 @@ $$
 
 **llmkit 구현:**
 ```python
-# agent.py: Line 131-214
+# service/impl/agent_service_impl.py: AgentServiceImpl.run()
+# facade/agent_facade.py: Agent.run()
 async def run(self, task: str) -> AgentResult:
     """
     ReAct 패턴:
     1. Thought: 어떤 도구를 사용할지 생각
     2. Action: 도구 선택 P(tool | query)
     3. Observation: 도구 실행 결과
+    
+    실제 구현:
+    - service/impl/agent_service_impl.py: AgentServiceImpl.run()
+    - facade/agent_facade.py: Agent.run() (사용자 API)
     """
     # LLM이 도구 선택
     response = await self.client.chat(messages)
@@ -235,12 +284,16 @@ $$
 
 **llmkit 구현:**
 ```python
-# tools.py: Tool.execute()
+# domain/tools/tool.py: Tool.execute()
 def execute(self, params: Dict[str, Any]) -> Any:
     """
     도구 실행: result = f(params)
     
     타입 검증 포함
+    
+    실제 구현:
+    - domain/tools/tool.py: Tool.execute()
+    - 파라미터 검증 후 함수 실행
     """
     # 파라미터 검증
     self._validate_params(params)
@@ -263,10 +316,15 @@ $$
 
 **llmkit 구현:**
 ```python
-# agent.py: 도구 실행 시 재시도
+# service/impl/agent_service_impl.py: AgentServiceImpl._execute_tool()
+# utils/error_handling.py: RetryHandler
 def _execute_tool(self, tool_name: str, params: Dict[str, Any]) -> str:
     """
-    도구 실행 + 재시도
+    도구 실행 + 재시도 (지수 백오프)
+    
+    실제 구현:
+    - service/impl/agent_service_impl.py: AgentServiceImpl._execute_tool()
+    - utils/error_handling.py: RetryHandler (재시도 로직)
     """
     max_retries = 3
     for attempt in range(max_retries):
@@ -275,7 +333,7 @@ def _execute_tool(self, tool_name: str, params: Dict[str, Any]) -> str:
             return str(tool.execute(params))
         except Exception as e:
             if attempt < max_retries - 1:
-                delay = min(2 ** attempt * 0.1, 1.0)
+                delay = min(2 ** attempt * 0.1, 1.0)  # 지수 백오프
                 await asyncio.sleep(delay)
             else:
                 return f"Error: {str(e)}"
@@ -295,10 +353,17 @@ $$
 
 **llmkit 구현:**
 ```python
-# agent.py: ReAct 패턴에서 체이닝
+# service/impl/agent_service_impl.py: AgentServiceImpl.run()
+# facade/agent_facade.py: Agent.run()
 async def run(self, task: str) -> AgentResult:
     """
     도구 체이닝: fₙ ∘ fₙ₋₁ ∘ ... ∘ f₁(task)
+    
+    ReAct 패턴에서 순차적 도구 실행
+    
+    실제 구현:
+    - service/impl/agent_service_impl.py: AgentServiceImpl.run()
+    - facade/agent_facade.py: Agent.run() (사용자 API)
     """
     while step_number < self.max_iterations:
         # 도구 실행

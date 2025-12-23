@@ -162,17 +162,28 @@ P(y | x) = Σ P(y | x, d) · P(d | x)
 | $d_3$: "강아지는 귀여워" | 0.15 | 0.20 | 0.03 |
 | $d_4$: "고양이 사료" | 0.10 | 0.30 | 0.03 |
 
-**Marginalization:**
+**Marginalization (가중 합):**
 
 $$
-P(y^* | x) = 0.8075 + 0.576 + 0.03 + 0.03 = 1.4435
+P(y^* | x) = \sum_{d \in \mathcal{D}} P(y^* | x, d) \cdot P(d | x)
 $$
 
-**정규화 후:**
+$$
+= 0.95 \times 0.85 + 0.80 \times 0.72 + 0.20 \times 0.15 + 0.30 \times 0.10
+$$
 
 $$
-P(y^* | x) = \frac{1.4435}{1.4435 + \text{other}} \approx 0.85
+= 0.8075 + 0.576 + 0.03 + 0.03 = 1.4435
 $$
+
+**해석:**
+- 문서 $d_1$의 기여도가 가장 큼 (0.8075)
+- 문서 $d_2$도 상당한 기여 (0.576)
+- 문서 $d_3$, $d_4$는 기여도가 낮음 (각 0.03)
+
+**실제 RAG에서는 상위 $k$개만 선택:**
+- $k=2$: $P(y^* | x) \approx 0.8075 + 0.576 = 1.3835$ (정규화 후 약 0.85)
+- $k=3$: $P(y^* | x) \approx 1.4135$ (정규화 후 약 0.87)
 
 ---
 
@@ -341,8 +352,10 @@ $$
 #### 구현 5.2.1: RAGChain.query()
 
 ```python
-# rag_chain.py: Line 195-206
-def query(
+# facade/rag_facade.py: RAGChain.query()
+# handler/rag_handler.py: RAGHandler.handle_query()
+# service/impl/rag_service_impl.py: RAGServiceImpl.query()
+async def query(
     self,
     question: str,
     k: int = 4,
@@ -354,11 +367,22 @@ def query(
 ) -> Union[str, Tuple[str, List[VectorSearchResult]]]:
     """
     RAG 쿼리: P(y | x) = Σ P(y | x, d) · P(d | x)
+    
+    수학적 표현:
+    1. 검색: R(x, k) = argmax_{S ⊆ D, |S|=k} Σ_{d ∈ S} P(d | x)
+    2. 컨텍스트: C = concat(R(x, k))
+    3. 생성: y = argmax_{y'} P(y' | x, C)
+    
+    실제 구현 경로:
+    - facade/rag_facade.py: RAGChain.query() (사용자 API)
+    - handler/rag_handler.py: RAGHandler.handle_query() (입력 검증)
+    - service/impl/rag_service_impl.py: RAGServiceImpl.query() (비즈니스 로직)
     """
     # 1. 검색: R(x, k)
+    # 내부적으로 RAGHandler.handle_query() → RAGServiceImpl.query() 호출
     results = self.retrieve(question, k=k, rerank=rerank, mmr=mmr, hybrid=hybrid)
     
-    # 2. 컨텍스트 구성: C
+    # 2. 컨텍스트 구성: C = concat(R(x, k))
     context = self._build_context(results)
     
     # 3. 생성: y = argmax P(y' | x, C)
@@ -432,19 +456,54 @@ Output: 상위 k개 인덱스
 **컨텍스트 길이 제한:**
 
 ```python
-# rag_chain.py: Line 179-186
-def _build_context(self, results: List[VectorSearchResult]) -> str:
-    """컨텍스트 구성"""
+# facade/rag_facade.py: RAGChain.query
+async def query(
+    self,
+    question: str,
+    k: int = 5,
+    rerank: bool = False,
+    **kwargs: Any,
+) -> str:
+    """
+    RAG 쿼리 실행:
+    1. 검색: R = Retrieve(Q, V, k)
+    2. 컨텍스트 구성: C = concat(R)
+    3. 생성: A = LLM(Q, C)
+    """
+    # 1. 검색
+    results = await self.vector_store.similarity_search(question, k=k)
+    
+    # 2. 컨텍스트 구성 (토큰 제한 고려)
     context_parts = []
-    max_length = 4000  # 토큰 제한
+    max_tokens = kwargs.get("max_context_tokens", 4000)
+    current_tokens = 0
     
     for i, result in enumerate(results, 1):
-        content = result.document.content
-        if len(context_parts) + len(content) > max_length:
+        content = result.page_content
+        # 간단한 토큰 추정 (실제로는 tiktoken 사용)
+        estimated_tokens = len(content.split()) * 1.3
+        
+        if current_tokens + estimated_tokens > max_tokens:
             break
+        
         context_parts.append(f"[{i}] {content}")
+        current_tokens += estimated_tokens
     
-    return "\n\n".join(context_parts)
+    context = "\n\n".join(context_parts)
+    
+    # 3. 프롬프트 구성
+    prompt = self.prompt_template.format(
+        context=context,
+        question=question
+    )
+    
+    # 4. LLM 생성
+    response = await self.llm.chat([{
+        "role": "user",
+        "content": prompt
+    }])
+    
+    return response.content
 ```
 
 **최적화:**

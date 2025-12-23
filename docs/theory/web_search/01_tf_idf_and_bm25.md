@@ -220,6 +220,121 @@ Output: BM25 점수
 
 **시간 복잡도:** $O(|Q| \cdot |D|)$
 
+**llmkit 구현:**
+```python
+# domain/web_search/engines.py: BaseSearchEngine
+# facade/web_search_facade.py: WebSearch
+# service/impl/web_search_service_impl.py: WebSearchServiceImpl
+from abc import ABC, abstractmethod
+import math
+from collections import Counter
+
+class BaseSearchEngine(ABC):
+    """
+    검색 엔진 베이스 클래스
+    
+    실제 구현:
+    - domain/web_search/engines.py: BaseSearchEngine (추상 클래스)
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    """
+    @abstractmethod
+    def search(self, query: str, num_results: int = 10) -> List[Dict[str, Any]]:
+        """검색 실행"""
+        pass
+
+def compute_tf_idf(term: str, document: str, document_collection: List[str]) -> float:
+    """
+    TF-IDF 계산: TF-IDF(t, d, D) = TF(t, d) × IDF(t, D)
+    
+    수학적 표현:
+    - TF(t, d) = f_{t,d} / max{f_{t',d} : t' ∈ d}
+    - IDF(t, D) = log(N / |{d ∈ D : t ∈ d}|)
+    - TF-IDF(t, d, D) = TF(t, d) × IDF(t, D)
+    
+    시간 복잡도: O(|d| + |D|)
+    
+    실제 구현:
+    - domain/web_search/engines.py: BaseSearchEngine (기본 검색 엔진)
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    """
+    import math
+    from collections import Counter
+    
+    # 1. TF 계산
+    doc_tokens = document.lower().split()
+    term_freq = Counter(doc_tokens)
+    max_freq = max(term_freq.values()) if term_freq else 1
+    tf = term_freq.get(term.lower(), 0) / max_freq
+    
+    # 2. IDF 계산
+    N = len(document_collection)
+    docs_with_term = sum(1 for doc in document_collection if term.lower() in doc.lower())
+    idf = math.log(N / docs_with_term) if docs_with_term > 0 else 0.0
+    
+    # 3. TF-IDF
+    tf_idf = tf * idf
+    
+    return tf_idf
+
+def compute_bm25(
+    document: str,
+    query: str,
+    document_collection: List[str],
+    k1: float = 1.2,
+    b: float = 0.75
+) -> float:
+    """
+    BM25 점수 계산: score(D, Q) = Σ IDF(q_i) × (f(q_i, D) × (k_1 + 1)) / (f(q_i, D) + k_1 × (1 - b + b × |D| / avgdl))
+    
+    수학적 표현:
+    - score(D, Q) = Σ_{i=1}^n IDF(q_i) × (f(q_i, D) × (k_1 + 1)) / (f(q_i, D) + k_1 × (1 - b + b × |D| / avgdl))
+    - k_1 = 1.2 (TF 정규화)
+    - b = 0.75 (길이 정규화)
+    
+    시간 복잡도: O(|Q| · |D|)
+    
+    실제 구현:
+    - domain/web_search/engines.py: BaseSearchEngine (기본 검색 엔진)
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    """
+    import math
+    from collections import Counter
+    
+    # 평균 문서 길이 계산
+    doc_lengths = [len(doc.split()) for doc in document_collection]
+    avgdl = sum(doc_lengths) / len(doc_lengths) if doc_lengths else 0
+    
+    # 문서 길이 및 단어 빈도
+    doc_tokens = document.lower().split()
+    doc_length = len(doc_tokens)
+    term_freq = Counter(doc_tokens)
+    
+    # 쿼리 단어별 점수 계산
+    query_terms = query.lower().split()
+    score = 0.0
+    
+    for term in query_terms:
+        # 단어 빈도
+        f = term_freq.get(term, 0)
+        
+        # IDF 계산
+        N = len(document_collection)
+        docs_with_term = sum(1 for doc in document_collection if term in doc.lower())
+        idf = math.log((N - docs_with_term + 0.5) / (docs_with_term + 0.5)) if docs_with_term > 0 else 0.0
+        
+        # BM25 점수
+        numerator = f * (k1 + 1)
+        denominator = f + k1 * (1 - b + b * doc_length / avgdl)
+        term_score = idf * (numerator / denominator) if denominator > 0 else 0.0
+        
+        score += term_score
+    
+    return score
+```
+
 ---
 
 ## 질문과 답변 (Q&A)

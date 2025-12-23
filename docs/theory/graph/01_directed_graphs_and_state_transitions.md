@@ -179,26 +179,78 @@ $$
 #### 구현 3.2.1: StateGraph
 
 ```python
-# state_graph.py: Line 113-394
+**llmkit 구현:**
+```python
+# facade/state_graph_facade.py: StateGraph
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl
 class StateGraph:
-    def __init__(self, state_schema: Optional[type] = None):
+    """
+    상태 그래프: G = (V, E, s, t)
+    
+    수학적 정의:
+    - V: 노드 집합 (nodes)
+    - E: 엣지 집합 (edges)
+    - s: 소스 함수 (source)
+    - t: 타겟 함수 (target)
+    
+    상태 전이: State_new = f_node(State_old)
+    """
+    def __init__(
+        self, 
+        state_schema: Optional[type] = None, 
+        config: Optional[GraphConfig] = None
+    ):
+        """
+        Args:
+            state_schema: State TypedDict 클래스 (옵션)
+            config: 그래프 설정 (체크포인팅, 재시도 등)
+        """
         self.state_schema = state_schema
-        self.nodes: Dict[str, Callable] = {}
-        self.edges: Dict[str, Union[str, type[END]]] = {}
+        self.config = config or GraphConfig()
+        self.nodes: Dict[str, Callable] = {}  # V
+        self.edges: Dict[str, Union[str, type[END]]] = {}  # E
+        self.conditional_edges: Dict[str, tuple] = {}  # 조건부 엣지
+        self.entry_point: Optional[str] = None  # 시작 노드
+        # 내부적으로 StateGraphHandler와 StateGraphService 사용
+    
+    def add_node(self, name: str, func: Callable[[StateType], StateType]):
+        """
+        노드 추가: f_node: State → State
+        
+        Args:
+            name: 노드 이름 (v ∈ V)
+            func: 노드 함수 (State를 변환하는 함수)
+        """
+        if name in self.nodes:
+            raise ValueError(f"Node '{name}' already exists")
+        self.nodes[name] = func
+    
+    def add_edge(self, from_node: str, to_node: Union[str, type[END]]):
+        """
+        엣지 추가: (from_node, to_node) ∈ E
+        
+        Args:
+            from_node: 소스 노드
+            to_node: 타겟 노드 (END로 종료 가능)
+        """
+        if from_node not in self.nodes:
+            raise ValueError(f"Node '{from_node}' not found")
+        if to_node != END and to_node not in self.nodes:
+            raise ValueError(f"Node '{to_node}' not found")
+        self.edges[from_node] = to_node
     
     def invoke(self, initial_state: StateType) -> StateType:
         """
-        상태 전이: State_new = f(State_old, node)
+        그래프 실행:
+        State_0 → f_1 → State_1 → f_2 → ... → State_n
+        
+        수학적 표현:
+        State_{i+1} = f_{node_i}(State_i)
+        
+        내부적으로 StateGraphHandler.handle_invoke() 사용
         """
-        state = initial_state
-        current_node = self.entry_point
-        
-        while current_node != END:
-            node_func = self.nodes[current_node]
-            state = node_func(state)  # 상태 전이
-            current_node = self._get_next_node(current_node, state)
-        
-        return state
+        # 내부 구현은 service/impl/state_graph_service_impl.py 참조
+        pass
 ```
 
 ---

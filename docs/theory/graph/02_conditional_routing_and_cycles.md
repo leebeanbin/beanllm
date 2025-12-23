@@ -57,9 +57,26 @@ node2   node3
 
 #### 구현 1.2.1: Conditional Edge
 
+**llmkit 구현:**
 ```python
-# graph.py: Line 406-479
+# domain/graph/nodes.py: ConditionalNode
+# facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl._get_next_node()
+from abc import ABC
+
 class ConditionalNode(BaseNode):
+    """
+    조건부 노드: 조건에 따라 다른 노드로 라우팅
+    
+    수학적 표현:
+    - next(v, state) = v_A if condition_A(state) else v_B
+    - condition: State → {True, False}
+    
+    실제 구현:
+    - domain/graph/nodes.py: ConditionalNode
+    - facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl._get_next_node()
+    """
     def __init__(
         self,
         name: str,
@@ -67,12 +84,32 @@ class ConditionalNode(BaseNode):
         true_node: Optional[BaseNode] = None,
         false_node: Optional[BaseNode] = None
     ):
+        """
+        Args:
+            name: 노드 이름
+            condition: 조건 함수 c: State → {True, False}
+            true_node: 조건이 True일 때 이동할 노드
+            false_node: 조건이 False일 때 이동할 노드
+        """
+        super().__init__(name)
         self.condition = condition
         self.true_node = true_node
         self.false_node = false_node
     
     async def execute(self, state: GraphState) -> Dict[str, Any]:
-        """조건 평가 및 노드 실행"""
+        """
+        조건 평가 및 노드 실행
+        
+        Process:
+        1. 조건 평가: result = condition(state)
+        2. 노드 선택: selected = true_node if result else false_node
+        3. 선택된 노드 실행
+        
+        수학적 표현:
+        - result = c(state)
+        - selected = result ? v_true : v_false
+        - output = selected.execute(state)
+        """
         condition_result = self.condition(state)
         selected_node = self.true_node if condition_result else self.false_node
         
@@ -80,6 +117,80 @@ class ConditionalNode(BaseNode):
             result = await selected_node.execute(state)
             return result
         return {}
+```
+
+**조건부 엣지 추가:**
+```python
+# facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+class StateGraph:
+    def add_conditional_edge(
+        self,
+        from_node: str,
+        condition: Callable[[Dict[str, Any]], str],
+        edge_mapping: Optional[Dict[str, str]] = None,
+    ):
+        """
+        조건부 엣지 추가: next(v, state) = condition(state)
+        
+        수학적 표현:
+        - 조건 함수: c: State → NodeName
+        - 전이: next = c(state)
+        
+        실제 구현:
+        - facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+        - service/impl/state_graph_service_impl.py: StateGraphServiceImpl._get_next_node()
+        """
+        self.conditional_edges[from_node] = (condition, edge_mapping)
+```
+
+**순환 감지:**
+```python
+# service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+class StateGraphServiceImpl:
+    async def invoke(self, request: StateGraphRequest) -> StateGraphResponse:
+        """
+        그래프 실행 (순환 감지 포함)
+        
+        순환 감지 알고리즘:
+        - visited: 방문한 노드 집합
+        - 순환: visited에 이미 있는 노드 재방문 시 감지
+        
+        시간 복잡도: O(V + E) (DFS)
+        
+        실제 구현:
+        - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+        - service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+        """
+        visited = set()
+        current_node = request.entry_point
+        state = request.initial_state
+        iteration = 0
+        
+        while current_node and iteration < request.max_iterations:
+            # 순환 감지
+            if current_node in visited:
+                logger.warning(f"Cycle detected: {current_node} already visited")
+                break
+            
+            visited.add(current_node)
+            
+            # 노드 실행
+            node_func = request.nodes[current_node]
+            state = node_func(state)
+            
+            # 다음 노드 결정 (조건부 엣지 우선)
+            current_node = self._get_next_node(
+                current_node,
+                state,
+                request.edges or {},
+                request.conditional_edges or {},
+                request.nodes or {},
+            )
+            
+            iteration += 1
+        
+        return StateGraphResponse(final_state=state)
 ```
 
 ---
@@ -162,10 +273,25 @@ Output: 사이클 존재 여부
 
 #### 구현 3.2.1: 무한 루프 방지
 
+**llmkit 구현:**
 ```python
-# graph.py: Line 809-896
-async def run(self, initial_state, verbose=False):
-    max_iterations = 100  # 무한 루프 방지
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+# service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+async def invoke(self, request: StateGraphRequest) -> StateGraphResponse:
+    """
+    그래프 실행 (순환 감지 포함)
+    
+    순환 감지 알고리즘:
+    - visited: 방문한 노드 집합
+    - 순환: visited에 이미 있는 노드 재방문 시 감지
+    
+    시간 복잡도: O(V + E) (DFS)
+    
+    실제 구현:
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+    - service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+    """
+    max_iterations = request.max_iterations or 100  # 무한 루프 방지
     visited = set()
     
     for iteration in range(max_iterations):

@@ -237,17 +237,32 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1104-1175
+# domain/embeddings/utils.py (또는 직접 구현)
+# domain/embeddings/base.py: BaseEmbedding
+from typing import List, Optional, Tuple
+import numpy as np
+
 def find_hard_negatives(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
-    similarity_threshold: tuple = (0.3, 0.7),  # (τ_min, τ_max)
+    similarity_threshold: Tuple[float, float] = (0.3, 0.7),  # (τ_min, τ_max)
     top_k: Optional[int] = None,
 ) -> List[int]:
     """
-    Hard Negative Mining:
-    N_hard = {n_i | τ_min < sim(q, n_i) < τ_max}
+    Hard Negative Mining: N_hard = {n_i | τ_min < sim(q, n_i) < τ_max}
+    
+    수학적 표현:
+    - 입력: 쿼리 q, 후보 C = {c₁, ..., cₙ}
+    - 출력: Hard Negative 인덱스 리스트
+    - 조건: τ_min < sim(q, c_i) < τ_max
+    
+    시간 복잡도: O(n·d)
+    
+    실제 구현:
+    - domain/embeddings/utils.py: find_hard_negatives() (또는 직접 구현)
+    - batch_cosine_similarity() 사용
     """
+    # 배치 유사도 계산
     similarities = batch_cosine_similarity(query_vec, candidate_vecs)
     min_sim, max_sim = similarity_threshold
     
@@ -405,11 +420,15 @@ Hard Negative가 더 빠르게 수렴
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1104-1175
+# domain/embeddings/utils.py (또는 직접 구현)
 # 배치 처리로 효율적 계산
 similarities = batch_cosine_similarity(query_vec, candidate_vecs)
 hard_neg_indices = [i for i, sim in enumerate(similarities) 
                     if min_sim < sim < max_sim]
+
+# 실제 구현:
+# - domain/embeddings/utils.py (또는 직접 구현)
+# - batch_cosine_similarity() 사용
 ```
 
 **성능:**

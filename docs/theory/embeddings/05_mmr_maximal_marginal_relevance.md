@@ -368,22 +368,65 @@ diversity_sims = batch_cosine_similarity(candidate_vecs[idx], selected_vecs)  # 
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1178-1259
+# domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
+# vector_stores/search.py: SearchAlgorithms.mmr_search()
+from typing import List, Optional
+import numpy as np
+
 def mmr_search(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
     k: int = 5,
     lambda_param: float = 0.6,
 ) -> List[int]:
-    # O(n·d) 시간
+    """
+    MMR 검색: argmax_i [λ·sim(q, c_i) - (1-λ)·max_j∈S sim(c_i, c_j)]
+    
+    수학적 표현:
+    - 입력: 쿼리 q, 후보 C = {c₁, ..., cₙ}, k
+    - 출력: 선택된 인덱스 S = {i₁, ..., iₖ}
+    - MMR 점수: MMR(i) = λ·sim(q, c_i) - (1-λ)·max_{j∈S} sim(c_i, c_j)
+    
+    시간 복잡도: O(k·n·d) (Greedy 알고리즘)
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
+    - vector_stores/search.py: SearchAlgorithms.mmr_search() (레거시)
+    - Greedy 알고리즘 사용
+    """
+    # 1. 쿼리 유사도 계산: O(n·d)
     query_similarities = batch_cosine_similarity(query_vec, candidate_vecs)
     
-    # O(k·n·d) 시간 (Greedy)
+    # 2. 첫 번째 항목 선택 (가장 유사한 것)
+    selected = [np.argmax(query_similarities)]
+    remaining = set(range(len(candidate_vecs))) - set(selected)
+    
+    # 3. Greedy 선택: O(k·n·d)
     for _ in range(k - 1):
+        best_idx = None
+        best_score = float('-inf')
+        
         for idx in remaining:
-            # O(d) 시간 (유사도 계산)
-            diversity = max(batch_cosine_similarity(candidate_vecs[idx], selected_vecs))
+            # 관련성: sim(q, c_idx)
+            relevance = query_similarities[idx]
+            
+            # 다양성: max_{j∈S} sim(c_idx, c_j)
+            selected_vecs = [candidate_vecs[i] for i in selected]
+            diversity_sims = batch_cosine_similarity(candidate_vecs[idx], selected_vecs)
+            diversity = max(diversity_sims) if diversity_sims else 0.0
+            
+            # MMR 점수: λ·relevance - (1-λ)·diversity
             mmr_score = lambda_param * relevance - (1 - lambda_param) * diversity
+            
+            if mmr_score > best_score:
+                best_score = mmr_score
+                best_idx = idx
+        
+        if best_idx is not None:
+            selected.append(best_idx)
+            remaining.remove(best_idx)
+    
+    return selected
 ```
 
 **성능:**
@@ -398,8 +441,9 @@ def mmr_search(
 
 #### 구현 8.1.1: Greedy MMR
 
+**llmkit 구현:**
 ```python
-# embeddings.py: Line 1178-1259
+# domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
 def mmr_search(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
@@ -407,9 +451,13 @@ def mmr_search(
     lambda_param: float = 0.6,
 ) -> List[int]:
     """
-    Greedy MMR 알고리즘
+    Greedy MMR 알고리즘: argmax_i [λ·sim(q, c_i) - (1-λ)·max_j∈S sim(c_i, c_j)]
     
     시간 복잡도: O(k·n·d)
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
+    - vector_stores/search.py: SearchAlgorithms.mmr_search() (레거시)
     """
     # 1. 쿼리와 모든 후보의 유사도 (한 번만 계산)
     query_similarities = batch_cosine_similarity(query_vec, candidate_vecs)  # O(n·d)

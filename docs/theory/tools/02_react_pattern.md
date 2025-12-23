@@ -106,28 +106,190 @@ $$
 
 #### 구현 2.2.1: ReAct 실행
 
+**llmkit 구현:**
 ```python
-# agent.py: Line 131-214
-async def run(self, task: str) -> AgentResult:
+# service/impl/agent_service_impl.py: AgentServiceImpl.run()
+# handler/agent_handler.py: AgentHandler.handle_run()
+# facade/agent_facade.py: Agent.run()
+class AgentServiceImpl(IAgentService):
     """
-    ReAct 패턴 실행
-    """
-    state = {"task": task, "history": []}
+    에이전트 서비스 구현체: ReAct 패턴 실행
     
-    for step in range(self.max_iterations):
-        # Thought
-        thought = await self._think(state)
+    수학적 표현:
+    - State_{t+1} = f(State_t, Thought_t, Action_t, Observation_t)
+    - Thought_t = LLM(State_t, Task)
+    - Action_t = SelectTool(Thought_t)
+    - Observation_t = ExecuteTool(Action_t)
+    
+    실제 구현:
+    - service/impl/agent_service_impl.py: AgentServiceImpl.run()
+    - handler/agent_handler.py: AgentHandler.handle_run() (입력 검증)
+    - facade/agent_facade.py: Agent.run() (사용자 API)
+    """
+    REACT_PROMPT = """You are a helpful AI assistant with access to tools.
+
+To solve the task, you should follow the ReAct (Reasoning + Acting) pattern:
+1. **Thought**: Think about what to do next
+2. **Action**: Choose a tool to use
+3. **Observation**: See the result
+4. Repeat until you have the final answer
+
+Available tools:
+{tools_description}
+
+Format:
+Thought: [your reasoning]
+Action: [tool_name]
+Action Input: {{"param1": "value1", "param2": "value2"}}
+Observation: [tool result]
+... (repeat as needed)
+Thought: I now know the final answer
+Final Answer: [your final answer]
+
+Task: {task}"""
+    
+    async def run(self, request: AgentRequest) -> AgentResponse:
+        """
+        ReAct 패턴 실행
         
-        # Action
-        action = self._parse_action(thought)
+        Process:
+        for t in range(max_steps):
+            1. Thought_t = LLM(State_t, Task)
+            2. Action_t = Parse(Thought_t)
+            3. Observation_t = ExecuteTool(Action_t)
+            4. State_{t+1} = Update(State_t, Thought_t, Action_t, Observation_t)
+            5. if Final Answer: break
         
-        if action:
-            # Observation
-            observation = await self._execute_tool(action)
-            state["history"].append((thought, action, observation))
-        else:
-            # Final Answer
-            return AgentResult(answer=thought)
+        시간 복잡도: O(max_steps · (T_LLM + T_tool))
+        
+        실제 구현:
+        - service/impl/agent_service_impl.py: AgentServiceImpl.run()
+        """
+        steps: List[Dict[str, Any]] = []
+        step_number = 0
+        
+        # 도구 설명 생성
+        tools_description = self._format_tools(request.tool_registry or self._tool_registry)
+        
+        # 초기 프롬프트 (ReAct 패턴)
+        prompt = self.REACT_PROMPT.format(
+            tools_description=tools_description,
+            task=request.task
+        )
+        
+        messages = [{"role": "user", "content": prompt}]
+        conversation_history = prompt
+        
+        # ReAct 사이클
+        while step_number < request.max_steps:
+            step_number += 1
+            
+            # 1. Thought: LLM 추론
+            chat_request = ChatRequest(
+                messages=messages,
+                model=request.model,
+                temperature=request.temperature or 0.0,
+            )
+            response = await self._chat_service.chat(chat_request)
+            content = response.content
+            
+            # 2. Action: 파싱
+            parsed_step = self._parse_response(content, step_number)
+            steps.append(parsed_step)
+            
+            # 3. 최종 답변 확인
+            if parsed_step.get("is_final") and parsed_step.get("final_answer"):
+                return AgentResponse(
+                    answer=parsed_step["final_answer"],
+                    steps=steps,
+                    total_steps=step_number,
+                    success=True,
+                )
+            
+            # 4. Observation: 도구 실행
+            action_name = parsed_step.get("action")
+            action_input = parsed_step.get("action_input")
+            if action_name and action_input:
+                observation = self._execute_tool(
+                    action_name,
+                    action_input,
+                    request.tool_registry or self._tool_registry
+                )
+                parsed_step["observation"] = observation
+                
+                # 대화 히스토리 업데이트
+                conversation_history += f"\n\n{content}\nObservation: {observation}"
+                messages = [{"role": "user", "content": conversation_history + "\n\nContinue..."}]
+        
+        # 최대 반복 도달
+        return AgentResponse(
+            answer="Maximum iterations reached",
+            steps=steps,
+            total_steps=step_number,
+            success=False,
+        )
+    
+    def _parse_response(self, content: str, step_number: int) -> Dict[str, Any]:
+        """
+        LLM 응답 파싱: Action, Action Input, Final Answer 추출
+        
+        실제 구현:
+        - service/impl/agent_service_impl.py: AgentServiceImpl._parse_response()
+        - 정규표현식으로 "Action:", "Action Input:", "Final Answer:" 추출
+        """
+        import re
+        
+        # Action 추출
+        action_match = re.search(r"Action:\s*(\w+)", content)
+        action = action_match.group(1) if action_match else None
+        
+        # Action Input 추출 (JSON)
+        action_input_match = re.search(r"Action Input:\s*(\{.*?\})", content, re.DOTALL)
+        action_input = None
+        if action_input_match:
+            try:
+                action_input = json.loads(action_input_match.group(1))
+            except:
+                action_input = {}
+        
+        # Final Answer 추출
+        final_answer_match = re.search(r"Final Answer:\s*(.+)", content, re.DOTALL)
+        final_answer = final_answer_match.group(1).strip() if final_answer_match else None
+        
+        return {
+            "step": step_number,
+            "thought": content,
+            "action": action,
+            "action_input": action_input,
+            "final_answer": final_answer,
+            "is_final": final_answer is not None,
+        }
+    
+    def _execute_tool(
+        self,
+        tool_name: str,
+        tool_input: Dict[str, Any],
+        tool_registry: Optional["ToolRegistryProtocol"]
+    ) -> str:
+        """
+        도구 실행: Observation = ExecuteTool(Action)
+        
+        실제 구현:
+        - service/impl/agent_service_impl.py: AgentServiceImpl._execute_tool()
+        - tool_registry에서 도구 조회 및 실행
+        """
+        if not tool_registry:
+            return "Tool registry not available"
+        
+        tool = tool_registry.get_tool(tool_name)
+        if not tool:
+            return f"Tool {tool_name} not found"
+        
+        try:
+            result = tool.execute(tool_input)
+            return str(result)
+        except Exception as e:
+            return f"Error: {str(e)}"
 ```
 
 ---

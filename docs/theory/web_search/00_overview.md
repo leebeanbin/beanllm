@@ -125,14 +125,42 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: Line 10-17 (주석에 수학 공식 포함)
-"""
-TF-IDF(t, d, D) = TF(t, d) × IDF(t, D)
-
-where:
-TF(t, d) = f_{t,d} / max{f_{t',d} : t' ∈ d}
-IDF(t, D) = log(N / |{d ∈ D : t ∈ d}|)
-"""
+# domain/web_search/engines.py: BaseSearchEngine
+# facade/web_search_facade.py: WebSearch
+# service/impl/web_search_service_impl.py: WebSearchServiceImpl
+def compute_tf_idf(term: str, document: str, document_collection: List[str]) -> float:
+    """
+    TF-IDF 계산: TF-IDF(t, d, D) = TF(t, d) × IDF(t, D)
+    
+    수학적 표현:
+    - TF(t, d) = f_{t,d} / max{f_{t',d} : t' ∈ d}
+    - IDF(t, D) = log(N / |{d ∈ D : t ∈ d}|)
+    - TF-IDF(t, d, D) = TF(t, d) × IDF(t, D)
+    
+    실제 구현:
+    - domain/web_search/engines.py: BaseSearchEngine (기본 검색 엔진)
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    - 검색 엔진별로 TF-IDF 또는 BM25 사용 (Google, Bing, DuckDuckGo)
+    """
+    import math
+    from collections import Counter
+    
+    # 1. TF 계산
+    doc_tokens = document.lower().split()
+    term_freq = Counter(doc_tokens)
+    max_freq = max(term_freq.values()) if term_freq else 1
+    tf = term_freq.get(term.lower(), 0) / max_freq
+    
+    # 2. IDF 계산
+    N = len(document_collection)
+    docs_with_term = sum(1 for doc in document_collection if term.lower() in doc.lower())
+    idf = math.log(N / docs_with_term) if docs_with_term > 0 else 0.0
+    
+    # 3. TF-IDF
+    tf_idf = tf * idf
+    
+    return tf_idf
 ```
 
 ---
@@ -156,15 +184,34 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: Line 19-28 (주석에 수학 공식 포함)
-"""
-BM25 Ranking Function:
-score(D, Q) = Σ_{i=1}^n IDF(q_i) × (f(q_i, D) × (k_1 + 1)) /
-                                    (f(q_i, D) + k_1 × (1 - b + b × |D| / avgdl))
+# domain/web_search/engines.py: BaseSearchEngine
+# facade/web_search_facade.py: WebSearch
+# service/impl/web_search_service_impl.py: WebSearchServiceImpl
+from abc import ABC, abstractmethod
+import math
+from collections import Counter
 
-where:
-- k_1=1.2, b=0.75 (typical values)
-"""
+class BaseSearchEngine(ABC):
+    """
+    검색 엔진 베이스 클래스
+    
+    BM25 Ranking Function:
+    score(D, Q) = Σ_{i=1}^n IDF(q_i) × (f(q_i, D) × (k_1 + 1)) /
+                                        (f(q_i, D) + k_1 × (1 - b + b × |D| / avgdl))
+    
+    where:
+    - k_1=1.2, b=0.75 (typical values)
+    
+    실제 구현:
+    - domain/web_search/engines.py: BaseSearchEngine (추상 클래스)
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    - 검색 엔진별로 TF-IDF 또는 BM25 사용 (Google, Bing, DuckDuckGo)
+    """
+    @abstractmethod
+    def search(self, query: str, num_results: int = 10) -> List[Dict[str, Any]]:
+        """검색 실행"""
+        pass
 ```
 
 ---
@@ -186,13 +233,23 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: Line 30-36 (주석에 수학 공식 포함)
+# domain/web_search/engines.py: BaseSearchEngine
+# facade/web_search_facade.py: WebSearch
+# PageRank는 검색 엔진 결과 순위화에 사용 (Google, Bing 등)
 """
 PageRank Algorithm:
 PR(p) = (1-d) + d × Σ_{p_i ∈ M(p)} PR(p_i) / L(p_i)
 
 where:
 - d: damping factor (typically 0.85)
+- M(p): 페이지 p로 링크하는 페이지 집합
+- L(p_i): 페이지 p_i의 외부 링크 수
+
+실제 구현:
+- llmkit은 외부 검색 엔진(Google, Bing, DuckDuckGo) API를 사용
+- PageRank는 검색 엔진 내부에서 이미 적용된 결과를 받음
+- domain/web_search/engines.py: BaseSearchEngine (검색 엔진 추상 클래스)
+- facade/web_search_facade.py: WebSearch (사용자 API)
 """
 ```
 
@@ -214,19 +271,57 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: WebSearch 클래스
+# facade/web_search_facade.py: WebSearch
+# service/impl/web_search_service_impl.py: WebSearchServiceImpl
+# handler/web_search_handler.py: WebSearchHandler
+from typing import List, Dict, Any
+
 class WebSearch:
+    """
+    웹 검색: 다중 검색 엔진 통합
+    
+    수학적 표현:
+    - Search(Q) = ∪_{e ∈ E} Search_e(Q)
+    - score_combined(r) = Σ_{e ∈ E} w_e × score_e(r)
+    
+    실제 구현:
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
+    - handler/web_search_handler.py: WebSearchHandler (입력 검증)
+    """
+    def __init__(self, default_engine: str = "google"):
+        """
+        Args:
+            default_engine: 기본 검색 엔진 ("google", "bing", "duckduckgo")
+        """
+        self.engines = {
+            "google": GoogleSearchEngine(),
+            "bing": BingSearchEngine(),
+            "duckduckgo": DuckDuckGoSearchEngine()
+        }
+        self.default_engine = default_engine
+    
     def search(
         self,
         query: str,
-        engines: List[str] = ["google", "bing"],
+        engines: List[str] = None,
         k: int = 10
-    ) -> SearchResponse:
+    ) -> List[Dict[str, Any]]:
         """
-        다중 검색 엔진 결과 융합:
-        score_combined = Σ w_e × score_e
+        다중 검색 엔진 결과 융합: score_combined = Σ w_e × score_e
+        
+        수학적 표현:
+        - 입력: 쿼리 Q, 검색 엔진 집합 E
+        - 출력: 융합된 검색 결과
+        - 점수: score_combined(r) = Σ_{e ∈ E} w_e × score_e(r)
+        
+        실제 구현:
+        - facade/web_search_facade.py: WebSearch.search()
+        - service/impl/web_search_service_impl.py: WebSearchServiceImpl.search()
         """
+        engines = engines or [self.default_engine]
         all_results = []
+        
         for engine in engines:
             results = self._search_engine(query, engine, k=k*2)
             all_results.extend(results)
@@ -234,6 +329,18 @@ class WebSearch:
         # 점수 정규화 및 결합
         combined = self._combine_results(all_results)
         return combined[:k]
+    
+    def _combine_results(self, results: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        검색 결과 결합: score_combined = Σ w_e × score_e
+        
+        실제 구현:
+        - facade/web_search_facade.py: WebSearch._combine_results()
+        - 점수 정규화 및 중복 제거
+        """
+        # 점수 정규화 및 결합 로직
+        # ...
+        return sorted(results, key=lambda x: x.get("score", 0), reverse=True)
 ```
 
 ---
@@ -250,17 +357,34 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: 다중 엔진 지원
+# facade/web_search_facade.py: WebSearch
+# domain/web_search/engines.py: GoogleSearchEngine, BingSearchEngine, DuckDuckGoSearchEngine
 class WebSearch:
     """
     Google, Bing, DuckDuckGo 등 여러 검색 엔진 통합
+    
+    실제 구현:
+    - facade/web_search_facade.py: WebSearch (사용자 API)
+    - domain/web_search/engines.py: GoogleSearchEngine, BingSearchEngine, DuckDuckGoSearchEngine
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl (비즈니스 로직)
     """
     def __init__(self, default_engine: str = "google"):
+        """
+        Args:
+            default_engine: 기본 검색 엔진
+        """
+        from ...domain.web_search.engines import (
+            GoogleSearchEngine,
+            BingSearchEngine,
+            DuckDuckGoSearchEngine
+        )
+        
         self.engines = {
             "google": GoogleSearchEngine(),
             "bing": BingSearchEngine(),
             "duckduckgo": DuckDuckGoSearchEngine()
         }
+        self.default_engine = default_engine
 ```
 
 ---
@@ -277,16 +401,33 @@ $$
 
 **llmkit 구현:**
 ```python
-# web_search.py: 콘텐츠 추출
+# facade/web_search_facade.py: WebSearch.extract_content()
+# service/impl/web_search_service_impl.py: WebSearchServiceImpl.extract_content()
+import requests
+from bs4 import BeautifulSoup
+
 def extract_content(self, url: str) -> str:
     """
     웹페이지에서 텍스트 추출: content = extract(HTML)
+    
+    수학적 표현:
+    - 입력: URL (웹페이지 주소)
+    - 출력: 텍스트 콘텐츠
+    - Process: HTML → Parse → Extract Text
+    
+    실제 구현:
+    - facade/web_search_facade.py: WebSearch.extract_content()
+    - service/impl/web_search_service_impl.py: WebSearchServiceImpl.extract_content()
+    - BeautifulSoup 사용 (HTML 파싱)
     """
     response = requests.get(url)
     soup = BeautifulSoup(response.content, 'html.parser')
     
     # 메인 콘텐츠 추출
-    content = soup.get_text()
+    # - <article>, <main>, <body> 태그에서 텍스트 추출
+    # - 스크립트, 스타일 태그 제거
+    content = soup.get_text(separator='\n', strip=True)
+    
     return content
 ```
 

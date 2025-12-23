@@ -99,15 +99,150 @@ $$
 
 #### 구현 4.1.1: Token Bucket
 
+**llmkit 구현:**
 ```python
+# utils/error_handling.py: RateLimiter
+# decorators/rate_limit.py: @rate_limit 데코레이터
+import time
+from collections import deque
+import threading
+
+class RateLimiter:
+    """
+    Rate Limiter: 시간 윈도우 기반 속도 제한
+    
+    수학적 모델:
+    - time_window 내 최대 max_calls 허용
+    - allow = True if len(calls) < max_calls else False
+    
+    시간 복잡도:
+    - _is_allowed: O(n) where n = calls in window (최적화 가능)
+    - call: O(1) amortized
+    
+    실제 구현:
+    - utils/error_handling.py: RateLimiter (시간 윈도우 기반)
+    - decorators/rate_limit.py: @rate_limit 데코레이터
+    - sliding window 방식 사용 (deque)
+    """
+    def __init__(self, config: Optional[RateLimitConfig] = None):
+        """
+        Args:
+            config: RateLimitConfig
+                - max_calls: 최대 호출 수 (기본값: 10)
+                - time_window: 시간 윈도우 (초, 기본값: 60.0)
+        """
+        self.config = config or RateLimitConfig()
+        self.calls = deque()  # 호출 타임스탬프 큐
+        self._lock = threading.Lock()  # 스레드 안전성
+    
+    def _clean_old_calls(self):
+        """
+        오래된 호출 기록 제거
+        
+        Process:
+        1. 현재 시간 기준 cutoff 계산
+        2. cutoff 이전의 호출 제거
+        
+        시간 복잡도: O(n) where n = expired calls
+        """
+        now = time.time()
+        cutoff = now - self.config.time_window
+        
+        while self.calls and self.calls[0] < cutoff:
+            self.calls.popleft()
+    
+    def _is_allowed(self) -> bool:
+        """
+        호출 허용 여부: allow = len(calls) < max_calls
+        
+        수학적 표현:
+        - allow = True if |{c ∈ calls : t_current - c < time_window}| < max_calls
+        - allow = False otherwise
+        """
+        self._clean_old_calls()
+        return len(self.calls) < self.config.max_calls
+    
+    def call(self, func: Callable, *args, **kwargs) -> Any:
+        """
+        Rate limit이 적용된 함수 호출
+        
+        Process:
+        1. 허용 여부 확인: _is_allowed()
+        2. 허용되면 호출 기록 추가
+        3. 함수 실행
+        
+        실제 구현:
+        - utils/error_handling.py: RateLimiter.call()
+        - decorators/rate_limit.py: @rate_limit 데코레이터 (이 클래스 사용)
+        """
+        with self._lock:
+            if not self._is_allowed():
+                wait_time = self._wait_time()
+                raise RateLimitError(
+                    f"Rate limit exceeded. Wait {wait_time:.2f}s before retry."
+                )
+            
+            # 호출 기록 추가
+            self.calls.append(time.time())
+        
+        # 함수 실행
+        return func(*args, **kwargs)
+    
+    def _wait_time(self) -> float:
+        """
+        대기 시간 계산
+        
+        수학적 표현:
+        - oldest_call = min(calls)
+        - elapsed = t_current - oldest_call
+        - wait_time = max(0, time_window - elapsed)
+        """
+        if not self.calls:
+            return 0.0
+        
+        oldest_call = self.calls[0]
+        elapsed = time.time() - oldest_call
+        remaining = self.config.time_window - elapsed
+        
+        return max(0.0, remaining)
+```
+
+**Token Bucket 구현 (참고용):**
+```python
+# 참고: llmkit은 현재 sliding window 방식 사용
+# Token Bucket은 향후 추가 가능
 class TokenBucket:
-    def __init__(self, rate, capacity):
+    """
+    토큰 버킷: tokens(t) = min(capacity, tokens(t-1) + rate × Δt)
+    
+    수학적 모델:
+    - tokens(t) = min(capacity, tokens(t-1) + rate × Δt)
+    - allow = True if tokens ≥ cost else False
+    
+    실제 구현:
+    - 현재 llmkit은 sliding window 방식 사용
+    - Token Bucket은 향후 추가 예정
+    """
+    def __init__(self, rate: float, capacity: float):
+        """
+        Args:
+            rate: 토큰 충전 속도 (tokens/sec)
+            capacity: 최대 토큰 수
+        """
         self.rate = rate
         self.capacity = capacity
         self.tokens = capacity
         self.last_update = time.time()
     
-    def allow_request(self, cost=1.0):
+    def allow_request(self, cost: float = 1.0) -> bool:
+        """
+        요청 허용 여부: allow = tokens ≥ cost
+        
+        Process:
+        1. 토큰 충전: _refill_tokens()
+        2. 허용 여부 확인: tokens ≥ cost
+        3. 토큰 소비: tokens -= cost
+        """
         self._refill_tokens()
         if self.tokens >= cost:
             self.tokens -= cost
@@ -115,6 +250,13 @@ class TokenBucket:
         return False
     
     def _refill_tokens(self):
+        """
+        토큰 충전: tokens(t) = min(capacity, tokens(t-1) + rate × Δt)
+        
+        수학적 표현:
+        - Δt = t_current - t_last_update
+        - tokens_new = min(capacity, tokens_old + rate × Δt)
+        """
         now = time.time()
         delta_t = now - self.last_update
         self.tokens = min(

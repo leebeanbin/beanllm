@@ -93,11 +93,77 @@ $$
 
 #### 구현 4.1.1: LRU Cache
 
+**llmkit 구현:**
 ```python
+# domain/embeddings/cache.py: EmbeddingCache
 from collections import OrderedDict
+from datetime import datetime, timedelta
 
-class LRUCache:
-    def __init__(self, max_size):
+class EmbeddingCache:
+    """
+    LRU + TTL 캐시
+    
+    제거 규칙: evict = argmin_i t_i
+    TTL 검증: valid(k) = (t_current - t_stored < TTL)
+    """
+    def __init__(
+        self,
+        max_size: int = 1000,
+        ttl_seconds: Optional[int] = None,
+    ):
+        """
+        Args:
+            max_size: 최대 캐시 크기
+            ttl_seconds: TTL (초), None이면 만료 없음
+        """
+        self.max_size = max_size
+        self.ttl_seconds = ttl_seconds
+        self._cache: OrderedDict[str, Tuple[Any, datetime]] = OrderedDict()
+    
+    def get(self, key: str) -> Optional[Any]:
+        """
+        캐시 조회
+        
+        Process:
+        1. 키 존재 확인
+        2. TTL 검증
+        3. LRU 업데이트 (맨 뒤로 이동)
+        """
+        if key not in self._cache:
+            return None
+        
+        value, stored_time = self._cache[key]
+        
+        # TTL 검증
+        if self.ttl_seconds is not None:
+            if datetime.now() - stored_time > timedelta(seconds=self.ttl_seconds):
+                del self._cache[key]
+                return None
+        
+        # LRU 업데이트 (맨 뒤로 이동)
+        self._cache.move_to_end(key)
+        
+        return value
+    
+    def set(self, key: str, value: Any):
+        """
+        캐시 저장
+        
+        Process:
+        1. 키가 이미 있으면 업데이트
+        2. 캐시가 가득 차면 LRU 제거
+        3. 새 항목 추가
+        """
+        if key in self._cache:
+            # 업데이트
+            self._cache.move_to_end(key)
+        elif len(self._cache) >= self.max_size:
+            # LRU 제거 (맨 앞 항목)
+            self._cache.popitem(last=False)
+        
+        self._cache[key] = (value, datetime.now())
+        self._cache.move_to_end(key)
+```
         self.cache = OrderedDict()
         self.max_size = max_size
     

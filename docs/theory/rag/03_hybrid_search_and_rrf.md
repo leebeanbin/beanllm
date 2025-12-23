@@ -193,15 +193,107 @@ $$
 
 **llmkit 구현:**
 ```python
-# vector_stores/search.py: Line 98-115
-def _combine_results(vector_results, keyword_results, alpha=0.5):
-    k_constant = 60  # RRF constant
+# domain/vector_stores/search.py: SearchAlgorithms._combine_results()
+# vector_stores/search.py: SearchAlgorithms.hybrid_search()
+# service/impl/search_strategy.py: HybridSearchStrategy
+class SearchAlgorithms:
+    """
+    고급 검색 알고리즘 모음
     
-    for doc_id, (result, vec_rank, key_rank) in results_map.items():
-        # 가중치 적용
-        vec_score = alpha / (k_constant + vec_rank) if vec_rank else 0
-        key_score = (1 - alpha) / (k_constant + key_rank) if key_rank else 0
-        total_score = vec_score + key_score
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms
+    - vector_stores/search.py: SearchAlgorithms (레거시)
+    - service/impl/search_strategy.py: HybridSearchStrategy
+    """
+    
+    @staticmethod
+    def hybrid_search(
+        vector_store,
+        query: str,
+        k: int = 4,
+        alpha: float = 0.5,
+        **kwargs
+    ) -> List[VectorSearchResult]:
+        """
+        Hybrid Search: 벡터 + 키워드 검색
+        
+        수학적 표현:
+        - Hybrid(q, D) = Combine(VectorSearch(q, D), KeywordSearch(q, D))
+        - Combine: RRF 또는 가중 평균
+        
+        시간 복잡도: O(n·(d + m) + n log n)
+        where n = 문서 수, d = 벡터 차원, m = 키워드 수
+        
+        실제 구현:
+        - domain/vector_stores/search.py: SearchAlgorithms.hybrid_search()
+        - service/impl/search_strategy.py: HybridSearchStrategy.execute()
+        """
+        # 1. 벡터 검색: O(n·d + n log n)
+        vector_results = vector_store.similarity_search(query, k=k * 2, **kwargs)
+        
+        # 2. 키워드 검색: O(n·m) where m = 키워드 수
+        keyword_results = SearchAlgorithms._keyword_search(vector_store, query, k=k * 2)
+        
+        # 3. RRF 결합: O(n)
+        combined = SearchAlgorithms._combine_results(
+            vector_results,
+            keyword_results,
+            alpha=alpha
+        )
+        
+        return combined[:k]
+    
+    @staticmethod
+    def _combine_results(
+        vector_results: List[VectorSearchResult],
+        keyword_results: List[VectorSearchResult],
+        alpha: float = 0.5,
+        k_constant: int = 60
+    ) -> List[VectorSearchResult]:
+        """
+        RRF 결합: RRF(d) = Σ w_r / (k + rank_r(d))
+        
+        수학적 표현:
+        - RRF(d) = α / (k + rank_vector(d)) + (1-α) / (k + rank_keyword(d))
+        - k = 60 (RRF 상수, 기본값)
+        - α = 벡터 검색 가중치 (기본값: 0.5)
+        
+        실제 구현:
+        - domain/vector_stores/search.py: SearchAlgorithms._combine_results()
+        """
+        # 문서별 점수 집계
+        results_map: Dict[str, Tuple[VectorSearchResult, Optional[int], Optional[int]]] = {}
+        
+        # 벡터 검색 결과 인덱싱
+        for rank, result in enumerate(vector_results, start=1):
+            doc_id = result.document.id if hasattr(result.document, 'id') else str(result.document)
+            if doc_id not in results_map:
+                results_map[doc_id] = (result, None, None)
+            result_obj, _, _ = results_map[doc_id]
+            results_map[doc_id] = (result_obj, rank, None)
+        
+        # 키워드 검색 결과 인덱싱
+        for rank, result in enumerate(keyword_results, start=1):
+            doc_id = result.document.id if hasattr(result.document, 'id') else str(result.document)
+            if doc_id not in results_map:
+                results_map[doc_id] = (result, None, None)
+            result_obj, vec_rank, _ = results_map[doc_id]
+            results_map[doc_id] = (result_obj, vec_rank, rank)
+        
+        # RRF 점수 계산
+        scored_results = []
+        for doc_id, (result, vec_rank, key_rank) in results_map.items():
+            # RRF 점수: RRF(d) = α / (k + rank_vec) + (1-α) / (k + rank_key)
+            vec_score = alpha / (k_constant + vec_rank) if vec_rank else 0.0
+            key_score = (1 - alpha) / (k_constant + key_rank) if key_rank else 0.0
+            total_score = vec_score + key_score
+            
+            scored_results.append((result, total_score))
+        
+        # 점수 기준 정렬 (내림차순)
+        scored_results.sort(key=lambda x: x[1], reverse=True)
+        
+        return [result for result, _ in scored_results]
 ```
 
 ---
@@ -395,8 +487,10 @@ Output: 결합된 결과
 
 #### 구현 7.1.1: Hybrid Search
 
+**llmkit 구현:**
 ```python
-# vector_stores/search.py: Line 14-47
+# domain/vector_stores/search.py: SearchAlgorithms.hybrid_search()
+# vector_stores/search.py: SearchAlgorithms.hybrid_search() (레거시)
 @staticmethod
 def hybrid_search(
     vector_store,
@@ -409,6 +503,10 @@ def hybrid_search(
     Hybrid Search: 벡터 + 키워드
     
     시간 복잡도: O(n·(d + m) + n log n)
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.hybrid_search()
+    - vector_stores/search.py: SearchAlgorithms.hybrid_search() (레거시)
     """
     # 1. 벡터 검색
     vector_results = vector_store.similarity_search(query, k=k * 2, **kwargs)
@@ -428,8 +526,10 @@ def hybrid_search(
 
 #### 구현 7.1.2: RRF 결합
 
+**llmkit 구현:**
 ```python
-# vector_stores/search.py: Line 65-115
+# domain/vector_stores/search.py: SearchAlgorithms._combine_results()
+# vector_stores/search.py: SearchAlgorithms._combine_results() (레거시)
 @staticmethod
 def _combine_results(
     vector_results: List[VectorSearchResult],
@@ -438,6 +538,10 @@ def _combine_results(
 ) -> List[VectorSearchResult]:
     """
     RRF 결합: RRF(d) = Σ w_r / (k + rank_r(d))
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms._combine_results()
+    - vector_stores/search.py: SearchAlgorithms._combine_results() (레거시)
     """
     results_map = {}
     k_constant = 60

@@ -65,15 +65,46 @@ $$
 #### 구현 1.2.1: 컨텍스트 구성
 
 ```python
-# rag_chain.py: Line 179-186
+# facade/rag_facade.py: RAGChain._build_context()
+# service/impl/rag_service_impl.py: RAGServiceImpl._build_context()
 def _build_context(self, results: List[VectorSearchResult]) -> str:
-    """검색 결과에서 컨텍스트 생성"""
+    """
+    검색 결과에서 컨텍스트 생성: C = concat({C₁, C₂, ..., Cₖ})
+    
+    수학적 표현:
+    - 입력: 검색 결과 R = {r₁, r₂, ..., rₖ}
+    - 출력: 컨텍스트 문자열 C = "[1] C₁\n\n[2] C₂\n\n..."
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain._build_context()
+    - service/impl/rag_service_impl.py: RAGServiceImpl._build_context()
+    """
     context_parts = []
     for i, result in enumerate(results, 1):
         context_parts.append(
             f"[{i}] {result.document.content}"
         )
     return "\n\n".join(context_parts)
+
+def _build_prompt(self, query: str, context: str) -> str:
+    """
+    프롬프트 생성: prompt = Template(context, query)
+    
+    수학적 표현:
+    - 입력: 쿼리 q, 컨텍스트 C
+    - 출력: 프롬프트 prompt = f(q, C)
+    
+    기본 템플릿:
+    "Based on the following context:\n{context}\n\nQuestion: {question}\nAnswer:"
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain._build_prompt()
+    - service/impl/rag_service_impl.py: RAGServiceImpl._build_prompt()
+    """
+    return self.prompt_template.format(
+        context=context,  # C = {C₁, C₂, ..., Cₖ}
+        question=query    # q
+    )
 ```
 
 ---

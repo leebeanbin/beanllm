@@ -66,14 +66,38 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 844-919
+# domain/embeddings/utils.py: cosine_similarity()
 def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """
-    벡터는 List[float]로 표현됨
-    예: text-embedding-3-small → 1536차원 벡터
+    코사인 유사도 계산: cosine(u, v) = (u·v) / (||u|| ||v||)
+    
+    Args:
+        vec1: 첫 번째 임베딩 벡터 (예: text-embedding-3-small → 1536차원)
+        vec2: 두 번째 임베딩 벡터 (같은 차원이어야 함)
+    
+    Returns:
+        코사인 유사도 값 (-1 ~ 1, 1에 가까울수록 유사)
+    
+    실제 구현:
+        - domain/embeddings/utils.py: cosine_similarity()
+        - numpy 기반 효율적 계산 (없으면 순수 Python 폴백)
+        - 수치 안정성을 위해 -1과 1 사이로 클리핑
     """
-    v1 = np.array(vec1, dtype=np.float32)  # ℝ^1536
-    v2 = np.array(vec2, dtype=np.float32)  # ℝ^1536
+    v1 = np.array(vec1, dtype=np.float32)  # ℝ^d (예: d=1536)
+    v2 = np.array(vec2, dtype=np.float32)  # ℝ^d
+    
+    # L2 Norm 계산
+    norm1 = np.linalg.norm(v1)
+    norm2 = np.linalg.norm(v2)
+    
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    
+    # 코사인 유사도 = (A · B) / (||A|| * ||B||)
+    similarity = np.dot(v1, v2) / (norm1 * norm2)
+    
+    # 수치 안정성을 위해 -1과 1 사이로 클리핑
+    return float(np.clip(similarity, -1.0, 1.0))
 ```
 
 ---
@@ -152,11 +176,24 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: OpenAIEmbedding, GeminiEmbedding 등
+# infrastructure/providers/openai_provider.py: OpenAIProvider
+# domain/embeddings/base.py: BaseEmbedding
 # 각 Provider는 Transformer 기반 모델 사용
 class OpenAIEmbedding(BaseEmbedding):
+    """
+    OpenAI 임베딩: Transformer 기반 모델
+    
+    실제 구현:
+    - infrastructure/providers/openai_provider.py: OpenAIProvider
+    - domain/embeddings/base.py: BaseEmbedding (추상 클래스)
+    """
     async def embed(self, texts: List[str]) -> List[List[float]]:
-        # OpenAI API는 내부적으로 Transformer 사용
+        """
+        OpenAI API는 내부적으로 Transformer 사용
+        
+        실제 구현:
+        - infrastructure/providers/openai_provider.py: OpenAIProvider.embed()
+        """
         response = await self.async_client.embeddings.create(
             input=texts, model=self.model
         )
@@ -214,10 +251,16 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Embedding 클래스
+# domain/embeddings/base.py: BaseEmbedding
+# facade/embeddings_facade.py: Embedding
 # 다국어 모델 자동 선택
 emb = Embedding(model="embed-multilingual-v3.0")
 # 한국어와 영어를 같은 공간에 매핑
+
+# 실제 구현:
+# - domain/embeddings/base.py: BaseEmbedding (추상 클래스)
+# - facade/embeddings_facade.py: Embedding (사용자 API)
+# - infrastructure/providers/: 각 Provider별 구현
 ```
 
 ---
@@ -339,9 +382,13 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 911-912
+# domain/embeddings/utils.py: cosine_similarity()
 # 코사인 유사도 = (A · B) / (||A|| * ||B||)
 similarity = np.dot(v1, v2) / (norm1 * norm2)
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 95)
+# - NumPy 벡터화 연산 사용
 ```
 
 **실제 사용 예시:**
@@ -510,9 +557,13 @@ cos(θ) = 1 - d²/2
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 966-967
+# domain/embeddings/utils.py: euclidean_distance()
 # 유클리드 거리 = sqrt(sum((a_i - b_i)^2))
 distance = np.linalg.norm(v1 - v2)
+
+# 실제 구현:
+# - domain/embeddings/utils.py: euclidean_distance() (Line 105-106)
+# - NumPy 벡터화 연산 사용
 ```
 
 **실제 사용 예시:**
@@ -573,8 +624,15 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1017-1026
+# domain/embeddings/utils.py (또는 직접 구현)
 def normalize_vector(vec: List[float]) -> List[float]:
+    """
+    L2 정규화: v_norm = v / ||v||
+    
+    실제 구현:
+    - domain/embeddings/utils.py (또는 직접 구현)
+    - NumPy 사용
+    """
     v = np.array(vec, dtype=np.float32)
     norm = np.linalg.norm(v)  # L2 norm
     if norm == 0:
@@ -703,13 +761,20 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1104-1175
+# domain/embeddings/utils.py (또는 직접 구현)
 def find_hard_negatives(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
     similarity_threshold: tuple = (0.3, 0.7),  # (τ_min, τ_max)
     top_k: Optional[int] = None,
 ) -> List[int]:
+    """
+    Hard Negative Mining: N_hard = {n_i | τ_min < sim(q, n_i) < τ_max}
+    
+    실제 구현:
+    - domain/embeddings/utils.py (또는 직접 구현)
+    - batch_cosine_similarity() 사용
+    """
     similarities = batch_cosine_similarity(query_vec, candidate_vecs)
     min_sim, max_sim = similarity_threshold
     # Hard Negative: τ_min < sim < τ_max
@@ -802,13 +867,20 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1178-1259
+# domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
 def mmr_search(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
     k: int = 5,
     lambda_param: float = 0.6,  # λ
 ) -> List[int]:
+    """
+    MMR 검색: argmax_i [λ·sim(q, c_i) - (1-λ)·max_j∈S sim(c_i, c_j)]
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
+    - vector_stores/search.py: SearchAlgorithms.mmr_search() (레거시)
+    """
     # 관련성 점수
     relevance = query_similarities[idx]
     
@@ -851,13 +923,20 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1262-1328
+# domain/embeddings/utils.py (또는 직접 구현)
 def query_expansion(
     query: str,
     embedding: BaseEmbedding,
     expansion_candidates: Optional[List[str]] = None,
     similarity_threshold: float = 0.7,  # τ
 ) -> List[str]:
+    """
+    Query Expansion: Q_exp = {w | sim(E(Q), E(w)) > τ}
+    
+    실제 구현:
+    - domain/embeddings/utils.py (또는 직접 구현)
+    - batch_cosine_similarity() 사용
+    """
     query_vec = embedding.embed_sync([query])[0]
     candidate_vecs = embedding.embed_sync(expansion_candidates)
     similarities = batch_cosine_similarity(query_vec, candidate_vecs)
@@ -885,11 +964,18 @@ def query_expansion(
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1033-1096
+# domain/embeddings/utils.py (또는 직접 구현)
 def batch_cosine_similarity(
     query_vec: List[float],
     candidate_vecs: List[List[float]]
 ) -> List[float]:
+    """
+    배치 코사인 유사도 계산: O(n·d)
+    
+    실제 구현:
+    - domain/embeddings/utils.py (또는 직접 구현)
+    - NumPy 벡터화 연산으로 효율적 계산
+    """
     # NumPy 벡터화 연산으로 효율적 계산
     query = np.array(query_vec, dtype=np.float32)
     candidates = np.array(candidate_vecs, dtype=np.float32)
@@ -921,19 +1007,38 @@ def batch_cosine_similarity(
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1331-1399
+# domain/embeddings/cache.py: EmbeddingCache
 class EmbeddingCache:
+    """
+    LRU + TTL 캐시: 가장 오래 사용되지 않은 항목 제거
+    
+    실제 구현:
+    - domain/embeddings/cache.py: EmbeddingCache
+    - OrderedDict 사용 (LRU 구현)
+    """
     def __init__(self, ttl: int = 3600, max_size: int = 10000):
         self.cache: OrderedDict[str, tuple[List[float], float]] = OrderedDict()
         # LRU: OrderedDict 사용
     
     def get(self, text: str) -> Optional[List[float]]:
+        """
+        캐시 조회: O(1)
+        
+        실제 구현:
+        - domain/embeddings/cache.py: EmbeddingCache.get()
+        """
         # O(1) 조회
         if text in self.cache:
             self.cache.move_to_end(text)  # LRU 업데이트
             return vector
     
     def set(self, text: str, vector: List[float]):
+        """
+        캐시 저장: O(1)
+        
+        실제 구현:
+        - domain/embeddings/cache.py: EmbeddingCache.set()
+        """
         # O(1) 삽입
         if len(self.cache) >= self.max_size:
             self.cache.popitem(last=False)  # 가장 오래된 항목 제거

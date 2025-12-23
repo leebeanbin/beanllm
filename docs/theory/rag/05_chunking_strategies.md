@@ -173,39 +173,184 @@ Output: 청크 리스트
 
 #### 구현 3.2.1: TextSplitter
 
+**llmkit 구현:**
 ```python
-# text_splitters.py
-class TextSplitter:
-    @staticmethod
-    def split(
-        documents: List[Document],
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
-        separator: str = "\n\n"
-    ) -> List[Document]:
+# domain/splitters/base.py: BaseTextSplitter
+# domain/splitters/splitters.py: CharacterTextSplitter, RecursiveCharacterTextSplitter
+# domain/splitters/factory.py: TextSplitter
+from abc import ABC, abstractmethod
+
+class BaseTextSplitter(ABC):
+    """
+    텍스트 분할 베이스 클래스
+    
+    수학적 정의:
+    - Chunk: Document → {C₁, C₂, ..., Cₙ}
+    - 제약: ∪ C_i = D, |C_i| ≤ chunk_size, |C_i ∩ C_j| ≤ overlap_max
+    
+    실제 구현:
+    - domain/splitters/base.py: BaseTextSplitter (추상 클래스)
+    - domain/splitters/splitters.py: CharacterTextSplitter, RecursiveCharacterTextSplitter
+    - domain/splitters/factory.py: TextSplitter (팩토리)
+    """
+    def __init__(
+        self,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        length_function: Callable[[str], int] = len,
+        keep_separator: bool = True,
+    ):
         """
-        고정 크기 청킹
-        
-        시간 복잡도: O(n)
+        Args:
+            chunk_size: 최대 청크 크기 |C_i| ≤ chunk_size
+            chunk_overlap: 청크 간 겹침 |C_i ∩ C_j| ≤ overlap
+            length_function: 길이 계산 함수 (len 또는 tiktoken)
+            keep_separator: 구분자 유지 여부
         """
-        chunks = []
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.length_function = length_function
+        self.keep_separator = keep_separator
+    
+    @abstractmethod
+    def split_text(self, text: str) -> List[str]:
+        """
+        텍스트 분할: Chunk(D) = {C₁, C₂, ..., Cₙ}
         
+        Returns:
+            청크 리스트 [C₁, C₂, ..., Cₙ]
+        """
+        pass
+    
+    def split_documents(self, documents: List["Document"]) -> List["Document"]:
+        """
+        문서 분할
+        
+        시간 복잡도: O(n) where n = 문서 길이
+        
+        실제 구현:
+        - domain/splitters/base.py: BaseTextSplitter.split_documents()
+        """
+        texts, metadatas = [], []
         for doc in documents:
-            text = doc.content
-            start = 0
-            
-            while start < len(text):
-                end = min(start + chunk_size, len(text))
-                chunk_text = text[start:end]
-                
-                chunks.append(Document(
-                    content=chunk_text,
-                    metadata={**doc.metadata, "chunk_index": len(chunks)}
-                ))
-                
-                start = end - chunk_overlap
+            texts.append(doc.content)
+            metadatas.append(doc.metadata)
         
-        return chunks
+        return self.create_documents(texts, metadatas)
+
+class CharacterTextSplitter(BaseTextSplitter):
+    """
+    단순 문자 기반 분할
+    
+    수학적 표현:
+    - 구분자로 분할: segments = Split(D, separator)
+    - 크기 제한으로 병합: Chunk = Merge(segments, chunk_size)
+    
+    실제 구현:
+    - domain/splitters/splitters.py: CharacterTextSplitter
+    """
+    def __init__(
+        self,
+        separator: str = "\n\n",
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        **kwargs
+    ):
+        super().__init__(chunk_size, chunk_overlap, **kwargs)
+        self.separator = separator
+    
+    def split_text(self, text: str) -> List[str]:
+        """
+        텍스트 분할
+        
+        Process:
+        1. 구분자로 분할: segments = text.split(separator)
+        2. 크기 제한으로 병합: chunks = merge(segments, chunk_size)
+        3. 오버랩 적용
+        
+        시간 복잡도: O(n) where n = text length
+        """
+        if self.separator:
+            splits = text.split(self.separator)
+        else:
+            splits = list(text)
+        
+        return self._merge_splits(splits, self.separator)
+
+class RecursiveCharacterTextSplitter(BaseTextSplitter):
+    """
+    재귀적 문자 분할 (여러 구분자 시도)
+    
+    수학적 표현:
+    - 구분자 우선순위: separators = ["\n\n", "\n", ". ", " "]
+    - 재귀적 분할: Chunk = RecursiveSplit(D, separators)
+    
+    실제 구현:
+    - domain/splitters/splitters.py: RecursiveCharacterTextSplitter
+    - 여러 구분자를 우선순위대로 시도
+    """
+    def __init__(
+        self,
+        separators: Optional[List[str]] = None,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        **kwargs
+    ):
+        super().__init__(chunk_size, chunk_overlap, **kwargs)
+        self.separators = separators or ["\n\n", "\n", ". ", " ", ""]
+    
+    def split_text(self, text: str) -> List[str]:
+        """
+        재귀적 텍스트 분할
+        
+        Process:
+        1. 첫 번째 구분자로 분할 시도
+        2. 청크가 너무 크면 다음 구분자로 재귀 분할
+        3. 최종적으로 문자 단위까지 분할
+        
+        시간 복잡도: O(n·m) where n = text length, m = separator count
+        """
+        return self._split_text_recursive(text, self.separators)
+```
+
+**TextSplitter 팩토리:**
+```python
+# domain/splitters/factory.py: TextSplitter
+class TextSplitter:
+    """
+    텍스트 분할 팩토리
+    
+    전략별 Splitter 생성 및 편의 메서드 제공
+    
+    실제 구현:
+    - domain/splitters/factory.py: TextSplitter
+    - 자동 전략 선택 및 스마트 기본값
+    """
+    SPLITTERS = {
+        "character": CharacterTextSplitter,
+        "recursive": RecursiveCharacterTextSplitter,
+        "token": TokenTextSplitter,
+        "markdown": MarkdownHeaderTextSplitter,
+    }
+    
+    @classmethod
+    def split(
+        cls,
+        documents: List["Document"],
+        strategy: str = "recursive",
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        **kwargs
+    ) -> List["Document"]:
+        """
+        문서 분할 (편의 메서드)
+        
+        실제 구현:
+        - domain/splitters/factory.py: TextSplitter.split()
+        - 전략별 Splitter 자동 생성 및 실행
+        """
+        splitter = cls.create(strategy, chunk_size, chunk_overlap, **kwargs)
+        return splitter.split_documents(documents)
 ```
 
 ---

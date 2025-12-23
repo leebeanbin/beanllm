@@ -124,25 +124,48 @@ $$
 
 **llmkit 구현:**
 ```python
-# rag_chain.py: Line 126-177
-def retrieve(self, query: str, k: int = 4) -> List[VectorSearchResult]:
+# facade/rag_facade.py: RAGChain
+# service/impl/rag_service_impl.py: RAGServiceImpl
+# handler/rag_handler.py: RAGHandler
+class RAGChain:
     """
-    P(d | x) 계산: 벡터 검색으로 관련 문서 찾기
+    RAG 파이프라인: RAG(x) = LLM(x, Retrieve(x, D))
+    
+    수학적 표현:
+    - P(d | x): 문서 검색 확률
+    - P(y | x, d): LLM 생성 확률
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain (사용자 API)
+    - service/impl/rag_service_impl.py: RAGServiceImpl (비즈니스 로직)
+    - handler/rag_handler.py: RAGHandler (입력 검증)
     """
-    results = self.vector_store.similarity_search(query, k=k)
-    return results  # 상위 k개 문서
+    def retrieve(self, query: str, k: int = 4) -> List[VectorSearchResult]:
+        """
+        P(d | x) 계산: 벡터 검색으로 관련 문서 찾기
+        
+        실제 구현:
+        - facade/rag_facade.py: RAGChain.retrieve()
+        - service/impl/rag_service_impl.py: RAGServiceImpl.retrieve()
+        """
+        results = self.vector_store.similarity_search(query, k=k)
+        return results  # 상위 k개 문서
 
-def query(self, question: str, k: int = 4) -> str:
-    """
-    전체 RAG 파이프라인:
-    1. P(d | x) 계산 (retrieve)
-    2. P(y | x, d) 계산 (LLM 생성)
-    """
-    results = self.retrieve(question, k=k)
-    context = self._build_context(results)
-    prompt = self._build_prompt(question, context)
-    answer = await self.llm.chat([{"role": "user", "content": prompt}])
-    return answer.content
+    def query(self, question: str, k: int = 4) -> str:
+        """
+        전체 RAG 파이프라인:
+        1. P(d | x) 계산 (retrieve)
+        2. P(y | x, d) 계산 (LLM 생성)
+        
+        실제 구현:
+        - facade/rag_facade.py: RAGChain.query()
+        - service/impl/rag_service_impl.py: RAGServiceImpl.query()
+        """
+        results = self.retrieve(question, k=k)
+        context = self._build_context(results)
+        prompt = self._build_prompt(question, context)
+        answer = await self.llm.chat([{"role": "user", "content": prompt}])
+        return answer.content
 ```
 
 ---
@@ -173,14 +196,18 @@ $$
 
 **llmkit 구현:**
 ```python
-# vector_stores_old.py: Line 130-151
-def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
+# domain/embeddings/utils.py: cosine_similarity()
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
     """
-    코사인 유사도 계산
+    코사인 유사도 계산: cosine(u, v) = (u·v) / (||u|| ||v||)
     이후 softmax로 확률 변환 가능
+    
+    실제 구현:
+    - domain/embeddings/utils.py: cosine_similarity()
+    - NumPy 벡터화 연산 사용
     """
-    a = np.array(vec1)
-    b = np.array(vec2)
+    a = np.array(vec1, dtype=np.float32)
+    b = np.array(vec2, dtype=np.float32)
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
 ```
 
@@ -208,16 +235,33 @@ $$
 
 **llmkit 구현:**
 ```python
-# rag_chain.py: Line 179-193
+# facade/rag_facade.py: RAGChain._build_context()
+# service/impl/rag_service_impl.py: RAGServiceImpl._build_context()
 def _build_context(self, results: List[VectorSearchResult]) -> str:
-    """검색 결과에서 컨텍스트 생성"""
+    """
+    검색 결과에서 컨텍스트 생성
+    
+    수학적 표현: C = concat({d₁, d₂, ..., dₖ})
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain._build_context()
+    - service/impl/rag_service_impl.py: RAGServiceImpl._build_context()
+    """
     context_parts = []
     for i, result in enumerate(results, 1):
         context_parts.append(f"[{i}] {result.document.content}")
     return "\n\n".join(context_parts)
 
 def _build_prompt(self, query: str, context: str) -> str:
-    """프롬프트 생성: f(x, d₁, d₂, ..., dₖ)"""
+    """
+    프롬프트 생성: f(x, d₁, d₂, ..., dₖ)
+    
+    수학적 표현: prompt = f(x, C) where C = {d₁, d₂, ..., dₖ}
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain._build_prompt()
+    - 기본 템플릿: "Based on the following context:\n{context}\n\nQuestion: {question}\nAnswer:"
+    """
     return self.prompt_template.format(
         context=context,  # d₁, d₂, ..., dₖ
         question=query    # x
@@ -244,19 +288,44 @@ $$
 
 **llmkit 구현:**
 ```python
-# vector_stores_old.py: BaseVectorStore
-def similarity_search(
+# service/types.py: VectorStoreProtocol
+# domain/vector_stores/base.py: BaseVectorStore
+# infrastructure/vector_stores/chroma.py: ChromaVectorStore
+async def similarity_search(
     self,
     query: str,
     k: int = 4,
     **kwargs
 ) -> List[VectorSearchResult]:
     """
-    k-NN 검색 구현
-    각 provider (Chroma, FAISS 등)가 최적화된 인덱스 사용
+    k-NN 검색 구현: top-k(q) = argmax_{S ⊆ D, |S|=k} Σ_{d ∈ S} sim(q, d)
+    
+    수학적 표현:
+    - 입력: 쿼리 q, 문서 컬렉션 D, k
+    - 출력: 상위 k개 문서 S ⊆ D
+    
+    시간 복잡도:
+    - Naive: O(n·d) (n: 문서 수, d: 차원)
+    - 최적화 (HNSW): O(log n·d)
+    
+    실제 구현:
+    - service/types.py: VectorStoreProtocol (인터페이스)
+    - domain/vector_stores/base.py: BaseVectorStore (추상 클래스)
+    - infrastructure/vector_stores/chroma.py: ChromaVectorStore (Chroma 구현)
+    - infrastructure/vector_stores/faiss.py: FAISSVectorStore (FAISS 구현)
+    - 각 provider가 최적화된 인덱스 사용 (HNSW, IVF, 등)
     """
-    query_vec = self.embedding_function([query])[0]
-    # Provider별 최적화된 검색 알고리즘 사용
+    # 1. 쿼리 임베딩 생성
+    query_vec = await self.embedding_function([query])
+    query_vec = query_vec[0] if isinstance(query_vec, list) else query_vec
+    
+    # 2. Provider별 최적화된 검색 알고리즘 사용
+    # - Chroma: 자체 최적화 인덱스
+    # - FAISS: HNSW 또는 IVF 인덱스
+    # - Pinecone: 관리형 서비스
+    results = await self._search_vectors(query_vec, k=k, **kwargs)
+    
+    return results
 ```
 
 ---
@@ -400,18 +469,21 @@ $$
 
 **llmkit 구현:**
 ```python
-# vector_stores_old.py: Line 143-195
+# domain/vector_stores/search.py: SearchAlgorithms._combine_results()
 def _combine_results(
-    self,
     vector_results: List[VectorSearchResult],
     keyword_results: List[VectorSearchResult],
     alpha: float = 0.5
 ) -> List[VectorSearchResult]:
     """
-    RRF로 결과 결합
+    RRF로 결과 결합: RRF(d) = α · (1/(k + r_vec)) + (1-α) · (1/(k + r_key))
     
     수학적 표현:
     score = α · (1/(k + r_vec)) + (1-α) · (1/(k + r_key))
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms._combine_results()
+    - vector_stores/search.py: SearchAlgorithms._combine_results() (레거시)
     """
     k_constant = 60  # RRF constant
     vec_score = alpha / (k_constant + vec_rank) if vec_rank else 0
@@ -456,17 +528,21 @@ $$
 
 **llmkit 구현:**
 ```python
-# rag_chain.py: Line 197-220
+# domain/vector_stores/search.py: SearchAlgorithms.rerank()
+# facade/rag_facade.py: RAGChain.rerank()
 def rerank(
-    self,
     query: str,
     results: List[VectorSearchResult],
     top_k: int = 5
 ) -> List[VectorSearchResult]:
     """
-    Cross-encoder로 재순위화
+    Cross-encoder로 재순위화: Rerank(R, q) = arg sort_{d ∈ R} Score_cross(q, d)
     
     Note: sentence-transformers의 CrossEncoder 사용
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.rerank()
+    - facade/rag_facade.py: RAGChain.rerank() (사용자 API)
     """
     # 1차: Bi-encoder로 후보 선정 (빠름)
     candidates = results  # 이미 검색됨
@@ -623,7 +699,7 @@ MMR 검색 (관련성 + 다양성):
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1178-1259
+# domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
 def mmr_search(
     query_vec: List[float],
     candidate_vecs: List[List[float]],
@@ -631,10 +707,14 @@ def mmr_search(
     lambda_param: float = 0.6,
 ) -> List[int]:
     """
-    Greedy MMR 알고리즘 구현
+    Greedy MMR 알고리즘: argmax_i [λ·sim(q, c_i) - (1-λ)·max_j∈S sim(c_i, c_j)]
     
     수학적 표현:
     mmr_score = λ × relevance - (1-λ) × diversity
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.mmr_search()
+    - vector_stores/search.py: SearchAlgorithms.mmr_search() (레거시)
     """
     # 첫 번째: 가장 관련성 높은 것
     selected = [query_similarities.index(max(query_similarities))]
@@ -678,7 +758,7 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 1262-1328
+# domain/embeddings/utils.py (또는 직접 구현)
 def query_expansion(
     query: str,
     embedding: BaseEmbedding,
@@ -686,8 +766,14 @@ def query_expansion(
     similarity_threshold: float = 0.7,
 ) -> List[str]:
     """
+    Query Expansion: Q_exp = {w | I(Q; w) > τ}
+    
     정보 이론적 관점:
     Q_exp = {w | I(Q; w) > τ}
+    
+    실제 구현:
+    - domain/embeddings/utils.py (또는 직접 구현)
+    - batch_cosine_similarity() 사용
     """
     query_vec = embedding.embed_sync([query])[0]
     candidate_vecs = embedding.embed_sync(expansion_candidates)
@@ -857,7 +943,8 @@ LLM 토큰: ~400 tokens
 
 **llmkit 구현:**
 ```python
-# rag_chain.py: Line 71-124
+# facade/rag_facade.py: RAGBuilder.from_documents()
+# service/impl/rag_service_impl.py: RAGServiceImpl.build_chain()
 @classmethod
 def from_documents(
     cls,
@@ -874,7 +961,15 @@ def from_documents(
     3. 임베딩: E = embed(C, model)
     4. 저장: V = store(E)
     5. RAGChain 생성
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGBuilder.from_documents()
+    - service/impl/rag_service_impl.py: RAGServiceImpl.build_chain()
     """
+    from ...domain.loaders import DocumentLoader
+    from ...domain.splitters import TextSplitter
+    from ...domain.embeddings import Embedding
+    
     documents = DocumentLoader.load(source)  # 1
     chunks = TextSplitter.split(documents, chunk_size, chunk_overlap)  # 2
     embedding = Embedding(model=embedding_model)  # 3
@@ -911,8 +1006,15 @@ $$
 
 **llmkit 구현:**
 ```python
-# text_splitters.py: Line 15-89
+# domain/splitters/base.py: BaseTextSplitter
 class BaseTextSplitter:
+    """
+    텍스트 분할 베이스 클래스
+    
+    실제 구현:
+    - domain/splitters/base.py: BaseTextSplitter (추상 클래스)
+    - domain/splitters/splitters.py: CharacterTextSplitter, RecursiveCharacterTextSplitter
+    """
     def __init__(
         self,
         chunk_size: int = 1000,      # s
@@ -923,6 +1025,9 @@ class BaseTextSplitter:
         최적 파라미터:
         - chunk_size: 모델 컨텍스트 길이의 50-75%
         - overlap: chunk_size의 10-20%
+        
+        실제 구현:
+        - domain/splitters/base.py: BaseTextSplitter.__init__()
         """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -956,7 +1061,8 @@ $$
 
 **llmkit 구현:**
 ```python
-# rag_chain.py: Line 195-204
+# facade/rag_facade.py: RAGChain.query()
+# service/impl/rag_service_impl.py: RAGServiceImpl.query()
 def query(
     self,
     question: str,
@@ -964,7 +1070,13 @@ def query(
     **kwargs
 ) -> str:
     """
+    RAG 쿼리: RAG(x) = LLM(x, Retrieve(x, D))
+    
     k=4가 실험적으로 최적 성능
+    
+    실제 구현:
+    - facade/rag_facade.py: RAGChain.query()
+    - service/impl/rag_service_impl.py: RAGServiceImpl.query()
     """
     results = self.retrieve(question, k=k)
 ```

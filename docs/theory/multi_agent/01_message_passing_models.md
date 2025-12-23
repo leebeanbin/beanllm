@@ -30,15 +30,29 @@ $$
 
 **llmkit 구현:**
 ```python
-# multi_agent.py: Line 43-76
+# domain/multi_agent/communication.py: AgentMessage
 @dataclass
 class AgentMessage:
-    id: str
-    sender: str
-    receiver: Optional[str]  # None = broadcast
-    message_type: MessageType
-    content: str
-    timestamp: datetime
+    """
+    메시지: m = (id, sender, receiver, type, content, timestamp)
+    """
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    sender: str = ""
+    receiver: Optional[str] = None  # None = broadcast
+    message_type: MessageType = MessageType.INFORM
+    content: Any = None
+    timestamp: datetime = field(default_factory=datetime.now)
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """딕셔너리로 변환"""
+        return {
+            "id": self.id,
+            "sender": self.sender,
+            "receiver": self.receiver,
+            "message_type": self.message_type.value,
+            "content": self.content,
+            "timestamp": self.timestamp.isoformat(),
+        }
 ```
 
 ### 1.2 메시지 전달 함수
@@ -80,11 +94,43 @@ $$
 #### 구현 2.2.1: Exactly-once 보장
 
 ```python
-# multi_agent.py: Line 100-115
-if self.delivery_guarantee == "exactly-once":
-    if message.id in self.delivered_messages:
-        return  # 중복 방지
-    self.delivered_messages.add(message.id)
+# domain/multi_agent/communication.py: CommunicationBus
+class CommunicationBus:
+    """
+    통신 버스: 메시지 전달 시스템
+    
+    전달 보장 수준:
+    - at-most-once: O(1) 시간, 손실 가능
+    - at-least-once: O(n) 시간, 중복 가능
+    - exactly-once: O(n) 시간 + 중복 체크
+    """
+    def __init__(self, delivery_guarantee: str = "at-most-once"):
+        self.delivery_guarantee = delivery_guarantee
+        self._messages: List[AgentMessage] = []
+        self._delivered_messages: Set[str] = set()
+        self._subscribers: Dict[str, List[Callable]] = {}
+    
+    def send(self, message: AgentMessage):
+        """
+        메시지 전송: send(Agent, Message) → void
+        """
+        if self.delivery_guarantee == "exactly-once":
+            if message.id in self._delivered_messages:
+                return  # 중복 방지
+            self._delivered_messages.add(message.id)
+        
+        self._messages.append(message)
+        
+        # 구독자에게 전달
+        if message.receiver is None:
+            # Broadcast
+            for callbacks in self._subscribers.values():
+                for callback in callbacks:
+                    callback(message)
+        elif message.receiver in self._subscribers:
+            # 특정 수신자
+            for callback in self._subscribers[message.receiver]:
+                callback(message)
 ```
 
 ---

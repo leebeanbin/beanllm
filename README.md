@@ -1,12 +1,12 @@
 # 🚀 llmkit
 
-**Production-ready LLM toolkit with unified interface for multiple providers**
+**Production-ready LLM toolkit with Clean Architecture and unified interface for multiple providers**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub](https://img.shields.io/github/stars/leebeanbin/llmkit?style=social)](https://github.com/leebeanbin/llmkit)
 
-**llmkit** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Write once, run everywhere.
+**llmkit** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
 
 ---
 
@@ -18,6 +18,7 @@
 - 📊 **Model Registry** - Auto-detect available models from API keys
 - 🔍 **CLI Tools** - Inspect models and capabilities from command line
 - 💰 **Cost Tracking** - Accurate token counting and cost estimation
+- 🏗️ **Clean Architecture** - Layered architecture with clear separation of concerns
 
 ### 🏗️ **RAG & Document Processing**
 - 📄 **Document Loaders** - PDF, CSV, TXT with automatic format detection
@@ -49,40 +50,117 @@
 ### 🏭 **Production Features**
 - 💵 **Token & Cost** - tiktoken-based accurate counting, cost optimization
 - 📝 **Prompt Templates** - Few-shot, chat, chain-of-thought templates
-- 📊 **Evaluation** - BLEU, ROUGE, LLM-as-Judge, RAG metrics
+- 📊 **Evaluation** - BLEU, ROUGE, LLM-as-Judge, RAG metrics, Context Recall
+- 👤 **Human-in-the-Loop** - 피드백 수집 및 하이브리드 평가
+- 🔄 **Continuous Evaluation** - 정기 평가 및 추적
+- 📉 **Drift Detection** - 모델 드리프트 감지
+- 📈 **Evaluation Dashboard** - 평가 결과 시각화
+- 📋 **Rubric-Driven Grading** - 구조화된 루브릭 기반 평가
+- ✅ **CheckEval** - 체크리스트 기반 Boolean 평가
+- 📊 **Evaluation Analytics** - 트렌드 및 상관관계 분석
 - 🎯 **Fine-tuning** - OpenAI fine-tuning API integration
 - 🛡️ **Error Handling** - Retry, circuit breaker, rate limiting
 - 📈 **Tracing** - Distributed tracing with OpenTelemetry export
 
 ---
 
+## 🏗️ Architecture
+
+llmkit은 **Clean Architecture**와 **SOLID 원칙**을 따르는 계층형 아키텍처를 사용합니다.
+
+### 레이어 구조
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Facade Layer                          │
+│  (사용자 친화적 API) - Client, RAGChain, Agent 등       │
+└──────────────────────┬────────────────────────────────────┘
+                       │
+┌──────────────────────▼────────────────────────────────────┐
+│                    Handler Layer                          │
+│  (Controller 역할) - 입력 검증, 에러 처리                  │
+└──────────────────────┬────────────────────────────────────┘
+                       │
+┌──────────────────────▼────────────────────────────────────┐
+│                    Service Layer                          │
+│  (비즈니스 로직) - 인터페이스 + 구현체                     │
+└──────────────────────┬────────────────────────────────────┘
+                       │
+┌──────────────────────▼────────────────────────────────────┐
+│                    Domain Layer                           │
+│  (핵심 비즈니스) - 엔티티, 인터페이스, 규칙              │
+└──────────────────────┬────────────────────────────────────┘
+                       │
+┌──────────────────────▼────────────────────────────────────┐
+│                Infrastructure Layer                       │
+│  (외부 시스템) - Provider, Vector Store 구현              │
+└───────────────────────────────────────────────────────────┘
+```
+
+### 디렉토리 구조
+
+```
+src/llmkit/
+├── facade/          # 외부 인터페이스 (Facade 패턴)
+├── handler/         # 요청 처리 (Controller 역할)
+├── service/         # 비즈니스 로직 (Service 인터페이스 + 구현체)
+├── domain/          # 도메인 모델 및 비즈니스 규칙
+├── infrastructure/ # 외부 시스템 인터페이스
+├── dto/             # 데이터 전송 객체
+├── decorators/      # 공통 데코레이터
+└── utils/           # 유틸리티 함수
+```
+
+### SOLID 원칙 적용
+
+- **SRP**: 각 레이어가 단일 책임만 담당
+- **OCP**: 인터페이스 기반 확장 가능
+- **LSP**: 인터페이스 구현체는 언제든 교체 가능
+- **ISP**: 작은, 특화된 인터페이스
+- **DIP**: 인터페이스에 의존, 구현체에 의존하지 않음
+
+자세한 아키텍처 설명은 [ARCHITECTURE.md](ARCHITECTURE.md)를 참고하세요.
+
+---
+
 ## 📦 Installation
 
-### Quick Start
+### Poetry 사용 (권장)
 
 ```bash
-pip install llmkit
+# 프로젝트 클론
+git clone https://github.com/yourusername/llmkit.git
+cd llmkit
+
+# 의존성 설치
+poetry install --extras all  # 모든 Provider 포함
+# 또는
+poetry install --extras openai  # OpenAI만
+
+# 가상 환경 활성화
+poetry shell
 ```
 
-**Included by default:**
-- ✅ OpenAI SDK (GPT-4o, o1, etc.)
-- ✅ Anthropic SDK (Claude 3.5, etc.)
-
-### Optional Providers
+### pip 사용
 
 ```bash
-# Add Gemini support
-pip install llmkit[gemini]
+# 기본 설치 (의존성 없음)
+pip install llmkit
 
-# Add Ollama support (local models)
+# 특정 Provider 추가
+pip install llmkit[openai]
+pip install llmkit[anthropic]
+pip install llmkit[gemini]
 pip install llmkit[ollama]
 
-# Install all providers
+# 모든 Provider
 pip install llmkit[all]
 
-# Development installation
+# 개발 도구 포함
 pip install llmkit[dev,all]
 ```
+
+> **참고**: Provider는 선택적 의존성입니다. 필요한 Provider만 설치하면 됩니다.
 
 ---
 
@@ -90,76 +168,151 @@ pip install llmkit[dev,all]
 
 ### Environment Setup
 
+`.env` 파일을 프로젝트 루트에 생성하세요:
+
 ```bash
-# Create .env file
-export OPENAI_API_KEY="your-key"
-export ANTHROPIC_API_KEY="your-key"
-export GEMINI_API_KEY="your-key"
-export OLLAMA_HOST="http://localhost:11434"
+# .env 파일 생성
+cat > .env << EOF
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
+OLLAMA_HOST=http://localhost:11434
+EOF
 ```
 
 ### Basic Usage
 
 ```python
+import asyncio
 from llmkit import Client
 
-# Unified interface - works with any provider
-client = Client(model="gpt-4o")
-response = client.chat("Explain quantum computing in simple terms")
-print(response.content)
+async def main():
+    # Unified interface - works with any provider
+    client = Client(model="gpt-4o")
+    response = await client.chat(
+        messages=[{"role": "user", "content": "Explain quantum computing in simple terms"}]
+    )
+    print(response.content)
+    
+    # Switch providers seamlessly
+    client = Client(model="claude-3-5-sonnet-20241022")
+    response = await client.chat(
+        messages=[{"role": "user", "content": "Same question, different provider"}]
+    )
+    
+    # Streaming
+    async for chunk in client.stream_chat(
+        messages=[{"role": "user", "content": "Tell me a story"}]
+    ):
+        print(chunk, end="", flush=True)
 
-# Switch providers seamlessly
-client = Client(model="claude-3-5-sonnet-20241022")
-response = client.chat("Same question, different provider")
-
-# Streaming
-for chunk in client.stream("Tell me a story"):
-    print(chunk.content, end="", flush=True)
+asyncio.run(main())
 ```
 
 ### RAG in One Line
 
 ```python
+import asyncio
 from llmkit import RAGChain
 
-# Create RAG system from documents
-rag = RAGChain.from_documents("docs/")
+async def main():
+    # Create RAG system from documents
+    rag = RAGChain.from_documents("docs/")
+    
+    # Ask questions
+    answer = await rag.query("What is this document about?")
+    print(answer)
+    
+    # With sources
+    result = await rag.query("Explain the main concept", include_sources=True)
+    print(result.answer)
+    for source in result.sources:
+        print(f"Source: {source.metadata.get('source', 'unknown')}")
+    
+    # Streaming query
+    async for chunk in rag.stream_query("질문"):
+        print(chunk, end="", flush=True)
 
-# Ask questions
-answer = rag.query("What is this document about?")
-print(answer)
-
-# With sources
-answer, sources = rag.query("Explain the main concept", include_sources=True)
-for source in sources:
-    print(f"Source: {source.document.metadata['source']}")
+asyncio.run(main())
 ```
 
-### Cost Optimization
+### Tools & Agents
 
 ```python
-from llmkit import count_tokens, estimate_cost, get_cheapest_model
+import asyncio
+from llmkit import Agent, Tool
 
-# Count tokens
-tokens = count_tokens("Your text here", model="gpt-4o")
-print(f"Tokens: {tokens}")
+async def main():
+    # Define tools
+    @Tool.from_function
+    def calculator(expression: str) -> str:
+        """Evaluate a math expression"""
+        return str(eval(expression))
 
-# Estimate cost
-cost = estimate_cost(
-    input_text="Your prompt",
-    output_text="Expected response",
-    model="gpt-4o"
-)
-print(f"Cost: ${cost.total_cost:.4f}")
+    # Create agent
+    agent = Agent(
+        model="gpt-4o-mini",
+        tools=[calculator],
+        max_iterations=10
+    )
+    
+    # Run agent
+    result = await agent.run("What is 25 * 17?")
+    print(result.answer)
+    print(f"Steps: {result.total_steps}")
 
-# Find cheapest model
-cheapest = get_cheapest_model(
-    input_text="Your prompt",
-    output_tokens=1000,
-    models=["gpt-4o", "gpt-4o-mini", "claude-3-5-sonnet"]
-)
-print(f"Use: {cheapest}")
+asyncio.run(main())
 ```
+
+### Graph Workflows
+
+```python
+import asyncio
+from llmkit import StateGraph, Client
+
+async def main():
+    client = Client(model="gpt-4o-mini")
+    
+    # Create graph
+    graph = StateGraph()
+    
+    async def analyze(state):
+        response = await client.chat(
+            messages=[{"role": "user", "content": f"Analyze: {state['input']}"}]
+        )
+        state["analysis"] = response.content
+        return state
+    
+    def decide(state):
+        score = float(state["analysis"].split("Score:")[1]) if "Score:" in state["analysis"] else 0.5
+        return "good" if score > 0.8 else "bad"
+    
+    # Build graph
+    graph.add_node("analyze", analyze)
+    graph.add_conditional_edges("analyze", decide, {
+        "good": "END",
+        "bad": "improve"
+    })
+    
+    # Run
+    result = await graph.invoke({"input": "Draft text"})
+    print(result)
+
+asyncio.run(main())
+```
+
+---
+
+## 📖 Examples
+
+더 많은 사용 예제는 [examples/](examples/) 디렉토리를 참고하세요:
+
+- `basic_usage.py` - 기본 사용법
+- `rag_demo.py` - RAG 파이프라인 예제
+- `rag_chain_demo.py` - RAG Chain 예제
+- `state_graph_demo.py` - Graph Workflow 예제
+- `embeddings_demo.py` - 임베딩 예제
+- `vector_stores_demo.py` - Vector Store 예제
 
 ---
 
@@ -170,14 +323,14 @@ print(f"Use: {cheapest}")
 Unified interface with automatic parameter adaptation:
 
 ```python
-from llmkit import Client, adapt_parameters
+from llmkit import Client
 
 # Works across all providers
 client = Client(model="gpt-4o")
 
 # Parameters automatically adapted
-response = client.chat(
-    "Hello",
+response = await client.chat(
+    messages=[{"role": "user", "content": "Hello"}],
     temperature=0.7,
     max_tokens=1000,  # → max_completion_tokens for GPT-5
                        # → max_output_tokens for Gemini
@@ -224,326 +377,30 @@ results = store.similarity_search("query", k=5)
 diverse_results = store.mmr_search("query", k=5, lambda_mult=0.5)
 ```
 
-### 4. Tools & Agents
+### 4. Multi-Agent Systems
 
 ```python
-from llmkit import Agent, Tool
+import asyncio
+from llmkit import MultiAgentCoordinator, Agent
 
-# Define tools
-@Tool.from_function
-def calculator(expression: str) -> str:
-    """Evaluate a math expression"""
-    return str(eval(expression))
+async def main():
+    # Create agents
+    researcher = Agent(model="gpt-4o-mini", tools=[], max_iterations=10)
+    writer = Agent(model="gpt-4o-mini", tools=[], max_iterations=10)
+    
+    # Coordinate
+    coordinator = MultiAgentCoordinator(
+        agents={"researcher": researcher, "writer": writer}
+    )
+    
+    result = await coordinator.execute_sequential(
+        task="Write an article about quantum computing",
+        agent_order=["researcher", "writer"]
+    )
+    print(result["final_result"])
 
-@Tool.from_function
-def search(query: str) -> str:
-    """Search the web"""
-    # ... web search logic
-    return results
-
-# Create agent
-agent = Agent(
-    llm=client,
-    tools=[calculator, search],
-    max_iterations=10
-)
-
-# Run agent
-result = agent.run("What is 25 * 17? Then search for that number in math history")
-print(result.output)
+asyncio.run(main())
 ```
-
-### 5. Memory & Chains
-
-```python
-from llmkit import BufferMemory, SequentialChain, PromptChain
-
-# Memory
-memory = BufferMemory(max_messages=10)
-memory.add_message("user", "Hello")
-memory.add_message("assistant", "Hi there!")
-
-# Chains
-analyze_chain = PromptChain(
-    llm=client,
-    template="Analyze this text: {text}"
-)
-
-summarize_chain = PromptChain(
-    llm=client,
-    template="Summarize: {analysis}"
-)
-
-# Sequential execution
-chain = SequentialChain(steps=[analyze_chain, summarize_chain])
-result = chain.run(text="Long article...")
-```
-
-### 6. Graph Workflows
-
-```python
-from llmkit import StateGraph
-
-# Create graph
-graph = StateGraph()
-
-def analyze(state):
-    state["analysis"] = client.chat(f"Analyze: {state['input']}")
-    return state
-
-def decide(state):
-    score = float(state["analysis"].split("Score:")[1])
-    return "good" if score > 0.8 else "bad"
-
-def improve(state):
-    state["output"] = client.chat(f"Improve: {state['input']}")
-    return state
-
-# Build graph
-graph.add_node("analyze", analyze)
-graph.add_node("improve", improve)
-graph.add_conditional_edges("analyze", decide, {
-    "good": "END",
-    "bad": "improve"
-})
-
-# Run
-result = graph.compile().invoke({"input": "Draft text"})
-```
-
-### 7. Multi-Agent Systems
-
-```python
-from llmkit import MultiAgentCoordinator, DebateStrategy
-
-# Create agents
-researcher = Agent(llm=client, tools=[search], role="researcher")
-writer = Agent(llm=client, role="writer")
-critic = Agent(llm=client, role="critic")
-
-# Coordinate with debate
-coordinator = MultiAgentCoordinator(
-    agents=[researcher, writer, critic],
-    strategy=DebateStrategy(rounds=3)
-)
-
-result = coordinator.coordinate("Write an article about quantum computing")
-print(result.final_output)
-```
-
-### 8. Vision RAG
-
-```python
-from llmkit import VisionRAG, CLIPEmbedding, ImageLoader
-
-# Load images
-images = ImageLoader.load("images/")
-
-# Create vision RAG
-vision_rag = VisionRAG.from_images(
-    images=images,
-    embedding=CLIPEmbedding(),
-    llm=Client(model="gpt-4o")  # Vision-capable model
-)
-
-# Query with text
-answer = vision_rag.query("What objects are in these images?")
-
-# Query with image
-answer = vision_rag.query_with_image(
-    "reference.jpg",
-    "Find similar images and describe them"
-)
-```
-
-### 9. Audio Processing
-
-```python
-from llmkit import WhisperSTT, TextToSpeech, AudioRAG
-
-# Speech to text
-stt = WhisperSTT()
-result = stt.transcribe("audio.mp3", language="en")
-print(result.text)
-
-# Text to speech
-tts = TextToSpeech(provider="openai")
-audio = tts.synthesize("Hello world", voice="alloy", speed=1.0)
-
-# Audio RAG
-audio_rag = AudioRAG.from_audio_files([
-    "podcast1.mp3",
-    "podcast2.mp3"
-])
-answer = audio_rag.query("What was discussed about AI?")
-```
-
-### 10. Web Search
-
-```python
-from llmkit import DuckDuckGoSearch, WebScraper
-
-# Search (no API key needed!)
-search = DuckDuckGoSearch()
-results = search.search("latest AI news", max_results=5)
-
-for result in results:
-    print(f"{result.title}: {result.url}")
-
-# Scrape content
-scraper = WebScraper()
-content = scraper.scrape(results[0].url)
-print(content)
-```
-
-### 11. Prompt Templates
-
-```python
-from llmkit import PromptTemplate, FewShotPromptTemplate, PredefinedTemplates
-
-# Basic template
-template = PromptTemplate(
-    template="Translate {text} from {source} to {target}",
-    input_variables=["text", "source", "target"]
-)
-prompt = template.format(text="Hello", source="English", target="Korean")
-
-# Few-shot template
-from llmkit import PromptExample
-
-examples = [
-    PromptExample(input="2+2", output="4"),
-    PromptExample(input="3*5", output="15")
-]
-
-few_shot = FewShotPromptTemplate(
-    examples=examples,
-    example_template=PromptTemplate(
-        template="Q: {input}\nA: {output}",
-        input_variables=["input", "output"]
-    ),
-    prefix="Solve the math problem:",
-    suffix="Q: {input}\nA:"
-)
-
-# Predefined templates
-cot = PredefinedTemplates.chain_of_thought()
-prompt = cot.format(question="What is 25% of 80?")
-```
-
-### 12. Evaluation
-
-```python
-from llmkit import BLEUMetric, ROUGEMetric, evaluate_text, evaluate_rag
-
-# Text evaluation
-prediction = "The cat sits on the mat"
-reference = "The cat is sitting on the mat"
-
-result = evaluate_text(
-    prediction=prediction,
-    reference=reference,
-    metrics=["bleu", "rouge-1", "rouge-l", "f1"]
-)
-print(f"Average score: {result.average_score:.4f}")
-
-# RAG evaluation
-rag_result = evaluate_rag(
-    question="What is AI?",
-    answer="AI is artificial intelligence...",
-    contexts=["Context 1", "Context 2"],
-    ground_truth="AI is..."
-)
-```
-
-### 13. Fine-tuning
-
-```python
-from llmkit import DatasetBuilder, FineTuningManager, create_finetuning_provider
-
-# Prepare data
-qa_pairs = [
-    {"question": "What is Python?", "answer": "Python is..."},
-    {"question": "What is a list?", "answer": "A list is..."}
-]
-
-examples = DatasetBuilder.from_qa_pairs(
-    qa_pairs,
-    system_message="You are a Python expert"
-)
-
-# Split data
-train, val = DatasetBuilder.split_dataset(examples, train_ratio=0.8)
-
-# Fine-tune
-provider = create_finetuning_provider("openai")
-manager = FineTuningManager(provider)
-
-train_file = manager.prepare_and_upload(train, "train.jsonl")
-val_file = manager.prepare_and_upload(val, "val.jsonl")
-
-job = manager.start_training(
-    model="gpt-3.5-turbo",
-    training_file=train_file,
-    validation_file=val_file,
-    n_epochs=3
-)
-```
-
-### 14. Error Handling
-
-```python
-from llmkit import retry, circuit_breaker, rate_limit, with_error_handling
-
-# Retry with exponential backoff
-@retry(max_retries=3, strategy=RetryStrategy.EXPONENTIAL)
-def api_call():
-    return client.chat("Hello")
-
-# Circuit breaker
-@circuit_breaker(failure_threshold=5, timeout=60)
-def flaky_service():
-    return external_api.call()
-
-# Rate limiting
-@rate_limit(max_calls=10, time_window=60)
-def rate_limited_call():
-    return api.call()
-
-# Combined error handling
-@with_error_handling(max_retries=3, failure_threshold=5, max_calls=10)
-def production_call():
-    return client.chat("Production query")
-```
-
----
-
-## 🎓 Documentation & Learning
-
-### Complete Learning Path
-
-llmkit includes **comprehensive AI master's level documentation**:
-
-- **Theory Documents** (900+ lines each with mathematical proofs)
-  - Embeddings: Vector math, Word2Vec, Attention, Transformers
-  - RAG: Vector search, HNSW, MMR, hybrid search
-  - Graph Workflows: DAG, topological sort, Petri nets
-  - Multi-Agent: Game theory, consensus, debate
-  - Vision: CNN, ResNet, CLIP, vision transformers
-  - Audio: Nyquist, MFCC, CTC, Whisper, WaveNet
-  - Production: Tokenization, BLEU/ROUGE, LoRA, error handling
-
-- **Tutorials** (600+ lines each with practical examples)
-  - Step-by-step implementations
-  - Real-world use cases
-  - Performance benchmarking
-
-- **16-Week Curriculum** (`docs/LEARNING_PATH.md`)
-  - Structured learning from basics to advanced
-  - Projects and exercises
-  - Graduate-level depth
-
-See [`docs/`](docs/) directory for all materials.
 
 ---
 
@@ -568,20 +425,6 @@ llmkit export > models.json
 
 ---
 
-## 🌟 Examples
-
-Check [`examples/`](examples/) directory:
-
-- `basic_usage.py` - Getting started
-- `rag_demo.py` - RAG system
-- `agent_demo.py` - Tool-using agents
-- `graph_demo.py` - Graph workflows
-- `multi_agent_demo.py` - Multi-agent systems
-- `vision_rag_demo.py` - Vision RAG
-- `audio_demo.py` - Audio processing
-
----
-
 ## 🧪 Testing
 
 ```bash
@@ -589,45 +432,82 @@ Check [`examples/`](examples/) directory:
 pytest
 
 # With coverage
-pytest --cov=llmkit --cov-report=html
+pytest --cov=src/llmkit --cov-report=html
 
 # Specific module
-pytest tests/test_rag.py -v
+pytest tests/test_facade/ -v
 ```
+
+**현재 테스트 커버리지**: 61% (624 tests, 593 passed)
 
 ---
 
 ## 🛠️ Development
+
+### Makefile 사용 (권장)
+
+```bash
+# 개발 도구 설치
+make install-dev
+
+# 빠른 자동 수정
+make quick-fix
+
+# 타입 체크
+make type-check
+
+# 린트 체크
+make lint
+
+# 전체 검사 및 수정
+make all
+```
+
+### 수동 실행
 
 ```bash
 # Install in editable mode
 pip install -e ".[dev,all]"
 
 # Format code
-black llmkit tests
+ruff format src/llmkit
 
 # Lint
-ruff check llmkit
+ruff check src/llmkit
 
 # Type check
-mypy llmkit
+mypy src/llmkit
 ```
 
 ---
 
 ## 🗺️ Roadmap
 
-- ✅ Unified multi-provider interface
-- ✅ RAG pipeline
-- ✅ Tools & Agents
-- ✅ Graph workflows
+### ✅ 완료된 주요 기능
+- ✅ Clean Architecture & SOLID principles
+- ✅ Unified multi-provider interface (OpenAI, Anthropic, Google, Ollama)
+- ✅ RAG pipeline & Document Processing
+- ✅ Tools & Agents (ReAct pattern)
+- ✅ Graph workflows (LangGraph-style)
 - ✅ Multi-agent systems
-- ✅ Vision & Audio
-- ✅ Production features
-- ⬜ LangSmith integration
-- ⬜ Prompt optimization
-- ⬜ Model benchmarks
-- ⬜ Web dashboard
+- ✅ Vision & Audio processing
+- ✅ Production features (evaluation, monitoring, cost tracking)
+- ✅ 프롬프트 버전 관리 & A/B 테스트
+- ✅ 스트리밍 응답 버퍼링
+- ✅ 평가 시스템 확장 (Human-in-the-Loop, Continuous Evaluation, Drift Detection)
+
+### 📋 계획 중
+- ⬜ 벤치마크 시스템
+
+---
+
+## 📚 Documentation
+
+- **[QUICK_START.md](QUICK_START.md)** - 빠른 시작 가이드
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - 아키텍처 상세 설명
+- **[docs/](docs/)** - 이론 문서 및 튜토리얼
+- **[docs/guides/](docs/guides/)** - 개발 가이드
+- **[examples/](examples/)** - 사용 예제 코드
 
 ---
 

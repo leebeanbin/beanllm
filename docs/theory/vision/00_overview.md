@@ -88,15 +88,115 @@ $$
    $$
    I \rightarrow \text{Vision Transformer} \rightarrow E_I \in \mathbb{R}^{512}
    $$
-   예: $E_I = [0.12, 0.45, -0.23, \ldots, 0.78]$ (512차원)
+   - Vision Transformer (ViT): 이미지를 패치로 분할 → Transformer 처리
+   - 예: $E_I = [0.12, 0.45, -0.23, \ldots, 0.78]$ (512차원)
+   - L2 정규화: $E_I = \frac{E_I}{\|E_I\|}$ (단위 벡터)
 
 2. **텍스트 인코더:**
    $$
    T \rightarrow \text{Tokenize} \rightarrow \text{Transformer} \rightarrow E_T \in \mathbb{R}^{512}
    $$
-   예: $E_T = [0.15, 0.42, -0.18, \ldots, 0.81]$ (512차원)
+   - 토큰화: "a cat" → ["a", "cat"] (또는 BPE 토큰)
+   - Transformer: 텍스트 임베딩 생성
+   - 예: $E_T = [0.15, 0.42, -0.18, \ldots, 0.81]$ (512차원)
+   - L2 정규화: $E_T = \frac{E_T}{\|E_T\|}$ (단위 벡터)
 
 3. **유사도 계산:**
+   $$
+   \text{sim}(E_I, E_T) = \cos(E_I, E_T) = \frac{E_I \cdot E_T}{\|E_I\| \|E_T\|} = E_I \cdot E_T
+   $$
+   (정규화되어 있으므로 내적 = 코사인 유사도)
+   
+   예: $\text{sim} = 0.12 \times 0.15 + 0.45 \times 0.42 + \ldots \approx 0.87$
+
+**llmkit 구현:**
+```python
+# domain/vision/embeddings.py: CLIPEmbedding
+# facade/vision_rag_facade.py: VisionRAG
+class CLIPEmbedding(BaseEmbedding):
+    """
+    CLIP 임베딩: E_I = f_image(I), E_T = f_text(T)
+    
+    수학적 표현:
+    - 이미지: I ∈ ℝ^(224×224×3) → E_I ∈ ℝ^512
+    - 텍스트: T (문자열) → E_T ∈ ℝ^512
+    - 유사도: sim(E_I, E_T) = cos(E_I, E_T)
+    
+    실제 구현:
+    - domain/vision/embeddings.py: CLIPEmbedding
+    - transformers 라이브러리 사용 (CLIPModel, CLIPProcessor)
+    - L2 정규화 자동 적용
+    """
+    def __init__(self, model: str = "openai/clip-vit-base-patch32"):
+        """
+        Args:
+            model: CLIP 모델 이름
+            - "openai/clip-vit-base-patch32": 기본 (512차원)
+            - "openai/clip-vit-large-patch14": 대형 (768차원)
+        """
+        super().__init__(model=model)
+        self._model = None
+        self._processor = None
+    
+    def embed_images(self, images: List[Union[str, Path]]) -> List[List[float]]:
+        """
+        이미지 임베딩: E_I = f_image(I)
+        
+        Process:
+        1. 이미지 로드 및 전처리 (224×224 리사이즈)
+        2. Vision Transformer (ViT) 처리
+        3. L2 정규화
+        
+        실제 구현:
+        - domain/vision/embeddings.py: CLIPEmbedding.embed_images()
+        """
+        self._load_model()
+        
+        # 이미지 로드 및 전처리
+        pil_images = [Image.open(img) for img in images]
+        inputs = self._processor(images=pil_images, return_tensors="pt")
+        
+        # Vision Encoder 실행
+        with torch.no_grad():
+            image_features = self._model.get_image_features(**inputs)
+        
+        # L2 정규화
+        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+        
+        return image_features.cpu().numpy().tolist()
+    
+    def embed_sync(self, texts: List[str]) -> List[List[float]]:
+        """
+        텍스트 임베딩: E_T = f_text(T)
+        
+        실제 구현:
+        - domain/vision/embeddings.py: CLIPEmbedding.embed_sync()
+        """
+        self._load_model()
+        
+        # 텍스트 전처리 및 토큰화
+        inputs = self._processor(text=texts, return_tensors="pt", padding=True)
+        
+        # Text Encoder 실행
+        with torch.no_grad():
+            text_features = self._model.get_text_features(**inputs)
+        
+        # L2 정규화
+        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        
+        return text_features.cpu().numpy().tolist()
+    
+    def similarity(self, vec1: List[float], vec2: List[float]) -> float:
+        """
+        유사도 계산: sim(E_I, E_T) = cos(E_I, E_T) = E_I · E_T
+        
+        (정규화되어 있으므로 내적 = 코사인 유사도)
+        """
+        import numpy as np
+        v1 = np.array(vec1)
+        v2 = np.array(vec2)
+        return float(np.dot(v1, v2))
+```
    $$
    \text{sim}(E_I, E_T) = \cos(E_I, E_T) = \frac{E_I \cdot E_T}{\|E_I\| \|E_T\|}
    $$
@@ -146,25 +246,39 @@ cos(θ) ≈ 0.50 (중간 유사도)
 
 **llmkit 구현:**
 ```python
-# vision_embeddings.py: CLIPEmbedding
+# domain/vision/embeddings.py: CLIPEmbedding
 class CLIPEmbedding(BaseEmbedding):
     """
     CLIP 임베딩: E_I = f_image(I), E_T = f_text(T)
+    
+    실제 구현:
+    - domain/vision/embeddings.py: CLIPEmbedding
+    - transformers 라이브러리 사용 (CLIPModel, CLIPProcessor)
     """
     def __init__(self, model: str = "openai/clip-vit-base-patch32"):
-        # CLIP 모델 로드
-        from transformers import CLIPProcessor, CLIPModel
-        self.model = CLIPModel.from_pretrained(model)
-        self.processor = CLIPProcessor.from_pretrained(model)
+        """
+        실제 구현:
+        - domain/vision/embeddings.py: CLIPEmbedding.__init__()
+        """
+        # CLIP 모델 로드 (lazy loading)
+        self.model_name = model
+        self._model = None
+        self._processor = None
     
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """
         텍스트 임베딩: E_T = f_text(T)
+        
+        실제 구현:
+        - domain/vision/embeddings.py: CLIPEmbedding.embed_sync()
         """
-        inputs = self.processor(text=texts, return_tensors="pt", padding=True)
+        self._load_model()
+        inputs = self._processor(text=texts, return_tensors="pt", padding=True)
         with torch.no_grad():
-            text_features = self.model.get_text_features(**inputs)
-        return text_features.numpy().tolist()
+            text_features = self._model.get_text_features(**inputs)
+        # L2 정규화
+        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        return text_features.cpu().numpy().tolist()
 ```
 
 ---
@@ -217,10 +331,14 @@ $$
 
 **llmkit 구현:**
 ```python
-# vision_embeddings.py: CLIPEmbedding
+# domain/vision/embeddings.py: CLIPEmbedding.similarity()
 def similarity(self, image_vec: List[float], text_vec: List[float]) -> float:
     """
-    교차 모달 유사도: sim(I, T) = cos(E_I, E_T)
+    교차 모달 유사도: sim(I, T) = cos(E_I, E_T) = E_I · E_T (정규화됨)
+    
+    실제 구현:
+    - domain/vision/embeddings.py: CLIPEmbedding.similarity()
+    - 정규화되어 있으므로 내적만 계산
     """
     a = np.array(image_vec)
     b = np.array(text_vec)
@@ -249,7 +367,7 @@ $$
 
 **llmkit 구현:**
 ```python
-# vision_rag.py: VisionRAG
+# facade/vision_rag_facade.py: VisionRAG
 class VisionRAG:
     def query(self, query: str, k: int = 5) -> str:
         """
@@ -285,7 +403,7 @@ class VisionRAG:
 
 **llmkit 구현:**
 ```python
-# vision_rag.py: VisionRAG
+# facade/vision_rag_facade.py: VisionRAG
 def _search_images(self, query_vec: List[float], k: int) -> List[VectorSearchResult]:
     """
     k-NN Cross-modal Search
@@ -317,7 +435,8 @@ $$
 
 **llmkit 구현:**
 ```python
-# vision_rag.py: Line 62-124
+# facade/vision_rag_facade.py: VisionRAG.from_images()
+# service/impl/vision_rag_service_impl.py: VisionRAGServiceImpl.build_chain()
 @classmethod
 def from_images(
     cls,
@@ -332,6 +451,10 @@ def from_images(
     3. E = embed(I, C)
     4. V = store(E)
     5. VisionRAG 생성
+    
+    실제 구현:
+    - facade/vision_rag_facade.py: VisionRAG.from_images()
+    - service/impl/vision_rag_service_impl.py: VisionRAGServiceImpl.build_chain()
     """
     # 1. 이미지 로딩
     images = load_images(source, generate_captions=generate_captions)
@@ -425,7 +548,7 @@ $$
 
 **llmkit 구현:**
 ```python
-# vision_rag.py: MultimodalRAG
+# facade/vision_rag_facade.py: MultimodalRAG
 class MultimodalRAG(VisionRAG):
     """
     이미지 + 캡션 통합 검색

@@ -319,8 +319,10 @@ Algorithm: BatchRerank(query, candidates, model, top_k, batch_size)
 
 #### 구현 6.1.1: Re-ranking
 
+**llmkit 구현:**
 ```python
-# vector_stores/search.py: Line 118-171
+# domain/vector_stores/search.py: SearchAlgorithms.rerank()
+# vector_stores/search.py: SearchAlgorithms.rerank() (레거시)
 @staticmethod
 def rerank(
     query: str,
@@ -329,9 +331,13 @@ def rerank(
     top_k: Optional[int] = None
 ) -> List[VectorSearchResult]:
     """
-    Cross-encoder 재순위화
+    Cross-encoder 재순위화: Rerank(R, q) = arg sort_{d ∈ R} Score_cross(q, d)
     
     시간 복잡도: O(k' · d · L)
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms.rerank()
+    - vector_stores/search.py: SearchAlgorithms.rerank() (레거시)
     """
     try:
         from sentence_transformers import CrossEncoder
@@ -357,6 +363,119 @@ def rerank(
         # sentence-transformers 없으면 원래 순서 반환
         return results[:top_k] if top_k else results
 ```
+
+**llmkit 구현:**
+```python
+# domain/vector_stores/search.py: SearchAlgorithms.rerank()
+# vector_stores/search.py: SearchAlgorithms.rerank()
+# service/impl/search_strategy.py: RerankSearchStrategy
+class SearchAlgorithms:
+    """
+    고급 검색 알고리즘 모음
+    
+    실제 구현:
+    - domain/vector_stores/search.py: SearchAlgorithms
+    - vector_stores/search.py: SearchAlgorithms (레거시)
+    """
+    
+    @staticmethod
+    def rerank(
+        query: str,
+        results: List[VectorSearchResult],
+        model: Optional[str] = None,
+        top_k: Optional[int] = None,
+    ) -> List[VectorSearchResult]:
+        """
+        Cross-encoder 재순위화: Rerank(R, q) = arg sort_{d ∈ R} Score_cross(q, d)
+        
+        수학적 표현:
+        - 입력: 쿼리 q, 초기 검색 결과 R (k'개)
+        - 출력: 재순위화된 결과 (상위 k개)
+        - Score_cross(q, d) = CrossEncoder([CLS] q [SEP] d)
+        
+        시간 복잡도: O(k' · d · L)
+        where:
+        - k': 후보 수 (일반적으로 20)
+        - d: 모델 차원 (예: 384)
+        - L: 입력 길이 (query + document)
+        
+        실제 구현:
+        - domain/vector_stores/search.py: SearchAlgorithms.rerank()
+        - sentence-transformers 라이브러리 사용 (CrossEncoder)
+        - 기본 모델: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        """
+        if not results:
+            return []
+        
+        try:
+            from sentence_transformers import CrossEncoder
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers 필요:\n"
+                "pip install sentence-transformers"
+            )
+        
+        # 모델 로드 (lazy loading)
+        model_name = model or "cross-encoder/ms-marco-MiniLM-L-6-v2"
+        cross_encoder = CrossEncoder(model_name)
+        
+        # 쿼리-문서 쌍 생성: pairs = [(q, d₁), (q, d₂), ..., (q, d_k')]
+        pairs = [[query, result.document.content] for result in results]
+        
+        # Cross-encoder로 점수 계산: scores = [Score_cross(q, d₁), ..., Score_cross(q, d_k')]
+        # 배치 처리로 효율적 계산
+        scores = cross_encoder.predict(pairs)
+        
+        # 점수와 결과 결합 및 정렬
+        reranked_results = []
+        for result, score in zip(results, scores):
+            reranked_results.append(
+                VectorSearchResult(
+                    document=result.document,
+                    score=float(score),  # Cross-encoder 점수
+                    similarity=float(score),  # 호환성
+                    metadata={
+                        **result.metadata,
+                        "rerank_score": float(score),
+                        "rerank_model": model_name,
+                    }
+                )
+            )
+        
+        # 점수 기준 내림차순 정렬
+        reranked_results.sort(key=lambda x: x.score, reverse=True)
+        
+        # 상위 k개 반환
+        if top_k:
+            return reranked_results[:top_k]
+        return reranked_results
+```
+
+**구체적 수치 예시:**
+
+**예시 4.1.1: Cross-encoder 재순위화**
+
+**초기 검색 결과 (벡터 검색):**
+1. "Python 프로그래밍 기초" (유사도: 0.85)
+2. "Python 라이브러리 설치" (유사도: 0.82)
+3. "Python 설치 가이드" (유사도: 0.80)
+
+**쿼리:** "Python 설치 방법"
+
+**Cross-encoder 점수 계산:**
+- 입력: `[CLS] Python 설치 방법 [SEP] Python 프로그래밍 기초`
+- 점수: 0.35 (낮음, 설치 관련 아님)
+
+- 입력: `[CLS] Python 설치 방법 [SEP] Python 라이브러리 설치`
+- 점수: 0.68 (중간, 부분 관련)
+
+- 입력: `[CLS] Python 설치 방법 [SEP] Python 설치 가이드`
+- 점수: 0.92 (높음, 정확히 관련)
+
+**재순위화 결과:**
+1. "Python 설치 가이드" (Cross-encoder: 0.92) ✓
+2. "Python 라이브러리 설치" (Cross-encoder: 0.68)
+3. "Python 프로그래밍 기초" (Cross-encoder: 0.35)
 
 ### 6.2 최적화 기법
 

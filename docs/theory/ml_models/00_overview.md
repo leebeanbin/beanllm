@@ -101,15 +101,54 @@ $$
 
 **llmkit 구현:**
 ```python
-# ml_models.py: BaseMLModel
+# infrastructure/ml/models.py: BaseMLModel
+# infrastructure/ml/factory.py: MLModelFactory
+from abc import ABC, abstractmethod
+
 class BaseMLModel(ABC):
     """
-    통합 인터페이스: f(x; θ) = ŷ
+    ML 모델 통합 인터페이스: ŷ = f(x; θ)
+    
+    수학적 정의:
+    - 입력: x ∈ X (입력 공간)
+    - 파라미터: θ ∈ Θ (파라미터 공간)
+    - 출력: ŷ ∈ Y (출력 공간)
+    - 예측 함수: f: X × Θ → Y
+    
+    실제 구현:
+    - infrastructure/ml/models.py: BaseMLModel (추상 클래스)
+    - infrastructure/ml/models.py: TensorFlowModel, PyTorchModel, SklearnModel
+    - infrastructure/ml/factory.py: MLModelFactory (자동 프레임워크 감지)
     """
+    @abstractmethod
+    def load(self, model_path: Union[str, Path]):
+        """
+        모델 로드: 역직렬화 File → Θ
+        
+        수학적 표현: θ = deserialize(file)
+        """
+        pass
+    
     @abstractmethod
     def predict(self, inputs: Any) -> Any:
         """
         예측 함수: ŷ = f(x; θ)
+        
+        수학적 표현:
+        - 입력: x ∈ X
+        - 출력: ŷ = f(x; θ) ∈ Y
+        
+        실제 구현:
+        - infrastructure/ml/models.py: 각 프레임워크별 predict() 구현
+        """
+        pass
+    
+    @abstractmethod
+    def save(self, save_path: Union[str, Path]):
+        """
+        모델 저장: 직렬화 Θ → File
+        
+        수학적 표현: file = serialize(θ)
         """
         pass
 ```
@@ -148,28 +187,210 @@ $$
 
 **llmkit 구현:**
 ```python
-# ml_models.py: 각 프레임워크별 구현
+# infrastructure/ml/models.py: TensorFlowModel, PyTorchModel, SklearnModel
+# infrastructure/ml/factory.py: MLModelFactory
 class TensorFlowModel(BaseMLModel):
-    def predict(self, inputs: np.ndarray) -> np.ndarray:
+    """
+    TensorFlow/Keras 모델 래퍼
+    
+    수학적 표현: M_keras = (L₁, L₂, ..., Lₙ)
+    where L_i는 레이어
+    
+    실제 구현:
+    - infrastructure/ml/models.py: TensorFlowModel
+    - Keras 모델 (.h5) 및 SavedModel 지원
+    """
+    def load(self, model_path: Union[str, Path]):
         """
-        TensorFlow: X (numpy array) → Y (numpy array)
+        Keras 모델 로드: M = load_model(path)
+        
+        지원 형식:
+        - .h5 (HDF5)
+        - SavedModel 디렉토리
         """
-        return self.model.predict(inputs)
+        import tensorflow as tf
+        self.model = tf.keras.models.load_model(str(model_path))
+        self.model_path = model_path
+    
+    def predict(self, inputs: np.ndarray, batch_size: Optional[int] = None) -> np.ndarray:
+        """
+        예측: ŷ = M(x)
+        
+        Args:
+            inputs: 입력 데이터 x ∈ ℝ^(batch×features)
+            batch_size: 배치 크기 (선택적)
+        
+        Returns:
+            예측 결과 ŷ ∈ ℝ^(batch×classes)
+        """
+        return self.model.predict(inputs, batch_size=batch_size)
 
 class PyTorchModel(BaseMLModel):
-    def predict(self, inputs: torch.Tensor) -> torch.Tensor:
+    """
+    PyTorch 모델 래퍼
+    
+    수학적 표현: M_pytorch = nn.Module(θ)
+    
+    실제 구현:
+    - infrastructure/ml/models.py: PyTorchModel
+    - .pt, .pth, .ckpt 체크포인트 지원
+    - CUDA 자동 감지 및 사용
+    """
+    def __init__(self, model: Optional[Any] = None, model_path: Optional[Union[str, Path]] = None, device: Optional[str] = None):
         """
-        PyTorch: X (Tensor) → Y (Tensor)
+        Args:
+            model: PyTorch 모델 인스턴스 (선택적)
+            model_path: 체크포인트 경로
+            device: 디바이스 ('cpu', 'cuda', 'mps')
         """
+        super().__init__(model_path)
+        self.device = device or ("cuda" if self._is_cuda_available() else "cpu")
+        self.model = model
+        if model_path:
+            self.load(model_path)
+    
+    def load(self, model_path: Union[str, Path]):
+        """
+        PyTorch 모델 로드: M = torch.load(path)
+        
+        지원 형식:
+        - 전체 모델 저장: torch.save(model, path)
+        - state_dict 저장: torch.save({'model_state_dict': ...}, path)
+        """
+        import torch
+        checkpoint = torch.load(str(model_path), map_location=self.device)
+        
+        if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+            # state_dict만 있는 경우 (모델 아키텍처 필요)
+            if self.model is None:
+                raise ValueError("Model architecture required for state_dict loading")
+            self.model.load_state_dict(checkpoint["model_state_dict"])
+        else:
+            # 전체 모델
+            self.model = checkpoint
+        
+        self.model.to(self.device)
+        self.model_path = model_path
+    
+    def predict(self, inputs: Union[np.ndarray, torch.Tensor], **kwargs) -> np.ndarray:
+        """
+        예측: ŷ = M(x)
+        
+        Process:
+        1. 입력을 Tensor로 변환
+        2. 디바이스로 이동
+        3. 추론 모드 실행 (torch.no_grad())
+        4. numpy로 변환
+        
+        Returns:
+            예측 결과 ŷ (numpy array)
+        """
+        import torch
+        
+        if isinstance(inputs, np.ndarray):
+            inputs = torch.from_numpy(inputs).to(self.device)
+        elif isinstance(inputs, torch.Tensor):
+            inputs = inputs.to(self.device)
+        
+        self.model.eval()
         with torch.no_grad():
-            return self.model(inputs)
+            outputs = self.model(inputs, **kwargs)
+        
+        return outputs.cpu().numpy() if isinstance(outputs, torch.Tensor) else outputs
 
 class SklearnModel(BaseMLModel):
-    def predict(self, inputs: np.ndarray) -> np.ndarray:
+    """
+    Scikit-learn 모델 래퍼
+    
+    수학적 표현: M_sklearn = fit(X, y)
+    
+    실제 구현:
+    - infrastructure/ml/models.py: SklearnModel
+    - .pkl, .pickle, .joblib 파일 지원
+    - fit(), predict(), predict_proba() 지원
+    """
+    def load(self, model_path: Union[str, Path]):
         """
-        Scikit-learn: X (numpy array) → Y (numpy array)
+        Scikit-learn 모델 로드: M = joblib.load(path) or pickle.load(path)
+        
+        지원 형식:
+        - .pkl, .pickle (pickle)
+        - .joblib (joblib, 권장)
         """
-        return self.model.predict(inputs)
+        import joblib
+        try:
+            self.model = joblib.load(str(model_path))
+        except:
+            import pickle
+            with open(model_path, "rb") as f:
+                self.model = pickle.load(f)
+        self.model_path = model_path
+    
+    def predict(self, inputs: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        예측: ŷ = M.predict(X)
+        
+        Returns:
+            예측 결과 ŷ (numpy array)
+        """
+        return self.model.predict(inputs, **kwargs)
+    
+    def predict_proba(self, inputs: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        확률 예측: P(y | x) = M.predict_proba(X)
+        
+        Returns:
+            클래스별 확률 P(y | x) (numpy array)
+        """
+        if not hasattr(self.model, "predict_proba"):
+            raise AttributeError("Model does not support predict_proba")
+        return self.model.predict_proba(inputs, **kwargs)
+```
+
+**MLModelFactory (자동 프레임워크 감지):**
+```python
+# infrastructure/ml/factory.py: MLModelFactory
+class MLModelFactory:
+    """
+    ML 모델 팩토리: 프레임워크 자동 감지
+    
+    수학적 표현:
+    - detect: File → Framework
+    - load: File × Framework → M(θ)
+    
+    실제 구현:
+    - infrastructure/ml/factory.py: MLModelFactory
+    - 파일 확장자로 프레임워크 자동 감지
+    """
+    @staticmethod
+    def load(model_path: Union[str, Path], framework: Optional[str] = None, **kwargs) -> BaseMLModel:
+        """
+        모델 로드 (자동 감지)
+        
+        Process:
+        1. 프레임워크 감지 (확장자 기반)
+           - .h5, .hdf5 → TensorFlow
+           - .pt, .pth, .ckpt → PyTorch
+           - .pkl, .pickle, .joblib → Scikit-learn
+        2. 적절한 래퍼 생성
+        3. 모델 로드
+        
+        실제 구현:
+        - infrastructure/ml/factory.py: MLModelFactory.load()
+        """
+        model_path = Path(model_path)
+        
+        if framework is None:
+            framework = MLModelFactory._detect_framework(model_path)
+        
+        if framework == "tensorflow" or framework == "tf":
+            return TensorFlowModel(model_path)
+        elif framework == "pytorch" or framework == "torch":
+            return PyTorchModel(model_path=model_path, **kwargs)
+        elif framework == "sklearn":
+            return SklearnModel.from_pickle(model_path)
+        else:
+            raise ValueError(f"Unknown framework: {framework}")
 ```
 
 ---

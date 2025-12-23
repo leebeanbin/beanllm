@@ -292,9 +292,34 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 911-912
-# 정규화된 벡터의 경우 내적만으로 계산 가능
-similarity = np.dot(v1, v2)  # 이미 normalized된 경우
+# domain/embeddings/utils.py: cosine_similarity
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    코사인 유사도 계산:
+    cosine(u, v) = (u·v) / (||u|| ||v||)
+    
+    Args:
+        vec1: 첫 번째 임베딩 벡터
+        vec2: 두 번째 임베딩 벡터
+    
+    Returns:
+        코사인 유사도 값 (-1 ~ 1)
+    """
+    v1 = np.array(vec1, dtype=np.float32)
+    v2 = np.array(vec2, dtype=np.float32)
+    
+    # L2 Norm 계산
+    norm1 = np.linalg.norm(v1)
+    norm2 = np.linalg.norm(v2)
+    
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    
+    # 코사인 유사도 = (A · B) / (||A|| * ||B||)
+    similarity = np.dot(v1, v2) / (norm1 * norm2)
+    
+    # 수치 안정성을 위해 -1과 1 사이로 클리핑
+    return float(np.clip(similarity, -1.0, 1.0))
 ```
 
 ---
@@ -468,10 +493,16 @@ $$
 ```
 차원 d에 따른 평균 각도:
 
-d=2:   평균 각도 ≈ 45°  (cos ≈ 0.7)
-d=10:  평균 각도 ≈ 70°  (cos ≈ 0.3)
-d=100: 평균 각도 ≈ 88°  (cos ≈ 0.03)
+d=2:   평균 각도 ≈ 45°  (cos ≈ 0.707)
+d=10:  평균 각도 ≈ 70°  (cos ≈ 0.342)
+d=100: 평균 각도 ≈ 88°  (cos ≈ 0.035)
+d=1536: 평균 각도 ≈ 89.9° (cos ≈ 0.002)  # text-embedding-3-small 차원
 d→∞:  평균 각도 → 90°  (cos → 0)
+
+**실제 임베딩 공간에서의 의미:**
+- 고차원 공간에서는 벡터들이 거의 직교하므로
+- 코사인 유사도가 0.7 이상이면 매우 유사한 것으로 간주
+- 임계값 설정: 일반적으로 0.7~0.8 이상을 "관련있다"고 판단
 
 → 고차원에서는 벡터들이 거의 직교
 ```
@@ -555,14 +586,80 @@ Output: 유사도 리스트 [sim₁, sim₂, ..., simₙ]
 **시간 복잡도:** $O(n \cdot d)$  
 **공간 복잡도:** $O(n)$
 
-**NumPy 벡터화:**
+**llmkit 구현:**
 ```python
-# embeddings.py: Line 1071-1092
-query = np.array(query_vec, dtype=np.float32)
-candidates = np.array(candidate_vecs, dtype=np.float32)  # [n, d]
+# domain/embeddings/utils.py: cosine_similarity()
+# domain/embeddings/base.py: BaseEmbedding
+import numpy as np
+from typing import List
 
-# 벡터화된 연산: O(n·d) 하지만 SIMD로 가속
-similarities = np.dot(candidates, query) / (candidate_norms * query_norm)
+def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
+    """
+    코사인 유사도 계산: cosine(u, v) = (u·v) / (||u|| ||v||)
+    
+    수학적 표현:
+    - 입력: 벡터 u, v ∈ ℝ^d
+    - 출력: 유사도 s ∈ [-1, 1]
+    - s = (u·v) / (||u|| ||v||)
+    
+    시간 복잡도: O(d)
+    공간 복잡도: O(1)
+    
+    실제 구현:
+    - domain/embeddings/utils.py: cosine_similarity()
+    - NumPy 벡터화 연산 사용 (SIMD 가속)
+    """
+    v1 = np.array(vec1, dtype=np.float32)
+    v2 = np.array(vec2, dtype=np.float32)
+    
+    # L2 Norm 계산: ||v|| = √(Σ v_i²)
+    norm1 = np.linalg.norm(v1)
+    norm2 = np.linalg.norm(v2)
+    
+    # 영벡터 체크
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+    
+    # 코사인 유사도 = (A · B) / (||A|| * ||B||)
+    similarity = np.dot(v1, v2) / (norm1 * norm2)
+    
+    # 수치 안정성을 위해 -1과 1 사이로 클리핑
+    return float(np.clip(similarity, -1.0, 1.0))
+```
+
+**배치 유사도 계산:**
+```python
+# domain/embeddings/utils.py (배치 처리)
+def batch_cosine_similarity(query_vec: List[float], candidate_vecs: List[List[float]]) -> List[float]:
+    """
+    배치 코사인 유사도 계산: O(n·d)
+    
+    수학적 표현:
+    - 입력: 쿼리 q ∈ ℝ^d, 후보 C ∈ ℝ^(n×d)
+    - 출력: 유사도 리스트 S ∈ ℝ^n
+    - S[i] = cosine(q, C[i])
+    
+    시간 복잡도: O(n·d) (SIMD로 가속)
+    
+    실제 구현:
+    - domain/embeddings/utils.py: batch_cosine_similarity() (또는 직접 구현)
+    - NumPy 행렬 연산 사용
+    """
+    query = np.array(query_vec, dtype=np.float32)
+    candidates = np.array(candidate_vecs, dtype=np.float32)  # [n, d]
+    
+    # L2 Norm 계산
+    query_norm = np.linalg.norm(query)
+    candidate_norms = np.linalg.norm(candidates, axis=1)  # [n]
+    
+    # 벡터화된 내적: candidates @ query = [n, d] @ [d] = [n]
+    dot_products = np.dot(candidates, query)  # [n]
+    
+    # 코사인 유사도: (dot_products) / (candidate_norms * query_norm)
+    similarities = dot_products / (candidate_norms * query_norm)
+    
+    # 클리핑
+    return np.clip(similarities, -1.0, 1.0).tolist()
 ```
 
 ### 7.3 메모리 최적화
@@ -583,9 +680,15 @@ similarities = np.dot(candidates, query) / (candidate_norms * query_norm)
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 893-894
-v1 = np.array(vec1, dtype=np.float32)  # 메모리 효율적
-v2 = np.array(vec2, dtype=np.float32)
+# domain/embeddings/utils.py: cosine_similarity()
+# NumPy float32 사용 (메모리 효율적)
+v1 = np.array(vec1, dtype=np.float32)  # 메모리 효율적 (4 bytes per float)
+v2 = np.array(vec2, dtype=np.float32)  # float64 대비 50% 메모리 절감
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 76-77)
+# - float32: 4 bytes, 정밀도 7자리 (임베딩에 충분)
+# - SIMD 명령어 활용 가능 (벡터화 연산 가속)
 ```
 
 ---
@@ -621,8 +724,14 @@ $$
 **코사인 유사도는 $[-1, 1]$ 범위로 클리핑:**
 
 ```python
-# embeddings.py: Line 915
+# domain/embeddings/utils.py: cosine_similarity()
+# 수치 안정성을 위해 클리핑
 similarity = np.clip(similarity, -1.0, 1.0)
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 98)
+# - 부동소수점 오차로 인해 범위를 벗어날 수 있음
+# - cos(θ)는 항상 [-1, 1] 범위이므로 클리핑 필요
 ```
 
 **이유:**
@@ -634,10 +743,16 @@ similarity = np.clip(similarity, -1.0, 1.0)
 **영벡터 체크:**
 
 ```python
-# embeddings.py: Line 907-909
+# domain/embeddings/utils.py: cosine_similarity()
+# 영벡터 처리
 if norm1 == 0 or norm2 == 0:
-    logger.warning("영벡터가 감지되었습니다.")
+    logger.warning("영벡터가 감지되었습니다. 유사도는 0으로 반환합니다.")
     return 0.0
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 90-92)
+# - 영벡터로 나누면 ZeroDivisionError 발생
+# - 코사인 유사도 정의되지 않음 (0/0)
 ```
 
 **이유:**
@@ -654,11 +769,16 @@ if norm1 == 0 or norm2 == 0:
 
 **순수 Python 구현:**
 ```python
-# embeddings.py: Line 881-890
+# domain/embeddings/utils.py: cosine_similarity() (numpy 없을 때)
+# 순수 Python 구현 (폴백)
 dot_product = sum(a * b for a, b in zip(vec1, vec2))  # O(d)
 norm1 = sum(a * a for a in vec1) ** 0.5  # O(d)
 norm2 = sum(b * b for b in vec2) ** 0.5  # O(d)
 similarity = dot_product / (norm1 * norm2)  # O(1)
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 64-72)
+# - numpy가 없을 때 사용하는 폴백 구현
 ```
 
 **시간 복잡도:** $O(d)$  
@@ -666,12 +786,21 @@ similarity = dot_product / (norm1 * norm2)  # O(1)
 
 **NumPy 구현:**
 ```python
-# embeddings.py: Line 911-912
-similarity = np.dot(v1, v2) / (norm1 * norm2)  # 벡터화
+# domain/embeddings/utils.py: cosine_similarity() (NumPy 사용)
+# NumPy 벡터화 연산
+v1 = np.array(vec1, dtype=np.float32)
+v2 = np.array(vec2, dtype=np.float32)
+norm1 = np.linalg.norm(v1)  # O(d) but SIMD 가속
+norm2 = np.linalg.norm(v2)
+similarity = np.dot(v1, v2) / (norm1 * norm2)  # C 레벨 최적화
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 76-98)
+# - NumPy SIMD 명령어 활용 (AVX, SSE 등)
 ```
 
 **시간 복잡도:** $O(d)$  
-**실제 성능:** 빠름 (C 레벨, SIMD)
+**실제 성능:** 빠름 (SIMD 가속, 약 10-100배 빠름)
 
 ### 9.2 성능 벤치마크
 

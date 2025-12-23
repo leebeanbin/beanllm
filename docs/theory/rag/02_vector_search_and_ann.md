@@ -97,19 +97,132 @@ Output: 상위 k개 인덱스
 
 **llmkit 구현:**
 ```python
-# vector_stores/base.py
-def similarity_search(self, query: str, k: int = 4):
-    query_vec = self.embedding_model.embed_sync([query])[0]
+# domain/vector_stores/base.py: BaseVectorStore
+# infrastructure/vector_stores/chroma.py: ChromaVectorStore
+# infrastructure/vector_stores/faiss.py: FAISSVectorStore
+from abc import ABC, abstractmethod
+
+class BaseVectorStore(ABC):
+    """
+    벡터 스토어 베이스 클래스
     
-    # 모든 후보와 거리 계산
-    distances = []
-    for doc_id, doc_vec in self.vectors.items():
-        dist = cosine_distance(query_vec, doc_vec)
-        distances.append((doc_id, dist))
+    수학적 정의:
+    - k-NN: top-k(q) = argmax_{S ⊆ D, |S|=k} Σ_{d ∈ S} sim(q, d)
+    - 시간 복잡도: O(n·d) (naive), O(log n·d) (HNSW)
     
-    # 정렬 및 상위 k개 선택
-    distances.sort(key=lambda x: x[1])
-    return [self.documents[doc_id] for doc_id, _ in distances[:k]]
+    실제 구현:
+    - domain/vector_stores/base.py: BaseVectorStore (추상 클래스)
+    - infrastructure/vector_stores/chroma.py: ChromaVectorStore (Chroma 사용)
+    - infrastructure/vector_stores/faiss.py: FAISSVectorStore (FAISS 사용)
+    """
+    @abstractmethod
+    async def similarity_search(
+        self,
+        query: str,
+        k: int = 4,
+        **kwargs
+    ) -> List[VectorSearchResult]:
+        """
+        k-NN 검색: top-k(q) = argmax_{S ⊆ D, |S|=k} Σ_{d ∈ S} sim(q, d)
+        
+        Process:
+        1. 쿼리 임베딩 생성: q_vec = embed(query)
+        2. 거리 계산: distances = [sim(q_vec, d_vec) for d_vec in D]
+        3. 정렬 및 상위 k개 선택
+        
+        시간 복잡도:
+        - Naive: O(n·d + n log n)
+        - HNSW (FAISS): O(log n·d)
+        - Chroma: 자체 최적화 인덱스
+        
+        실제 구현:
+        - domain/vector_stores/base.py: BaseVectorStore.similarity_search() (추상)
+        - infrastructure/vector_stores/chroma.py: ChromaVectorStore.similarity_search()
+        - infrastructure/vector_stores/faiss.py: FAISSVectorStore.similarity_search()
+        """
+        # 1. 쿼리 임베딩
+        query_vec = await self.embedding_function([query])
+        query_vec = query_vec[0] if isinstance(query_vec, list) else query_vec
+        
+        # 2. Provider별 최적화된 검색
+        # - Chroma: 자체 인덱스 (HNSW 유사)
+        # - FAISS: HNSW 또는 IVF 인덱스
+        # - Pinecone: 관리형 서비스
+        results = await self._search_vectors(query_vec, k=k, **kwargs)
+        
+        return results
+```
+
+**HNSW 구현 (FAISS):**
+```python
+# infrastructure/vector_stores/faiss.py: FAISSVectorStore
+import faiss
+
+class FAISSVectorStore(BaseVectorStore):
+    """
+    FAISS 벡터 스토어: HNSW 인덱스 사용
+    
+    HNSW 알고리즘:
+    - 다층 그래프: L₀, L₁, ..., Lₘ
+    - 탐색: 상위 레이어 → 하위 레이어
+    - 시간 복잡도: O(log n·d)
+    
+    실제 구현:
+    - infrastructure/vector_stores/faiss.py: FAISSVectorStore
+    - FAISS HNSW 인덱스 사용
+    """
+    def __init__(self, dimension: int, index_type: str = "HNSW", **kwargs):
+        """
+        Args:
+            dimension: 벡터 차원 d
+            index_type: 인덱스 타입 ('HNSW', 'IVF', 'Flat')
+        """
+        self.dimension = dimension
+        
+        if index_type == "HNSW":
+            # HNSW 인덱스 생성
+            # M: 각 레이어의 최대 연결 수 (기본값: 32)
+            # ef_construction: 인덱싱 시 탐색 범위 (기본값: 200)
+            self.index = faiss.IndexHNSWFlat(dimension, M=32)
+            self.index.hnsw.efConstruction = 200
+            self.index.hnsw.efSearch = 50  # 검색 시 탐색 범위
+        elif index_type == "IVF":
+            # IVF 인덱스 (Inverted File Index)
+            nlist = kwargs.get("nlist", 100)  # 클러스터 수
+            quantizer = faiss.IndexFlatL2(dimension)
+            self.index = faiss.IndexIVFFlat(quantizer, dimension, nlist)
+        else:
+            # Flat 인덱스 (Linear Search)
+            self.index = faiss.IndexFlatL2(dimension)
+    
+    def add_vectors(self, vectors: np.ndarray):
+        """
+        벡터 추가 및 인덱싱
+        
+        시간 복잡도:
+        - HNSW: O(n log n·d)
+        - IVF: O(n·k·d) where k = 클러스터 수
+        - Flat: O(1) (인덱싱 없음)
+        """
+        vectors = np.array(vectors, dtype=np.float32)
+        
+        if isinstance(self.index, faiss.IndexIVFFlat):
+            # IVF는 학습 필요
+            if not self.index.is_trained:
+                self.index.train(vectors)
+        
+        self.index.add(vectors)
+    
+    def search(self, query_vec: np.ndarray, k: int = 4) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        HNSW 검색: O(log n·d)
+        
+        Returns:
+            (distances, indices): 거리와 인덱스
+        """
+        query_vec = np.array([query_vec], dtype=np.float32)
+        distances, indices = self.index.search(query_vec, k)
+        return distances[0], indices[0]
 ```
 
 ### 2.2 공간 분할 기법

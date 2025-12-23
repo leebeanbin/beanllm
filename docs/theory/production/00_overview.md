@@ -111,35 +111,117 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: EmbeddingCache
+# domain/embeddings/cache.py: EmbeddingCache
+# domain/prompts/cache.py: PromptCache
+# domain/graph/node_cache.py: NodeCache
+from collections import OrderedDict
+import time
+
 class EmbeddingCache:
     """
-    LRU 캐시: 가장 오래 사용되지 않은 항목 제거
-    evict = argmin_i t_i
+    LRU + TTL 캐시: 가장 오래 사용되지 않은 항목 제거
+    
+    수학적 모델:
+    - Cache = {(k₁, v₁, t₁), (k₂, v₂, t₂), ..., (kₙ, vₙ, tₙ)}
+    - evict = argmin_i t_i (LRU)
+    - valid(k) = True if t_current - t_stored < TTL else False
+    
+    시간 복잡도:
+    - get: O(1) (OrderedDict 사용)
+    - set: O(1) (OrderedDict 사용)
+    - evict: O(1) (맨 앞 항목 제거)
+    
+    실제 구현:
+    - domain/embeddings/cache.py: EmbeddingCache (임베딩 캐시)
+    - domain/prompts/cache.py: PromptCache (프롬프트 캐시)
+    - domain/graph/node_cache.py: NodeCache (그래프 노드 캐시)
     """
     def __init__(self, ttl: int = 3600, max_size: int = 10000):
-        from collections import OrderedDict
+        """
+        Args:
+            ttl: Time To Live (초 단위, 기본값: 3600 = 1시간)
+            max_size: 최대 캐시 크기 (기본값: 10000)
+        """
         self.cache: OrderedDict[str, tuple[List[float], float]] = OrderedDict()
         self.max_size = max_size
+        self.ttl = ttl
+        self.hits = 0
+        self.misses = 0
     
     def get(self, text: str) -> Optional[List[float]]:
         """
         캐시 조회: O(1) 시간 복잡도
+        
+        Process:
+        1. 키 존재 확인: O(1)
+        2. TTL 검증: O(1)
+        3. LRU 업데이트: O(1) (move_to_end)
+        
+        실제 구현:
+        - domain/embeddings/cache.py: EmbeddingCache.get()
         """
-        if text in self.cache:
-            # LRU 업데이트: 사용된 항목을 맨 뒤로
-            self.cache.move_to_end(text)
-            return self.cache[text][0]
-        return None
+        if text not in self.cache:
+            self.misses += 1
+            return None
+        
+        vector, stored_time = self.cache[text]
+        
+        # TTL 검증
+        if time.time() - stored_time > self.ttl:
+            # 만료된 항목 제거
+            del self.cache[text]
+            self.misses += 1
+            return None
+        
+        # LRU 업데이트: 사용된 항목을 맨 뒤로 이동
+        self.cache.move_to_end(text)
+        self.hits += 1
+        
+        return vector
     
     def set(self, text: str, vector: List[float]):
         """
         캐시 저장: O(1) 시간 복잡도
+        
+        Process:
+        1. 크기 확인: O(1)
+        2. 필요시 evict: O(1) (맨 앞 항목 제거)
+        3. 항목 추가: O(1)
+        
+        실제 구현:
+        - domain/embeddings/cache.py: EmbeddingCache.set()
         """
+        # 크기 제한 확인
         if len(self.cache) >= self.max_size:
             # 가장 오래된 항목 제거 (맨 앞)
             self.cache.popitem(last=False)
+        
+        # 항목 추가 (맨 뒤에 추가 = 최근 사용)
         self.cache[text] = (vector, time.time())
+    
+    def stats(self) -> Dict[str, Any]:
+        """
+        캐시 통계: H = Hits / (Hits + Misses)
+        
+        Returns:
+            {
+                "hits": hits,
+                "misses": misses,
+                "hit_rate": H,
+                "size": len(cache)
+            }
+        """
+        total = self.hits + self.misses
+        hit_rate = self.hits / total if total > 0 else 0.0
+        
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "hit_rate": hit_rate,
+            "size": len(self.cache),
+            "max_size": self.max_size,
+            "ttl": self.ttl,
+        }
 ```
 
 ---
@@ -162,10 +244,13 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: EmbeddingCache.stats()
-def stats(self) -> Dict[str, Any]:
+# domain/embeddings/cache.py: EmbeddingCache.get_stats()
+def get_stats(self) -> Dict[str, Any]:
     """
     캐시 통계: H = Hits / (Hits + Misses)
+    
+    실제 구현:
+    - domain/embeddings/cache.py: EmbeddingCache.get_stats()
     """
     total = self.hits + self.misses
     hit_rate = self.hits / total if total > 0 else 0
@@ -194,10 +279,13 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: EmbeddingCache.get()
+# domain/embeddings/cache.py: EmbeddingCache.get()
 def get(self, text: str) -> Optional[List[float]]:
     """
     TTL 확인: valid(k) = (t_current - t_stored) < TTL
+    
+    실제 구현:
+    - domain/embeddings/cache.py: EmbeddingCache.get()
     """
     if text not in self.cache:
         return None
@@ -270,6 +358,66 @@ t=4s:  tokens=10+10=20 (충전)
       요청 4 (cost=15) → tokens=5 ✓
 t=5s:  tokens=5+10=15 (충전)
       요청 5 (cost=20) → tokens=15 < 20 ✗ (거부)
+```
+
+**llmkit 구현:**
+```python
+# utils/error_handling.py: RateLimiter
+# decorators/rate_limit.py: @rate_limit 데코레이터
+class RateLimiter:
+    """
+    Rate Limiter: 시간 윈도우 기반 속도 제한
+    
+    수학적 모델:
+    - time_window 내 최대 max_calls 허용
+    - allow = True if |{calls in window}| < max_calls else False
+    
+    실제 구현:
+    - utils/error_handling.py: RateLimiter (sliding window 방식)
+    - decorators/rate_limit.py: @rate_limit 데코레이터
+    - 스레드 안전 (threading.Lock 사용)
+    """
+    def __init__(self, config: Optional[RateLimitConfig] = None):
+        """
+        Args:
+            config: RateLimitConfig
+                - max_calls: 최대 호출 수 (기본값: 10)
+                - time_window: 시간 윈도우 (초, 기본값: 60.0)
+        """
+        self.config = config or RateLimitConfig()
+        self.calls = deque()  # 호출 타임스탬프 큐
+        self._lock = threading.Lock()
+    
+    def _is_allowed(self) -> bool:
+        """
+        호출 허용 여부: allow = len(calls) < max_calls
+        
+        수학적 표현:
+        - window = {c ∈ calls : t_current - c < time_window}
+        - allow = True if |window| < max_calls else False
+        """
+        self._clean_old_calls()  # 오래된 호출 제거
+        return len(self.calls) < self.config.max_calls
+    
+    def call(self, func: Callable, *args, **kwargs) -> Any:
+        """
+        Rate limit이 적용된 함수 호출
+        
+        실제 구현:
+        - utils/error_handling.py: RateLimiter.call()
+        - decorators/rate_limit.py: @rate_limit 데코레이터
+        """
+        with self._lock:
+            if not self._is_allowed():
+                wait_time = self._wait_time()
+                raise RateLimitError(
+                    f"Rate limit exceeded. Wait {wait_time:.2f}s before retry."
+                )
+            
+            # 호출 기록
+            self.calls.append(time.time())
+        
+        return func(*args, **kwargs)
 ```
 
 #### 구체적 수치 예시

@@ -527,9 +527,15 @@ $$
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 893-894
+# domain/embeddings/utils.py: cosine_similarity()
+# NumPy float32 사용 (메모리 효율적)
 v1 = np.array(vec1, dtype=np.float32)  # 4 bytes per element
 v2 = np.array(vec2, dtype=np.float32)  # 메모리 효율적
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 76-77)
+# - float32: 4 bytes, 정밀도 7자리 (임베딩에 충분)
+# - SIMD 명령어 활용 가능 (벡터화 연산 가속)
 ```
 
 ### 7.2 벡터 연산의 시간 복잡도
@@ -547,15 +553,23 @@ v2 = np.array(vec2, dtype=np.float32)  # 메모리 효율적
 
 **llmkit 구현:**
 ```python
-# embeddings.py: Line 881-890
-# 순수 Python 구현: O(d) 시간
+# domain/embeddings/utils.py: cosine_similarity()
+# 순수 Python 구현 (numpy 없을 때 폴백)
 dot_product = sum(a * b for a, b in zip(vec1, vec2))  # O(d)
 norm1 = sum(a * a for a in vec1) ** 0.5  # O(d)
 norm2 = sum(b * b for b in vec2) ** 0.5  # O(d)
 similarity = dot_product / (norm1 * norm2)  # O(1)
 
 # NumPy 구현: 벡터화로 더 빠름
+v1 = np.array(vec1, dtype=np.float32)
+v2 = np.array(vec2, dtype=np.float32)
+norm1 = np.linalg.norm(v1)  # O(d) but SIMD 가속
+norm2 = np.linalg.norm(v2)
 similarity = np.dot(v1, v2) / (norm1 * norm2)  # C 레벨 최적화
+
+# 실제 구현:
+# - domain/embeddings/utils.py: cosine_similarity() (Line 64-98)
+# - NumPy SIMD 명령어 활용 (AVX, SSE 등)
 ```
 
 ### 7.3 행렬-벡터 곱의 최적화
@@ -633,9 +647,15 @@ similarities = batch_cosine_similarity(query_vec, candidate_vecs)
 
 **NumPy 벡터화:**
 ```python
-# embeddings.py: Line 1071-1092
+# domain/embeddings/utils.py (배치 처리)
+# 배치 코사인 유사도 계산
 query = np.array(query_vec, dtype=np.float32)
 candidates = np.array(candidate_vecs, dtype=np.float32)  # [n, d] 행렬
+
+# 실제 구현:
+# - domain/embeddings/utils.py: batch_cosine_similarity() (또는 직접 구현)
+# - NumPy 행렬 연산 사용 (SIMD 가속)
+```
 
 # 벡터화된 연산: O(n·d) 하지만 SIMD로 가속
 similarities = np.dot(candidates, query) / (norms * query_norm)

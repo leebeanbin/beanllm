@@ -485,10 +485,33 @@ Output: 유클리드 거리 d
 2. return ||diff_vector||₂  // L2 norm 계산
 ```
 
-**NumPy 구현:**
+**llmkit 구현:**
 ```python
-# embeddings.py: Line 966-967
-distance = np.linalg.norm(v1 - v2)  # 최적화된 구현
+# domain/embeddings/utils.py: euclidean_distance()
+import numpy as np
+from typing import List
+
+def euclidean_distance(vec1: List[float], vec2: List[float]) -> float:
+    """
+    유클리드 거리 계산: d(u, v) = ||u - v||₂
+    
+    수학적 표현:
+    - 입력: 벡터 u, v ∈ ℝ^d
+    - 출력: 거리 d = √(Σ(u_i - v_i)²)
+    
+    시간 복잡도: O(d)
+    
+    실제 구현:
+    - domain/embeddings/utils.py: euclidean_distance()
+    - NumPy 벡터화 연산 사용
+    """
+    v1 = np.array(vec1, dtype=np.float32)
+    v2 = np.array(vec2, dtype=np.float32)
+    
+    # 유클리드 거리 = L2 norm of difference
+    distance = np.linalg.norm(v1 - v2)
+    
+    return float(distance)
 ```
 
 ### 7.2 배치 거리 계산

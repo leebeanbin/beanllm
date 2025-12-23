@@ -179,16 +179,186 @@ $$
 
 #### 구현 5.1.1: 병렬 실행
 
+**llmkit 구현:**
 ```python
-# multi_agent.py: Line 233-270
+# domain/multi_agent/strategies.py: SequentialStrategy, ParallelStrategy, HierarchicalStrategy
+# service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl
+# facade/multi_agent_facade.py: MultiAgentCoordinator
+from abc import ABC, abstractmethod
+import asyncio
+
+class CoordinationStrategy(ABC):
+    """
+    조정 전략 베이스 클래스
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: CoordinationStrategy (추상 클래스)
+    - domain/multi_agent/strategies.py: SequentialStrategy, ParallelStrategy, HierarchicalStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl (전략 실행)
+    """
+    @abstractmethod
+    async def execute(self, agents: List[Any], task: str, **kwargs) -> Dict[str, Any]:
+        """전략 실행"""
+        pass
+
+class SequentialStrategy(CoordinationStrategy):
+    """
+    순차 실행 전략: result = fₙ ∘ fₙ₋₁ ∘ ... ∘ f₁(task)
+    
+    수학적 표현:
+    - 함수 합성: result = fₙ ∘ fₙ₋₁ ∘ ... ∘ f₂ ∘ f₁(task)
+    - 시간 복잡도: T_sequential = Σ T_i
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: SequentialStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_sequential()
+    """
+    async def execute(self, agents: List[Any], task: str, **kwargs) -> Dict[str, Any]:
+        """
+        순차 실행
+        
+        Process:
+        1. Agent 1 실행: result₁ = f₁(task)
+        2. Agent 2 실행: result₂ = f₂(result₁)
+        3. Agent 3 실행: result₃ = f₃(result₂)
+        ...
+        n. Agent n 실행: resultₙ = fₙ(resultₙ₋₁)
+        
+        시간: T = T₁ + T₂ + ... + Tₙ
+        """
+        results = []
+        current_input = task
+        
+        for i, agent in enumerate(agents):
+            result = await agent.run(current_input)
+            results.append(result)
+            
+            # 다음 agent의 입력은 이전 agent의 출력
+            current_input = result.answer
+        
+        return {
+            "final_result": results[-1].answer if results else None,
+            "intermediate_results": [r.answer for r in results],
+            "all_steps": results,
+            "strategy": "sequential",
+        }
+
 class ParallelStrategy(CoordinationStrategy):
-    async def execute(self, agents, task, **kwargs):
+    """
+    병렬 실행 전략: results = {f₁(task), f₂(task), ..., fₙ(task)} (동시 실행)
+    
+    수학적 표현:
+    - 동시 실행: results = {f₁(task), f₂(task), ..., fₙ(task)}
+    - 시간 복잡도: T_parallel = max(T₁, T₂, ..., Tₙ)
+    - 속도 향상: S = T_sequential / T_parallel = Σ T_i / max(T_i)
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: ParallelStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_parallel()
+    - asyncio.gather() 사용
+    """
+    def __init__(self, aggregation: str = "concatenate"):
         """
-        병렬 실행: T_par = max(T₁, T₂, ..., Tₙ)
+        Args:
+            aggregation: 결과 집계 방법 ("concatenate", "vote", "average")
         """
+        self.aggregation = aggregation
+    
+    async def execute(self, agents: List[Any], task: str, **kwargs) -> Dict[str, Any]:
+        """
+        병렬 실행
+        
+        Process:
+        1. 모든 agent를 동시에 실행: asyncio.gather()
+        2. 결과 집계: aggregation(results)
+        
+        시간: T = max(T₁, T₂, ..., Tₙ)
+        속도 향상: S = (T₁ + T₂ + ... + Tₙ) / max(T₁, T₂, ..., Tₙ)
+        """
+        # 모든 agent를 동시에 실행
         tasks = [agent.run(task) for agent in agents]
         results = await asyncio.gather(*tasks)
-        return self._aggregate(results)
+        
+        # 결과 집계
+        if self.aggregation == "concatenate":
+            final_result = "\n\n".join([r.answer for r in results])
+        elif self.aggregation == "vote":
+            # 투표 기반 집계
+            final_result = max(set([r.answer for r in results]), key=[r.answer for r in results].count)
+        else:
+            final_result = results[0].answer if results else None
+        
+        return {
+            "final_result": final_result,
+            "all_results": [r.answer for r in results],
+            "strategy": "parallel",
+            "aggregation": self.aggregation,
+        }
+
+class HierarchicalStrategy(CoordinationStrategy):
+    """
+    계층적 실행 전략: Manager → Workers
+    
+    수학적 표현:
+    - 트리 구조: manager (root) → {worker₁, worker₂, ..., workerₙ} (leaves)
+    - 시간 복잡도: T_hierarchical = T_manager + max(T_worker_i)
+    
+    실제 구현:
+    - domain/multi_agent/strategies.py: HierarchicalStrategy
+    - service/impl/multi_agent_service_impl.py: MultiAgentServiceImpl.execute_hierarchical()
+    """
+    def __init__(self, manager_agent: Any):
+        """
+        Args:
+            manager_agent: 매니저 역할 agent
+        """
+        self.manager = manager_agent
+    
+    async def execute(self, agents: List[Any], task: str, **kwargs) -> Dict[str, Any]:
+        """
+        계층적 실행
+        
+        Process:
+        1. Manager가 작업 분해: subtasks = Manager.decompose(task)
+        2. Workers 병렬 실행: results = {Worker₁(subtask₁), ..., Workerₙ(subtaskₙ)}
+        3. Manager가 결과 종합: final = Manager.synthesize(results)
+        
+        시간: T = T_decompose + max(T_worker_i) + T_synthesize
+        """
+        # 1. Manager가 작업 분해
+        delegation_prompt = f"""Break down this task into {len(agents)} subtasks.
+Task: {task}
+Return JSON: {{"subtasks": ["subtask1", "subtask2", ...]}}"""
+        
+        delegation_result = await self.manager.run(delegation_prompt)
+        
+        # JSON 파싱
+        import json
+        import re
+        json_match = re.search(r"\{.*\}", delegation_result.answer, re.DOTALL)
+        if json_match:
+            subtasks_data = json.loads(json_match.group())
+            subtasks = subtasks_data.get("subtasks", [])
+        else:
+            subtasks = [task] * len(agents)
+        
+        # 2. Workers 병렬 실행
+        worker_tasks = [agent.run(subtask) for agent, subtask in zip(agents, subtasks)]
+        worker_results = await asyncio.gather(*worker_tasks)
+        
+        # 3. Manager가 결과 종합
+        synthesis_prompt = f"""Synthesize these results into a final answer.
+Results: {[r.answer for r in worker_results]}
+Original task: {task}"""
+        
+        final_result = await self.manager.run(synthesis_prompt)
+        
+        return {
+            "final_result": final_result.answer,
+            "subtasks": subtasks,
+            "worker_results": [r.answer for r in worker_results],
+            "strategy": "hierarchical",
+        }
 ```
 
 **시간 복잡도:** $O(\max(T_1, T_2, \ldots, T_n))$

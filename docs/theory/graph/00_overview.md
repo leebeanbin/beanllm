@@ -117,19 +117,27 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Line 24-54
+# domain/graph/graph_state.py: GraphState
 @dataclass
 class GraphState:
     """
     그래프 상태: V의 각 노드가 가질 수 있는 상태
     
     수학적 표현: S = {s_v | v ∈ V}
+    
+    실제 구현:
+    - domain/graph/graph_state.py: GraphState
     """
     data: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
     
     def update(self, updates: Dict[str, Any]):
-        """상태 업데이트: s_v ← f(s_v, updates)"""
+        """
+        상태 업데이트: s_v ← f(s_v, updates)
+        
+        실제 구현:
+        - domain/graph/graph_state.py: GraphState.update()
+        """
         self.data.update(updates)
 ```
 
@@ -162,12 +170,31 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: BaseNode
+# domain/graph/node.py: BaseNode
+# facade/state_graph_facade.py: StateGraph
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl
 class BaseNode(ABC):
+    """
+    그래프 노드: v = (f_v, I_v, O_v)
+    
+    where:
+    - f_v: S → S' (전이 함수)
+    - I_v ⊆ V (입력 노드 집합)
+    - O_v ⊆ V (출력 노드 집합)
+    """
     @abstractmethod
     async def execute(self, state: GraphState) -> GraphState:
         """
         전이 함수 구현: δ_v(s) = s'
+        
+        수학적 표현:
+        - 입력: 상태 s ∈ S
+        - 출력: 새 상태 s' ∈ S
+        
+        실제 구현:
+        - domain/graph/node.py: BaseNode (추상 클래스)
+        - facade/state_graph_facade.py: StateGraph.add_node() (노드 추가)
+        - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke() (실행)
         """
         pass
 ```
@@ -204,8 +231,43 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph 클래스
-class Graph:
+# facade/state_graph_facade.py: StateGraph
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl
+class StateGraph:
+    """
+    상태 그래프: G = (V, E, s, t)
+    
+    where:
+    - V: 노드 집합
+    - E: 엣지 집합
+    - s: E → V (소스 함수)
+    - t: E → V (타겟 함수)
+    """
+    def add_edge(
+        self,
+        from_node: str,
+        to_node: str,
+        condition: Optional[Callable] = None,
+    ):
+        """
+        엣지 추가: e = (v_s, v_t, c_e)
+        
+        Args:
+            from_node: 소스 노드 v_s
+            to_node: 타겟 노드 v_t
+            condition: 조건 함수 c_e: S → {True, False} (선택적)
+        
+        실제 구현:
+        - facade/state_graph_facade.py: StateGraph.add_edge()
+        - service/impl/state_graph_service_impl.py: StateGraphServiceImpl._get_next_node()
+        """
+        if condition:
+            # 조건부 엣지: c_e(s) = True일 때만 전이
+            self.conditional_edges[from_node] = (condition, to_node)
+        else:
+            # 무조건 엣지: 항상 전이
+            self.edges[from_node] = to_node
+    
     def connect(
         self,
         from_node: str,
@@ -247,17 +309,21 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.run()
-async def run(self, initial_state: GraphState) -> GraphState:
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+# facade/state_graph_facade.py: StateGraph.invoke()
+async def invoke(self, request: StateGraphRequest) -> StateGraphResponse:
     """
-    상태 전이 합성:
-    s_final = δ_vn ∘ δ_vn-1 ∘ ... ∘ δ_v1(s_0)
+    상태 전이 합성: s_final = δ_vn ∘ δ_vn-1 ∘ ... ∘ δ_v1(s_0)
+    
+    실제 구현:
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+    - facade/state_graph_facade.py: StateGraph.invoke()
     """
-    current_state = initial_state
+    current_state = request.initial_state
     for node_name in execution_order:
-        node = self.nodes[node_name]
+        node = request.nodes[node_name]
         current_state = await node.execute(current_state)
-    return current_state
+    return StateGraphResponse(final_state=current_state)
 ```
 
 ---
@@ -280,11 +346,20 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Line 56-100
+# domain/graph/node_cache.py: NodeCache
 class NodeCache:
+    """
+    노드 캐시: Cache(node, state) → result
+    
+    실제 구현:
+    - domain/graph/node_cache.py: NodeCache
+    """
     def get_key(self, node_name: str, state: GraphState) -> str:
         """
         캐시 키 생성: hash(node_name, serialize(state))
+        
+        실제 구현:
+        - domain/graph/node_cache.py: NodeCache.get_key()
         """
         state_json = json.dumps(state.data, sort_keys=True)
         hash_value = hashlib.md5(state_json.encode()).hexdigest()
@@ -293,6 +368,9 @@ class NodeCache:
     def get(self, node_name: str, state: GraphState) -> Optional[Any]:
         """
         캐시 조회: O(1) 시간 복잡도
+        
+        실제 구현:
+        - domain/graph/node_cache.py: NodeCache.get()
         """
         key = self.get_key(node_name, state)
         if key in self.cache:
@@ -329,11 +407,14 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Checkpoint 클래스
+# domain/state_graph/checkpoint.py: Checkpoint
 @dataclass
 class Checkpoint:
     """
     체크포인트: 특정 시점의 상태 저장
+    
+    실제 구현:
+    - domain/state_graph/checkpoint.py: Checkpoint
     """
     state: GraphState
     step: int
@@ -366,23 +447,21 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.connect_if()
-def connect_if(
+# facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+def add_conditional_edge(
     self,
     from_node: str,
-    condition: Callable[[GraphState], bool],
-    then_node: str,
-    else_node: Optional[str] = None
+    condition: Callable[[Dict[str, Any]], str],
+    edge_mapping: Optional[Dict[str, str]] = None,
 ):
     """
     조건부 엣지: c(s) ? then_node : else_node
-    """
-    def routing_func(state: GraphState) -> str:
-        if condition(state):
-            return then_node
-        return else_node or "end"
     
-    self.conditional_edges[from_node] = routing_func
+    실제 구현:
+    - facade/state_graph_facade.py: StateGraph.add_conditional_edge()
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl._get_next_node()
+    """
+    self.conditional_edges[from_node] = (condition, edge_mapping)
 ```
 
 ---
@@ -415,25 +494,30 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.run() with cycle detection
-async def run(self, initial_state: GraphState, max_iterations: int = 100):
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+# service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+async def invoke(self, request: StateGraphRequest) -> StateGraphResponse:
     """
-    순환 감지 및 고정점 찾기
-    """
-    current_state = initial_state
-    seen_states = set()
+    그래프 실행 (순환 감지 및 고정점 찾기)
     
-    for iteration in range(max_iterations):
-        state_hash = hash_state(current_state)
-        if state_hash in seen_states:
-            # 순환 감지 또는 고정점 도달
+    실제 구현:
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke()
+    - service/impl/graph_service_impl.py: GraphServiceImpl.run_graph()
+    """
+    current_state = request.initial_state
+    visited = set()
+    
+    for iteration in range(request.max_iterations):
+        if current_node in visited:
+            # 순환 감지
             break
-        seen_states.add(state_hash)
+        visited.add(current_node)
         
-        current_state = await self._execute_step(current_state)
+        # 노드 실행
+        current_state = await self._execute_node(current_node, current_state)
         
-        if self._is_fixed_point(current_state):
-            break
+        # 다음 노드 결정
+        current_node = self._get_next_node(...)
 ```
 
 ---
@@ -450,16 +534,17 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: 확률적 라우팅 (향후 구현)
+# domain/graph/nodes.py (향후 구현)
 def probabilistic_routing(
-    self,
     from_node: str,
     scores: Dict[str, float]
 ) -> str:
     """
-    확률 분포에 따라 노드 선택
+    확률 분포에 따라 노드 선택: P(v_i) = exp(score_i) / Σ exp(score_j)
     
-    P(v_i) = exp(score_i) / Σ exp(score_j)
+    실제 구현:
+    - domain/graph/nodes.py (향후 구현)
+    - softmax 기반 확률적 라우팅
     """
     import numpy as np
     nodes = list(scores.keys())
@@ -489,14 +574,17 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.run_parallel()
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke() (병렬 노드 지원)
 async def run_parallel(
-    self,
     nodes: List[str],
     state: GraphState
 ) -> GraphState:
     """
     병렬 실행: T_parallel = max(T_i)
+    
+    실제 구현:
+    - service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke() (병렬 노드 지원)
+    - asyncio.gather() 사용
     """
     tasks = [self.nodes[n].execute(state) for n in nodes]
     results = await asyncio.gather(*tasks)
@@ -526,13 +614,20 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.find_critical_path()
-def find_critical_path(self) -> List[str]:
+# domain/graph/utils.py (또는 직접 구현)
+def find_critical_path(graph: StateGraph) -> List[str]:
     """
     Critical Path 찾기: 최장 경로
+    
+    수학적 표현: T_min = max_{P ∈ paths} Σ_{v ∈ P} T(v)
+    
+    실제 구현:
+    - domain/graph/utils.py (또는 직접 구현)
+    - Topological sort + longest path (Dijkstra 알고리즘 변형)
     """
     # Topological sort + longest path
     # Dijkstra 알고리즘 변형
+    pass
 ```
 
 ---
@@ -549,7 +644,8 @@ $$
 
 **llmkit 구현:**
 ```python
-# graph.py: Graph.run() with retry
+# service/impl/state_graph_service_impl.py: StateGraphServiceImpl.invoke() (재시도 지원)
+# utils/error_handling.py: RetryHandler
 async def run_with_retry(
     self,
     node_name: str,
