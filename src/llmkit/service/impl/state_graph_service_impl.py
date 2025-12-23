@@ -23,6 +23,7 @@ from typing import (
     get_type_hints,
 )
 
+from ...domain.graph.graph_state import GraphState
 from ...domain.state_graph import END, Checkpoint, GraphExecution, NodeExecution
 from ...dto.request.state_graph_request import StateGraphRequest
 from ...dto.response.state_graph_response import StateGraphResponse
@@ -81,8 +82,6 @@ class StateGraphServiceImpl(IStateGraphService):
         execution = GraphExecution(execution_id=execution_id, start_time=datetime.now())
 
         # 상태 복사 (원본 보존) - 최적화: GraphState.copy() 사용
-        from ...domain.graph.graph_state import GraphState
-        
         if isinstance(request.initial_state, GraphState):
             state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
         elif isinstance(request.initial_state, dict):
@@ -119,7 +118,6 @@ class StateGraphServiceImpl(IStateGraphService):
 
                 try:
                     # 노드 함수 실행 - 최적화: 실행 기록용으로만 복사
-                    # GraphState import는 위에서 이미 했으므로 재사용
                     if isinstance(state, GraphState):
                         input_state = state.copy()  # GraphState.copy() 사용
                     elif isinstance(state, dict):
@@ -208,15 +206,13 @@ class StateGraphServiceImpl(IStateGraphService):
             execution_id = request.execution_id
 
         # 상태 복사 - 최적화: GraphState.copy() 사용
-        from ...domain.graph.graph_state import GraphState
-        
         if isinstance(request.initial_state, GraphState):
             state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
         elif isinstance(request.initial_state, dict):
             state = dict(request.initial_state)  # Dict는 얕은 복사
         else:
             state = copy.deepcopy(request.initial_state)  # 기타 타입은 깊은 복사
-        
+
         current_node = request.entry_point
 
         checkpoint: Optional[Checkpoint] = None
@@ -236,7 +232,7 @@ class StateGraphServiceImpl(IStateGraphService):
                 state_copy = dict(state)  # Dict는 얕은 복사
             else:
                 state_copy = copy.deepcopy(state)  # 기타 타입은 깊은 복사
-            
+
             yield (current_node, state_copy)
 
             # 체크포인트 (기존과 동일)
