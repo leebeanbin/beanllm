@@ -77,7 +77,7 @@ class StateGraphServiceImpl(IStateGraphService):
         else:
             execution_id = request.execution_id
 
-        # 실행 기록 시작 (기존과 동일)
+        # 실행 기록 시작
         execution = GraphExecution(execution_id=execution_id, start_time=datetime.now())
 
         # 상태 복사 (원본 보존) - 최적화: GraphState.copy() 사용
@@ -119,8 +119,7 @@ class StateGraphServiceImpl(IStateGraphService):
 
                 try:
                     # 노드 함수 실행 - 최적화: 실행 기록용으로만 복사
-                    from ...domain.graph.graph_state import GraphState
-                    
+                    # GraphState import는 위에서 이미 했으므로 재사용
                     if isinstance(state, GraphState):
                         input_state = state.copy()  # GraphState.copy() 사용
                     elif isinstance(state, dict):
@@ -230,7 +229,7 @@ class StateGraphServiceImpl(IStateGraphService):
             node_func = request.nodes[current_node]
             state = node_func(state)
 
-            # 상태 반환 - 최적화: GraphState.copy() 사용 (이미 위에서 import됨)
+            # 상태 반환 - 최적화: GraphState.copy() 사용
             if isinstance(state, GraphState):
                 state_copy = state.copy()  # GraphState.copy() 사용
             elif isinstance(state, dict):
@@ -239,8 +238,6 @@ class StateGraphServiceImpl(IStateGraphService):
                 state_copy = copy.deepcopy(state)  # 기타 타입은 깊은 복사
             
             yield (current_node, state_copy)
-            
-            iteration += 1
 
             # 체크포인트 (기존과 동일)
             if checkpoint:
