@@ -220,7 +220,7 @@ class MultiAgentCoordinator:
         agents = [self.agents[aid] for aid in agent_ids]
 
         # Judge agent 찾기 (기존 multi_agent.py와 동일)
-        judge = self.agents[judge_id] if judge_id else None
+        self.agents[judge_id] if judge_id else None
 
         # Handler를 통한 처리
         # judge를 agents_dict로 전달하여 handler에서 찾을 수 있도록 함

@@ -237,8 +237,7 @@ class TokenTextSplitter(BaseTextSplitter):
             import tiktoken
         except ImportError:
             raise ImportError(
-                "tiktoken is required for TokenTextSplitter. "
-                "Install it with: pip install tiktoken"
+                "tiktoken is required for TokenTextSplitter. Install it with: pip install tiktoken"
             )
 
         if model_name:

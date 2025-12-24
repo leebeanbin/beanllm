@@ -107,9 +107,9 @@ from .token_counter import (
 # Provider Retry Strategies
 try:
     from .provider_retry_strategies import (
+        PROVIDER_RETRY_STRATEGIES,
         get_error_type_retry_config,
         get_provider_retry_config,
-        PROVIDER_RETRY_STRATEGIES,
     )
 except ImportError:
     # Optional dependency

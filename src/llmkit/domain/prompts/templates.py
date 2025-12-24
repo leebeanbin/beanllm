@@ -68,7 +68,7 @@ class PromptTemplate(BasePromptTemplate):
 
         if extracted != declared:
             raise ValueError(
-                f"Template variables mismatch. " f"Extracted: {extracted}, Declared: {declared}"
+                f"Template variables mismatch. Extracted: {extracted}, Declared: {declared}"
             )
 
     def format(self, **kwargs) -> str:

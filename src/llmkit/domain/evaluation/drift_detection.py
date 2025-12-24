@@ -7,8 +7,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from .results import EvaluationResult
-
 
 @dataclass
 class DriftAlert:
@@ -50,9 +48,9 @@ class DriftDetector:
         self.detection_window_days = detection_window_days
         self.threshold_std = threshold_std
         self.threshold_percent = threshold_percent
-        self._history: List[Dict[str, Any]] = (
-            []
-        )  # [{"timestamp": ..., "metric": ..., "score": ...}]
+        self._history: List[
+            Dict[str, Any]
+        ] = []  # [{"timestamp": ..., "metric": ..., "score": ...}]
         self._alert_counter = 0
 
     def record_score(
@@ -240,4 +238,3 @@ class DriftDetector:
         else:
             cutoff_date = datetime.now() - timedelta(days=days)
             self._history = [h for h in self._history if h["timestamp"] >= cutoff_date]
-

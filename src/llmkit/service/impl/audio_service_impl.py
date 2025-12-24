@@ -110,7 +110,7 @@ class AudioServiceImpl(IAudioService):
             )
         except ImportError:
             raise ImportError(
-                "openai-whisper not installed. " "Install with: pip install openai-whisper"
+                "openai-whisper not installed. Install with: pip install openai-whisper"
             )
 
     async def transcribe(self, request: AudioRequest) -> AudioResponse:
@@ -168,7 +168,7 @@ class AudioServiceImpl(IAudioService):
         if isinstance(audio, (AudioSegment, bytes)):
             try:
                 os.unlink(audio_path)
-            except:
+            except OSError:
                 pass
 
         transcription_result = TranscriptionResult(
@@ -263,7 +263,7 @@ class AudioServiceImpl(IAudioService):
             from google.cloud import texttospeech
         except ImportError:
             raise ImportError(
-                "google-cloud-texttospeech not installed. " "pip install google-cloud-texttospeech"
+                "google-cloud-texttospeech not installed. pip install google-cloud-texttospeech"
             )
 
         client = texttospeech.TextToSpeechClient()
@@ -310,7 +310,7 @@ class AudioServiceImpl(IAudioService):
             speech_config.speech_synthesis_voice_name = voice
 
         # Synthesize to in-memory stream (기존과 동일)
-        audio_config = speechsdk.audio.AudioOutputConfig(use_default_speaker=False)
+        speechsdk.audio.AudioOutputConfig(use_default_speaker=False)
         synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=None)
 
         result = synthesizer.speak_text_async(text).get()

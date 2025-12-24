@@ -11,7 +11,6 @@ import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.audio import AudioSegment, TranscriptionResult, TTSProvider, WhisperModel
 from ..handler.audio_handler import AudioHandler
 from ..utils.logger import get_logger
@@ -59,10 +58,10 @@ class WhisperSTT:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..utils.di_container import get_container
         from ..service.impl.audio_service_impl import AudioServiceImpl
+        from ..utils.di_container import get_container
 
-        container = get_container()
+        get_container()
 
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
@@ -72,7 +71,6 @@ class WhisperSTT:
         )
 
         # AudioHandler 생성 (직접 생성 - 커스텀 Service 사용)
-        from ..handler.audio_handler import AudioHandler
 
         self._audio_handler = AudioHandler(audio_service)
 
@@ -190,7 +188,6 @@ class TextToSpeech:
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
-        from ..handler.audio_handler import AudioHandler
 
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
@@ -306,7 +303,6 @@ class AudioRAG:
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from ..service.impl.audio_service_impl import AudioServiceImpl
-        from ..handler.audio_handler import AudioHandler
 
         # stt에서 설정 가져오기
         whisper_model = self.stt.model_name if hasattr(self.stt, "model_name") else "base"
@@ -380,7 +376,7 @@ class AudioRAG:
         Returns:
             TranscriptionResult
         """
-        response = await self._audio_handler.handle_add_audio(
+        await self._audio_handler.handle_add_audio(
             audio=audio,
             audio_id=audio_id,
             metadata=metadata,

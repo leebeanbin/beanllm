@@ -15,6 +15,9 @@ from ..infrastructure.registry import get_model_registry
 
 if TYPE_CHECKING:
     from .._source_providers.base_provider import BaseLLMProvider
+    from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
+else:
+    from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 
 
 class Client:

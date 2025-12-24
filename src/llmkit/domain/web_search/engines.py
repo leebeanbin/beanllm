@@ -442,7 +442,7 @@ class BingSearch(BaseSearchEngine):
             return None
         try:
             return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-        except:
+        except (ValueError, TypeError):
             return None
 
 

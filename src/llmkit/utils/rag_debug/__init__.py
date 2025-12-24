@@ -21,6 +21,7 @@ __all__ = [
     "inspect_embedding",
     "compare_texts",
     "validate_pipeline",
+    "visualize_embeddings",
     "visualize_embeddings_2d",
     "similarity_heatmap",
 ]

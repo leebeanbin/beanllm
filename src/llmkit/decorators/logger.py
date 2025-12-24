@@ -6,7 +6,7 @@ Logger Decorators - 로깅 공통 기능
 import functools
 import inspect
 import time
-from typing import AsyncIterator, Callable, TypeVar
+from typing import Callable, TypeVar
 
 from ..utils.logger import get_logger
 
@@ -81,7 +81,7 @@ def log_service_call(func: Callable[..., T]) -> Callable[..., T]:
         @log_service_call
         async def chat(self, request: ChatRequest) -> ChatResponse:
             ...
-        
+
         @log_service_call
         async def stream_chat(self, request: ChatRequest) -> AsyncIterator[str]:
             ...
@@ -137,7 +137,7 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
         @log_handler_call
         async def handle_chat(self, messages, model, ...):
             ...
-        
+
         @log_handler_call
         async def handle_stream_chat(self, messages, model, ...) -> AsyncIterator[str]:
             ...
@@ -164,70 +164,6 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
                 raise
 
         return async_gen_wrapper
-    else:
-        # 일반 async 함수인 경우
-        @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            handler_name = self.__class__.__name__
-            method_name = func.__name__
-
-            # 민감한 정보 제외하고 로깅
-            safe_kwargs = {k: v for k, v in kwargs.items() if k not in ["api_key", "password"]}
-            logger.info(f"Handler call: {handler_name}.{method_name} with {safe_kwargs}")
-
-            try:
-                result = await func(self, *args, **kwargs)
-                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
-                return result
-            except Exception as e:
-                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
-                raise
-
-        return wrapper
-
-
-            try:
-                # 동기 generator를 직접 반환
-                for item in func(self, *args, **kwargs):
-                    yield item
-                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
-            except Exception as e:
-                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
-                raise
-
-        return sync_gen_wrapper
-    else:
-        # 일반 async 함수인 경우
-        @functools.wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            handler_name = self.__class__.__name__
-            method_name = func.__name__
-
-            # 민감한 정보 제외하고 로깅
-            safe_kwargs = {k: v for k, v in kwargs.items() if k not in ["api_key", "password"]}
-            logger.info(f"Handler call: {handler_name}.{method_name} with {safe_kwargs}")
-
-            try:
-                result = await func(self, *args, **kwargs)
-                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
-                return result
-            except Exception as e:
-                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
-                raise
-
-        return wrapper
-
-
-            try:
-                # 동기 generator를 직접 반환
-                for item in func(self, *args, **kwargs):
-                    yield item
-                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
-            except Exception as e:
-                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
-                raise
-
-        return sync_gen_wrapper
     else:
         # 일반 async 함수인 경우
         @functools.wraps(func)

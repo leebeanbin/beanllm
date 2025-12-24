@@ -473,7 +473,7 @@ class EnumOutputParser(BaseOutputParser):
     def get_format_instructions(self) -> str:
         valid_values = [m.value for m in self.enum_class]
         return f"""Output must be one of the following values:
-{', '.join(valid_values)}
+{", ".join(valid_values)}
 
 Return ONLY one of these values, nothing else."""
 

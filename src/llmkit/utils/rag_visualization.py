@@ -3,7 +3,6 @@ RAG Pipeline Visualization - RAG 파이프라인 시각화
 """
 
 from typing import Any, Dict, List, Optional
-from pathlib import Path
 
 
 class RAGPipelineVisualizer:
@@ -78,7 +77,7 @@ class RAGPipelineVisualizer:
         # 엣지 정의
         for i in range(len(self.steps) - 1):
             current_id = f"step{i}"
-            next_id = f"step{i+1}"
+            next_id = f"step{i + 1}"
             lines.append(f"    {current_id} --> {next_id}")
 
         return "\n".join(lines)
@@ -112,7 +111,7 @@ class RAGPipelineVisualizer:
         # 엣지 정의
         for i in range(len(self.steps) - 1):
             current_id = f"step{i}"
-            next_id = f"step{i+1}"
+            next_id = f"step{i + 1}"
             lines.append(f"    {current_id} -> {next_id};")
 
         lines.append("}")
@@ -171,4 +170,3 @@ class RAGPipelineVisualizer:
     def clear(self):
         """단계 초기화"""
         self.steps.clear()
-

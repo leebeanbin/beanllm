@@ -193,12 +193,12 @@ def show_model(registry, model_name: str):
 
     # 메인 패널
     info_text = f"""[bold cyan]Provider:[/bold cyan] {model.provider}
-[bold cyan]Description:[/bold cyan] {model.description or 'N/A'}
+[bold cyan]Description:[/bold cyan] {model.description or "N/A"}
 
 [bold yellow]Capabilities:[/bold yellow]
-  • Streaming: {'✅ Yes' if model.supports_streaming else '❌ No'}
-  • Temperature: {'✅ Yes' if model.supports_temperature else '❌ No'}
-  • Max Tokens: {'✅ Yes' if model.supports_max_tokens else '❌ No'}"""
+  • Streaming: {"✅ Yes" if model.supports_streaming else "❌ No"}
+  • Temperature: {"✅ Yes" if model.supports_temperature else "❌ No"}
+  • Max Tokens: {"✅ Yes" if model.supports_max_tokens else "❌ No"}"""
 
     if model.uses_max_completion_tokens:
         info_text += "\n  • Uses max_completion_tokens: ✅ Yes"
@@ -279,11 +279,11 @@ def show_summary(registry):
         print(f"Total Models: {summary['total_models']}")
         return
 
-    summary_text = f"""[bold cyan]Total Providers:[/bold cyan] {summary['total_providers']}
-[bold cyan]Active Providers:[/bold cyan] {summary['active_providers']}
-[bold cyan]Total Models:[/bold cyan] {summary['total_models']}
+    summary_text = f"""[bold cyan]Total Providers:[/bold cyan] {summary["total_providers"]}
+[bold cyan]Active Providers:[/bold cyan] {summary["active_providers"]}
+[bold cyan]Total Models:[/bold cyan] {summary["total_models"]}
 
-[bold yellow]Active Providers:[/bold yellow] {', '.join(summary['active_provider_names'])}"""
+[bold yellow]Active Providers:[/bold yellow] {", ".join(summary["active_provider_names"])}"""
 
     console.print(
         Panel(summary_text, title="[bold magenta]Summary[/bold magenta]", border_style="cyan")
@@ -334,10 +334,10 @@ async def scan_models():
         if RICH_AVAILABLE:
             console.print()
             summary_panel = Panel(
-                f"""[bold cyan]Total Models:[/bold cyan] {summary['total']}
-[bold cyan]Local Models:[/bold cyan] {summary['by_source']['local']}
-[bold cyan]New Models:[/bold cyan] {summary['by_source']['inferred']}
-[bold cyan]Average Confidence:[/bold cyan] {summary['avg_confidence']:.2%}""",
+                f"""[bold cyan]Total Models:[/bold cyan] {summary["total"]}
+[bold cyan]Local Models:[/bold cyan] {summary["by_source"]["local"]}
+[bold cyan]New Models:[/bold cyan] {summary["by_source"]["inferred"]}
+[bold cyan]Average Confidence:[/bold cyan] {summary["avg_confidence"]:.2%}""",
                 title="[bold magenta]📊 Scan Results[/bold magenta]",
                 border_style="cyan",
             )
@@ -368,18 +368,20 @@ async def scan_models():
                     confidence_color = (
                         "green"
                         if model.inference_confidence >= 0.8
-                        else "yellow" if model.inference_confidence >= 0.6 else "red"
+                        else "yellow"
+                        if model.inference_confidence >= 0.6
+                        else "red"
                     )
 
                     model_info = f"""[bold cyan]Provider:[/bold cyan] {model.provider}
 [bold cyan]Display Name:[/bold cyan] {model.display_name}
 [bold cyan]Confidence:[/bold cyan] [{confidence_color}]{model.inference_confidence:.2f} ({int(model.inference_confidence * 100)}%)[/{confidence_color}]
-[bold cyan]Matched Patterns:[/bold cyan] {', '.join(model.matched_patterns)}
+[bold cyan]Matched Patterns:[/bold cyan] {", ".join(model.matched_patterns)}
 
 [bold yellow]Parameters:[/bold yellow]
-  • Temperature: {'✅ Yes' if model.supports_temperature else '❌ No'}
-  • Max Tokens: {model.max_tokens or 'N/A'}
-  • Max Completion Tokens: {'✅ Yes' if model.uses_max_completion_tokens else '❌ No'}"""
+  • Temperature: {"✅ Yes" if model.supports_temperature else "❌ No"}
+  • Max Tokens: {model.max_tokens or "N/A"}
+  • Max Completion Tokens: {"✅ Yes" if model.uses_max_completion_tokens else "❌ No"}"""
 
                     console.print(
                         Panel(
@@ -445,7 +447,9 @@ async def analyze_model(model_id: str):
         confidence_color = (
             "green"
             if model.inference_confidence >= 0.8
-            else "yellow" if model.inference_confidence >= 0.6 else "red"
+            else "yellow"
+            if model.inference_confidence >= 0.6
+            else "red"
         )
 
         # 모델 정보

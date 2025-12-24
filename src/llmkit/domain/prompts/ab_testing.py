@@ -2,7 +2,6 @@
 A/B Testing for Prompts - 프롬프트 A/B 테스트
 """
 
-import asyncio
 import random
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -105,7 +104,6 @@ class ABTestRunner:
             use_b = random.random() < config.traffic_split
 
             prompt = config.prompt_b if use_b else config.prompt_a
-            version = config.prompt_b_version if use_b else config.prompt_a_version
 
             # 프롬프트 포맷팅 (변수 치환)
             try:
@@ -249,4 +247,3 @@ class ABTestRunner:
                 "b": len(result.results_b),
             },
         }
-

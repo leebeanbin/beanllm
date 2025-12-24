@@ -92,7 +92,7 @@ class RubricGrader(BaseMetric):
     def _create_rubric_prompt(self, prediction: str, reference: Optional[str] = None) -> str:
         """루브릭 평가 프롬프트 생성"""
         prompt_parts = [
-            f"Evaluate the following response using this rubric:",
+            "Evaluate the following response using this rubric:",
             f"\nRubric: {self.rubric.name}",
             f"Description: {self.rubric.description}",
             "\nCriteria:",

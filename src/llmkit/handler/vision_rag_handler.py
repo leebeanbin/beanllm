@@ -9,7 +9,7 @@ VisionRAGHandler - Vision RAG 요청 처리 (Controller 역할)
 
 from __future__ import annotations
 
-from typing import Any, List, Union
+from typing import Any, List
 
 from ..decorators.error_handler import handle_errors
 from ..decorators.logger import log_handler_call

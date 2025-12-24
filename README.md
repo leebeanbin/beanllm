@@ -495,6 +495,7 @@ mypy src/llmkit
 - ✅ 프롬프트 버전 관리 & A/B 테스트
 - ✅ 스트리밍 응답 버퍼링
 - ✅ 평가 시스템 확장 (Human-in-the-Loop, Continuous Evaluation, Drift Detection)
+- ✅ 내부 성능 최적화 (병렬 처리, 배치 검색, 히스토리 압축)
 
 ### 📋 계획 중
 - ⬜ 벤치마크 시스템
@@ -505,8 +506,9 @@ mypy src/llmkit
 
 - **[QUICK_START.md](QUICK_START.md)** - 빠른 시작 가이드
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - 아키텍처 상세 설명
-- **[docs/](docs/)** - 이론 문서 및 튜토리얼
-- **[docs/guides/](docs/guides/)** - 개발 가이드
+- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - PyPI 배포 가이드
+- **[docs/theory/](docs/theory/)** - 이론 문서 및 학습 자료
+- **[docs/tutorials/](docs/tutorials/)** - 튜토리얼 코드
 - **[examples/](examples/)** - 사용 예제 코드
 
 ---

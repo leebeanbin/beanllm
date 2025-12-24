@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from ...dto.request.agent_request import AgentRequest
@@ -82,15 +83,19 @@ class AgentServiceImpl(IAgentService):
         tools_description = self._format_tools(tool_registry)
 
         # 초기 프롬프트 (기존: self.REACT_PROMPT.format(...))
-        prompt = self.REACT_PROMPT.format(tools_description=tools_description, task=request.task)
+        initial_prompt = self.REACT_PROMPT.format(
+            tools_description=tools_description, task=request.task
+        )
 
-        # messages 배열 관리 (기존과 동일)
-        messages = [{"role": "user", "content": prompt}]
-        conversation_history = prompt
+        # 히스토리를 리스트로 관리 (Dynamic Compression을 위해)
+        history_steps: List[Dict[str, Any]] = []
 
         # 기존 while 루프 로직 정확히 마이그레이션
         while step_number < request.max_steps:
             step_number += 1
+
+            # 메시지 생성 (첫 번째 루프 또는 히스토리 업데이트 후)
+            messages = self._build_messages(initial_prompt, history_steps)
 
             # LLM 호출 (기존: await self.client.chat(messages, temperature=0.0))
             chat_request = ChatRequest(
@@ -122,9 +127,22 @@ class AgentServiceImpl(IAgentService):
                 observation = self._execute_tool(action_name, action_input, tool_registry)
                 parsed_step["observation"] = observation
 
-                # 대화 히스토리 업데이트 (기존과 정확히 동일)
-                conversation_history += f"\n\n{content}\nObservation: {observation}"
-                messages = [{"role": "user", "content": conversation_history + "\n\nContinue..."}]
+                # 히스토리 업데이트 (리스트로 관리)
+                history_steps.append(
+                    {
+                        "content": content,
+                        "observation": observation,
+                        "timestamp": time.time(),
+                        "action": action_name,
+                    }
+                )
+
+                # 히스토리 압축 (토큰 초과 시)
+                if self._estimate_tokens(history_steps) > self._max_history_tokens:
+                    history_steps = self._compress_history(history_steps)
+
+                # 메시지 생성
+                self._build_messages(initial_prompt, history_steps)
 
         # 최대 반복 도달 (기존과 동일)
         return AgentResponse(
@@ -172,7 +190,7 @@ Let's begin!
         """도구 목록을 문자열로 포맷 (기존 agent.py와 정확히 동일)"""
         # tool_registry 우선순위: 인자 > self._tool_registry
         registry = tool_registry or self._tool_registry
-        
+
         # 기존: tools = self.registry.get_all()
         if not registry:
             return "No tools available"
@@ -243,15 +261,15 @@ Let's begin!
         return step
 
     def _execute_tool(
-        self, 
-        tool_name: str, 
+        self,
+        tool_name: str,
         arguments: Dict[str, Any],
-        tool_registry: Optional["ToolRegistryProtocol"] = None
+        tool_registry: Optional["ToolRegistryProtocol"] = None,
     ) -> str:
         """도구 실행 (기존 agent.py와 정확히 동일한 로직)"""
         # tool_registry 우선순위: 인자 > self._tool_registry
         registry = tool_registry or self._tool_registry
-        
+
         if not registry:
             return f"Tool registry not available. Cannot execute tool '{tool_name}'"
 
@@ -263,3 +281,78 @@ Let's begin!
             error_msg = f"Error executing tool '{tool_name}': {e}"
             logger.error(error_msg)
             return error_msg
+
+    def _compress_history(self, steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Dynamic Compression: 중요도 기반 압축
+
+        Args:
+            steps: 히스토리 스텝 리스트
+
+        Returns:
+            압축된 히스토리 스텝 리스트
+        """
+        if not steps:
+            return steps
+
+        # 중요도 계산
+        importance_scores = []
+        for i, step in enumerate(steps):
+            # 최근성 (최근일수록 높은 점수)
+            recency = 1.0 / (len(steps) - i + 1)
+
+            # 액션 가중치 (도구 실행이 있으면 중요)
+            action_weight = 2.0 if step.get("action") else 1.0
+
+            # 관찰 가중치 (관찰이 길면 중요)
+            obs_len = len(step.get("observation", ""))
+            obs_weight = min(2.0, obs_len / 100.0) if obs_len > 0 else 0.5
+
+            # 최종 중요도
+            importance = recency * action_weight * obs_weight
+            importance_scores.append((i, importance))
+
+        # 상위 N%만 유지
+        keep_count = max(1, int(len(steps) * self._compression_ratio))
+        keep_indices = set(
+            idx
+            for idx, _ in sorted(importance_scores, key=lambda x: x[1], reverse=True)[:keep_count]
+        )
+
+        return [steps[i] for i in sorted(keep_indices)]
+
+    def _estimate_tokens(self, steps: List[Dict[str, Any]]) -> int:
+        """
+        토큰 수 추정 (간단한 추정)
+
+        Args:
+            steps: 히스토리 스텝 리스트
+
+        Returns:
+            추정 토큰 수
+        """
+        total = 0
+        for step in steps:
+            total += len(step.get("content", "").split()) * 1.3
+            total += len(step.get("observation", "").split()) * 1.3
+        return int(total)
+
+    def _build_messages(
+        self, initial_prompt: str, steps: List[Dict[str, Any]]
+    ) -> List[Dict[str, str]]:
+        """
+        메시지 생성 (히스토리 포함)
+
+        Args:
+            initial_prompt: 초기 프롬프트
+            steps: 히스토리 스텝 리스트
+
+        Returns:
+            메시지 리스트
+        """
+        history_text = initial_prompt
+        for step in steps:
+            history_text += f"\n\n{step['content']}"
+            if step.get("observation"):
+                history_text += f"\nObservation: {step['observation']}"
+        return [{"role": "user", "content": history_text + "\n\nContinue..."}]

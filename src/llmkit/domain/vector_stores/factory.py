@@ -60,7 +60,7 @@ class VectorStore:
 
         if provider not in cls.PROVIDERS:
             raise ValueError(
-                f"Unknown provider: {provider}. " f"Available: {list(cls.PROVIDERS.keys())}"
+                f"Unknown provider: {provider}. Available: {list(cls.PROVIDERS.keys())}"
             )
 
         vector_store_class = cls.PROVIDERS[provider]

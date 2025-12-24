@@ -106,7 +106,7 @@ class RAGServiceImpl(IRAGService):
 
     async def retrieve(self, request: RAGRequest) -> List[Any]:
         """
-        문서 검색만 수행 (비즈니스 로직만)
+        문서 검색만 수행 (2단계 검색 지원)
 
         Args:
             request: RAG 요청 DTO
@@ -117,18 +117,26 @@ class RAGServiceImpl(IRAGService):
         책임:
             - 검색 비즈니스 로직만
             - Strategy 패턴으로 if-else 제거
+            - 2단계 검색: Broad search -> Rerank -> Dynamic selection
         """
+        # 1단계: 넓은 검색 (broad_k)
+        extra_params = getattr(request, "extra_params", {}) or {}
+        broad_k = extra_params.get("broad_k", request.k * 2 if request.rerank else request.k)
+
         # 검색 전략 선택 (Strategy 패턴으로 if-else 제거)
         search_type = self._determine_search_type(request)
         strategy = SearchStrategyFactory.create(search_type)
 
         # 검색 수행 (비즈니스 로직)
-        k = request.k * 2 if request.rerank else request.k
-        results = strategy.search(self._vector_store, request.query, k)
+        results = strategy.search(self._vector_store, request.query, broad_k)
 
-        # 재순위화 (비즈니스 로직)
+        # 2단계: 재순위화 (선택적)
         if request.rerank:
             results = self._vector_store.rerank(request.query, results, top_k=request.k)
+
+        # 3단계: 동적 패시지 선택 (토큰 제한 고려)
+        max_tokens = extra_params.get("max_context_tokens", 4000)
+        results = self._select_passages_dynamically(results, max_tokens)
 
         return results
 
@@ -167,6 +175,36 @@ Question: {question}
 
 Answer:"""
         return template.format(context=context, question=query)
+
+    def _select_passages_dynamically(
+        self,
+        results: List[Any],
+        max_tokens: int = 4000,
+    ) -> List[Any]:
+        """
+        동적 패시지 선택: 토큰 제한 고려
+
+        Args:
+            results: 검색 결과 리스트
+            max_tokens: 최대 토큰 수
+
+        Returns:
+            선택된 결과 리스트
+        """
+        selected = []
+        current_tokens = 0
+
+        for result in results:
+            content = result.document.content if hasattr(result, "document") else str(result)
+            passage_tokens = int(len(content.split()) * 1.3)  # 간단한 토큰 추정
+
+            if current_tokens + passage_tokens > max_tokens:
+                break
+
+            selected.append(result)
+            current_tokens += passage_tokens
+
+        return selected
 
     async def stream_query(self, request: RAGRequest) -> AsyncIterator[str]:
         """

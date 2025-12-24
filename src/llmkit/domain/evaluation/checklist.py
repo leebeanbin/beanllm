@@ -78,7 +78,7 @@ class ChecklistGrader(BaseMetric):
     def _create_checklist_prompt(self, prediction: str, reference: Optional[str] = None) -> str:
         """체크리스트 평가 프롬프트 생성"""
         prompt_parts = [
-            f"Evaluate the following response using this checklist:",
+            "Evaluate the following response using this checklist:",
             f"\nChecklist: {self.checklist.name}",
             f"Description: {self.checklist.description}",
             "\nItems:",
@@ -245,7 +245,7 @@ class ChecklistGrader(BaseMetric):
         # 각 항목별로 파싱
         for i, item in enumerate(self.checklist.items):
             # 패턴: "NUMBER. YES/NO - JUSTIFICATION"
-            pattern = rf"{i+1}\.\s*(YES|NO)\s*-\s*.+"
+            pattern = rf"{i + 1}\.\s*(YES|NO)\s*-\s*.+"
             match = re.search(pattern, llm_output, re.IGNORECASE | re.MULTILINE)
 
             if match:
@@ -253,7 +253,7 @@ class ChecklistGrader(BaseMetric):
                 item_answers[i] = answer_str == "YES"
             else:
                 # 대체 패턴 시도
-                pattern2 = rf"{i+1}\.\s*(YES|NO)"
+                pattern2 = rf"{i + 1}\.\s*(YES|NO)"
                 match2 = re.search(pattern2, llm_output, re.IGNORECASE)
                 if match2:
                     answer_str = match2.group(1).upper()

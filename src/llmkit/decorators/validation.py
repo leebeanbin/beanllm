@@ -5,18 +5,20 @@ Validation Decorators - 입력 검증 공통 기능
 
 import functools
 import inspect
-from typing import AsyncIterator, Callable, Dict, List, TypeVar
+from typing import Callable, Dict, List, TypeVar
 
 try:
     from .validation_utils import _get_bound_args, _validate_parameters
 except ImportError:
     # Fallback: 직접 구현 (validation_utils가 없는 경우)
+    from typing import Any
+
     def _get_bound_args(func: Any, *args: Any, **kwargs: Any):
         sig = inspect.signature(func)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         return bound_args
-    
+
     def _validate_parameters(bound_args, required_params=None, param_types=None, param_ranges=None):
         if required_params:
             for param in required_params:
@@ -27,16 +29,23 @@ except ImportError:
                 if param in bound_args.arguments:
                     value = bound_args.arguments[param]
                     if value is not None and not isinstance(value, expected_type):
-                        raise TypeError(f"Parameter '{param}' must be of type {expected_type.__name__}, got {type(value).__name__}")
+                        raise TypeError(
+                            f"Parameter '{param}' must be of type {expected_type.__name__}, got {type(value).__name__}"
+                        )
         if param_ranges:
             for param, (min_val, max_val) in param_ranges.items():
                 if param in bound_args.arguments:
                     value = bound_args.arguments[param]
                     if value is not None:
                         if min_val is not None and value < min_val:
-                            raise ValueError(f"Parameter '{param}' must be >= {min_val}, got {value}")
+                            raise ValueError(
+                                f"Parameter '{param}' must be >= {min_val}, got {value}"
+                            )
                         if max_val is not None and value > max_val:
-                            raise ValueError(f"Parameter '{param}' must be <= {max_val}, got {value}")
+                            raise ValueError(
+                                f"Parameter '{param}' must be <= {max_val}, got {value}"
+                            )
+
 
 T = TypeVar("T")
 

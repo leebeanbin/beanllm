@@ -16,11 +16,10 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.config import EnvConfig
-from utils.exceptions import ProviderError
-from utils.logger import get_logger
-from utils.retry import retry
-
+from ...utils.config import EnvConfig
+from ...utils.exceptions import ProviderError
+from ...utils.logger import get_logger
+from ...utils.retry import retry
 from .base_provider import BaseLLMProvider, LLMResponse
 
 logger = get_logger(__name__)
@@ -32,8 +31,7 @@ class OllamaProvider(BaseLLMProvider):
     def __init__(self, config: Dict = None):
         if AsyncClient is None:
             raise ImportError(
-                "ollama package is required for OllamaProvider. "
-                "Install it with: pip install ollama"
+                "ollama package is required for OllamaProvider. Install it with: pip install ollama"
             )
         super().__init__(config or {})
         config_dict = config or {}

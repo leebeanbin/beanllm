@@ -128,7 +128,7 @@ class SearchAlgorithms:
         try:
             from sentence_transformers import CrossEncoder
         except ImportError:
-            raise ImportError("sentence-transformers 필요:\n" "pip install sentence-transformers")
+            raise ImportError("sentence-transformers 필요:\npip install sentence-transformers")
 
         # 모델 로드
         model_name = model or "cross-encoder/ms-marco-MiniLM-L-6-v2"

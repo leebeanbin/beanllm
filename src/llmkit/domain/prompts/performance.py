@@ -215,4 +215,3 @@ class PromptPerformanceTracker:
             "recent_average": recent_avg,
             "change_percent": change_percent,
         }
-

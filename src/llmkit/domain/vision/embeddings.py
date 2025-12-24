@@ -44,7 +44,7 @@ class CLIPEmbedding(BaseEmbedding):
             try:
                 from transformers import CLIPModel, CLIPProcessor
             except ImportError:
-                raise ImportError("transformers 및 torch 필요:\n" "pip install transformers torch")
+                raise ImportError("transformers 및 torch 필요:\npip install transformers torch")
 
             self._processor = CLIPProcessor.from_pretrained(self.model)
             self._model = CLIPModel.from_pretrained(self.model)
@@ -100,7 +100,7 @@ class CLIPEmbedding(BaseEmbedding):
             import torch
             from PIL import Image
         except ImportError:
-            raise ImportError("Pillow 필요:\n" "pip install pillow")
+            raise ImportError("Pillow 필요:\npip install pillow")
 
         # 이미지 로드
         pil_images = [Image.open(img) for img in images]

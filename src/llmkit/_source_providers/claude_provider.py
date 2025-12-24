@@ -19,11 +19,10 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from utils.config import EnvConfig
-from utils.exceptions import ProviderError
-from utils.logger import get_logger
-from utils.retry import retry
-
+from ...utils.config import EnvConfig
+from ...utils.exceptions import ProviderError
+from ...utils.logger import get_logger
+from ...utils.retry import retry
 from .base_provider import BaseLLMProvider, LLMResponse
 
 logger = get_logger(__name__)
@@ -35,8 +34,10 @@ class ClaudeProvider(BaseLLMProvider):
     def __init__(self, config: Dict = None):
         super().__init__(config or {})
         if AsyncAnthropic is None:
-            raise ImportError("anthropic package is required. Install it with: pip install anthropic")
-        
+            raise ImportError(
+                "anthropic package is required. Install it with: pip install anthropic"
+            )
+
         api_key = EnvConfig.ANTHROPIC_API_KEY
         if not api_key:
             raise ValueError("ANTHROPIC_API_KEY is required for Claude provider")

@@ -133,14 +133,14 @@ class Embedding:
             else:
                 # 기본: OpenAI
                 logger.warning(
-                    f"Could not detect provider for model: {model}, " f"defaulting to OpenAI"
+                    f"Could not detect provider for model: {model}, defaulting to OpenAI"
                 )
                 provider = "openai"
 
         # Provider 클래스 선택
         if provider not in cls.PROVIDERS:
             raise ValueError(
-                f"Unknown provider: {provider}. " f"Supported: {list(cls.PROVIDERS.keys())}"
+                f"Unknown provider: {provider}. Supported: {list(cls.PROVIDERS.keys())}"
             )
 
         embedding_class = cls.PROVIDERS[provider]

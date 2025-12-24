@@ -62,11 +62,21 @@ class EvaluationServiceImpl(IEvaluationService):
         return EvaluationResponse(result=result)
 
     async def batch_evaluate(self, request: "BatchEvaluationRequest") -> "BatchEvaluationResponse":
-        """배치 평가 실행"""
+        """배치 평가 실행 (내부적으로 자동 병렬 처리)"""
         evaluator = Evaluator(metrics=request.metrics)
-        results = evaluator.batch_evaluate(
+
+        # 내부적으로 자동 병렬 처리 (사용자는 신경 쓸 필요 없음)
+        # 기본 설정: max_concurrent=10, rate_limiter 자동 생성
+        from ...utils.error_handling import AsyncTokenBucket
+
+        rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)
+        max_concurrent = 10
+
+        results = await evaluator.batch_evaluate_async(
             predictions=request.predictions,
             references=request.references,
+            max_concurrent=max_concurrent,
+            rate_limiter=rate_limiter,
             **request.kwargs,
         )
         return BatchEvaluationResponse(results=results)

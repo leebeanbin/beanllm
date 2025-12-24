@@ -2,7 +2,6 @@
 Memory Factory
 """
 
-
 from .base import BaseMemory
 from .implementations import (
     BufferMemory,

@@ -127,9 +127,7 @@ class PDFLoader(BaseDocumentLoader):
 
             self.pypdf = pypdf
         except ImportError:
-            raise ImportError(
-                "pypdf is required for PDFLoader. " "Install it with: pip install pypdf"
-            )
+            raise ImportError("pypdf is required for PDFLoader. Install it with: pip install pypdf")
 
     def load(self) -> List[Document]:
         """PDF 로딩 (페이지별 문서)"""

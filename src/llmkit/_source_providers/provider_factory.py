@@ -3,16 +3,10 @@ Provider Factory
 환경 변수 기반 LLM 제공자 자동 선택 및 생성 (dotenv 중앙 관리)
 """
 
-# 독립적인 utils 사용
-import sys
-from pathlib import Path
 from typing import List, Optional
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from utils.config import EnvConfig
-from utils.logger import get_logger
-
+from ..utils.config import EnvConfig
+from ..utils.logger import get_logger
 from .base_provider import BaseLLMProvider
 
 # 선택적 의존성
@@ -172,23 +166,7 @@ class ProviderFactory:
                     break
                 continue
 
-        # 사용 가능한 제공자가 없음 (Ollama만 실패한 경우는 조용히 처리)
-        if last_error and "ollama" in str(last_error).lower():
-            # Ollama가 없어도 다른 provider가 있을 수 있으므로 에러를 던지지 않음
-            # 대신 사용 가능한 provider를 다시 확인
-            for name in cls._provider_classes.keys():
-                if name == "ollama":
-                    continue
-                try:
-                    provider = cls._provider_classes[name]({})
-                    if provider.is_available():
-                        logger.info(f"Using LLM provider: {name}")
-                        cls._instances[name] = provider
-                        return provider
-                except Exception as e:
-                    logger.debug(f"Provider {name} not available: {e}")
-                    pass
-
+        # 사용 가능한 제공자가 없음
         error_msg = f"No available LLM provider found. Last error: {last_error}"
         logger.error(error_msg)
         raise ValueError(error_msg)

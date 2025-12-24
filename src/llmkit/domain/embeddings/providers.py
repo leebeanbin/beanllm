@@ -48,7 +48,7 @@ class OpenAIEmbedding(BaseEmbedding):
             from openai import AsyncOpenAI, OpenAI
         except ImportError:
             raise ImportError(
-                "openai is required for OpenAIEmbedding. " "Install it with: pip install openai"
+                "openai is required for OpenAIEmbedding. Install it with: pip install openai"
             )
 
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
@@ -240,7 +240,7 @@ class VoyageEmbedding(BaseEmbedding):
             import voyageai
         except ImportError:
             raise ImportError(
-                "voyageai is required for VoyageEmbedding. " "Install it with: pip install voyageai"
+                "voyageai is required for VoyageEmbedding. Install it with: pip install voyageai"
             )
 
         self.api_key = api_key or os.getenv("VOYAGE_API_KEY")
@@ -352,8 +352,7 @@ class MistralEmbedding(BaseEmbedding):
             from mistralai.client import MistralClient
         except ImportError:
             raise ImportError(
-                "mistralai is required for MistralEmbedding. "
-                "Install it with: pip install mistralai"
+                "mistralai is required for MistralEmbedding. Install it with: pip install mistralai"
             )
 
         self.api_key = api_key or os.getenv("MISTRAL_API_KEY")
@@ -414,7 +413,7 @@ class CohereEmbedding(BaseEmbedding):
             import cohere
         except ImportError:
             raise ImportError(
-                "cohere is required for CohereEmbedding. " "Install it with: pip install cohere"
+                "cohere is required for CohereEmbedding. Install it with: pip install cohere"
             )
 
         self.api_key = api_key or os.getenv("COHERE_API_KEY")
