@@ -58,13 +58,12 @@ class HumanFeedback:
         }
 
 
-@dataclass
 class ComparisonFeedback(HumanFeedback):
-    """비교 평가 피드백"""
+    """
+    비교 평가 피드백
 
-    output_a: str  # 첫 번째 출력
-    output_b: str  # 두 번째 출력
-    winner: ComparisonWinner  # 승자
+    Note: dataclass 데코레이터 제거 (부모 클래스의 기본값 필드와 충돌 방지)
+    """
 
     def __init__(
         self,
@@ -298,4 +297,3 @@ class HumanFeedbackCollector:
         """필요시 저장 (파일 기반 저장 구현 예정)"""
         # TODO: 파일 기반 저장 구현
         pass
-

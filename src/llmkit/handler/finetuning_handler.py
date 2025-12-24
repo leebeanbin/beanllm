@@ -44,7 +44,9 @@ class FinetuningHandler(BaseHandler):
             finetuning_service: 파인튜닝 서비스
         """
         super().__init__(finetuning_service)
-        self._finetuning_service = finetuning_service  # BaseHandler._service와 동일하지만 명시적으로 유지
+        self._finetuning_service = (
+            finetuning_service  # BaseHandler._service와 동일하지만 명시적으로 유지
+        )
 
     @handle_errors(error_message="Prepare data failed")
     @validate_input(
@@ -157,7 +159,12 @@ class FinetuningHandler(BaseHandler):
     @handle_errors(error_message="Quick finetune failed")
     @validate_input(
         required_params=["training_data", "model"],
-        param_types={"training_data": list, "model": str, "validation_split": float, "n_epochs": int},
+        param_types={
+            "training_data": list,
+            "model": str,
+            "validation_split": float,
+            "n_epochs": int,
+        },
         param_ranges={"validation_split": (0.0, 1.0), "n_epochs": (1, None)},
     )
     async def handle_quick_finetune(
@@ -168,30 +175,6 @@ class FinetuningHandler(BaseHandler):
         n_epochs: int = 3,
         wait: bool = True,
         **kwargs,
-    ) -> "CreateJobResponse":
-        """빠른 파인튜닝 처리"""
-        request = QuickFinetuneRequest(
-            training_data=training_data,
-            model=model,
-            validation_split=validation_split,
-            n_epochs=n_epochs,
-            wait=wait,
-            **kwargs,
-        )
-        return await self._call_service("quick_finetune", request)
-
-    ) -> "CreateJobResponse":
-        """빠른 파인튜닝 처리"""
-        request = QuickFinetuneRequest(
-            training_data=training_data,
-            model=model,
-            validation_split=validation_split,
-            n_epochs=n_epochs,
-            wait=wait,
-            **kwargs,
-        )
-        return await self._call_service("quick_finetune", request)
-
     ) -> "CreateJobResponse":
         """빠른 파인튜닝 처리"""
         request = QuickFinetuneRequest(

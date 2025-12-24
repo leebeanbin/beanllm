@@ -5,6 +5,7 @@ llmkit.error_handling - Advanced Error Handling
 이 모듈은 프로덕션급 에러 처리를 제공합니다.
 """
 
+import asyncio
 import random
 import threading
 import time
@@ -157,8 +158,7 @@ class RetryHandler:
 
                 if attempt >= self.config.max_retries:
                     raise MaxRetriesExceededError(
-                        f"Max retries ({self.config.max_retries}) exceeded. "
-                        f"Last error: {str(e)}"
+                        f"Max retries ({self.config.max_retries}) exceeded. Last error: {str(e)}"
                     ) from e
 
                 # 재시도 전 대기
@@ -308,7 +308,7 @@ class CircuitBreaker:
             # OPEN 상태면 차단
             if self.state == CircuitState.OPEN:
                 raise CircuitBreakerError(
-                    f"Circuit breaker is OPEN. " f"Wait {self.config.timeout}s before retry."
+                    f"Circuit breaker is OPEN. Wait {self.config.timeout}s before retry."
                 )
 
         # 함수 실행
@@ -431,9 +431,7 @@ class RateLimiter:
         with self._lock:
             if not self._is_allowed():
                 wait_time = self._wait_time()
-                raise RateLimitError(
-                    f"Rate limit exceeded. " f"Wait {wait_time:.2f}s before retry."
-                )
+                raise RateLimitError(f"Rate limit exceeded. Wait {wait_time:.2f}s before retry.")
 
             # 호출 기록
             self.calls.append(time.time())
@@ -501,6 +499,87 @@ def rate_limit(max_calls: int = 10, time_window: float = 60.0, wait: bool = Fals
         return wrapper
 
     return decorator
+
+
+# ===== Async Token Bucket Rate Limiter =====
+
+
+class AsyncTokenBucket:
+    """
+    비동기 Token Bucket Rate Limiter
+
+    Token Bucket 알고리즘을 사용한 비동기 Rate Limiter
+    - 버스트 허용: 토큰이 축적되면 짧은 시간에 많은 요청 처리 가능
+    - 평균 속도 제어: 장기적으로는 평균 속도 유지
+    - Semaphore보다 더 유연한 제어
+    """
+
+    def __init__(self, rate: float = 1.0, capacity: float = 20.0):
+        """
+        Args:
+            rate: 평균 속도 (토큰/초)
+            capacity: 버스트 용량 (최대 토큰 수)
+        """
+        self.rate = rate
+        self.capacity = capacity
+        self.tokens = capacity
+        self.last_update = time.time()
+        self._lock = asyncio.Lock()
+
+    async def acquire(self, cost: float = 1.0) -> bool:
+        """
+        토큰 획득 시도 (대기하지 않음)
+
+        Args:
+            cost: 필요한 토큰 수
+
+        Returns:
+            True: 토큰 획득 성공, False: 토큰 부족
+        """
+        async with self._lock:
+            self._refill_tokens()
+            if self.tokens >= cost:
+                self.tokens -= cost
+                return True
+            return False
+
+    async def wait(self, cost: float = 1.0):
+        """
+        토큰이 충분할 때까지 대기
+
+        Args:
+            cost: 필요한 토큰 수
+        """
+        while True:
+            async with self._lock:
+                self._refill_tokens()
+                if self.tokens >= cost:
+                    self.tokens -= cost
+                    return
+
+                # 필요한 토큰 계산
+                needed = cost - self.tokens
+                wait_time = needed / self.rate
+                if wait_time > 0:
+                    await asyncio.sleep(min(wait_time, 1.0))  # 최대 1초씩 대기
+                else:
+                    await asyncio.sleep(0.01)  # 짧은 대기
+
+    def _refill_tokens(self):
+        """토큰 충전"""
+        now = time.time()
+        delta_t = now - self.last_update
+        self.tokens = min(self.capacity, self.tokens + self.rate * delta_t)
+        self.last_update = now
+
+    def get_status(self) -> Dict[str, Any]:
+        """현재 상태 조회"""
+        return {
+            "tokens": self.tokens,
+            "capacity": self.capacity,
+            "rate": self.rate,
+            "available": self.tokens,
+        }
 
 
 # ===== Fallback Handler =====
@@ -719,13 +798,17 @@ class ErrorHandler:
         try:
             # Rate Limit 적용
             if self.rate_limiter:
-                wrapped_func_rl = lambda: self.rate_limiter.call(wrapped_func)
+
+                def wrapped_func_rl():
+                    return self.rate_limiter.call(wrapped_func)
             else:
                 wrapped_func_rl = wrapped_func
 
             # Circuit Breaker 적용
             if self.circuit_breaker:
-                wrapped_func_cb = lambda: self.circuit_breaker.call(wrapped_func_rl)
+
+                def wrapped_func_cb():
+                    return self.circuit_breaker.call(wrapped_func_rl)
             else:
                 wrapped_func_cb = wrapped_func_rl
 

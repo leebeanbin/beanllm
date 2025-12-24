@@ -135,12 +135,3 @@ class EvaluationHandler(BaseHandler):
         """Evaluator 생성 처리"""
         request = CreateEvaluatorRequest(metric_names=metric_names)
         return await self._call_service("create_evaluator", request)
-
-    @validate_input(
-        required_params=["metric_names"],
-        param_types={"metric_names": list},
-    )
-    async def handle_create_evaluator(self, metric_names: List[str]) -> "Evaluator":
-        """Evaluator 생성 처리"""
-        request = CreateEvaluatorRequest(metric_names=metric_names)
-        return await self._call_service("create_evaluator", request)

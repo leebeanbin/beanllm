@@ -40,7 +40,7 @@ class SequentialStrategy(CoordinationStrategy):
         current_input = task
 
         for i, agent in enumerate(agents):
-            logger.info(f"Sequential: Agent {i+1}/{len(agents)} executing")
+            logger.info(f"Sequential: Agent {i + 1}/{len(agents)} executing")
 
             result = await agent.run(current_input)
             results.append(result)
@@ -193,7 +193,7 @@ Return a JSON list of subtasks:
         # 2. Workers 병렬 실행
         worker_tasks = []
         for i, (agent, subtask) in enumerate(zip(agents, subtasks)):
-            logger.info(f"Worker {i+1}: {subtask[:50]}...")
+            logger.info(f"Worker {i + 1}: {subtask[:50]}...")
             worker_tasks.append(agent.run(subtask))
 
         worker_results = await asyncio.gather(*worker_tasks)
@@ -205,7 +205,7 @@ Return a JSON list of subtasks:
 Original Task: {task}
 
 Worker Results:
-{chr(10).join(f'{i+1}. {ans}' for i, ans in enumerate(worker_answers))}
+{chr(10).join(f"{i + 1}. {ans}" for i, ans in enumerate(worker_answers))}
 
 Provide a comprehensive final answer:
 """
@@ -279,7 +279,7 @@ class DebateStrategy(CoordinationStrategy):
                 debate_prompt = f"""Task: {task}
 
 Your previous answer:
-{current_answers[f'agent_{i}']}
+{current_answers[f"agent_{i}"]}
 
 Other agents' answers:
 {other_answers}
@@ -305,7 +305,7 @@ Your refined answer:
 
 After {self.rounds} rounds of debate, here are the final answers:
 
-{chr(10).join(f'Agent {i}: {ans}' for i, ans in enumerate(current_answers.values()))}
+{chr(10).join(f"Agent {i}: {ans}" for i, ans in enumerate(current_answers.values()))}
 
 As a judge, determine the best answer and explain why:
 """

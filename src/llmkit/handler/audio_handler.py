@@ -10,12 +10,12 @@ AudioHandler - Audio 요청 처리 (Controller 역할)
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from ..decorators.error_handler import handle_errors
 from ..decorators.logger import log_handler_call
 from ..decorators.validation import validate_input
-from ..domain.audio import AudioSegment, TranscriptionResult
+from ..domain.audio import AudioSegment
 from ..dto.request.audio_request import AudioRequest
 from ..dto.response.audio_response import AudioResponse
 from ..service.audio_service import IAudioService

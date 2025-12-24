@@ -11,11 +11,11 @@ import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
+from ..domain.vision.embeddings import CLIPEmbedding, MultimodalEmbedding
+from ..domain.vision.loaders import load_images
 from ..handler.vision_rag_handler import VisionRAGHandler
 from ..utils.logger import get_logger
 from ..vector_stores import VectorSearchResult
-from ..domain.vision.embeddings import CLIPEmbedding, MultimodalEmbedding
-from ..domain.vision.loaders import load_images
 from .client_facade import Client
 
 if TYPE_CHECKING:
@@ -76,8 +76,8 @@ Answer:"""
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..utils.di_container import get_container
         from ..service.impl.vision_rag_service_impl import VisionRAGServiceImpl
+        from ..utils.di_container import get_container
 
         container = get_container()
         service_factory = container.get_service_factory(vector_store=self.vector_store)

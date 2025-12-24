@@ -46,24 +46,39 @@ type-check-strict: ## 엄격한 타입 체크 (모든 타입 어노테이션 필
 		--show-error-context || true
 	@echo "$(GREEN)✅ 엄격한 타입 체크 완료$(NC)"
 
-lint: ## 린트 체크 (ruff)
+lint: ## 린트 체크 (ruff, E501 제외)
 	@echo "$(GREEN)린트 체크 중...$(NC)"
 	@$(PYTHON) -m ruff check $(PACKAGE) \
 		--select E,F,I \
+		--ignore E501 \
 		--output-format=concise || true
 	@echo "$(GREEN)✅ 린트 체크 완료$(NC)"
+
+lint-all: ## 린트 체크 (모든 오류 포함, E501 포함)
+	@echo "$(GREEN)전체 린트 체크 중...$(NC)"
+	@$(PYTHON) -m ruff check $(PACKAGE) \
+		--select E,F,I \
+		--output-format=concise || true
+	@echo "$(GREEN)✅ 전체 린트 체크 완료$(NC)"
 
 lint-fix: ## 린트 자동 수정 (ruff --fix)
 	@echo "$(GREEN)린트 자동 수정 중...$(NC)"
 	@$(PYTHON) -m ruff check --fix $(PACKAGE) \
 		--select E,F,I \
+		--ignore E501 \
 		--output-format=concise
 	@echo "$(GREEN)✅ 린트 자동 수정 완료$(NC)"
 
-format: ## 코드 포맷팅 (ruff format)
+format: ## 코드 포맷팅 자동 수정 (ruff format)
 	@echo "$(GREEN)코드 포맷팅 중...$(NC)"
 	@$(PYTHON) -m ruff format $(PACKAGE)
 	@echo "$(GREEN)✅ 코드 포맷팅 완료$(NC)"
+
+format-check: ## 코드 포맷팅 필요 여부 확인만 (수정 안함)
+	@echo "$(GREEN)포맷팅 확인 중...$(NC)"
+	@$(PYTHON) -m ruff format --check $(PACKAGE) || \
+		(echo "$(YELLOW)⚠️  포맷팅이 필요한 파일이 있습니다. 'make format'을 실행하세요.$(NC)" && exit 1)
+	@echo "$(GREEN)✅ 모든 파일이 올바르게 포맷팅되어 있습니다$(NC)"
 
 import-sort: ## Import 정렬 (ruff --fix I001)
 	@echo "$(GREEN)Import 정렬 중...$(NC)"
@@ -121,5 +136,8 @@ fix-types: ## 주요 타입 오류 자동 수정 시도
 quick-check: lint ## 빠른 린트 체크만
 	@echo "$(GREEN)✅ 빠른 검사 완료$(NC)"
 
-quick-fix: lint-fix import-sort ## 빠른 자동 수정
+quick-fix: lint-fix format import-sort ## 빠른 자동 수정 (린트 + 포맷팅 + import 정렬)
 	@echo "$(GREEN)✅ 빠른 수정 완료$(NC)"
+
+lint-format: lint-fix format import-sort ## 린트 수정 + 포맷팅 + import 정렬 (가장 많이 사용)
+	@echo "$(GREEN)✅ 코드 품질 개선 완료$(NC)"

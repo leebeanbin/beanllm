@@ -164,7 +164,7 @@ class StateGraphServiceImpl(IStateGraphService):
             # 무한 루프 체크 (기존과 동일)
             if iteration >= request.max_iterations:
                 raise RuntimeError(
-                    f"Max iterations ({request.max_iterations}) reached. " "Possible infinite loop."
+                    f"Max iterations ({request.max_iterations}) reached. Possible infinite loop."
                 )
 
             # 실행 완료 (기존과 동일)

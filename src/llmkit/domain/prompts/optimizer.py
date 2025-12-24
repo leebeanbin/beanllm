@@ -57,5 +57,5 @@ class PromptOptimizer:
     def add_role_context(prompt: str, role: str, expertise: List[str]) -> str:
         """역할 컨텍스트 추가"""
         expertise_text = ", ".join(expertise)
-        role_prompt = f"You are a {role} with expertise in {expertise_text}.\n\n" f"{prompt}"
+        role_prompt = f"You are a {role} with expertise in {expertise_text}.\n\n{prompt}"
         return role_prompt

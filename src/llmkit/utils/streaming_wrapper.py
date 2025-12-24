@@ -2,7 +2,7 @@
 Streaming Wrapper - 버퍼링된 스트리밍 래퍼
 """
 
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator
 
 from .streaming import StreamingBuffer
 
@@ -89,4 +89,3 @@ class PausableStream:
     def clear(self):
         """버퍼 초기화"""
         self.buffer.clear(self.stream_id)
-

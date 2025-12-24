@@ -192,7 +192,6 @@ class HybridEvaluator:
                 - LLM 평가 결과
                 - 수집할 피드백 객체 (사용자가 채워야 함)
         """
-        import asyncio
 
         # LLM 평가 실행
         llm_result = self.llm_grader.compute(
@@ -210,4 +209,3 @@ class HybridEvaluator:
         )
 
         return llm_result, feedback
-

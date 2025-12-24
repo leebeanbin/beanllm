@@ -119,15 +119,15 @@ class RAGDebugger:
             text=text, vector=vector, dimension=dimension, norm=norm, preview=preview
         )
 
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("📊 Embedding 정보")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
         self._print(f"텍스트: {text[:100]}...")
         self._print(f"차원: {dimension}")
         self._print(f"벡터 크기 (norm): {norm:.4f}")
         self._print(f"미리보기 ({show_preview}개):")
         self._print(f"  {preview}")
-        self._print(f"{'='*60}\n")
+        self._print(f"{'=' * 60}\n")
 
         return info
 
@@ -145,9 +145,9 @@ class RAGDebugger:
                 ("자동차", vec3)
             ])
         """
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("📊 Embeddings 비교")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
 
         # 각 임베딩 기본 정보
         for text, vector in embeddings:
@@ -158,9 +158,9 @@ class RAGDebugger:
             self._print(f"  앞 5개: {vector[:5]}")
 
         # 유사도 매트릭스
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("유사도 매트릭스 (Cosine Similarity):")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
 
         texts = [t for t, _ in embeddings]
         vectors = [v for _, v in embeddings]
@@ -180,7 +180,7 @@ class RAGDebugger:
                 row += f"{sim:>15.3f}"
             self._print(row)
 
-        self._print(f"{'='*60}\n")
+        self._print(f"{'=' * 60}\n")
 
     # ==================== 유사도 계산 ====================
 
@@ -244,15 +244,15 @@ class RAGDebugger:
             interpretation=interpretation,
         )
 
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("📊 텍스트 유사도")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
         self._print(f"텍스트 1: {text1[:50]}...")
         self._print(f"텍스트 2: {text2[:50]}...")
         self._print(f"\n코사인 유사도: {cosine_sim:.4f}")
         self._print(f"유클리드 거리: {euclidean_dist:.4f}")
         self._print(f"해석: {interpretation}")
-        self._print(f"{'='*60}\n")
+        self._print(f"{'=' * 60}\n")
 
         return info
 
@@ -288,9 +288,9 @@ class RAGDebugger:
             "chunk_lengths": chunk_lengths,
         }
 
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("📄 청크 정보")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
         self._print(f"총 청크 수: {total_chunks}")
         self._print(f"평균 길이: {avg_length:.1f} 문자")
         self._print(f"최소 길이: {min_length} 문자")
@@ -304,7 +304,7 @@ class RAGDebugger:
             if chunk.metadata:
                 self._print(f"  메타: {chunk.metadata}")
 
-        self._print(f"{'='*60}\n")
+        self._print(f"{'=' * 60}\n")
 
         return stats
 
@@ -322,9 +322,9 @@ class RAGDebugger:
         Returns:
             검색 결과
         """
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("🔍 Vector Store 검사")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
 
         results = {}
 
@@ -360,7 +360,7 @@ class RAGDebugger:
                 self._print(f"  ❌ 에러: {e}")
                 results[query] = None
 
-        self._print(f"\n{'='*60}\n")
+        self._print(f"\n{'=' * 60}\n")
 
         return results
 
@@ -387,9 +387,9 @@ class RAGDebugger:
         Returns:
             전체 검증 결과
         """
-        self._print(f"\n{'#'*60}")
+        self._print(f"\n{'#' * 60}")
         self._print("# RAG 파이프라인 전체 검증")
-        self._print(f"{'#'*60}\n")
+        self._print(f"{'#' * 60}\n")
 
         report = {}
 
@@ -421,9 +421,9 @@ class RAGDebugger:
         report["search_results"] = search_results
 
         # 5. 종합 평가
-        self._print(f"\n{'='*60}")
+        self._print(f"\n{'=' * 60}")
         self._print("📊 종합 평가")
-        self._print(f"{'='*60}")
+        self._print(f"{'=' * 60}")
 
         issues = []
 
@@ -454,7 +454,7 @@ class RAGDebugger:
             for issue in issues:
                 self._print(f"  {issue}")
 
-        self._print(f"{'='*60}\n")
+        self._print(f"{'=' * 60}\n")
 
         report["issues"] = issues
 
@@ -544,7 +544,14 @@ def visualize_embeddings_2d(texts: List[str], embedding_function, save_path: Opt
         visualize_embeddings_2d(texts, embed_func)
     """
     # 새로운 함수로 위임
-    visualize_embeddings(texts, embedding_function, method="tsne", dimensions=2, save_path=save_path, interactive=False)
+    visualize_embeddings(
+        texts,
+        embedding_function,
+        method="tsne",
+        dimensions=2,
+        save_path=save_path,
+        interactive=False,
+    )
 
 
 def visualize_embeddings(
@@ -654,8 +661,6 @@ def visualize_embeddings(
             import matplotlib.pyplot as plt
 
             if dimensions == 3:
-                from mpl_toolkits.mplot3d import Axes3D
-
                 fig = plt.figure(figsize=(12, 8))
                 ax = fig.add_subplot(111, projection="3d")
                 ax.scatter(
@@ -749,7 +754,7 @@ def similarity_heatmap(
     # 클러스터링 적용
     if cluster:
         try:
-            from scipy.cluster.hierarchy import linkage, leaves_list
+            from scipy.cluster.hierarchy import leaves_list, linkage
 
             # 계층적 클러스터링
             linkage_matrix = linkage(vectors_array, method=method)
@@ -774,16 +779,12 @@ def similarity_heatmap(
         yticklabels=texts_ordered,
         annot=True,
         fmt=".2f",
-        cmap="coolwarm",
+        cmap="RdYlGn",
         center=0.5,
         square=True,
         linewidths=0.5,
-        cmap="RdYlGn",
         vmin=0,
         vmax=1,
-        square=True,
-    )
-
     )
     plt.title("유사도 히트맵", fontsize=16)
     plt.xticks(rotation=45, ha="right")

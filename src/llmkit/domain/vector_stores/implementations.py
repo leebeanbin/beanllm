@@ -36,7 +36,7 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
             import chromadb
             from chromadb.config import Settings
         except ImportError:
-            raise ImportError("Chroma not installed. " "pip install chromadb")
+            raise ImportError("Chroma not installed. pip install chromadb")
 
         # Chroma 클라이언트 설정
         if persist_directory:
@@ -101,6 +101,47 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         return search_results
 
+    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+        """Chroma에서 모든 벡터 가져오기"""
+        try:
+            all_data = self.collection.get()
+
+            vectors = all_data.get("embeddings", [])
+            if not vectors:
+                return [], []
+
+            documents = []
+            texts = all_data.get("documents", [])
+            metadatas = all_data.get("metadatas", [{}] * len(texts))
+
+            from ...domain.loaders import Document
+
+            for i, text in enumerate(texts):
+                doc = Document(content=text, metadata=metadatas[i] if i < len(metadatas) else {})
+                documents.append(doc)
+
+            return vectors, documents
+        except Exception:
+            # 에러 발생 시 빈 리스트 반환
+            return [], []
+
+    async def asimilarity_search_by_vector(
+        self, query_vec: List[float], k: int = 4, **kwargs
+    ) -> List[VectorSearchResult]:
+        """벡터로 직접 검색"""
+        results = self.collection.query(query_embeddings=[query_vec], n_results=k, **kwargs)
+
+        search_results = []
+        for i in range(len(results["ids"][0])):
+            from ...domain.loaders import Document
+
+            doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
+            score = 1 - results["distances"][0][i]  # Cosine distance -> similarity
+            search_results.append(
+                VectorSearchResult(document=doc, score=score, metadata=results["metadatas"][0][i])
+            )
+        return search_results
+
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
         self.collection.delete(ids=ids)
@@ -125,7 +166,7 @@ class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
         try:
             import pinecone
         except ImportError:
-            raise ImportError("Pinecone not installed. " "pip install pinecone-client")
+            raise ImportError("Pinecone not installed. pip install pinecone-client")
 
         # API 키 설정
         api_key = api_key or os.getenv("PINECONE_API_KEY")
@@ -196,6 +237,35 @@ class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         return search_results
 
+    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+        """Pinecone에서 모든 벡터 가져오기 (제한적)"""
+        try:
+            # Pinecone은 모든 벡터를 가져오는 API가 제한적
+            # fetch()를 사용하거나 query()로 일부만 가져올 수 있음
+            # 여기서는 빈 리스트 반환 (배치 검색은 Pinecone API를 직접 사용 권장)
+            return [], []
+        except Exception:
+            return [], []
+
+    async def asimilarity_search_by_vector(
+        self, query_vec: List[float], k: int = 4, **kwargs
+    ) -> List[VectorSearchResult]:
+        """벡터로 직접 검색"""
+        results = self.index.query(vector=query_vec, top_k=k, include_metadata=True, **kwargs)
+
+        search_results = []
+        for match in results.matches:
+            text = match.metadata.get("text", "")
+            metadata = {k: v for k, v in match.metadata.items() if k != "text"}
+
+            from ...domain.loaders import Document
+
+            doc = Document(content=text, metadata=metadata)
+            search_results.append(
+                VectorSearchResult(document=doc, score=float(match.score), metadata=metadata)
+            )
+        return search_results
+
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
         self.index.delete(ids=ids)
@@ -218,7 +288,7 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
             import faiss
             import numpy as np
         except ImportError:
-            raise ImportError("FAISS not installed. " "pip install faiss-cpu  # or faiss-gpu")
+            raise ImportError("FAISS not installed. pip install faiss-cpu  # or faiss-gpu")
 
         self.faiss = faiss
         self.np = np
@@ -287,6 +357,38 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         return search_results
 
+    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+        """FAISS에서 모든 벡터 가져오기"""
+        if not self.documents:
+            return [], []
+
+        # FAISS 인덱스에서 모든 벡터 가져오기
+        try:
+            # FAISS는 직접 벡터를 가져올 수 없으므로 문서에서 재임베딩
+            # 또는 인덱스를 재구축해야 함
+            # 여기서는 간단히 빈 리스트 반환 (배치 검색은 비효율적)
+            # 실제로는 인덱스에 벡터를 저장해야 함
+            return [], []
+        except Exception:
+            return [], []
+
+    async def asimilarity_search_by_vector(
+        self, query_vec: List[float], k: int = 4, **kwargs
+    ) -> List[VectorSearchResult]:
+        """벡터로 직접 검색"""
+        query_array = self.np.array([query_vec]).astype("float32")
+        distances, indices = self.index.search(query_array, k)
+
+        search_results = []
+        for i, idx in enumerate(indices[0]):
+            if idx < len(self.documents):
+                doc = self.documents[idx]
+                score = 1 / (1 + distances[0][i])
+                search_results.append(
+                    VectorSearchResult(document=doc, score=score, metadata=doc.metadata)
+                )
+        return search_results
+
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제 (FAISS는 삭제 미지원, 재구축 필요)"""
         # FAISS는 직접 삭제를 지원하지 않음
@@ -339,7 +441,7 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
             from qdrant_client import QdrantClient
             from qdrant_client.models import Distance, PointStruct, VectorParams
         except ImportError:
-            raise ImportError("Qdrant not installed. " "pip install qdrant-client")
+            raise ImportError("Qdrant not installed. pip install qdrant-client")
 
         self.PointStruct = PointStruct
 
@@ -358,7 +460,7 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # Collection 존재 확인
         try:
             self.client.get_collection(collection_name)
-        except:
+        except Exception:
             # Collection 생성
             self.client.create_collection(
                 collection_name=collection_name,
@@ -422,6 +524,50 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         return search_results
 
+    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+        """Qdrant에서 모든 벡터 가져오기"""
+        try:
+            # Qdrant에서 모든 포인트 가져오기
+            points = self.client.scroll(
+                collection_name=self.collection_name,
+                limit=10000,  # 최대 10000개
+            )
+
+            vectors = []
+            documents = []
+            from ...domain.loaders import Document
+
+            for point in points[0]:  # points는 (points, next_offset) 튜플
+                vectors.append(point.vector)
+                payload = point.payload
+                text = payload.pop("text", "")
+                doc = Document(content=text, metadata=payload)
+                documents.append(doc)
+
+            return vectors, documents
+        except Exception:
+            return [], []
+
+    async def asimilarity_search_by_vector(
+        self, query_vec: List[float], k: int = 4, **kwargs
+    ) -> List[VectorSearchResult]:
+        """벡터로 직접 검색"""
+        results = self.client.search(
+            collection_name=self.collection_name, query_vector=query_vec, limit=k, **kwargs
+        )
+
+        search_results = []
+        for result in results:
+            payload = result.payload
+            text = payload.pop("text", "")
+            from ...domain.loaders import Document
+
+            doc = Document(content=text, metadata=payload)
+            search_results.append(
+                VectorSearchResult(document=doc, score=result.score, metadata=payload)
+            )
+        return search_results
+
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
         self.client.delete(collection_name=self.collection_name, points_selector=ids)
@@ -444,7 +590,7 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
         try:
             import weaviate
         except ImportError:
-            raise ImportError("Weaviate not installed. " "pip install weaviate-client")
+            raise ImportError("Weaviate not installed. pip install weaviate-client")
 
         # 클라이언트 설정
         url = url or os.getenv("WEAVIATE_URL", "http://localhost:8080")
@@ -533,6 +679,60 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
                     VectorSearchResult(document=doc, score=score, metadata=metadata)
                 )
 
+        return search_results
+
+    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+        """Weaviate에서 모든 벡터 가져오기"""
+        try:
+            # Weaviate에서 모든 객체 가져오기
+            results = (
+                self.client.query.get(self.class_name, ["text", "metadata"])
+                .with_additional(["vector"])
+                .with_limit(10000)  # 최대 10000개
+                .do()
+            )
+
+            vectors = []
+            documents = []
+            from ...domain.loaders import Document
+
+            for obj in results.get("data", {}).get("Get", {}).get(self.class_name, []):
+                vector = obj.get("_additional", {}).get("vector", [])
+                if vector:
+                    vectors.append(vector)
+                    text = obj.get("text", "")
+                    metadata = obj.get("metadata", {})
+                    doc = Document(content=text, metadata=metadata)
+                    documents.append(doc)
+
+            return vectors, documents
+        except Exception:
+            return [], []
+
+    async def asimilarity_search_by_vector(
+        self, query_vec: List[float], k: int = 4, **kwargs
+    ) -> List[VectorSearchResult]:
+        """벡터로 직접 검색"""
+        results = (
+            self.client.query.get(self.class_name, ["text", "metadata"])
+            .with_near_vector({"vector": query_vec})
+            .with_limit(k)
+            .with_additional(["certainty", "distance"])
+            .do()
+        )
+
+        search_results = []
+        for obj in results.get("data", {}).get("Get", {}).get(self.class_name, []):
+            text = obj.get("text", "")
+            metadata = obj.get("metadata", {})
+            certainty = obj.get("_additional", {}).get("certainty", 0.0)
+
+            from ...domain.loaders import Document
+
+            doc = Document(content=text, metadata=metadata)
+            search_results.append(
+                VectorSearchResult(document=doc, score=float(certainty), metadata=metadata)
+            )
         return search_results
 
     def delete(self, ids: List[str], **kwargs) -> bool:

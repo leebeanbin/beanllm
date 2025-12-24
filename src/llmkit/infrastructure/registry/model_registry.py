@@ -181,11 +181,11 @@ async for chunk in llm_service.stream_chat(messages=[{{"role": "user", "content"
 ```python
 """
         if model_config.get("supports_temperature", True):
-            example += f'temperature = {model_config.get("temperature", 0.0)}\n'
+            example += f"temperature = {model_config.get('temperature', 0.0)}\n"
         if model_config.get("uses_max_completion_tokens", False):
-            example += f'max_completion_tokens = {model_config.get("max_tokens", 1000)}\n'
+            example += f"max_completion_tokens = {model_config.get('max_tokens', 1000)}\n"
         elif model_config.get("supports_max_tokens", True):
-            example += f'max_tokens = {model_config.get("max_tokens", 1000)}\n'
+            example += f"max_tokens = {model_config.get('max_tokens', 1000)}\n"
         example += "```\n"
         return example
 

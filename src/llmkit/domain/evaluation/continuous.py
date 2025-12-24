@@ -2,16 +2,23 @@
 Continuous Evaluation - 지속적 평가 시스템
 """
 
-import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+# apscheduler는 선택적 의존성
+try:
+    from apscheduler.schedulers.asyncio import AsyncIOScheduler
+    from apscheduler.triggers.cron import CronTrigger
+
+    APSCHEDULER_AVAILABLE = True
+except ImportError:
+    APSCHEDULER_AVAILABLE = False
+    AsyncIOScheduler = None  # type: ignore
+    CronTrigger = None  # type: ignore
 
 from .evaluator import Evaluator
-from .results import BatchEvaluationResult, EvaluationResult
+from .results import BatchEvaluationResult
 
 
 @dataclass
@@ -102,7 +109,7 @@ class ContinuousEvaluator:
         if task_id not in self._tasks:
             return False
 
-        task = self._tasks[task_id]
+        self._tasks[task_id]
         del self._tasks[task_id]
 
         # 스케줄러에서도 제거
@@ -251,7 +258,9 @@ class ContinuousEvaluator:
             trend = (
                 "improving"
                 if recent_avg > early_avg
-                else "declining" if recent_avg < early_avg else "stable"
+                else "declining"
+                if recent_avg < early_avg
+                else "stable"
             )
         else:
             trend = "stable"
@@ -273,7 +282,7 @@ class ContinuousEvaluator:
         if not APSCHEDULER_AVAILABLE:
             raise ImportError(
                 "apscheduler is required for scheduled tasks. "
-                "Install it with: pip install apscheduler"
+                "Install it with: pip install llmkit[evaluation] or pip install apscheduler"
             )
         if self._scheduler is None:
             self._scheduler = AsyncIOScheduler()
@@ -293,7 +302,7 @@ class ContinuousEvaluator:
         if not APSCHEDULER_AVAILABLE:
             raise ImportError(
                 "apscheduler is required for scheduled tasks. "
-                "Install it with: pip install apscheduler"
+                "Install it with: pip install llmkit[evaluation] or pip install apscheduler"
             )
 
         if self._scheduler is None:
@@ -318,4 +327,3 @@ class ContinuousEvaluator:
         """필요시 저장 (파일 기반 저장 구현 예정)"""
         # TODO: 파일 기반 저장 구현
         pass
-

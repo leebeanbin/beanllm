@@ -6,7 +6,10 @@ Streaming Helpers
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Callable, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Dict, List, Optional
+
+if TYPE_CHECKING:
+    pass
 
 try:
     from rich.console import Console
@@ -83,6 +86,9 @@ async def stream_response(
     show_stats: bool = False,
     panel_title: Optional[str] = None,
     on_chunk: Optional[Callable[[str], Any]] = None,
+    enable_buffer: bool = False,
+    buffer: Optional["StreamBuffer"] = None,
+    stream_id: Optional[str] = None,
 ) -> Optional[StreamResponse]:
     """
     스트리밍 응답 출력 헬퍼

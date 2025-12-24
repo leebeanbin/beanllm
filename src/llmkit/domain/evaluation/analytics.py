@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from .results import BatchEvaluationResult, EvaluationResult
+from .results import BatchEvaluationResult
 
 
 @dataclass

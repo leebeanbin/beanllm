@@ -6,7 +6,6 @@ from typing import Any, Dict, List, Optional
 
 try:
     import plotly.graph_objects as go
-    from plotly.subplots import make_subplots
 
     PLOTLY_AVAILABLE = True
 except ImportError:
@@ -417,9 +416,7 @@ class EvaluationDashboard:
             # 값 표시
             for i in range(len(metrics)):
                 for j in range(len(cases)):
-                    text = ax.text(
-                        j, i, f"{z_array[i, j]:.2f}", ha="center", va="center", color="white"
-                    )
+                    ax.text(j, i, f"{z_array[i, j]:.2f}", ha="center", va="center", color="white")
 
             plt.colorbar(im, ax=ax)
 
@@ -432,4 +429,3 @@ class EvaluationDashboard:
             fig.savefig(save_path, dpi=300, bbox_inches="tight")
 
         return fig
-

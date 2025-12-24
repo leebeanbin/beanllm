@@ -159,7 +159,7 @@ Answer:"""
 
         from ..dto.request.rag_request import RAGRequest
 
-        request = RAGRequest(
+        RAGRequest(
             query=query,
             vector_store=self.vector_store,
             k=k,
@@ -330,7 +330,7 @@ Answer:"""
         self, questions: List[str], k: int = 4, model: Optional[str] = None, **kwargs: Any
     ) -> List[str]:
         """
-        여러 질문에 대해 배치 답변 (기존 rag_chain.py의 batch_query 정확히 마이그레이션)
+        여러 질문에 대해 배치 답변 (내부적으로 자동 병렬 처리)
 
         Args:
             questions: 질문 리스트
@@ -348,12 +348,55 @@ Answer:"""
             # 다른 모델 사용
             answers = rag.batch_query(questions, model="gpt-4o")
         """
-        # 기존 rag_chain.py의 batch_query 정확히 마이그레이션
-        answers = []
-        for question in questions:
-            answer = self.query(question, k=k, model=model, **kwargs)
-            answers.append(answer)
-        return answers
+        # 내부적으로 병렬 처리 사용 (사용자는 신경 쓸 필요 없음)
+        import asyncio
+
+        from ...utils.error_handling import AsyncTokenBucket
+
+        # 자동 최적화 설정
+        rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)
+        max_concurrent = 10
+
+        async def _batch_query_async():
+            semaphore = asyncio.Semaphore(max_concurrent)
+
+            async def query_one(question: str):
+                """단일 질의 (Rate Limiting + Semaphore)"""
+                await rate_limiter.wait(cost=1.0)
+                async with semaphore:
+                    return await self.aquery(question, k=k, model=model, **kwargs)
+
+            tasks = [query_one(q) for q in questions]
+            answers = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # 결과 정리
+            results = []
+            for ans in answers:
+                if isinstance(ans, Exception):
+                    results.append(f"Error: {str(ans)}")
+                elif isinstance(ans, tuple):
+                    results.append(ans[0])  # (answer, sources) 튜플인 경우
+                else:
+                    results.append(str(ans))
+
+            return results
+
+        # 비동기 실행
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 이미 실행 중인 루프가 있으면 순차 처리로 폴백
+                # (중첩 이벤트 루프는 복잡하므로)
+                answers = []
+                for question in questions:
+                    answer = self.query(question, k=k, model=model, **kwargs)
+                    answers.append(answer)
+                return answers
+            else:
+                return loop.run_until_complete(_batch_query_async())
+        except RuntimeError:
+            # 루프가 없으면 새로 생성
+            return asyncio.run(_batch_query_async())
 
     async def aquery(
         self,

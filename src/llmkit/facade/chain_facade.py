@@ -11,7 +11,6 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..domain.memory import BaseMemory, BufferMemory, create_memory
 from ..domain.tools import Tool
 from ..utils.logger import get_logger

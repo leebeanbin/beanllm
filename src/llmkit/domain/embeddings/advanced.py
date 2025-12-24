@@ -71,7 +71,7 @@ def find_hard_negatives(
 
     # Positive 제외 (제공된 경우)
     if positive_vecs:
-        positive_similarities = [
+        [
             max(batch_cosine_similarity(query_vec, [pv])[0] for pv in positive_vecs)
             for _ in candidate_vecs
         ]

@@ -291,7 +291,7 @@ class SemanticSimilarityMetric(BaseMetric):
                 self.embedding_model = OpenAIEmbedding()
             except Exception:
                 raise RuntimeError(
-                    "Embedding model not available. " "Please provide an embedding model."
+                    "Embedding model not available. Please provide an embedding model."
                 )
         return self.embedding_model
 
@@ -347,7 +347,7 @@ class LLMJudgeMetric(BaseMetric):
 
                 self.client = create_client()
             except Exception:
-                raise RuntimeError("LLM client not available. " "Please provide a client.")
+                raise RuntimeError("LLM client not available. Please provide a client.")
         return self.client
 
     def _create_judge_prompt(

@@ -88,9 +88,9 @@ class GraphServiceImpl(IGraphService):
             visited.add(current_node)
 
             if request.verbose:
-                logger.info(f"\n{'='*60}")
+                logger.info(f"\n{'=' * 60}")
                 logger.info(f"Executing node: {current_node}")
-                logger.info(f"{'='*60}")
+                logger.info(f"{'=' * 60}")
 
             # 노드 실행
             node = nodes[current_node]

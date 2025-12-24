@@ -126,7 +126,7 @@ class ImageLoader(BaseDocumentLoader):
             from PIL import Image
             from transformers import BlipForConditionalGeneration, BlipProcessor
         except ImportError:
-            raise ImportError("transformers 및 Pillow 필요:\n" "pip install transformers pillow")
+            raise ImportError("transformers 및 Pillow 필요:\npip install transformers pillow")
 
         # 모델 로드
         processor = BlipProcessor.from_pretrained(self.caption_model)
@@ -179,7 +179,7 @@ class PDFWithImagesLoader(BaseDocumentLoader):
         try:
             import fitz  # PyMuPDF
         except ImportError:
-            raise ImportError("PyMuPDF 필요:\n" "pip install pymupdf")
+            raise ImportError("PyMuPDF 필요:\npip install pymupdf")
 
         source_path = Path(source)
         documents = []

@@ -148,13 +148,13 @@ class Tool:
             # 타입 힌트에서 타입 추출
             param_type = "string"
             if param.annotation != inspect.Parameter.empty:
-                if param.annotation == int or param.annotation == float:
+                if param.annotation is int or param.annotation is float:
                     param_type = "number"
-                elif param.annotation == bool:
+                elif param.annotation is bool:
                     param_type = "boolean"
-                elif param.annotation == list:
+                elif param.annotation is list:
                     param_type = "array"
-                elif param.annotation == dict:
+                elif param.annotation is dict:
                     param_type = "object"
 
             # 필수 여부

@@ -71,7 +71,7 @@ class TensorFlowModel(BaseMLModel):
         try:
             import tensorflow as tf
         except ImportError:
-            raise ImportError("TensorFlow 필요:\n" "pip install tensorflow")
+            raise ImportError("TensorFlow 필요:\npip install tensorflow")
 
         model_path = Path(model_path)
 
@@ -181,7 +181,7 @@ class PyTorchModel(BaseMLModel):
         try:
             import torch
         except ImportError:
-            raise ImportError("PyTorch 필요:\n" "pip install torch")
+            raise ImportError("PyTorch 필요:\npip install torch")
 
         checkpoint = torch.load(str(model_path), map_location=self.device)
 
@@ -495,8 +495,7 @@ class MLModelFactory:
                 return "tensorflow"
 
         raise ValueError(
-            f"Cannot detect framework from path: {model_path}. "
-            "Please specify framework explicitly."
+            f"Cannot detect framework from path: {model_path}. Please specify framework explicitly."
         )
 
 

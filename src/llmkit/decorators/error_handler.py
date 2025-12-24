@@ -5,7 +5,7 @@ Error Handler Decorators - 에러 처리 공통 기능
 
 import functools
 import inspect
-from typing import Any, AsyncIterator, Callable, TypeVar
+from typing import Any, Callable, TypeVar
 
 from ..utils.logger import get_logger
 
@@ -143,68 +143,6 @@ def log_errors(func: Callable[..., T]) -> Callable[..., T]:
 
     책임:
     - 에러 발생 시 로깅만
-    - 에러는 그대로 재발생
-
-    Example:
-        @log_errors
-        async def my_function(...):
-            ...
-    """
-
-    @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
-        func_name = func.__name__
-        try:
-            return await func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"{func_name} error: {e}", exc_info=True)
-            raise
-
-    @functools.wraps(func)
-    def sync_wrapper(*args, **kwargs):
-        func_name = func.__name__
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"{func_name} error: {e}", exc_info=True)
-            raise
-
-    # async 함수인지 확인
-    if hasattr(func, "__code__") and "coroutine" in str(type(func)):
-        return async_wrapper
-    return sync_wrapper
-
-    - 에러는 그대로 재발생
-
-    Example:
-        @log_errors
-        async def my_function(...):
-            ...
-    """
-
-    @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
-        func_name = func.__name__
-        try:
-            return await func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"{func_name} error: {e}", exc_info=True)
-            raise
-
-    @functools.wraps(func)
-    def sync_wrapper(*args, **kwargs):
-        func_name = func.__name__
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"{func_name} error: {e}", exc_info=True)
-            raise
-
-    # async 함수인지 확인
-    if hasattr(func, "__code__") and "coroutine" in str(type(func)):
-        return async_wrapper
-    return sync_wrapper
-
     - 에러는 그대로 재발생
 
     Example:

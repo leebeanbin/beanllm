@@ -234,7 +234,7 @@ class FineTuningManager:
             report = DataValidator.validate_dataset(examples)
             if not report["is_valid"]:
                 raise ValueError(
-                    f"Dataset validation failed: " f"{report['invalid_count']} invalid examples"
+                    f"Dataset validation failed: {report['invalid_count']} invalid examples"
                 )
 
         # 데이터 준비
