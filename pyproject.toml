@@ -13,10 +13,11 @@ authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
 ]
 keywords = [
-    "llm", "llmkit", "kit",
-    "openai", "claude", "gemini", "ollama",
-    "ai", "model-manager", "rag", "langchain",
-    "embedding", "vector-store", "chatbot", "gpt"
+    "llm", "beanllm", "ai-toolkit",
+    "openai", "claude", "anthropic", "gemini", "ollama",
+    "ai", "machine-learning", "rag", "langchain",
+    "embedding", "vector-store", "chatbot", "gpt",
+    "multi-agent", "agent", "nlp", "prompt-engineering"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

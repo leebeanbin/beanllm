@@ -1,4 +1,4 @@
-# 🧪 llmkit 테스트 가이드
+# 🧪 beanllm 테스트 가이드
 
 ## 📋 테스트 구조
 
@@ -34,7 +34,7 @@ pytest
 pytest -v
 
 # 커버리지 포함
-pytest --cov=src.llmkit --cov-report=html
+pytest --cov=src.beanllm --cov-report=html
 ```
 
 ### 특정 테스트 실행
@@ -155,7 +155,7 @@ except (ValueError, ImportError):
 ```python
 from unittest.mock import MagicMock, patch
 
-@patch('llmkit._source_providers.openai_provider.AsyncOpenAI')
+@patch('beanllm._source_providers.openai_provider.AsyncOpenAI')
 def test_with_mock(mock_openai):
     # Mock 설정
     # 테스트 실행
@@ -189,7 +189,7 @@ def test_with_file(temp_dir):
 
 ```bash
 # 프로젝트 루트에서 실행
-cd /Users/leejungbin/Downloads/llmkit
+cd /Users/leejungbin/Downloads/beanllm
 python -m pytest tests/
 ```
 
@@ -216,14 +216,14 @@ tests/test_cli.py::TestCLIBasic::test_cli_list_command PASSED
 ======================== 50 passed in 2.34s ========================
 
 # 커버리지 포함
-$ pytest --cov=src.llmkit --cov-report=term
+$ pytest --cov=src.beanllm --cov-report=term
 ======================== test session starts ========================
 ...
 ----------- coverage: platform darwin, python 3.11 -----------
 Name                                    Stmts   Miss  Cover
 ------------------------------------------------------------
-src/llmkit/__init__.py                    823     45    95%
-src/llmkit/domain/__init__.py             443     12    97%
+src/beanllm/__init__.py                    823     45    95%
+src/beanllm/domain/__init__.py             443     12    97%
 ...
 ------------------------------------------------------------
 TOTAL                                    5000    200    96%
@@ -237,7 +237,7 @@ GitHub Actions에서 자동 실행:
 
 ```yaml
 - name: Run tests
-  run: pytest --cov=src.llmkit --cov-report=xml
+  run: pytest --cov=src.beanllm --cov-report=xml
 
 - name: Upload coverage
   uses: codecov/codecov-action@v3

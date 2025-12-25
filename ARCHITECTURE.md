@@ -1,4 +1,4 @@
-# 🏗️ llmkit 아키텍처 가이드
+# 🏗️ beanllm 아키텍처 가이드
 
 ## 📋 목차
 
@@ -14,7 +14,7 @@
 
 ## 아키텍처 개요
 
-llmkit은 **Domain-Driven Design (DDD)**과 **Clean Architecture** 원칙을 따르는 계층형 아키텍처를 사용합니다.
+beanllm은 **Domain-Driven Design (DDD)**과 **Clean Architecture** 원칙을 따르는 계층형 아키텍처를 사용합니다.
 
 ### 핵심 원칙
 
@@ -76,7 +76,7 @@ llmkit은 **Domain-Driven Design (DDD)**과 **Clean Architecture** 원칙을 따
 ### 전체 구조
 
 ```
-src/llmkit/
+src/beanllm/
 ├── __init__.py              # Public API (통합 export)
 │
 ├── facade/                  # Facade Layer
@@ -368,7 +368,7 @@ Domain Layer ← Infrastructure Layer (구현체)
 ```
 1. 사용자 호출
    ↓
-   from llmkit import Client
+   from beanllm import Client
    client = Client(model="gpt-4o")
    response = client.chat("Hello")
 
@@ -452,26 +452,26 @@ Domain Layer ← Infrastructure Layer (구현체)
 ### 통합 Import (권장)
 
 ```python
-from llmkit import Client, Embedding, Document, Agent, RAGChain
+from beanllm import Client, Embedding, Document, Agent, RAGChain
 ```
 
 ### 레이어별 Import
 
 ```python
 # Domain Layer
-from llmkit.domain import Document, Embedding, VectorStore
+from beanllm.domain import Document, Embedding, VectorStore
 
 # Infrastructure Layer
-from llmkit.infrastructure import ModelRegistry, ParameterAdapter
+from beanllm.infrastructure import ModelRegistry, ParameterAdapter
 
 # Utils
-from llmkit.utils import Config, ErrorHandler, retry
+from beanllm.utils import Config, ErrorHandler, retry
 ```
 
 ### Facade Import
 
 ```python
-from llmkit.facade import Client, RAGChain, Agent
+from beanllm.facade import Client, RAGChain, Agent
 ```
 
 ---
@@ -561,7 +561,7 @@ from llmkit.facade import Client, RAGChain, Agent
 
 ```python
 # 기존 코드 (여전히 작동)
-from llmkit import Client
+from beanllm import Client
 client = Client(model="gpt-4o")
 response = client.chat("Hello")
 
