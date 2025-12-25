@@ -5,9 +5,9 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.state_graph_facade import StateGraph
-    from llmkit.domain.state_graph import END
-    from llmkit.domain.graph.graph_state import GraphState
+    from beanllm.facade.state_graph_facade import StateGraph
+    from beanllm.domain.state_graph import END
+    from beanllm.domain.graph.graph_state import GraphState
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -17,7 +17,7 @@ except ImportError:
 class TestStateGraph:
     @pytest.fixture
     def graph(self):
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             from unittest.mock import AsyncMock
             mock_handler = MagicMock()
             mock_response = Mock()

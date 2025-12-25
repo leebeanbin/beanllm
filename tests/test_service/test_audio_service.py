@@ -6,10 +6,10 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from pathlib import Path
 
-from llmkit.dto.request.audio_request import AudioRequest
-from llmkit.dto.response.audio_response import AudioResponse
-from llmkit.domain.audio import AudioSegment, TranscriptionResult, TranscriptionSegment, TTSProvider
-from llmkit.service.impl.audio_service_impl import AudioServiceImpl
+from beanllm.dto.request.audio_request import AudioRequest
+from beanllm.dto.response.audio_response import AudioResponse
+from beanllm.domain.audio import AudioSegment, TranscriptionResult, TranscriptionSegment, TTSProvider
+from beanllm.service.impl.audio_service_impl import AudioServiceImpl
 
 
 class TestAudioService:
@@ -233,7 +233,7 @@ class TestAudioService:
         # Mock vector_store와 embedding_model
         # vector_store.search는 동기 함수이고 SearchResult 객체를 반환
         try:
-            from llmkit.vector_stores.search import SearchResult
+            from beanllm.vector_stores.search import SearchResult
         except ImportError:
             # SearchResult가 없으면 Mock 사용
             SearchResult = Mock

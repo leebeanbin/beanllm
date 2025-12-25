@@ -5,9 +5,9 @@ WebSearchHandler 테스트 - Web Search Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.web_search_request import WebSearchRequest
-from llmkit.dto.response.web_search_response import WebSearchResponse
-from llmkit.handler.web_search_handler import WebSearchHandler
+from beanllm.dto.request.web_search_request import WebSearchRequest
+from beanllm.dto.response.web_search_response import WebSearchResponse
+from beanllm.handler.web_search_handler import WebSearchHandler
 
 
 class TestWebSearchHandler:

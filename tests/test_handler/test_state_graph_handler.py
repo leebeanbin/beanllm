@@ -5,10 +5,10 @@ StateGraphHandler 테스트 - StateGraph Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.state_graph_request import StateGraphRequest
-from llmkit.dto.response.state_graph_response import StateGraphResponse
-from llmkit.domain.state_graph import END
-from llmkit.handler.state_graph_handler import StateGraphHandler
+from beanllm.dto.request.state_graph_request import StateGraphRequest
+from beanllm.dto.response.state_graph_response import StateGraphResponse
+from beanllm.domain.state_graph import END
+from beanllm.handler.state_graph_handler import StateGraphHandler
 
 
 class TestStateGraphHandler:
@@ -17,7 +17,7 @@ class TestStateGraphHandler:
     @pytest.fixture
     def mock_state_graph_service(self):
         """Mock StateGraphService"""
-        from llmkit.service.state_graph_service import IStateGraphService
+        from beanllm.service.state_graph_service import IStateGraphService
 
         service = Mock(spec=IStateGraphService)
         service.invoke = AsyncMock(

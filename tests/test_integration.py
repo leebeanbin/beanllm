@@ -11,9 +11,9 @@ class TestFacadeToHandler:
     def test_client_facade_to_handler(self):
         """Client Facade가 Handler를 사용하는지 확인"""
         try:
-            from llmkit.facade.client_facade import Client
+            from beanllm.facade.client_facade import Client
         except ImportError:
-            from src.llmkit.facade.client_facade import Client
+            from src.beanllm.facade.client_facade import Client
 
         try:
             client = Client(model="gpt-4o-mini")
@@ -29,13 +29,13 @@ class TestHandlerToService:
     def test_chat_handler_to_service(self):
         """ChatHandler가 Service를 사용하는지 확인"""
         try:
-            from llmkit.handler.chat_handler import ChatHandler
-            from llmkit.service.factory import ServiceFactory
-            from llmkit._source_providers.provider_factory import ProviderFactory
+            from beanllm.handler.chat_handler import ChatHandler
+            from beanllm.service.factory import ServiceFactory
+            from beanllm._source_providers.provider_factory import ProviderFactory
         except ImportError:
-            from src.llmkit.handler.chat_handler import ChatHandler
-            from src.llmkit.service.factory import ServiceFactory
-            from src.llmkit._source_providers.provider_factory import ProviderFactory
+            from src.beanllm.handler.chat_handler import ChatHandler
+            from src.beanllm.service.factory import ServiceFactory
+            from src.beanllm._source_providers.provider_factory import ProviderFactory
 
         try:
             provider_factory = ProviderFactory()
@@ -54,11 +54,11 @@ class TestServiceToDomain:
     def test_rag_service_uses_domain(self):
         """RAGService가 Domain을 사용하는지 확인"""
         try:
-            from llmkit.service.rag_service import IRAGService
-            from llmkit.domain import Document, Embedding, VectorStore
+            from beanllm.service.rag_service import IRAGService
+            from beanllm.domain import Document, Embedding, VectorStore
         except ImportError:
-            from src.llmkit.service.rag_service import IRAGService
-            from src.llmkit.domain import Document, Embedding, VectorStore
+            from src.beanllm.service.rag_service import IRAGService
+            from src.beanllm.domain import Document, Embedding, VectorStore
 
         # 인터페이스 확인
         assert IRAGService is not None
@@ -73,9 +73,9 @@ class TestEndToEnd:
     def test_import_chain(self):
         """전체 import 체인 테스트"""
         # Facade → Handler → Service → Domain → Infrastructure
-        from llmkit import Client, Embedding, Document
-        from llmkit.infrastructure import get_model_registry
-        from llmkit.utils import Config
+        from beanllm import Client, Embedding, Document
+        from beanllm.infrastructure import get_model_registry
+        from beanllm.utils import Config
 
         assert Client is not None
         assert Embedding is not None
@@ -85,7 +85,7 @@ class TestEndToEnd:
 
     def test_basic_workflow(self, temp_dir):
         """기본 워크플로우 테스트"""
-        from llmkit import Document, TextSplitter
+        from beanllm import Document, TextSplitter
 
         # 1. Document 생성
         doc = Document(content="Test content", metadata={"source": "test.txt"})
@@ -99,7 +99,7 @@ class TestEndToEnd:
 
     def test_rag_workflow(self, temp_dir):
         """RAG 워크플로우 테스트"""
-        from llmkit import DocumentLoader, TextSplitter
+        from beanllm import DocumentLoader, TextSplitter
 
         # 테스트 문서 생성
         test_file = temp_dir / "test.txt"

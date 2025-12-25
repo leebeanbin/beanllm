@@ -5,7 +5,7 @@ Token Counter 테스트 - 토큰 카운팅 테스트
 import pytest
 from unittest.mock import Mock, patch
 
-from llmkit.utils.token_counter import (
+from beanllm.utils.token_counter import (
     TokenCounter,
     count_tokens,
     estimate_cost,
@@ -34,7 +34,7 @@ class TestTokenCounter:
 
     def test_count_tokens_anthropic(self, token_counter):
         """Anthropic 토큰 카운팅 테스트"""
-        from llmkit.utils.token_counter import TokenCounter
+        from beanllm.utils.token_counter import TokenCounter
 
         counter = TokenCounter(model="claude-3-opus")
         text = "Hello world"
@@ -54,7 +54,7 @@ class TestTokenCounter:
 
     def test_estimate_cost(self, token_counter):
         """비용 추정 테스트"""
-        from llmkit.utils.token_counter import CostEstimator
+        from beanllm.utils.token_counter import CostEstimator
 
         estimator = CostEstimator(model="gpt-4o-mini")
         cost_estimate = estimator.estimate_cost(
@@ -80,7 +80,7 @@ class TestTokenCounterFunctions:
 
     def test_estimate_cost_function(self):
         """estimate_cost 편의 함수 테스트"""
-        from llmkit.utils.token_counter import CostEstimator
+        from beanllm.utils.token_counter import CostEstimator
 
         estimator = CostEstimator(model="gpt-4o-mini")
         cost_estimate = estimator.estimate_cost(
@@ -162,7 +162,7 @@ class TestTokenCounterAdvanced:
 
     def test_count_tokens_from_messages_no_encoding(self):
         """인코딩 없이 메시지 토큰 카운팅 테스트"""
-        with patch("llmkit.utils.token_counter.TIKTOKEN_AVAILABLE", False):
+        with patch("beanllm.utils.token_counter.TIKTOKEN_AVAILABLE", False):
             counter = TokenCounter(model="gpt-4o-mini")
             messages = [{"role": "user", "content": "Hello"}]
             count = counter.count_tokens_from_messages(messages)
@@ -331,7 +331,7 @@ class TestTokenCounterAdvanced:
 
     def test_count_tokens_from_messages_no_encoding(self):
         """인코딩 없이 메시지 토큰 카운팅 테스트"""
-        with patch("llmkit.utils.token_counter.TIKTOKEN_AVAILABLE", False):
+        with patch("beanllm.utils.token_counter.TIKTOKEN_AVAILABLE", False):
             counter = TokenCounter(model="gpt-4o-mini")
             messages = [{"role": "user", "content": "Hello"}]
             count = counter.count_tokens_from_messages(messages)
@@ -500,7 +500,7 @@ class TestTokenCounterAdvanced:
 
     def test_count_tokens_from_messages_no_encoding(self):
         """인코딩 없이 메시지 토큰 카운팅 테스트"""
-        with patch("llmkit.utils.token_counter.TIKTOKEN_AVAILABLE", False):
+        with patch("beanllm.utils.token_counter.TIKTOKEN_AVAILABLE", False):
             counter = TokenCounter(model="gpt-4o-mini")
             messages = [{"role": "user", "content": "Hello"}]
             count = counter.count_tokens_from_messages(messages)

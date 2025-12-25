@@ -5,13 +5,13 @@ EvaluationHandler 테스트 - Evaluation Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.evaluation_request import (
+from beanllm.dto.request.evaluation_request import (
     EvaluationRequest,
     TextEvaluationRequest,
     RAGEvaluationRequest,
 )
-from llmkit.dto.response.evaluation_response import EvaluationResponse
-from llmkit.handler.evaluation_handler import EvaluationHandler
+from beanllm.dto.response.evaluation_response import EvaluationResponse
+from beanllm.handler.evaluation_handler import EvaluationHandler
 
 
 class TestEvaluationHandler:
@@ -40,7 +40,7 @@ class TestEvaluationHandler:
     @pytest.mark.asyncio
     async def test_handle_evaluate(self, evaluation_handler):
         """기본 평가 테스트"""
-        from llmkit.domain.evaluation.metrics import BLEUMetric
+        from beanllm.domain.evaluation.metrics import BLEUMetric
 
         # decorator가 인자 없이 사용되므로 직접 호출
         # 실제로는 decorator가 함수를 감싸므로 정상 작동해야 함

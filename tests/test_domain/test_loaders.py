@@ -6,8 +6,8 @@ import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from llmkit.domain.loaders import Document, DocumentLoader
-from llmkit.domain.loaders.loaders import TextLoader, CSVLoader, DirectoryLoader
+from beanllm.domain.loaders import Document, DocumentLoader
+from beanllm.domain.loaders.loaders import TextLoader, CSVLoader, DirectoryLoader
 
 
 class TestTextLoader:

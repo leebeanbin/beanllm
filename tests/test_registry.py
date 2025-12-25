@@ -3,7 +3,7 @@ Test ModelRegistry
 """
 
 import pytest
-from llmkit import get_registry
+from beanllm import get_registry
 
 
 def test_get_registry():

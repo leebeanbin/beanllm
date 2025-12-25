@@ -2,7 +2,7 @@
 Test EnvConfig
 """
 
-from llmkit.utils import EnvConfig
+from beanllm.utils import EnvConfig
 
 
 def test_env_config_exists():

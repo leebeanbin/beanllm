@@ -5,7 +5,7 @@ Error Handler 테스트 - 에러 처리 유틸리티 테스트
 import pytest
 from unittest.mock import Mock, patch
 
-from llmkit.utils.error_handling import (
+from beanllm.utils.error_handling import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitState,
@@ -68,7 +68,7 @@ class TestRateLimiter:
     @pytest.fixture
     def rate_limiter(self):
         """RateLimiter 인스턴스"""
-        from llmkit.utils.error_handling import RateLimitConfig
+        from beanllm.utils.error_handling import RateLimitConfig
 
         config = RateLimitConfig(max_calls=5, time_window=60)
         return RateLimiter(config)
@@ -95,7 +95,7 @@ class TestRetryHandler:
     @pytest.fixture
     def retry_handler(self):
         """RetryHandler 인스턴스"""
-        from llmkit.utils.error_handling import RetryConfig, RetryStrategy
+        from beanllm.utils.error_handling import RetryConfig, RetryStrategy
 
         config = RetryConfig(max_retries=3, strategy=RetryStrategy.EXPONENTIAL)
         return RetryHandler(config)
@@ -112,7 +112,7 @@ class TestRetryHandler:
 
     def test_retry_handler_execute_failure(self, retry_handler):
         """재시도 핸들러 실패 테스트"""
-        from llmkit.utils.error_handling import MaxRetriesExceededError
+        from beanllm.utils.error_handling import MaxRetriesExceededError
 
         call_count = 0
 
@@ -143,7 +143,7 @@ class TestWithErrorHandling:
 
     def test_with_error_handling_exception(self):
         """에러 발생 시 처리 테스트"""
-        from llmkit.utils.error_handling import MaxRetriesExceededError
+        from beanllm.utils.error_handling import MaxRetriesExceededError
 
         @with_error_handling(max_retries=1)
         def failing_func():
@@ -477,7 +477,7 @@ class TestTimeout:
         # 실제로 timeout이 작동하는지 확인하기 어려우므로 스킵
         pytest.skip("Timeout decorator with SIGALRM may not work reliably on macOS")
 
-        from llmkit.utils.error_handling import MaxRetriesExceededError
+        from beanllm.utils.error_handling import MaxRetriesExceededError
 
         @with_error_handling(max_retries=1)
         def failing_func():
@@ -811,7 +811,7 @@ class TestTimeout:
         # 실제로 timeout이 작동하는지 확인하기 어려우므로 스킵
         pytest.skip("Timeout decorator with SIGALRM may not work reliably on macOS")
 
-        from llmkit.utils.error_handling import MaxRetriesExceededError
+        from beanllm.utils.error_handling import MaxRetriesExceededError
 
         @with_error_handling(max_retries=1)
         def failing_func():

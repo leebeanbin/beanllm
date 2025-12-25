@@ -8,7 +8,7 @@ from datetime import datetime
 import json
 from pathlib import Path
 
-from llmkit.utils.tracer import (
+from beanllm.utils.tracer import (
     Tracer,
     get_tracer,
     enable_tracing,

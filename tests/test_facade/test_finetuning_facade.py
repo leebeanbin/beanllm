@@ -6,10 +6,10 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.finetuning_facade import FineTuningManagerFacade
-    from llmkit.domain.finetuning.providers import OpenAIFineTuningProvider
-    from llmkit.domain.finetuning.types import FineTuningJob, TrainingExample
-    from llmkit.dto.response.finetuning_response import (
+    from beanllm.facade.finetuning_facade import FineTuningManagerFacade
+    from beanllm.domain.finetuning.providers import OpenAIFineTuningProvider
+    from beanllm.domain.finetuning.types import FineTuningJob, TrainingExample
+    from beanllm.dto.response.finetuning_response import (
         PrepareDataResponse,
         StartTrainingResponse,
         GetJobResponse,
@@ -30,11 +30,11 @@ class TestFineTuningManagerFacade:
     @pytest.fixture
     def manager(self, provider):
         # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
-        with patch("llmkit.facade.finetuning_facade.FinetuningHandler") as mock_handler_class:
+        with patch("beanllm.facade.finetuning_facade.FinetuningHandler") as mock_handler_class:
             mock_handler = MagicMock()
 
             # prepare_data mock
-            from llmkit.domain.finetuning.enums import FineTuningStatus
+            from beanllm.domain.finetuning.enums import FineTuningStatus
 
             mock_job = FineTuningJob(
                 job_id="job_123",
@@ -77,7 +77,7 @@ class TestFineTuningManagerFacade:
             mock_handler.handle_get_job = MagicMock(side_effect=mock_handle_get_job)
 
             # get_metrics mock - metrics를 리스트로 설정
-            from llmkit.domain.finetuning.types import FineTuningMetrics
+            from beanllm.domain.finetuning.types import FineTuningMetrics
             mock_metrics = [FineTuningMetrics(step=1, train_loss=0.5, valid_loss=0.6)]
             mock_metrics_response = GetMetricsResponse(metrics=mock_metrics)
 

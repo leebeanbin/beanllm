@@ -12,8 +12,8 @@ class TestPromptComposer:
     def test_prompt_composer_compose(self):
         """프롬프트 작성 테스트"""
         try:
-            from llmkit.domain.prompts.composer import PromptComposer
-            from llmkit.domain.prompts.templates import PromptTemplate
+            from beanllm.domain.prompts.composer import PromptComposer
+            from beanllm.domain.prompts.templates import PromptTemplate
 
             composer = PromptComposer()
             template = PromptTemplate(template="Hello {name}", input_variables=["name"])
@@ -32,7 +32,7 @@ class TestPromptFactory:
     def test_prompt_factory_create(self):
         """프롬프트 생성 테스트"""
         try:
-            from llmkit.domain.prompts.factory import create_prompt_template
+            from beanllm.domain.prompts.factory import create_prompt_template
 
             template = create_prompt_template(
                 template="Test {variable}",
@@ -52,7 +52,7 @@ class TestPredefinedPrompts:
     def test_predefined_prompts_rag(self):
         """RAG 프롬프트 테스트 (question_answering 사용)"""
         try:
-            from llmkit.domain.prompts.predefined import PredefinedTemplates
+            from beanllm.domain.prompts.predefined import PredefinedTemplates
 
             template = PredefinedTemplates.question_answering()
             prompt = template.format(context="Test context", question="Test question")

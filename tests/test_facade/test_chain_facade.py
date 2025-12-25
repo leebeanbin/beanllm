@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.chain_facade import Chain, ChainResult
-    from llmkit.facade.client_facade import Client
+    from beanllm.facade.chain_facade import Chain, ChainResult
+    from beanllm.facade.client_facade import Client
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -28,7 +28,7 @@ class TestChainFacade:
     @pytest.fixture
     def chain(self, mock_client):
         """Chain 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.output = "Chain output"

@@ -5,7 +5,7 @@ Service Types 테스트 - Protocol 및 타입 정의 테스트
 import pytest
 from typing import List, Dict, Any, Optional
 
-from llmkit.service.types import (
+from beanllm.service.types import (
     ProviderFactoryProtocol,
     VectorStoreProtocol,
     EmbeddingServiceProtocol,
@@ -137,7 +137,7 @@ Service Types 테스트 - Protocol 및 타입 정의 테스트
 import pytest
 from typing import List, Dict, Any, Optional
 
-from llmkit.service.types import (
+from beanllm.service.types import (
     ProviderFactoryProtocol,
     VectorStoreProtocol,
     EmbeddingServiceProtocol,
@@ -269,7 +269,7 @@ Service Types 테스트 - Protocol 및 타입 정의 테스트
 import pytest
 from typing import List, Dict, Any, Optional
 
-from llmkit.service.types import (
+from beanllm.service.types import (
     ProviderFactoryProtocol,
     VectorStoreProtocol,
     EmbeddingServiceProtocol,

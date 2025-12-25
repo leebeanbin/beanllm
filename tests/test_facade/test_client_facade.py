@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
 try:
-    from llmkit.dto.response.chat_response import ChatResponse
-    from llmkit.facade.client_facade import Client
+    from beanllm.dto.response.chat_response import ChatResponse
+    from beanllm.facade.client_facade import Client
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -21,7 +21,7 @@ class TestClientFacade:
     @pytest.fixture
     def client(self):
         """Client 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
 
             # handle_chat은 ChatResponse 반환

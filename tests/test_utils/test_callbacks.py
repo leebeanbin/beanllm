@@ -5,7 +5,7 @@ Callbacks 테스트 - 콜백 시스템 테스트
 import pytest
 from unittest.mock import Mock, AsyncMock
 
-from llmkit.utils.callbacks import (
+from beanllm.utils.callbacks import (
     BaseCallback,
     CallbackManager,
     LoggingCallback,

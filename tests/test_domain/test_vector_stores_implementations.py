@@ -5,8 +5,8 @@ Vector Store Implementations 테스트 - 실제 구현체 테스트
 import pytest
 from unittest.mock import Mock, patch
 
-from llmkit.domain.loaders import Document
-from llmkit.domain.vector_stores.base import VectorSearchResult
+from beanllm.domain.loaders import Document
+from beanllm.domain.vector_stores.base import VectorSearchResult
 
 
 class TestChromaVectorStore:
@@ -20,7 +20,7 @@ class TestChromaVectorStore:
     def test_chroma_vector_store_initialization(self, mock_embedding_function):
         """ChromaVectorStore 초기화 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import ChromaVectorStore
+            from beanllm.domain.vector_stores.implementations import ChromaVectorStore
 
             store = ChromaVectorStore(
                 collection_name="test_collection",
@@ -34,7 +34,7 @@ class TestChromaVectorStore:
     def test_chroma_add_documents(self, mock_embedding_function):
         """Chroma 문서 추가 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import ChromaVectorStore
+            from beanllm.domain.vector_stores.implementations import ChromaVectorStore
 
             # Mock embedding_function이 각 텍스트마다 하나의 벡터를 반환하도록 설정
             def mock_embedding(texts):
@@ -59,7 +59,7 @@ class TestChromaVectorStore:
     def test_chroma_similarity_search(self, mock_embedding_function):
         """Chroma 유사도 검색 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import ChromaVectorStore
+            from beanllm.domain.vector_stores.implementations import ChromaVectorStore
 
             store = ChromaVectorStore(
                 collection_name="test_collection",
@@ -84,7 +84,7 @@ class TestPineconeVectorStore:
     def test_pinecone_vector_store_initialization(self, mock_embedding_function):
         """PineconeVectorStore 초기화 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import PineconeVectorStore
+            from beanllm.domain.vector_stores.implementations import PineconeVectorStore
 
             store = PineconeVectorStore(
                 index_name="test_index",
@@ -106,7 +106,7 @@ class TestFAISSVectorStore:
     def test_faiss_vector_store_initialization(self, mock_embedding_function):
         """FAISSVectorStore 초기화 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import FAISSVectorStore
+            from beanllm.domain.vector_stores.implementations import FAISSVectorStore
 
             store = FAISSVectorStore(embedding_function=mock_embedding_function)
             assert store is not None
@@ -116,7 +116,7 @@ class TestFAISSVectorStore:
     def test_faiss_add_documents(self, mock_embedding_function):
         """FAISS 문서 추가 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import FAISSVectorStore
+            from beanllm.domain.vector_stores.implementations import FAISSVectorStore
 
             store = FAISSVectorStore(embedding_function=mock_embedding_function)
             documents = [
@@ -134,7 +134,7 @@ class TestFAISSVectorStore:
     def test_faiss_similarity_search(self, mock_embedding_function):
         """FAISS 유사도 검색 테스트"""
         try:
-            from llmkit.domain.vector_stores.implementations import FAISSVectorStore
+            from beanllm.domain.vector_stores.implementations import FAISSVectorStore
 
             store = FAISSVectorStore(embedding_function=mock_embedding_function)
             documents = [

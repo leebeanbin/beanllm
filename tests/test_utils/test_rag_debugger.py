@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, patch
 
 try:
-    from llmkit.utils.rag_debug import (
+    from beanllm.utils.rag_debug import (
         RAGDebugger,
         EmbeddingInfo,
         SimilarityInfo,
@@ -54,7 +54,7 @@ class TestRAGDebugger:
 
     def test_rag_debugger_validate_rag_pipeline(self, rag_debugger):
         """파이프라인 검증 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -91,7 +91,7 @@ class TestRAGDebugger:
 
     def test_rag_debugger_inspect_chunks(self, rag_debugger):
         """청크 검사 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
 
         chunks = [
             Document(content="chunk1 " * 10, metadata={}),
@@ -113,7 +113,7 @@ class TestRAGDebugger:
 
     def test_rag_debugger_inspect_vector_store(self, rag_debugger):
         """Vector Store 검사 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         mock_store = Mock()
@@ -131,7 +131,7 @@ class TestRAGDebugger:
 
     def test_rag_debugger_validate_rag_pipeline_full(self, rag_debugger):
         """전체 RAG 파이프라인 검증 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -190,7 +190,7 @@ class TestRAGDebuggerFunctions:
 
     def test_validate_pipeline_function(self):
         """validate_pipeline 편의 함수 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -227,7 +227,7 @@ class TestRAGDebuggerFunctions:
 
     def test_rag_debugger_validate_rag_pipeline_full(self, rag_debugger):
         """전체 RAG 파이프라인 검증 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -286,7 +286,7 @@ class TestRAGDebuggerFunctions:
 
     def test_validate_pipeline_function(self):
         """validate_pipeline 편의 함수 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -323,7 +323,7 @@ class TestRAGDebuggerFunctions:
 
     def test_rag_debugger_validate_rag_pipeline_full(self, rag_debugger):
         """전체 RAG 파이프라인 검증 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]
@@ -382,7 +382,7 @@ class TestRAGDebuggerFunctions:
 
     def test_validate_pipeline_function(self):
         """validate_pipeline 편의 함수 테스트"""
-        from llmkit.domain.loaders.types import Document
+        from beanllm.domain.loaders.types import Document
         from unittest.mock import Mock
 
         documents = [Document(content="doc1", metadata={})]

@@ -5,17 +5,17 @@ FinetuningHandler 테스트 - Finetuning Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.finetuning_request import (
+from beanllm.dto.request.finetuning_request import (
     PrepareDataRequest,
     CreateJobRequest,
     GetJobRequest,
 )
-from llmkit.dto.response.finetuning_response import (
+from beanllm.dto.response.finetuning_response import (
     PrepareDataResponse,
     CreateJobResponse,
     GetJobResponse,
 )
-from llmkit.handler.finetuning_handler import FinetuningHandler
+from beanllm.handler.finetuning_handler import FinetuningHandler
 
 
 class TestFinetuningHandler:
@@ -44,7 +44,7 @@ class TestFinetuningHandler:
     @pytest.mark.asyncio
     async def test_handle_prepare_data(self, finetuning_handler):
         """데이터 준비 테스트"""
-        from llmkit.domain.finetuning.types import TrainingExample
+        from beanllm.domain.finetuning.types import TrainingExample
 
         examples = [
             TrainingExample(
@@ -69,7 +69,7 @@ class TestFinetuningHandler:
     @pytest.mark.asyncio
     async def test_handle_create_job(self, finetuning_handler):
         """작업 생성 테스트"""
-        from llmkit.domain.finetuning.types import FineTuningConfig
+        from beanllm.domain.finetuning.types import FineTuningConfig
 
         config = FineTuningConfig(
             model="gpt-3.5-turbo",

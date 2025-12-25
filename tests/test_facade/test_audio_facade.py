@@ -5,9 +5,9 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.audio_facade import WhisperSTT, TextToSpeech, AudioRAG
-    from llmkit.domain.audio.types import TranscriptionResult, AudioSegment
-    from llmkit.dto.response.audio_response import AudioResponse
+    from beanllm.facade.audio_facade import WhisperSTT, TextToSpeech, AudioRAG
+    from beanllm.domain.audio.types import TranscriptionResult, AudioSegment
+    from beanllm.dto.response.audio_response import AudioResponse
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -18,7 +18,7 @@ class TestWhisperSTT:
     @pytest.fixture
     def whisper_stt(self):
         # Patch AudioServiceImpl where it's imported
-        patcher = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
+        patcher = patch("beanllm.service.impl.audio_service_impl.AudioServiceImpl")
         mock_audio_service_class = patcher.start()
 
         from unittest.mock import AsyncMock
@@ -58,7 +58,7 @@ class TestTextToSpeech:
     @pytest.fixture
     def tts(self):
         # Patch AudioServiceImpl where it's imported
-        patcher = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
+        patcher = patch("beanllm.service.impl.audio_service_impl.AudioServiceImpl")
         mock_audio_service_class = patcher.start()
 
         from unittest.mock import AsyncMock
@@ -95,8 +95,8 @@ class TestAudioRAG:
     @pytest.fixture
     def audio_rag(self, mock_vector_store):
         # Patch AudioServiceImpl where it's imported
-        patcher1 = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
-        patcher2 = patch("llmkit.facade.audio_facade.WhisperSTT")
+        patcher1 = patch("beanllm.service.impl.audio_service_impl.AudioServiceImpl")
+        patcher2 = patch("beanllm.facade.audio_facade.WhisperSTT")
 
         mock_audio_service_class = patcher1.start()
         mock_whisper_stt_class = patcher2.start()

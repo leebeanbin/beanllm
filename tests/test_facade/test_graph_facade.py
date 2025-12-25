@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.graph_facade import Graph
-    from llmkit.domain.graph import GraphState
+    from beanllm.facade.graph_facade import Graph
+    from beanllm.domain.graph import GraphState
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -21,7 +21,7 @@ class TestGraphFacade:
     @pytest.fixture
     def graph(self):
         """Graph 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.final_state = {"result": "Graph result"}

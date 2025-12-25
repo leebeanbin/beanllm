@@ -5,9 +5,9 @@ Utils Layer 테스트 - 유틸리티 함수 테스트
 import pytest
 
 try:
-    from llmkit.utils import Config, EnvConfig, retry, get_logger
+    from beanllm.utils import Config, EnvConfig, retry, get_logger
 except ImportError:
-    from src.llmkit.utils import Config, EnvConfig, retry, get_logger
+    from src.beanllm.utils import Config, EnvConfig, retry, get_logger
 
 
 class TestConfig:
@@ -72,27 +72,27 @@ class TestErrorHandling:
     def test_error_handler_import(self):
         """ErrorHandler import 테스트"""
         try:
-            from llmkit.utils.error_handling import ErrorHandler
+            from beanllm.utils.error_handling import ErrorHandler
         except ImportError:
-            from src.llmkit.utils.error_handling import ErrorHandler
+            from src.beanllm.utils.error_handling import ErrorHandler
 
         assert ErrorHandler is not None
 
     def test_circuit_breaker_import(self):
         """CircuitBreaker import 테스트"""
         try:
-            from llmkit.utils.error_handling import CircuitBreaker
+            from beanllm.utils.error_handling import CircuitBreaker
         except ImportError:
-            from src.llmkit.utils.error_handling import CircuitBreaker
+            from src.beanllm.utils.error_handling import CircuitBreaker
 
         assert CircuitBreaker is not None
 
     def test_rate_limiter_import(self):
         """RateLimiter import 테스트"""
         try:
-            from llmkit.utils.error_handling import RateLimiter
+            from beanllm.utils.error_handling import RateLimiter
         except ImportError:
-            from src.llmkit.utils.error_handling import RateLimiter
+            from src.beanllm.utils.error_handling import RateLimiter
 
         assert RateLimiter is not None
 
@@ -103,9 +103,9 @@ class TestTokenCounter:
     def test_count_tokens_import(self):
         """count_tokens import 테스트"""
         try:
-            from llmkit.utils.token_counter import count_tokens
+            from beanllm.utils.token_counter import count_tokens
         except ImportError:
-            from src.llmkit.utils.token_counter import count_tokens
+            from src.beanllm.utils.token_counter import count_tokens
 
         assert count_tokens is not None
         assert callable(count_tokens)
@@ -113,9 +113,9 @@ class TestTokenCounter:
     def test_count_tokens_basic(self):
         """count_tokens 기본 테스트"""
         try:
-            from llmkit.utils.token_counter import count_tokens
+            from beanllm.utils.token_counter import count_tokens
         except ImportError:
-            from src.llmkit.utils.token_counter import count_tokens
+            from src.beanllm.utils.token_counter import count_tokens
 
         try:
             tokens = count_tokens("Hello world", model="gpt-4o")
@@ -131,9 +131,9 @@ class TestStreaming:
     def test_streaming_import(self):
         """Streaming 유틸리티 import 테스트"""
         try:
-            from llmkit.utils.streaming import StreamStats
+            from beanllm.utils.streaming import StreamStats
         except ImportError:
-            from src.llmkit.utils.streaming import StreamStats
+            from src.beanllm.utils.streaming import StreamStats
 
         assert StreamStats is not None
 

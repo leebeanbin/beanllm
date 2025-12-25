@@ -4,7 +4,7 @@ Text Splitters 테스트 - 텍스트 분할 테스트
 
 import pytest
 
-from llmkit.domain.loaders import Document
+from beanllm.domain.loaders import Document
 
 
 class TestTextSplitter:
@@ -21,7 +21,7 @@ class TestTextSplitter:
     def test_recursive_character_splitter(self, sample_document):
         """RecursiveCharacterTextSplitter 테스트"""
         try:
-            from llmkit.domain.splitters.splitters import RecursiveCharacterTextSplitter
+            from beanllm.domain.splitters.splitters import RecursiveCharacterTextSplitter
 
             splitter = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=10)
             chunks = splitter.split_documents([sample_document])
@@ -35,7 +35,7 @@ class TestTextSplitter:
     def test_character_splitter(self, sample_document):
         """CharacterTextSplitter 테스트"""
         try:
-            from llmkit.domain.splitters.splitters import CharacterTextSplitter
+            from beanllm.domain.splitters.splitters import CharacterTextSplitter
 
             splitter = CharacterTextSplitter(chunk_size=50, separator=" ")
             chunks = splitter.split_documents([sample_document])
@@ -48,7 +48,7 @@ class TestTextSplitter:
     def test_text_splitter_factory(self, sample_document):
         """TextSplitter 팩토리 테스트"""
         try:
-            from llmkit.domain.splitters.factory import TextSplitter
+            from beanllm.domain.splitters.factory import TextSplitter
 
             splitter = TextSplitter.create(strategy="recursive", chunk_size=50)
             chunks = splitter.split_documents([sample_document])

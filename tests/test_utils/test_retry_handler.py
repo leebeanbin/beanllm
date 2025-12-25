@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import asyncio
 
 try:
-    from llmkit.utils.error_handling import RetryHandler
+    from beanllm.utils.error_handling import RetryHandler
     RETRY_HANDLER_AVAILABLE = True
 except ImportError:
     RETRY_HANDLER_AVAILABLE = False
@@ -20,7 +20,7 @@ class TestRetryHandler:
     @pytest.fixture
     def retry_handler(self):
         """RetryHandler 인스턴스"""
-        from llmkit.utils.error_handling import RetryConfig, RetryStrategy
+        from beanllm.utils.error_handling import RetryConfig, RetryStrategy
         
         config = RetryConfig(
             max_retries=3,
@@ -67,7 +67,7 @@ class TestRetryHandler:
             call_count += 1
             raise Exception("Always fail")
 
-        from llmkit.utils.error_handling import MaxRetriesExceededError
+        from beanllm.utils.error_handling import MaxRetriesExceededError
         with pytest.raises(MaxRetriesExceededError):
             retry_handler.execute(test_func)
 

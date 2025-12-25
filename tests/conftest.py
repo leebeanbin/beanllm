@@ -48,7 +48,7 @@ Final thoughts and summary.
 @pytest.fixture
 def sample_documents():
     """샘플 문서 리스트"""
-    from llmkit import Document
+    from beanllm import Document
 
     return [
         Document(
@@ -79,7 +79,7 @@ def mock_env(monkeypatch):
 def skip_if_no_provider():
     """Provider가 없으면 테스트 스킵"""
     import pytest
-    from llmkit._source_providers import OpenAIProvider
+    from beanllm._source_providers import OpenAIProvider
 
     try:
         # OpenAI Provider가 사용 가능한지 확인
@@ -93,7 +93,7 @@ def skip_if_no_provider():
 def mock_client():
     """Mock Client for testing"""
     from unittest.mock import MagicMock
-    from llmkit.facade.client_facade import Client
+    from beanllm.facade.client_facade import Client
 
     mock = MagicMock(spec=Client)
     mock.model = "gpt-4o-mini"

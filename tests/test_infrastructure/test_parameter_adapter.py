@@ -5,7 +5,7 @@ ParameterAdapter 테스트 - 파라미터 변환 테스트
 import pytest
 from unittest.mock import Mock, patch
 
-from llmkit.infrastructure.adapter import (
+from beanllm.infrastructure.adapter import (
     AdaptedParameters,
     ParameterAdapter,
     adapt_parameters,

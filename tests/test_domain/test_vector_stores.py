@@ -5,8 +5,8 @@ Vector Stores 테스트 - 벡터 스토어 구현체 테스트
 import pytest
 from unittest.mock import Mock
 
-from llmkit.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
-from llmkit.domain.loaders import Document
+from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
+from beanllm.domain.loaders import Document
 
 
 class TestBaseVectorStore:
@@ -80,7 +80,7 @@ class TestSearchAlgorithms:
     def test_hybrid_search(self, mock_vector_store):
         """Hybrid Search 테스트"""
         try:
-            from llmkit.vector_stores.search import SearchAlgorithms
+            from beanllm.vector_stores.search import SearchAlgorithms
 
             results = SearchAlgorithms.hybrid_search(
                 mock_vector_store, "test query", k=5, alpha=0.5
@@ -93,7 +93,7 @@ class TestSearchAlgorithms:
     def test_mmr_search(self, mock_vector_store):
         """MMR Search 테스트"""
         try:
-            from llmkit.vector_stores.search import SearchAlgorithms
+            from beanllm.vector_stores.search import SearchAlgorithms
 
             results = SearchAlgorithms.mmr_search(
                 mock_vector_store, "test query", k=5, fetch_k=20, lambda_param=0.5
@@ -106,7 +106,7 @@ class TestSearchAlgorithms:
     def test_rerank(self, mock_vector_store):
         """Re-ranking 테스트"""
         try:
-            from llmkit.vector_stores.search import SearchAlgorithms
+            from beanllm.vector_stores.search import SearchAlgorithms
 
             results = [
                 VectorSearchResult(

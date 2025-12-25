@@ -6,9 +6,9 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.search import SearchAlgorithms
-    from llmkit.vector_stores.base import VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.search import SearchAlgorithms
+    from beanllm.vector_stores.base import VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     SEARCH_AVAILABLE = True
 except ImportError:
@@ -103,9 +103,9 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.search import SearchAlgorithms
-    from llmkit.vector_stores.base import VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.search import SearchAlgorithms
+    from beanllm.vector_stores.base import VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     SEARCH_AVAILABLE = True
 except ImportError:
@@ -200,9 +200,9 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.search import SearchAlgorithms
-    from llmkit.vector_stores.base import VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.search import SearchAlgorithms
+    from beanllm.vector_stores.base import VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     SEARCH_AVAILABLE = True
 except ImportError:

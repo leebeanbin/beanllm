@@ -4,7 +4,7 @@ Memory 테스트 - 메모리 구현체 테스트
 
 import pytest
 
-from llmkit.domain.memory import (
+from beanllm.domain.memory import (
     BufferMemory,
     WindowMemory,
     TokenMemory,

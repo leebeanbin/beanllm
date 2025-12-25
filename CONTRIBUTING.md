@@ -1,13 +1,13 @@
-# Contributing to llmkit
+# Contributing to beanllm
 
-Thank you for your interest in contributing to llmkit! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to beanllm! This document provides guidelines and instructions for contributing.
 
 ## Development Setup
 
 1. Fork and clone the repository:
 ```bash
-git clone https://github.com/yourusername/llmkit.git
-cd llmkit
+git clone https://github.com/yourusername/beanllm.git
+cd beanllm
 ```
 
 2. Create a virtual environment:
@@ -33,7 +33,7 @@ Run all checks before submitting:
 ```bash
 black src/
 ruff check src/
-mypy src/llmkit
+mypy src/beanllm
 ```
 
 ## Testing
@@ -41,7 +41,7 @@ mypy src/llmkit
 All new features should include tests:
 
 ```bash
-pytest tests/ -v --cov=llmkit
+pytest tests/ -v --cov=beanllm
 ```
 
 Test coverage should remain above 80%.
@@ -99,14 +99,14 @@ git push origin feature/your-feature-name
 
 ### New Provider Support
 
-1. Create provider implementation in `src/llmkit/providers/`
-2. Add provider to registry in `src/llmkit/registry.py`
+1. Create provider implementation in `src/beanllm/providers/`
+2. Add provider to registry in `src/beanllm/registry.py`
 3. Add tests in `tests/test_providers/`
 4. Update documentation and examples
 
 ### New Tools or Features
 
-1. Implement in appropriate module under `src/llmkit/`
+1. Implement in appropriate module under `src/beanllm/`
 2. Add comprehensive tests
 3. Create tutorial in `docs/tutorials/`
 4. Add theory documentation if complex

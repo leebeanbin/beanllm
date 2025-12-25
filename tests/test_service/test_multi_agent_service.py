@@ -5,9 +5,9 @@ MultiAgentService 테스트 - Multi-Agent 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.multi_agent_request import MultiAgentRequest
-from llmkit.dto.response.multi_agent_response import MultiAgentResponse
-from llmkit.service.impl.multi_agent_service_impl import MultiAgentServiceImpl
+from beanllm.dto.request.multi_agent_request import MultiAgentRequest
+from beanllm.dto.response.multi_agent_response import MultiAgentResponse
+from beanllm.service.impl.multi_agent_service_impl import MultiAgentServiceImpl
 
 
 class TestMultiAgentService:

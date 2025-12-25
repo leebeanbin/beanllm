@@ -5,14 +5,14 @@ Infrastructure Layer 테스트 - 외부 시스템 인터페이스 테스트
 import pytest
 
 try:
-    from llmkit.infrastructure import (
+    from beanllm.infrastructure import (
         ModelRegistry,
         get_model_registry,
         ParameterAdapter,
         adapt_parameters,
     )
 except ImportError:
-    from src.llmkit.infrastructure import (
+    from src.beanllm.infrastructure import (
         ModelRegistry,
         get_model_registry,
         ParameterAdapter,
@@ -77,7 +77,7 @@ class TestParameterAdapter:
 
     def test_adapt_parameters_basic(self):
         """기본 파라미터 변환 테스트"""
-        from llmkit.infrastructure.adapter import AdaptedParameters
+        from beanllm.infrastructure.adapter import AdaptedParameters
 
         params = {"temperature": 0.7, "max_tokens": 1000}
         adapted = adapt_parameters("openai", "gpt-4o", params)
@@ -105,9 +105,9 @@ class TestParameterAdapter:
     def test_validate_parameters(self):
         """파라미터 검증 테스트"""
         try:
-            from llmkit.infrastructure import validate_parameters
+            from beanllm.infrastructure import validate_parameters
         except ImportError:
-            from src.llmkit.infrastructure import validate_parameters
+            from src.beanllm.infrastructure import validate_parameters
 
         params = {"temperature": 0.7, "max_tokens": 1000}
         # 에러 없이 실행되어야 함
@@ -123,9 +123,9 @@ class TestProviderFactory:
     def test_provider_factory_get_available_providers(self):
         """사용 가능한 Provider 목록 테스트"""
         try:
-            from llmkit.infrastructure.provider import ProviderFactory
+            from beanllm.infrastructure.provider import ProviderFactory
         except ImportError:
-            from src.llmkit.infrastructure.provider import ProviderFactory
+            from src.beanllm.infrastructure.provider import ProviderFactory
 
         providers = ProviderFactory.get_available_providers()
         assert isinstance(providers, list)
@@ -133,9 +133,9 @@ class TestProviderFactory:
     def test_provider_factory_get_provider(self):
         """Provider 생성 테스트"""
         try:
-            from llmkit._source_providers.provider_factory import ProviderFactory
+            from beanllm._source_providers.provider_factory import ProviderFactory
         except ImportError:
-            from src.llmkit._source_providers.provider_factory import ProviderFactory
+            from src.beanllm._source_providers.provider_factory import ProviderFactory
 
         # Provider가 없을 수 있으므로 try-except
         try:
@@ -147,9 +147,9 @@ class TestProviderFactory:
     def test_provider_factory_get_default_provider(self):
         """기본 Provider 조회 테스트"""
         try:
-            from llmkit.infrastructure.provider import ProviderFactory
+            from beanllm.infrastructure.provider import ProviderFactory
         except ImportError:
-            from src.llmkit.infrastructure.provider import ProviderFactory
+            from src.beanllm.infrastructure.provider import ProviderFactory
 
         try:
             provider = ProviderFactory.get_default_provider()
@@ -163,7 +163,7 @@ class TestInfrastructureIntegration:
 
     def test_registry_and_adapter_integration(self):
         """Registry와 Adapter 통합 테스트"""
-        from llmkit.infrastructure.adapter import AdaptedParameters
+        from beanllm.infrastructure.adapter import AdaptedParameters
 
         registry = get_model_registry()
         model = registry.get_model_info("gpt-4o-mini")

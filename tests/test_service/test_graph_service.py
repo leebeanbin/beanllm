@@ -5,10 +5,10 @@ GraphService 테스트 - Graph 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.domain.graph import FunctionNode, GraphState
-from llmkit.dto.request.graph_request import GraphRequest
-from llmkit.dto.response.graph_response import GraphResponse
-from llmkit.service.impl.graph_service_impl import GraphServiceImpl
+from beanllm.domain.graph import FunctionNode, GraphState
+from beanllm.dto.request.graph_request import GraphRequest
+from beanllm.dto.response.graph_response import GraphResponse
+from beanllm.service.impl.graph_service_impl import GraphServiceImpl
 
 
 class TestGraphService:

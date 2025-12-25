@@ -5,9 +5,9 @@ AgentHandler 테스트 - Agent Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.agent_request import AgentRequest
-from llmkit.dto.response.agent_response import AgentResponse
-from llmkit.handler.agent_handler import AgentHandler
+from beanllm.dto.request.agent_request import AgentRequest
+from beanllm.dto.response.agent_response import AgentResponse
+from beanllm.handler.agent_handler import AgentHandler
 
 
 class TestAgentHandler:
@@ -63,7 +63,7 @@ class TestAgentHandler:
     @pytest.mark.asyncio
     async def test_handle_run_with_tool_registry(self, agent_handler):
         """ToolRegistry 포함 에이전트 실행 테스트"""
-        from llmkit.domain.tools import ToolRegistry
+        from beanllm.domain.tools import ToolRegistry
 
         registry = ToolRegistry()
         mock_tool = Mock()

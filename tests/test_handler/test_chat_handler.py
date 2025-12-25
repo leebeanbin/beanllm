@@ -6,13 +6,13 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 try:
-    from llmkit.handler.chat_handler import ChatHandler
-    from llmkit.service.chat_service import IChatService
-    from llmkit.dto.response.chat_response import ChatResponse
+    from beanllm.handler.chat_handler import ChatHandler
+    from beanllm.service.chat_service import IChatService
+    from beanllm.dto.response.chat_response import ChatResponse
 except ImportError:
-    from src.llmkit.handler.chat_handler import ChatHandler
-    from src.llmkit.service.chat_service import IChatService
-    from src.llmkit.dto.response.chat_response import ChatResponse
+    from src.beanllm.handler.chat_handler import ChatHandler
+    from src.beanllm.service.chat_service import IChatService
+    from src.beanllm.dto.response.chat_response import ChatResponse
 
 
 class TestChatHandler:

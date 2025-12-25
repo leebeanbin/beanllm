@@ -1,3 +1,3 @@
 """
-Tests for llmkit
+Tests for beanllm
 """

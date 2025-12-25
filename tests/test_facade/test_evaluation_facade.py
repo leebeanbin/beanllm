@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.evaluation_facade import EvaluatorFacade
-    from llmkit.domain.evaluation.results import BatchEvaluationResult
+    from beanllm.facade.evaluation_facade import EvaluatorFacade
+    from beanllm.domain.evaluation.results import BatchEvaluationResult
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -18,11 +18,11 @@ except ImportError:
 class TestEvaluatorFacade:
     @pytest.fixture
     def evaluator(self):
-        from llmkit.domain.evaluation.results import EvaluationResult
-        from llmkit.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
+        from beanllm.domain.evaluation.results import EvaluationResult
+        from beanllm.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
 
         # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
-        with patch("llmkit.handler.evaluation_handler.EvaluationHandler") as mock_handler_class:
+        with patch("beanllm.handler.evaluation_handler.EvaluationHandler") as mock_handler_class:
             mock_handler = MagicMock()
             
             # handle_evaluate는 EvaluationResponse를 반환

@@ -5,9 +5,9 @@ GraphHandler 테스트 - Graph Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.graph_request import GraphRequest
-from llmkit.dto.response.graph_response import GraphResponse
-from llmkit.handler.graph_handler import GraphHandler
+from beanllm.dto.request.graph_request import GraphRequest
+from beanllm.dto.response.graph_response import GraphResponse
+from beanllm.handler.graph_handler import GraphHandler
 
 
 class TestGraphHandler:

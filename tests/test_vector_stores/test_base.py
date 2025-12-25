@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.base import BaseVectorStore, VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.base import BaseVectorStore, VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     VECTOR_STORES_AVAILABLE = True
 except ImportError:
@@ -181,8 +181,8 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.base import BaseVectorStore, VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.base import BaseVectorStore, VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     VECTOR_STORES_AVAILABLE = True
 except ImportError:
@@ -356,8 +356,8 @@ import pytest
 from unittest.mock import Mock
 
 try:
-    from llmkit.vector_stores.base import BaseVectorStore, VectorSearchResult
-    from llmkit.domain.loaders.types import Document
+    from beanllm.vector_stores.base import BaseVectorStore, VectorSearchResult
+    from beanllm.domain.loaders.types import Document
 
     VECTOR_STORES_AVAILABLE = True
 except ImportError:

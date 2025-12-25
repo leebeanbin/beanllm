@@ -11,18 +11,18 @@ class TestClientFacade:
     def test_client_import(self):
         """Client import 테스트"""
         try:
-            from llmkit import Client
+            from beanllm import Client
         except ImportError:
-            from src.llmkit import Client
+            from src.beanllm import Client
 
         assert Client is not None
 
     def test_client_creation(self):
         """Client 생성 테스트"""
         try:
-            from llmkit import Client
+            from beanllm import Client
         except ImportError:
-            from src.llmkit import Client
+            from src.beanllm import Client
 
         # 모델 이름만으로 생성 시도
         try:
@@ -34,9 +34,9 @@ class TestClientFacade:
     def test_client_chat_method(self):
         """Client.chat 메서드 존재 확인"""
         try:
-            from llmkit import Client
+            from beanllm import Client
         except ImportError:
-            from src.llmkit import Client
+            from src.beanllm import Client
 
         assert hasattr(Client, "chat")
         assert hasattr(Client, "stream_chat")  # stream이 아니라 stream_chat
@@ -48,9 +48,9 @@ class TestRAGFacade:
     def test_rag_import(self):
         """RAG import 테스트"""
         try:
-            from llmkit import RAGChain, RAG, RAGBuilder
+            from beanllm import RAGChain, RAG, RAGBuilder
         except ImportError:
-            from src.llmkit import RAGChain, RAG, RAGBuilder
+            from src.beanllm import RAGChain, RAG, RAGBuilder
 
         assert RAGChain is not None
         assert RAG is not None
@@ -59,9 +59,9 @@ class TestRAGFacade:
     def test_rag_from_documents(self, temp_dir):
         """RAG.from_documents 테스트"""
         try:
-            from llmkit import RAGChain
+            from beanllm import RAGChain
         except ImportError:
-            from src.llmkit import RAGChain
+            from src.beanllm import RAGChain
 
         # 테스트 문서 생성
         test_file = temp_dir / "test.txt"
@@ -84,9 +84,9 @@ class TestRAGFacade:
     def test_rag_query_method(self):
         """RAG.query 메서드 존재 확인"""
         try:
-            from llmkit import RAGChain
+            from beanllm import RAGChain
         except ImportError:
-            from src.llmkit import RAGChain
+            from src.beanllm import RAGChain
 
         assert hasattr(RAGChain, "query")
         # query_with_sources는 없을 수 있음 (실제 API 확인 필요)
@@ -99,18 +99,18 @@ class TestAgentFacade:
     def test_agent_import(self):
         """Agent import 테스트"""
         try:
-            from llmkit import Agent
+            from beanllm import Agent
         except ImportError:
-            from src.llmkit import Agent
+            from src.beanllm import Agent
 
         assert Agent is not None
 
     def test_agent_creation(self):
         """Agent 생성 테스트"""
         try:
-            from llmkit import Agent
+            from beanllm import Agent
         except ImportError:
-            from src.llmkit import Agent
+            from src.beanllm import Agent
 
         try:
             # Agent는 model을 직접 받음 (llm 파라미터 없음)
@@ -122,9 +122,9 @@ class TestAgentFacade:
     def test_agent_run_method(self):
         """Agent.run 메서드 존재 확인"""
         try:
-            from llmkit import Agent
+            from beanllm import Agent
         except ImportError:
-            from src.llmkit import Agent
+            from src.beanllm import Agent
 
         assert hasattr(Agent, "run")
         # run_async는 없을 수 있음 (실제 API 확인 필요)
@@ -137,9 +137,9 @@ class TestGraphFacade:
     def test_graph_import(self):
         """Graph import 테스트"""
         try:
-            from llmkit import Graph, StateGraph, create_simple_graph
+            from beanllm import Graph, StateGraph, create_simple_graph
         except ImportError:
-            from src.llmkit import Graph, StateGraph, create_simple_graph
+            from src.beanllm import Graph, StateGraph, create_simple_graph
 
         assert Graph is not None
         assert StateGraph is not None
@@ -148,9 +148,9 @@ class TestGraphFacade:
     def test_graph_creation(self):
         """Graph 생성 테스트"""
         try:
-            from llmkit import StateGraph
+            from beanllm import StateGraph
         except ImportError:
-            from src.llmkit import StateGraph
+            from src.beanllm import StateGraph
 
         graph = StateGraph()
         assert graph is not None
@@ -164,7 +164,7 @@ class TestFacadeIntegration:
     def test_all_facades_importable(self):
         """모든 Facade가 import 가능한지 확인"""
         try:
-            from llmkit import (
+            from beanllm import (
                 Client,
                 RAGChain,
                 Agent,
@@ -175,7 +175,7 @@ class TestFacadeIntegration:
                 WebSearch,
             )
         except ImportError:
-            from src.llmkit import (
+            from src.beanllm import (
                 Client,
                 RAGChain,
                 Agent,

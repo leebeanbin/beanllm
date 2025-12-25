@@ -8,7 +8,7 @@ import asyncio
 import time
 
 try:
-    from llmkit.utils.error_handling import RateLimiter, RateLimitConfig
+    from beanllm.utils.error_handling import RateLimiter, RateLimitConfig
     RATE_LIMITER_AVAILABLE = True
 except ImportError:
     RATE_LIMITER_AVAILABLE = False
@@ -45,7 +45,7 @@ class TestRateLimiter:
             assert result == "allowed"
 
         # 제한 초과 시도
-        from llmkit.utils.error_handling import RateLimitError
+        from beanllm.utils.error_handling import RateLimitError
         with pytest.raises(RateLimitError):
             rate_limiter.call(test_func)
 

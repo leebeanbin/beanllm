@@ -5,9 +5,9 @@ RAGService 테스트 - RAG 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.rag_request import RAGRequest
-from llmkit.dto.response.rag_response import RAGResponse
-from llmkit.service.impl.rag_service_impl import RAGServiceImpl
+from beanllm.dto.request.rag_request import RAGRequest
+from beanllm.dto.response.rag_response import RAGResponse
+from beanllm.service.impl.rag_service_impl import RAGServiceImpl
 
 
 class TestRAGService:

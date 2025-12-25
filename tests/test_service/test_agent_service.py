@@ -5,9 +5,9 @@ AgentService 테스트 - 에이전트 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.agent_request import AgentRequest
-from llmkit.dto.response.agent_response import AgentResponse
-from llmkit.service.impl.agent_service_impl import AgentServiceImpl
+from beanllm.dto.request.agent_request import AgentRequest
+from beanllm.dto.response.agent_response import AgentResponse
+from beanllm.service.impl.agent_service_impl import AgentServiceImpl
 
 
 class TestAgentService:
@@ -37,7 +37,7 @@ class TestAgentService:
     async def test_run_basic(self, agent_service):
         """기본 에이전트 실행 테스트"""
         # Mock LLM 응답 - 최종 답변 포함
-        from llmkit.dto.response.chat_response import ChatResponse
+        from beanllm.dto.response.chat_response import ChatResponse
 
         final_answer_response = ChatResponse(
             content="""
@@ -168,7 +168,7 @@ Final Answer: The answer is simple.
     @pytest.mark.asyncio
     async def test_run_with_system_prompt(self, agent_service):
         """시스템 프롬프트 포함 에이전트 실행 테스트"""
-        from llmkit.dto.response.chat_response import ChatResponse
+        from beanllm.dto.response.chat_response import ChatResponse
 
         final_answer_response = ChatResponse(
             content="""
@@ -198,7 +198,7 @@ Final Answer: Following instructions.
     @pytest.mark.asyncio
     async def test_run_with_temperature(self, agent_service):
         """Temperature 파라미터 포함 에이전트 실행 테스트"""
-        from llmkit.dto.response.chat_response import ChatResponse
+        from beanllm.dto.response.chat_response import ChatResponse
 
         final_answer_response = ChatResponse(
             content="""

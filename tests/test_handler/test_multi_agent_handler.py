@@ -5,9 +5,9 @@ MultiAgentHandler 테스트 - Multi-Agent Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.multi_agent_request import MultiAgentRequest
-from llmkit.dto.response.multi_agent_response import MultiAgentResponse
-from llmkit.handler.multi_agent_handler import MultiAgentHandler
+from beanllm.dto.request.multi_agent_request import MultiAgentRequest
+from beanllm.dto.response.multi_agent_response import MultiAgentResponse
+from beanllm.handler.multi_agent_handler import MultiAgentHandler
 
 
 class TestMultiAgentHandler:
@@ -16,7 +16,7 @@ class TestMultiAgentHandler:
     @pytest.fixture
     def mock_multi_agent_service(self):
         """Mock MultiAgentService"""
-        from llmkit.service.multi_agent_service import IMultiAgentService
+        from beanllm.service.multi_agent_service import IMultiAgentService
 
         service = Mock(spec=IMultiAgentService)
 

@@ -1,12 +1,12 @@
-# 🚀 llmkit
+# 🚀 beanllm
 
 **Production-ready LLM toolkit with Clean Architecture and unified interface for multiple providers**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/github/stars/leebeanbin/llmkit?style=social)](https://github.com/leebeanbin/llmkit)
+[![GitHub](https://img.shields.io/github/stars/leebeanbin/beanllm?style=social)](https://github.com/leebeanbin/beanllm)
 
-**llmkit** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
+**beanllm** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
 
 ---
 
@@ -66,7 +66,7 @@
 
 ## 🏗️ Architecture
 
-llmkit은 **Clean Architecture**와 **SOLID 원칙**을 따르는 계층형 아키텍처를 사용합니다.
+beanllm은 **Clean Architecture**와 **SOLID 원칙**을 따르는 계층형 아키텍처를 사용합니다.
 
 ### 레이어 구조
 
@@ -100,7 +100,7 @@ llmkit은 **Clean Architecture**와 **SOLID 원칙**을 따르는 계층형 아�
 ### 디렉토리 구조
 
 ```
-src/llmkit/
+src/beanllm/
 ├── facade/          # 외부 인터페이스 (Facade 패턴)
 ├── handler/         # 요청 처리 (Controller 역할)
 ├── service/         # 비즈니스 로직 (Service 인터페이스 + 구현체)
@@ -129,8 +129,8 @@ src/llmkit/
 
 ```bash
 # 프로젝트 클론
-git clone https://github.com/yourusername/llmkit.git
-cd llmkit
+git clone https://github.com/yourusername/beanllm.git
+cd beanllm
 
 # 의존성 설치
 poetry install --extras all  # 모든 Provider 포함
@@ -145,19 +145,19 @@ poetry shell
 
 ```bash
 # 기본 설치 (의존성 없음)
-pip install llmkit
+pip install beanllm
 
 # 특정 Provider 추가
-pip install llmkit[openai]
-pip install llmkit[anthropic]
-pip install llmkit[gemini]
-pip install llmkit[ollama]
+pip install beanllm[openai]
+pip install beanllm[anthropic]
+pip install beanllm[gemini]
+pip install beanllm[ollama]
 
 # 모든 Provider
-pip install llmkit[all]
+pip install beanllm[all]
 
 # 개발 도구 포함
-pip install llmkit[dev,all]
+pip install beanllm[dev,all]
 ```
 
 > **참고**: Provider는 선택적 의존성입니다. 필요한 Provider만 설치하면 됩니다.
@@ -184,7 +184,7 @@ EOF
 
 ```python
 import asyncio
-from llmkit import Client
+from beanllm import Client
 
 async def main():
     # Unified interface - works with any provider
@@ -213,7 +213,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from llmkit import RAGChain
+from beanllm import RAGChain
 
 async def main():
     # Create RAG system from documents
@@ -240,7 +240,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from llmkit import Agent, Tool
+from beanllm import Agent, Tool
 
 async def main():
     # Define tools
@@ -268,7 +268,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from llmkit import StateGraph, Client
+from beanllm import StateGraph, Client
 
 async def main():
     client = Client(model="gpt-4o-mini")
@@ -323,7 +323,7 @@ asyncio.run(main())
 Unified interface with automatic parameter adaptation:
 
 ```python
-from llmkit import Client
+from beanllm import Client
 
 # Works across all providers
 client = Client(model="gpt-4o")
@@ -341,7 +341,7 @@ response = await client.chat(
 ### 2. Document Processing
 
 ```python
-from llmkit import DocumentLoader, RecursiveCharacterTextSplitter
+from beanllm import DocumentLoader, RecursiveCharacterTextSplitter
 
 # Load documents
 docs = DocumentLoader.load("docs/")  # PDF, CSV, TXT
@@ -358,7 +358,7 @@ chunks = splitter.split_documents(docs)
 ### 3. Embeddings & Vector Stores
 
 ```python
-from llmkit import OpenAIEmbedding, ChromaVectorStore
+from beanllm import OpenAIEmbedding, ChromaVectorStore
 
 # Create embeddings
 embedding = OpenAIEmbedding(model="text-embedding-3-small")
@@ -381,7 +381,7 @@ diverse_results = store.mmr_search("query", k=5, lambda_mult=0.5)
 
 ```python
 import asyncio
-from llmkit import MultiAgentCoordinator, Agent
+from beanllm import MultiAgentCoordinator, Agent
 
 async def main():
     # Create agents
@@ -408,19 +408,19 @@ asyncio.run(main())
 
 ```bash
 # List available models
-llmkit list
+beanllm list
 
 # Show model details
-llmkit show gpt-4o
+beanllm show gpt-4o
 
 # Check providers
-llmkit providers
+beanllm providers
 
 # Quick summary
-llmkit summary
+beanllm summary
 
 # Export model info
-llmkit export > models.json
+beanllm export > models.json
 ```
 
 ---
@@ -432,7 +432,7 @@ llmkit export > models.json
 pytest
 
 # With coverage
-pytest --cov=src/llmkit --cov-report=html
+pytest --cov=src/beanllm --cov-report=html
 
 # Specific module
 pytest tests/test_facade/ -v
@@ -470,13 +470,13 @@ make all
 pip install -e ".[dev,all]"
 
 # Format code
-ruff format src/llmkit
+ruff format src/beanllm
 
 # Lint
-ruff check src/llmkit
+ruff check src/beanllm
 
 # Type check
-mypy src/llmkit
+mypy src/beanllm
 ```
 
 ---
@@ -548,12 +548,12 @@ Special thanks to:
 
 ## 📧 Contact
 
-- **GitHub**: https://github.com/leebeanbin/llmkit
-- **Issues**: https://github.com/leebeanbin/llmkit/issues
-- **Discussions**: https://github.com/leebeanbin/llmkit/discussions
+- **GitHub**: https://github.com/leebeanbin/beanllm
+- **Issues**: https://github.com/leebeanbin/beanllm/issues
+- **Discussions**: https://github.com/leebeanbin/beanllm/discussions
 
 ---
 
 **Built with ❤️ for the LLM community**
 
-Transform your LLM applications from prototype to production with llmkit.
+Transform your LLM applications from prototype to production with beanllm.

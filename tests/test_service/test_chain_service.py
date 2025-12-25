@@ -5,10 +5,10 @@ ChainService 테스트 - Chain 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.chain_request import ChainRequest
-from llmkit.dto.response.chain_response import ChainResponse
-from llmkit.dto.response.chat_response import ChatResponse
-from llmkit.service.impl.chain_service_impl import ChainServiceImpl
+from beanllm.dto.request.chain_request import ChainRequest
+from beanllm.dto.response.chain_response import ChainResponse
+from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.service.impl.chain_service_impl import ChainServiceImpl
 
 
 class TestChainService:

@@ -5,16 +5,16 @@ EvaluationService 테스트 - Evaluation 서비스 구현체 테스트
 import pytest
 from unittest.mock import Mock
 
-from llmkit.dto.request.evaluation_request import (
+from beanllm.dto.request.evaluation_request import (
     EvaluationRequest,
     BatchEvaluationRequest,
     TextEvaluationRequest,
     RAGEvaluationRequest,
     CreateEvaluatorRequest,
 )
-from llmkit.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
-from llmkit.domain.evaluation.metrics import BLEUMetric, ROUGEMetric, F1ScoreMetric
-from llmkit.service.impl.evaluation_service_impl import EvaluationServiceImpl
+from beanllm.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
+from beanllm.domain.evaluation.metrics import BLEUMetric, ROUGEMetric, F1ScoreMetric
+from beanllm.service.impl.evaluation_service_impl import EvaluationServiceImpl
 
 
 class TestEvaluationService:

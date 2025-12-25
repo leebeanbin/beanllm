@@ -5,9 +5,9 @@ ChainHandler 테스트 - Chain Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.chain_request import ChainRequest
-from llmkit.dto.response.chain_response import ChainResponse
-from llmkit.handler.chain_handler import ChainHandler
+from beanllm.dto.request.chain_request import ChainRequest
+from beanllm.dto.response.chain_response import ChainResponse
+from beanllm.handler.chain_handler import ChainHandler
 
 
 class TestChainHandler:
@@ -16,7 +16,7 @@ class TestChainHandler:
     @pytest.fixture
     def mock_chain_service(self):
         """Mock ChainService"""
-        from llmkit.service.chain_service import IChainService
+        from beanllm.service.chain_service import IChainService
 
         service = Mock(spec=IChainService)
 

@@ -12,10 +12,10 @@ class TestE2EBasic:
         """모든 주요 모듈 import 테스트"""
         try:
             # Facade
-            from llmkit import Client, RAGChain, Agent, Graph, StateGraph
+            from beanllm import Client, RAGChain, Agent, Graph, StateGraph
 
             # Domain
-            from llmkit.domain import (
+            from beanllm.domain import (
                 Document,
                 Embedding,
                 TextSplitter,
@@ -25,16 +25,16 @@ class TestE2EBasic:
             )
 
             # Infrastructure
-            from llmkit.infrastructure import ModelRegistry, ParameterAdapter
+            from beanllm.infrastructure import ModelRegistry, ParameterAdapter
 
             # Utils
-            from llmkit.utils import Config, retry, get_logger
+            from beanllm.utils import Config, retry, get_logger
         except ImportError:
             # Facade
-            from src.llmkit import Client, RAGChain, Agent, Graph, StateGraph
+            from src.beanllm import Client, RAGChain, Agent, Graph, StateGraph
 
             # Domain
-            from src.llmkit.domain import (
+            from src.beanllm.domain import (
                 Document,
                 Embedding,
                 TextSplitter,
@@ -44,10 +44,10 @@ class TestE2EBasic:
             )
 
             # Infrastructure
-            from src.llmkit.infrastructure import ModelRegistry, ParameterAdapter
+            from src.beanllm.infrastructure import ModelRegistry, ParameterAdapter
 
             # Utils
-            from src.llmkit.utils import Config, retry, get_logger
+            from src.beanllm.utils import Config, retry, get_logger
 
         assert all(
             [
@@ -74,7 +74,7 @@ class TestE2EBasic:
         """기본 import 체인 테스트"""
         # 최상위에서 모든 것을 import
         try:
-            from llmkit import (
+            from beanllm import (
                 Client,
                 Embedding,
                 Document,
@@ -87,7 +87,7 @@ class TestE2EBasic:
                 WebSearch,
             )
         except ImportError:
-            from src.llmkit import (
+            from src.beanllm import (
                 Client,
                 Embedding,
                 Document,
@@ -122,9 +122,9 @@ class TestE2EDocumentProcessing:
     def test_document_loading_to_splitting(self, temp_dir):
         """문서 로딩 → 분할 E2E"""
         try:
-            from llmkit import DocumentLoader, TextSplitter
+            from beanllm import DocumentLoader, TextSplitter
         except ImportError:
-            from src.llmkit import DocumentLoader, TextSplitter
+            from src.beanllm import DocumentLoader, TextSplitter
 
         # 테스트 파일 생성
         test_file = temp_dir / "test.txt"
@@ -152,9 +152,9 @@ class TestE2ERAG:
     def test_rag_full_pipeline(self, temp_dir):
         """RAG 전체 파이프라인 테스트"""
         try:
-            from llmkit import DocumentLoader, TextSplitter, RAGChain
+            from beanllm import DocumentLoader, TextSplitter, RAGChain
         except ImportError:
-            from src.llmkit import DocumentLoader, TextSplitter, RAGChain
+            from src.beanllm import DocumentLoader, TextSplitter, RAGChain
 
         # 테스트 문서 생성
         test_file = temp_dir / "test.txt"
@@ -182,9 +182,9 @@ class TestE2EAgent:
     def test_agent_creation(self):
         """Agent 생성 E2E"""
         try:
-            from llmkit import Agent
+            from beanllm import Agent
         except ImportError:
-            from src.llmkit import Agent
+            from src.beanllm import Agent
 
         try:
             # Agent는 model을 직접 받음

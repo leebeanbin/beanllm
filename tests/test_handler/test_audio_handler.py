@@ -6,9 +6,9 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 from pathlib import Path
 
-from llmkit.dto.request.audio_request import AudioRequest
-from llmkit.dto.response.audio_response import AudioResponse
-from llmkit.handler.audio_handler import AudioHandler
+from beanllm.dto.request.audio_request import AudioRequest
+from beanllm.dto.response.audio_response import AudioResponse
+from beanllm.handler.audio_handler import AudioHandler
 
 
 class TestAudioHandler:
@@ -17,8 +17,8 @@ class TestAudioHandler:
     @pytest.fixture
     def mock_audio_service(self):
         """Mock AudioService"""
-        from llmkit.domain.audio import TranscriptionResult, TranscriptionSegment, AudioSegment
-        from llmkit.service.audio_service import IAudioService
+        from beanllm.domain.audio import TranscriptionResult, TranscriptionSegment, AudioSegment
+        from beanllm.service.audio_service import IAudioService
 
         service = Mock(spec=IAudioService)
         service.transcribe = AsyncMock(
@@ -87,8 +87,8 @@ class TestAudioHandler:
         audio_file.write_bytes(b"fake audio")
 
         # handle_transcribe는 AudioResponse를 반환
-        from llmkit.domain.audio import TranscriptionResult
-        from llmkit.dto.response import AudioResponse
+        from beanllm.domain.audio import TranscriptionResult
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_transcribe(
             audio=str(audio_file),
@@ -104,8 +104,8 @@ class TestAudioHandler:
     async def test_handle_synthesize(self, audio_handler):
         """음성 합성 테스트"""
         # handle_synthesize는 AudioResponse를 반환
-        from llmkit.domain.audio import AudioSegment
-        from llmkit.dto.response import AudioResponse
+        from beanllm.domain.audio import AudioSegment
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_synthesize(
             text="Hello world",
@@ -125,8 +125,8 @@ class TestAudioHandler:
         audio_file.write_bytes(b"fake audio")
 
         # handle_add_audio는 AudioResponse를 반환
-        from llmkit.domain.audio import TranscriptionResult
-        from llmkit.dto.response import AudioResponse
+        from beanllm.domain.audio import TranscriptionResult
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_add_audio(
             audio=str(audio_file),
@@ -142,7 +142,7 @@ class TestAudioHandler:
     async def test_handle_search_audio(self, audio_handler):
         """오디오 검색 테스트"""
         # handle_search_audio는 AudioResponse를 반환
-        from llmkit.dto.response import AudioResponse
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_search_audio(
             query="test query",
@@ -158,8 +158,8 @@ class TestAudioHandler:
     async def test_handle_get_transcription(self, audio_handler):
         """전사 결과 조회 테스트"""
         # handle_get_transcription은 AudioResponse를 반환
-        from llmkit.domain.audio import TranscriptionResult
-        from llmkit.dto.response import AudioResponse
+        from beanllm.domain.audio import TranscriptionResult
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_get_transcription(
             audio_id="audio_1",
@@ -174,7 +174,7 @@ class TestAudioHandler:
     async def test_handle_list_audios(self, audio_handler):
         """오디오 목록 조회 테스트"""
         # handle_list_audios는 AudioResponse를 반환
-        from llmkit.dto.response import AudioResponse
+        from beanllm.dto.response import AudioResponse
 
         result = await audio_handler.handle_list_audios()
 

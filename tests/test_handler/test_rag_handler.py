@@ -6,17 +6,17 @@ import pytest
 from unittest.mock import AsyncMock, Mock
 
 try:
-    from llmkit.handler.rag_handler import RAGHandler
-    from llmkit.service.rag_service import IRAGService
-    from llmkit.dto.response.rag_response import RAGResponse
-    from llmkit.domain.vector_stores.base import VectorSearchResult
-    from llmkit.domain.loaders import Document
+    from beanllm.handler.rag_handler import RAGHandler
+    from beanllm.service.rag_service import IRAGService
+    from beanllm.dto.response.rag_response import RAGResponse
+    from beanllm.domain.vector_stores.base import VectorSearchResult
+    from beanllm.domain.loaders import Document
 except ImportError:
-    from src.llmkit.handler.rag_handler import RAGHandler
-    from src.llmkit.service.rag_service import IRAGService
-    from src.llmkit.dto.response.rag_response import RAGResponse
-    from src.llmkit.domain.vector_stores.base import VectorSearchResult
-    from src.llmkit.domain.loaders import Document
+    from src.beanllm.handler.rag_handler import RAGHandler
+    from src.beanllm.service.rag_service import IRAGService
+    from src.beanllm.dto.response.rag_response import RAGResponse
+    from src.beanllm.domain.vector_stores.base import VectorSearchResult
+    from src.beanllm.domain.loaders import Document
 
 
 class TestRAGHandler:

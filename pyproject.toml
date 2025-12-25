@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "llmkit"
+name = "beanllm"
 version = "0.1.0"
 description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
 readme = "README.md"
@@ -93,14 +93,14 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/leebeanbin/llmkit"
-Documentation = "https://github.com/leebeanbin/llmkit#readme"
-Repository = "https://github.com/leebeanbin/llmkit"
-"Bug Tracker" = "https://github.com/leebeanbin/llmkit/issues"
+Homepage = "https://github.com/leebeanbin/beanllm"
+Documentation = "https://github.com/leebeanbin/beanllm#readme"
+Repository = "https://github.com/leebeanbin/beanllm"
+"Bug Tracker" = "https://github.com/leebeanbin/beanllm/issues"
 
 # CLI 진입점
 [project.scripts]
-llmkit = "llmkit.utils.cli.cli:main"
+beanllm = "beanllm.utils.cli.cli:main"
 
 # setuptools 설정 (src layout)
 [tool.setuptools]

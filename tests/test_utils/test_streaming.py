@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 from datetime import datetime
 
-from llmkit.utils.streaming import (
+from beanllm.utils.streaming import (
     StreamStats,
     StreamResponse,
     stream_response,

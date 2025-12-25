@@ -5,7 +5,7 @@ ProviderFactory 테스트 - Provider 팩토리 테스트
 import pytest
 from unittest.mock import patch
 
-from llmkit.infrastructure.provider import ProviderFactory
+from beanllm.infrastructure.provider import ProviderFactory
 
 
 class TestProviderFactory:
@@ -16,7 +16,7 @@ class TestProviderFactory:
         """ProviderFactory 클래스"""
         return ProviderFactory
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_get_available_providers_with_keys(self, mock_config, factory):
         """API 키가 있는 Provider 목록 조회 테스트"""
         mock_config.OPENAI_API_KEY = "test_key"
@@ -29,7 +29,7 @@ class TestProviderFactory:
         assert isinstance(providers, list)
         assert "openai" in providers or len(providers) >= 0
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_get_available_providers_no_keys(self, mock_config, factory):
         """API 키가 없는 경우 테스트"""
         mock_config.OPENAI_API_KEY = None
@@ -41,7 +41,7 @@ class TestProviderFactory:
 
         assert isinstance(providers, list)
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_is_provider_available(self, mock_config, factory):
         """Provider 사용 가능 여부 확인 테스트"""
         mock_config.OPENAI_API_KEY = "test_key"
@@ -53,7 +53,7 @@ class TestProviderFactory:
 
         assert isinstance(is_available, bool)
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_is_provider_available_not_available(self, mock_config, factory):
         """사용 불가능한 Provider 확인 테스트"""
         mock_config.OPENAI_API_KEY = None
@@ -66,7 +66,7 @@ class TestProviderFactory:
         assert isinstance(is_available, bool)
         assert not is_available
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_get_default_provider(self, mock_config, factory):
         """기본 Provider 조회 테스트"""
         mock_config.OPENAI_API_KEY = "test_key"
@@ -78,7 +78,7 @@ class TestProviderFactory:
 
         assert default_provider is None or isinstance(default_provider, str)
 
-    @patch("llmkit.infrastructure.provider.provider_factory.Config")
+    @patch("beanllm.infrastructure.provider.provider_factory.Config")
     def test_get_default_provider_no_available(self, mock_config, factory):
         """사용 가능한 Provider가 없는 경우 테스트"""
         # ollama는 항상 사용 가능하므로 실제로는 None이 아닐 수 있음

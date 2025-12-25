@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.multi_agent_facade import MultiAgentCoordinator
-    from llmkit.facade.agent_facade import Agent
+    from beanllm.facade.multi_agent_facade import MultiAgentCoordinator
+    from beanllm.facade.agent_facade import Agent
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -21,7 +21,7 @@ class TestMultiAgentFacade:
     @pytest.fixture
     def coordinator(self):
         """MultiAgentCoordinator 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.final_result = "Multi-agent result"

@@ -5,7 +5,7 @@ Tools 테스트 - 도구 시스템 테스트
 import pytest
 from unittest.mock import Mock
 
-from llmkit.domain.tools import Tool, ToolParameter, ToolRegistry, register_tool, get_tool
+from beanllm.domain.tools import Tool, ToolParameter, ToolRegistry, register_tool, get_tool
 
 
 class TestTool:

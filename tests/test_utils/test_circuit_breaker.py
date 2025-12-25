@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 import asyncio
 
 try:
-    from llmkit.utils.error_handling import CircuitBreaker, CircuitBreakerConfig
+    from beanllm.utils.error_handling import CircuitBreaker, CircuitBreakerConfig
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:
     CIRCUIT_BREAKER_AVAILABLE = False
@@ -52,7 +52,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_open_state(self, circuit_breaker):
         """열린 상태에서 호출 테스트"""
-        from llmkit.utils.error_handling import CircuitState
+        from beanllm.utils.error_handling import CircuitState
         import time
         
         # Circuit을 열림 상태로 만듦
@@ -64,7 +64,7 @@ class TestCircuitBreaker:
             return "should not execute"
 
         # Circuit이 열려있으면 즉시 실패
-        from llmkit.utils.error_handling import CircuitBreakerError
+        from beanllm.utils.error_handling import CircuitBreakerError
         with pytest.raises(CircuitBreakerError):
             circuit_breaker.call(test_func)
 
@@ -81,7 +81,7 @@ class TestCircuitBreaker:
     def test_circuit_breaker_recovery(self, circuit_breaker):
         """복구 테스트"""
         import time
-        from llmkit.utils.error_handling import CircuitState
+        from beanllm.utils.error_handling import CircuitState
         
         # Circuit을 열림 상태로 만듦
         circuit_breaker.failure_count = 3

@@ -6,10 +6,10 @@ import pytest
 from unittest.mock import AsyncMock, Mock, patch
 from pathlib import Path
 
-from llmkit.dto.request.vision_rag_request import VisionRAGRequest
-from llmkit.dto.response.vision_rag_response import VisionRAGResponse
-from llmkit.dto.response.chat_response import ChatResponse
-from llmkit.service.impl.vision_rag_service_impl import VisionRAGServiceImpl
+from beanllm.dto.request.vision_rag_request import VisionRAGRequest
+from beanllm.dto.response.vision_rag_response import VisionRAGResponse
+from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.service.impl.vision_rag_service_impl import VisionRAGServiceImpl
 
 
 class TestVisionRAGService:
@@ -85,10 +85,10 @@ class TestVisionRAGService:
         # vision_loaders 모듈을 sys.modules에 추가
         import sys
 
-        if "llmkit.vision_loaders" not in sys.modules:
+        if "beanllm.vision_loaders" not in sys.modules:
             mock_vision_loaders = Mock()
             mock_vision_loaders.ImageDocument = Mock
-            sys.modules["llmkit.vision_loaders"] = mock_vision_loaders
+            sys.modules["beanllm.vision_loaders"] = mock_vision_loaders
 
         request = VisionRAGRequest(
             question="What is in these images?",
@@ -193,7 +193,7 @@ class TestVisionRAGService:
         mock_doc.get_image_base64 = Mock(return_value="base64data")
         mock_loader.load = Mock(return_value=[mock_doc])
 
-        with patch("llmkit.domain.vision.loaders.ImageLoader", return_value=mock_loader):
+        with patch("beanllm.domain.vision.loaders.ImageLoader", return_value=mock_loader):
             request = VisionRAGRequest(
                 source=str(tmp_path / "test.jpg"),
                 generate_captions=True,
@@ -222,7 +222,7 @@ class TestVisionRAGService:
         mock_doc.get_image_base64 = Mock(return_value="base64data")
         mock_loader.load = Mock(return_value=[mock_doc])
 
-        with patch("llmkit.domain.vision.loaders.ImageLoader", return_value=mock_loader):
+        with patch("beanllm.domain.vision.loaders.ImageLoader", return_value=mock_loader):
             request = VisionRAGRequest(
                 sources=[str(tmp_path / "test.jpg")],
                 generate_captions=True,

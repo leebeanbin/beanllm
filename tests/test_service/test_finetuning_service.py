@@ -5,7 +5,7 @@ FinetuningService 테스트 - Finetuning 서비스 구현체 테스트
 import pytest
 from unittest.mock import Mock
 
-from llmkit.dto.request.finetuning_request import (
+from beanllm.dto.request.finetuning_request import (
     PrepareDataRequest,
     CreateJobRequest,
     GetJobRequest,
@@ -16,7 +16,7 @@ from llmkit.dto.request.finetuning_request import (
     WaitForCompletionRequest,
     QuickFinetuneRequest,
 )
-from llmkit.dto.response.finetuning_response import (
+from beanllm.dto.response.finetuning_response import (
     PrepareDataResponse,
     CreateJobResponse,
     GetJobResponse,
@@ -25,9 +25,9 @@ from llmkit.dto.response.finetuning_response import (
     GetMetricsResponse,
     StartTrainingResponse,
 )
-from llmkit.domain.finetuning.types import FineTuningJob, FineTuningConfig
-from llmkit.domain.finetuning.enums import FineTuningStatus
-from llmkit.service.impl.finetuning_service_impl import FinetuningServiceImpl
+from beanllm.domain.finetuning.types import FineTuningJob, FineTuningConfig
+from beanllm.domain.finetuning.enums import FineTuningStatus
+from beanllm.service.impl.finetuning_service_impl import FinetuningServiceImpl
 
 
 class TestFinetuningService:
@@ -39,7 +39,7 @@ class TestFinetuningService:
         provider = Mock()
 
         # Mock job - FineTuningJob은 dataclass이므로 실제 인스턴스 생성
-        from llmkit.domain.finetuning.types import FineTuningJob, FineTuningStatus
+        from beanllm.domain.finetuning.types import FineTuningJob, FineTuningStatus
         import time
 
         mock_job = FineTuningJob(
@@ -61,7 +61,7 @@ class TestFinetuningService:
     @pytest.fixture
     def mock_manager(self):
         """Mock FineTuningManager"""
-        from llmkit.domain.finetuning.types import FineTuningJob, FineTuningStatus
+        from beanllm.domain.finetuning.types import FineTuningJob, FineTuningStatus
         import time
 
         manager = Mock()
@@ -95,7 +95,7 @@ class TestFinetuningService:
     @pytest.mark.asyncio
     async def test_prepare_data(self, finetuning_service):
         """데이터 준비 테스트"""
-        from llmkit.domain.finetuning.types import TrainingExample
+        from beanllm.domain.finetuning.types import TrainingExample
 
         examples = [
             TrainingExample(
@@ -209,7 +209,7 @@ class TestFinetuningService:
     @pytest.mark.asyncio
     async def test_quick_finetune(self, finetuning_service):
         """빠른 파인튜닝 테스트"""
-        from llmkit.domain.finetuning.types import TrainingExample
+        from beanllm.domain.finetuning.types import TrainingExample
 
         training_data = [
             TrainingExample(
@@ -242,7 +242,7 @@ class TestFinetuningService:
     @pytest.mark.asyncio
     async def test_quick_finetune_with_wait(self, finetuning_service):
         """대기 포함 빠른 파인튜닝 테스트"""
-        from llmkit.domain.finetuning.types import TrainingExample
+        from beanllm.domain.finetuning.types import TrainingExample
 
         training_data = [
             TrainingExample(

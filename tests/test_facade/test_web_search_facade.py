@@ -5,8 +5,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.web_search_facade import WebSearch
-    from llmkit.domain.web_search import SearchEngine, SearchResponse
+    from beanllm.facade.web_search_facade import WebSearch
+    from beanllm.domain.web_search import SearchEngine, SearchResponse
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -16,7 +16,7 @@ except ImportError:
 class TestWebSearch:
     @pytest.fixture
     def web_search(self):
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = SearchResponse(
                 query="test query",

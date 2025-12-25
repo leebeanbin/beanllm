@@ -5,10 +5,10 @@ WebSearchService 테스트 - Web Search 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
-from llmkit.dto.request.web_search_request import WebSearchRequest
-from llmkit.dto.response.web_search_response import WebSearchResponse
-from llmkit.domain.web_search import SearchResult, SearchEngine
-from llmkit.service.impl.web_search_service_impl import WebSearchServiceImpl
+from beanllm.dto.request.web_search_request import WebSearchRequest
+from beanllm.dto.response.web_search_response import WebSearchResponse
+from beanllm.domain.web_search import SearchResult, SearchEngine
+from beanllm.service.impl.web_search_service_impl import WebSearchServiceImpl
 
 
 class TestWebSearchService:
@@ -73,7 +73,7 @@ class TestWebSearchService:
     async def test_search_google_with_api_key(self, web_search_service):
         """Google 검색 - API 키 포함 테스트"""
         # Mock GoogleSearch
-        from llmkit.domain.web_search import GoogleSearch
+        from beanllm.domain.web_search import GoogleSearch
 
         mock_engine = Mock(spec=GoogleSearch)
         mock_search_response = Mock()
@@ -88,7 +88,7 @@ class TestWebSearchService:
 
         # GoogleSearch 생성자를 Mock
         with patch(
-            "llmkit.service.impl.web_search_service_impl.GoogleSearch", return_value=mock_engine
+            "beanllm.service.impl.web_search_service_impl.GoogleSearch", return_value=mock_engine
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -108,7 +108,7 @@ class TestWebSearchService:
     async def test_search_bing_with_api_key(self, web_search_service):
         """Bing 검색 - API 키 포함 테스트"""
         # Mock BingSearch
-        from llmkit.domain.web_search import BingSearch
+        from beanllm.domain.web_search import BingSearch
 
         mock_engine = Mock(spec=BingSearch)
         mock_search_response = Mock()
@@ -123,7 +123,7 @@ class TestWebSearchService:
 
         # BingSearch 생성자를 Mock
         with patch(
-            "llmkit.service.impl.web_search_service_impl.BingSearch", return_value=mock_engine
+            "beanllm.service.impl.web_search_service_impl.BingSearch", return_value=mock_engine
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -142,7 +142,7 @@ class TestWebSearchService:
     async def test_search_extra_params(self, web_search_service):
         """추가 파라미터 포함 검색 테스트"""
         # Mock DuckDuckGoSearch
-        from llmkit.domain.web_search import DuckDuckGoSearch
+        from beanllm.domain.web_search import DuckDuckGoSearch
 
         mock_engine = Mock(spec=DuckDuckGoSearch)
         mock_search_response = Mock()
@@ -156,7 +156,7 @@ class TestWebSearchService:
         mock_engine.search_async = AsyncMock(return_value=mock_search_response)
 
         with patch(
-            "llmkit.service.impl.web_search_service_impl.DuckDuckGoSearch", return_value=mock_engine
+            "beanllm.service.impl.web_search_service_impl.DuckDuckGoSearch", return_value=mock_engine
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -195,7 +195,7 @@ class TestWebSearchService:
         mock_scraper.scrape_async = AsyncMock(return_value="Scraped content")
 
         with patch(
-            "llmkit.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
+            "beanllm.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -236,7 +236,7 @@ class TestWebSearchService:
         mock_scraper.scrape_async = AsyncMock(side_effect=["Content 1", "Content 2"])
 
         with patch(
-            "llmkit.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
+            "beanllm.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
         ):
             request = WebSearchRequest(
                 query="Python programming",

@@ -6,10 +6,10 @@ import pytest
 from unittest.mock import Mock
 from pathlib import Path
 
-from llmkit.dto.request.state_graph_request import StateGraphRequest
-from llmkit.dto.response.state_graph_response import StateGraphResponse
-from llmkit.domain.state_graph import END
-from llmkit.service.impl.state_graph_service_impl import StateGraphServiceImpl
+from beanllm.dto.request.state_graph_request import StateGraphRequest
+from beanllm.dto.response.state_graph_response import StateGraphResponse
+from beanllm.domain.state_graph import END
+from beanllm.service.impl.state_graph_service_impl import StateGraphServiceImpl
 
 
 class TestStateGraphService:

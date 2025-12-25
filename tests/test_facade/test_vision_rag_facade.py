@@ -5,8 +5,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.vision_rag_facade import VisionRAG
-    from llmkit.domain.vector_stores.base import BaseVectorStore
+    from beanllm.facade.vision_rag_facade import VisionRAG
+    from beanllm.domain.vector_stores.base import BaseVectorStore
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -22,11 +22,11 @@ class TestVisionRAG:
 
     @pytest.fixture
     def vision_rag(self, mock_vector_store):
-        patcher = patch("llmkit.utils.di_container.get_container")
+        patcher = patch("beanllm.utils.di_container.get_container")
         mock_get_container = patcher.start()
 
-        from llmkit.dto.response.vision_rag_response import VisionRAGResponse
-        from llmkit.dto.response.chat_response import ChatResponse
+        from beanllm.dto.response.vision_rag_response import VisionRAGResponse
+        from beanllm.dto.response.chat_response import ChatResponse
         from unittest.mock import AsyncMock
 
         # Mock vision RAG handler

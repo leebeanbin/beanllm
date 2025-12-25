@@ -1,6 +1,6 @@
 # 📦 PyPI 배포 가이드 (2025년 최신)
 
-이 문서는 llmkit 패키지를 PyPI에 배포하는 최신 방법을 설명합니다.
+이 문서는 beanllm 패키지를 PyPI에 배포하는 최신 방법을 설명합니다.
 
 ## 📋 목차
 
@@ -29,7 +29,7 @@
 2. **Add API token** 클릭
 3. **Scope 선택**:
    - `Entire account`: 모든 프로젝트에 사용 가능
-   - `Project: llmkit`: llmkit 프로젝트만 (첫 배포 후 선택 가능)
+   - `Project: beanllm`: beanllm 프로젝트만 (첫 배포 후 선택 가능)
 4. 토큰 복사 (⚠️ 한 번만 표시되므로 안전하게 보관)
 
 ### 2. 로컬 환경 설정
@@ -85,7 +85,7 @@ pip install --upgrade build twine
 # TestPyPI에서 설치 테스트
 pip install --index-url https://test.pypi.org/simple/ \
             --extra-index-url https://pypi.org/simple/ \
-            llmkit
+            beanllm
 ```
 
 #### 본 PyPI에 배포
@@ -122,8 +122,8 @@ python -m build
 ```
 
 빌드 결과물:
-- `dist/llmkit-0.1.0.tar.gz` - 소스 배포 (source distribution)
-- `dist/llmkit-0.1.0-py3-none-any.whl` - 휠 배포 (wheel distribution)
+- `dist/beanllm-0.1.0.tar.gz` - 소스 배포 (source distribution)
+- `dist/beanllm-0.1.0-py3-none-any.whl` - 휠 배포 (wheel distribution)
 
 #### Step 3: 빌드 검증
 
@@ -141,11 +141,11 @@ python -m twine upload --repository testpypi dist/*
 # TestPyPI에서 설치 테스트
 pip install --index-url https://test.pypi.org/simple/ \
             --extra-index-url https://pypi.org/simple/ \
-            llmkit[all]
+            beanllm[all]
 
 # CLI 테스트
-llmkit list
-llmkit --version
+beanllm list
+beanllm --version
 ```
 
 #### Step 5: PyPI 배포
@@ -155,13 +155,13 @@ llmkit --version
 python -m twine upload dist/*
 
 # 확인
-pip install llmkit
-llmkit --version
+pip install beanllm
+beanllm --version
 ```
 
 **배포 후 확인:**
-- PyPI 페이지: https://pypi.org/project/llmkit/
-- 설치 테스트: `pip install llmkit[all]`
+- PyPI 페이지: https://pypi.org/project/beanllm/
+- 설치 테스트: `pip install beanllm[all]`
 
 ---
 
@@ -175,9 +175,9 @@ llmkit --version
 
 1. PyPI 계정 설정 → **Publishing** → **Add a new publisher**
 2. 다음 정보 입력:
-   - PyPI Project Name: `llmkit`
+   - PyPI Project Name: `beanllm`
    - Owner: `leebeanbin`
-   - Repository name: `llmkit`
+   - Repository name: `beanllm`
    - Workflow name: `publish.yml`
    - Environment name: `release` (선택사항)
 
@@ -201,7 +201,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: release
-      url: https://pypi.org/project/llmkit/
+      url: https://pypi.org/project/beanllm/
     permissions:
       id-token: write  # OIDC 토큰 발급을 위해 필수
 
@@ -350,10 +350,10 @@ gh release create v0.1.1 --generate-notes
 
 ### 1. 패키지 이름 충돌
 
-**증상**: `The name 'llmkit' is already taken`
+**증상**: `The name 'beanllm' is already taken`
 
 **해결**:
-- PyPI에서 패키지 이름 검색: https://pypi.org/search/?q=llmkit
+- PyPI에서 패키지 이름 검색: https://pypi.org/search/?q=beanllm
 - 이름이 이미 존재하면 `pyproject.toml`에서 `name` 변경
 
 ### 2. 빌드 오류
@@ -436,7 +436,7 @@ python -m twine check dist/*
 
 # 캐시 정리 후 재설치
 pip cache purge
-pip install --upgrade --no-cache-dir llmkit
+pip install --upgrade --no-cache-dir beanllm
 ```
 
 ---
@@ -468,20 +468,20 @@ grep version pyproject.toml
 ls -lh dist/
 
 # PyPI에 등록된 버전 확인
-pip index versions llmkit
+pip index versions beanllm
 
 # 패키지 정보 확인
-pip show llmkit
+pip show beanllm
 
 # 설치된 버전 업그레이드
-pip install --upgrade llmkit
+pip install --upgrade beanllm
 
 # 특정 버전 설치
-pip install llmkit==0.1.0
+pip install beanllm==0.1.0
 
 # extras와 함께 설치
-pip install llmkit[all]
-pip install llmkit[openai,anthropic]
+pip install beanllm[all]
+pip install beanllm[openai,anthropic]
 ```
 
 ---
@@ -526,4 +526,4 @@ python -m twine upload dist/*
 ---
 
 **마지막 업데이트**: 2025년 12월 24일
-**llmkit 버전**: 0.1.0
+**beanllm 버전**: 0.1.0

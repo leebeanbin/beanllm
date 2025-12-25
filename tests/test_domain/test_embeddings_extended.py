@@ -5,7 +5,7 @@ Embeddings 확장 테스트 - Embedding Cache, Factory 등
 import pytest
 from unittest.mock import Mock, patch, AsyncMock
 
-from llmkit.domain.embeddings.base import BaseEmbedding
+from beanllm.domain.embeddings.base import BaseEmbedding
 
 
 class TestEmbeddingCache:
@@ -14,7 +14,7 @@ class TestEmbeddingCache:
     def test_embedding_cache_get_set(self):
         """임베딩 캐시 저장/조회 테스트"""
         try:
-            from llmkit.domain.embeddings.cache import EmbeddingCache
+            from beanllm.domain.embeddings.cache import EmbeddingCache
 
             cache = EmbeddingCache(max_size=100)
 
@@ -29,7 +29,7 @@ class TestEmbeddingCache:
     def test_embedding_cache_clear(self):
         """임베딩 캐시 초기화 테스트"""
         try:
-            from llmkit.domain.embeddings.cache import EmbeddingCache
+            from beanllm.domain.embeddings.cache import EmbeddingCache
 
             cache = EmbeddingCache()
             cache.set("text1", [0.1, 0.2, 0.3])
@@ -47,9 +47,9 @@ class TestEmbeddingFactory:
     def test_embedding_factory_create_openai(self):
         """OpenAI Embedding 생성 테스트"""
         try:
-            from llmkit.domain.embeddings.factory import Embedding
+            from beanllm.domain.embeddings.factory import Embedding
 
-            with patch("llmkit.domain.embeddings.providers.OpenAI"):
+            with patch("beanllm.domain.embeddings.providers.OpenAI"):
                 embedding = Embedding(model="text-embedding-3-small", provider="openai", api_key="test_key")
                 assert embedding is not None
                 assert embedding.model == "text-embedding-3-small"
@@ -59,9 +59,9 @@ class TestEmbeddingFactory:
     def test_embedding_factory_create_ollama(self):
         """Ollama Embedding 생성 테스트"""
         try:
-            from llmkit.domain.embeddings.factory import Embedding
+            from beanllm.domain.embeddings.factory import Embedding
 
-            with patch("llmkit.domain.embeddings.providers.ollama"):
+            with patch("beanllm.domain.embeddings.providers.ollama"):
                 embedding = Embedding(model="nomic-embed-text", provider="ollama")
                 assert embedding is not None
                 assert embedding.model == "nomic-embed-text"
@@ -76,10 +76,10 @@ class TestEmbeddingProviders:
     async def test_openai_embedding_embed(self):
         """OpenAI Embedding embed 테스트"""
         try:
-            from llmkit.domain.embeddings.providers import OpenAIEmbedding
+            from beanllm.domain.embeddings.providers import OpenAIEmbedding
             from unittest.mock import AsyncMock, patch
 
-            with patch("llmkit.domain.embeddings.providers.OpenAI") as mock_openai:
+            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
                 mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
                 mock_response.usage = Mock(total_tokens=1)
@@ -96,10 +96,10 @@ class TestEmbeddingProviders:
     def test_openai_embedding_embed_sync(self):
         """OpenAI Embedding embed_sync 테스트"""
         try:
-            from llmkit.domain.embeddings.providers import OpenAIEmbedding
+            from beanllm.domain.embeddings.providers import OpenAIEmbedding
             from unittest.mock import Mock, patch
 
-            with patch("llmkit.domain.embeddings.providers.OpenAI") as mock_openai:
+            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
                 mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
                 mock_response.usage = Mock(total_tokens=1)
@@ -117,7 +117,7 @@ class TestEmbeddingProviders:
 
             from unittest.mock import Mock, patch
 
-            with patch("llmkit.domain.embeddings.providers.OpenAI") as mock_openai:
+            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
                 mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
                 mock_response.usage = Mock(total_tokens=1)
@@ -135,7 +135,7 @@ class TestEmbeddingProviders:
 
             from unittest.mock import Mock, patch
 
-            with patch("llmkit.domain.embeddings.providers.OpenAI") as mock_openai:
+            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
                 mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
                 mock_response.usage = Mock(total_tokens=1)

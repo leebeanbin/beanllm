@@ -5,7 +5,7 @@ Domain Layer 테스트 - 핵심 비즈니스 로직 테스트
 import pytest
 
 try:
-    from llmkit.domain import (
+    from beanllm.domain import (
         Document,
         Embedding,
         TextSplitter,
@@ -14,7 +14,7 @@ try:
         BaseVectorStore,
     )
 except ImportError:
-    from src.llmkit.domain import (
+    from src.beanllm.domain import (
         Document,
         Embedding,
         TextSplitter,
@@ -56,9 +56,9 @@ class TestTextSplitter:
     def test_text_splitter_factory(self):
         """TextSplitter 팩토리 테스트"""
         try:
-            from llmkit.domain import RecursiveCharacterTextSplitter
+            from beanllm.domain import RecursiveCharacterTextSplitter
         except ImportError:
-            from src.llmkit.domain import RecursiveCharacterTextSplitter
+            from src.beanllm.domain import RecursiveCharacterTextSplitter
 
         splitter = TextSplitter.create(strategy="recursive", chunk_size=100)
         assert isinstance(splitter, RecursiveCharacterTextSplitter)
@@ -72,9 +72,9 @@ class TestTextSplitter:
     def test_text_splitter_strategies(self, sample_documents):
         """다양한 전략 테스트"""
         try:
-            from llmkit.domain import CharacterTextSplitter, RecursiveCharacterTextSplitter
+            from beanllm.domain import CharacterTextSplitter, RecursiveCharacterTextSplitter
         except ImportError:
-            from src.llmkit.domain import CharacterTextSplitter, RecursiveCharacterTextSplitter
+            from src.beanllm.domain import CharacterTextSplitter, RecursiveCharacterTextSplitter
 
         # Recursive
         splitter = TextSplitter.create(strategy="recursive")
@@ -117,9 +117,9 @@ class TestVectorStore:
     def test_vector_store_interface(self):
         """VectorStore 인터페이스 테스트"""
         try:
-            from llmkit.domain.vector_stores.base import BaseVectorStore
+            from beanllm.domain.vector_stores.base import BaseVectorStore
         except ImportError:
-            from src.llmkit.domain.vector_stores.base import BaseVectorStore
+            from src.beanllm.domain.vector_stores.base import BaseVectorStore
 
         # 인터페이스 메서드 확인
         assert hasattr(BaseVectorStore, "add_documents")

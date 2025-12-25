@@ -2,7 +2,7 @@
 Tests for Text Splitters
 """
 import pytest
-from llmkit import (
+from beanllm import (
     Document,
     CharacterTextSplitter,
     RecursiveCharacterTextSplitter,
@@ -313,7 +313,7 @@ class TestIntegration:
 
     def test_full_pipeline(self, tmp_path):
         """전체 파이프라인 테스트"""
-        from llmkit import DocumentLoader, TextSplitter
+        from beanllm import DocumentLoader, TextSplitter
         from pathlib import Path
 
         # 1. 문서 생성 (임시 디렉토리 사용)

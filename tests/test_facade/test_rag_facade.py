@@ -6,8 +6,8 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 try:
-    from llmkit.facade.rag_facade import RAGChain
-    from llmkit.domain.vector_stores.base import BaseVectorStore
+    from beanllm.facade.rag_facade import RAGChain
+    from beanllm.domain.vector_stores.base import BaseVectorStore
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -28,7 +28,7 @@ class TestRAGFacade:
     @pytest.fixture
     def rag_chain(self, mock_vector_store):
         """RAGChain 인스턴스"""
-        patcher = patch("llmkit.utils.di_container.get_container")
+        patcher = patch("beanllm.utils.di_container.get_container")
         mock_get_container = patcher.start()
 
         mock_handler = MagicMock()

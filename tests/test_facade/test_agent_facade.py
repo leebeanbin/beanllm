@@ -6,7 +6,7 @@ import pytest
 from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from llmkit.facade.agent_facade import Agent, AgentResult
+    from beanllm.facade.agent_facade import Agent, AgentResult
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -20,7 +20,7 @@ class TestAgentFacade:
     @pytest.fixture
     def agent(self):
         """Agent 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
+        with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.answer = "Agent response"

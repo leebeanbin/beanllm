@@ -5,9 +5,9 @@ VisionRAGHandler 테스트 - Vision RAG Handler 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock
 
-from llmkit.dto.request.vision_rag_request import VisionRAGRequest
-from llmkit.dto.response.vision_rag_response import VisionRAGResponse
-from llmkit.handler.vision_rag_handler import VisionRAGHandler
+from beanllm.dto.request.vision_rag_request import VisionRAGRequest
+from beanllm.dto.response.vision_rag_response import VisionRAGResponse
+from beanllm.handler.vision_rag_handler import VisionRAGHandler
 
 
 class TestVisionRAGHandler:
@@ -16,7 +16,7 @@ class TestVisionRAGHandler:
     @pytest.fixture
     def mock_vision_rag_service(self):
         """Mock VisionRAGService"""
-        from llmkit.service.vision_rag_service import IVisionRAGService
+        from beanllm.service.vision_rag_service import IVisionRAGService
 
         service = Mock(spec=IVisionRAGService)
         service.retrieve = AsyncMock(

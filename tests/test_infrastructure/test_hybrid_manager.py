@@ -5,7 +5,7 @@ HybridModelManager 테스트 - 하이브리드 모델 관리자 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
-from llmkit.infrastructure.hybrid import HybridModelInfo, HybridModelManager, create_hybrid_manager
+from beanllm.infrastructure.hybrid import HybridModelInfo, HybridModelManager, create_hybrid_manager
 
 
 class TestHybridModelManager:

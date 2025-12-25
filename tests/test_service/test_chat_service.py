@@ -5,10 +5,10 @@ ChatService 테스트 - 채팅 서비스 구현체 테스트
 import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
-from llmkit.dto.request.chat_request import ChatRequest
-from llmkit.dto.response.chat_response import ChatResponse
-from llmkit.infrastructure.adapter import ParameterAdapter
-from llmkit.service.impl.chat_service_impl import ChatServiceImpl
+from beanllm.dto.request.chat_request import ChatRequest
+from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.infrastructure.adapter import ParameterAdapter
+from beanllm.service.impl.chat_service_impl import ChatServiceImpl
 
 
 class TestChatService:
