@@ -20,13 +20,14 @@ class TestAgentFacade:
     @pytest.fixture
     def agent(self):
         """Agent 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.facade.agent_facade.HandlerFactory") as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.answer = "Agent response"
             mock_response.steps = [{"step_number": 1, "thought": "test"}]
             mock_response.total_steps = 1
             mock_response.success = True
+            mock_response.error = None
 
             async def mock_handle_run(*args, **kwargs):
                 return mock_response
@@ -35,10 +36,12 @@ class TestAgentFacade:
 
             mock_handler_factory = Mock()
             mock_handler_factory.create_agent_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
 
             agent = Agent(model="gpt-4o-mini")
-            agent._agent_handler = mock_handler
             return agent
 
     @pytest.mark.asyncio

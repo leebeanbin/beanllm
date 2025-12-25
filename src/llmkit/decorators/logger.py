@@ -132,6 +132,7 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
     - Handler 메서드 호출 로깅
     - 요청 파라미터 로깅
     - async generator 함수 지원
+    - 동기 generator 함수 지원
 
     Example:
         @log_handler_call
@@ -140,6 +141,10 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
 
         @log_handler_call
         async def handle_stream_chat(self, messages, model, ...) -> AsyncIterator[str]:
+            ...
+
+        @log_handler_call
+        def handle_stream(self, ...) -> Iterator[tuple]:
             ...
     """
     # async generator 함수인지 확인
@@ -164,7 +169,28 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
                 raise
 
         return async_gen_wrapper
-    else:
+    elif inspect.isgeneratorfunction(func):
+        # 동기 generator 함수인 경우
+        @functools.wraps(func)
+        def sync_gen_wrapper(self, *args, **kwargs):
+            handler_name = self.__class__.__name__
+            method_name = func.__name__
+
+            # 민감한 정보 제외하고 로깅
+            safe_kwargs = {k: v for k, v in kwargs.items() if k not in ["api_key", "password"]}
+            logger.info(f"Handler call: {handler_name}.{method_name} with {safe_kwargs}")
+
+            try:
+                # 동기 generator를 직접 반환
+                for item in func(self, *args, **kwargs):
+                    yield item
+                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
+            except Exception as e:
+                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
+                raise
+
+        return sync_gen_wrapper
+    elif inspect.iscoroutinefunction(func):
         # 일반 async 함수인 경우
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
@@ -184,3 +210,23 @@ def log_handler_call(func: Callable[..., T]) -> Callable[..., T]:
                 raise
 
         return wrapper
+    else:
+        # 동기 함수인 경우
+        @functools.wraps(func)
+        def sync_wrapper(self, *args, **kwargs):
+            handler_name = self.__class__.__name__
+            method_name = func.__name__
+
+            # 민감한 정보 제외하고 로깅
+            safe_kwargs = {k: v for k, v in kwargs.items() if k not in ["api_key", "password"]}
+            logger.info(f"Handler call: {handler_name}.{method_name} with {safe_kwargs}")
+
+            try:
+                result = func(self, *args, **kwargs)
+                logger.info(f"Handler call succeeded: {handler_name}.{method_name}")
+                return result
+            except Exception as e:
+                logger.error(f"Handler call failed: {handler_name}.{method_name} - {e}")
+                raise
+
+        return sync_wrapper

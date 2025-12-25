@@ -237,12 +237,6 @@ class TestStreamBuffer:
         assert all_buffers["stream1"] == "chunk1"
         assert all_buffers["stream2"] == "chunk2"
 
-            yield "chunk2"
-
-        content = await stream_collect(mock_stream())
-
-        assert content == "chunk1chunk2"
-
     @pytest.mark.asyncio
     async def test_stream_response_with_on_chunk(self):
         """on_chunk 콜백 테스트"""
@@ -398,12 +392,6 @@ class TestStreamBuffer:
         assert "stream2" in all_buffers
         assert all_buffers["stream1"] == "chunk1"
         assert all_buffers["stream2"] == "chunk2"
-
-            yield "chunk2"
-
-        content = await stream_collect(mock_stream())
-
-        assert content == "chunk1chunk2"
 
     @pytest.mark.asyncio
     async def test_stream_response_with_on_chunk(self):

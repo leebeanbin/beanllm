@@ -268,8 +268,7 @@ Final Answer: Based on the search, the answer is X.
         assert len(response.steps) == 2
         assert response.steps[0].get("observation") == "Search results"
 
-    @pytest.mark.asyncio
-    async def test_parse_response_final_answer(self, agent_service):
+    def test_parse_response_final_answer(self, agent_service):
         """응답 파싱 - 최종 답변 테스트"""
         content = """
 Thought: I have the answer.
@@ -281,8 +280,7 @@ Final Answer: This is the final answer.
         assert parsed["final_answer"] == "This is the final answer."
         assert parsed["thought"] == "I have the answer."
 
-    @pytest.mark.asyncio
-    async def test_parse_response_action(self, agent_service):
+    def test_parse_response_action(self, agent_service):
         """응답 파싱 - Action 포함 테스트"""
         content = """
 Thought: I need to use a tool.
@@ -296,8 +294,7 @@ Action Input: {"expression": "2 + 2"}
         assert parsed["action_input"] == {"expression": "2 + 2"}
         assert parsed["thought"] == "I need to use a tool."
 
-    @pytest.mark.asyncio
-    async def test_parse_response_invalid_json(self, agent_service):
+    def test_parse_response_invalid_json(self, agent_service):
         """응답 파싱 - 잘못된 JSON 테스트"""
         content = """
 Thought: I need to use a tool.
@@ -310,8 +307,7 @@ Action Input: {invalid json}
         # 잘못된 JSON은 빈 dict로 처리
         assert parsed["action_input"] == {}
 
-    @pytest.mark.asyncio
-    async def test_execute_tool_success(self, agent_service):
+    def test_execute_tool_success(self, agent_service):
         """도구 실행 성공 테스트"""
         agent_service._tool_registry.execute = Mock(return_value="Result")
 
@@ -322,8 +318,7 @@ Action Input: {invalid json}
             "calculator", {"expression": "1 + 1"}
         )
 
-    @pytest.mark.asyncio
-    async def test_execute_tool_no_registry(self, agent_service):
+    def test_execute_tool_no_registry(self, agent_service):
         """도구 레지스트리가 없는 경우 테스트"""
         agent_service._tool_registry = None
 
@@ -331,8 +326,7 @@ Action Input: {invalid json}
 
         assert "Tool registry not available" in result
 
-    @pytest.mark.asyncio
-    async def test_execute_tool_error(self, agent_service):
+    def test_execute_tool_error(self, agent_service):
         """도구 실행 에러 테스트"""
         agent_service._tool_registry.execute = Mock(side_effect=ValueError("Tool error"))
 
@@ -341,8 +335,7 @@ Action Input: {invalid json}
         assert "Error executing tool" in result
         assert "Tool error" in result
 
-    @pytest.mark.asyncio
-    async def test_format_tools_with_tools(self, agent_service):
+    def test_format_tools_with_tools(self, agent_service):
         """도구 포맷팅 - 도구가 있는 경우"""
         mock_tool = Mock()
         mock_tool.name = "calculator"
@@ -360,8 +353,7 @@ Action Input: {invalid json}
         assert "Calculate expressions" in formatted
         assert "expression: str" in formatted
 
-    @pytest.mark.asyncio
-    async def test_format_tools_no_tools(self, agent_service):
+    def test_format_tools_no_tools(self, agent_service):
         """도구 포맷팅 - 도구가 없는 경우"""
         agent_service._tool_registry.get_all = Mock(return_value=[])
 
@@ -369,8 +361,7 @@ Action Input: {invalid json}
 
         assert formatted == "No tools available"
 
-    @pytest.mark.asyncio
-    async def test_format_tools_no_registry(self, agent_service):
+    def test_format_tools_no_registry(self, agent_service):
         """도구 포맷팅 - 레지스트리가 없는 경우"""
         agent_service._tool_registry = None
 
@@ -378,8 +369,7 @@ Action Input: {invalid json}
 
         assert formatted == "No tools available"
 
-    @pytest.mark.asyncio
-    async def test_format_tools_get_all_tools(self, agent_service):
+    def test_format_tools_get_all_tools(self, agent_service):
         """도구 포맷팅 - get_all_tools() 메서드 사용"""
         mock_tool = Mock()
         mock_tool.name = "search"

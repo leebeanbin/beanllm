@@ -18,13 +18,18 @@ except ImportError:
 class TestEvaluatorFacade:
     @pytest.fixture
     def evaluator(self):
-        with patch("llmkit.facade.evaluation_facade.HandlerFactory") as mock_factory:
-            mock_handler = MagicMock()
-            from llmkit.domain.evaluation.results import EvaluationResult
+        from llmkit.domain.evaluation.results import EvaluationResult
+        from llmkit.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
 
-            mock_response = Mock()
-            mock_response.result = BatchEvaluationResult(
-                results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
+        # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
+        with patch("llmkit.handler.evaluation_handler.EvaluationHandler") as mock_handler_class:
+            mock_handler = MagicMock()
+            
+            # handle_evaluate는 EvaluationResponse를 반환
+            mock_response = EvaluationResponse(
+                result=BatchEvaluationResult(
+                    results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
+                )
             )
 
             async def mock_handle_evaluate(*args, **kwargs):
@@ -32,23 +37,25 @@ class TestEvaluatorFacade:
 
             mock_handler.handle_evaluate = MagicMock(side_effect=mock_handle_evaluate)
 
-            mock_response_batch = Mock()
-            mock_response_batch.results = [
-                BatchEvaluationResult(
-                    results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
-                )
-            ]
+            # handle_batch_evaluate는 BatchEvaluationResponse를 반환
+            mock_response_batch = BatchEvaluationResponse(
+                results=[
+                    BatchEvaluationResult(
+                        results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
+                    )
+                ]
+            )
 
             async def mock_handle_batch_evaluate(*args, **kwargs):
                 return mock_response_batch
 
             mock_handler.handle_batch_evaluate = MagicMock(side_effect=mock_handle_batch_evaluate)
-
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_evaluation_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+            
+            # Handler 클래스가 인스턴스화될 때 mock_handler 반환
+            mock_handler_class.return_value = mock_handler
 
             evaluator = EvaluatorFacade()
+            # 실제 생성된 Handler를 Mock으로 교체
             evaluator._evaluation_handler = mock_handler
             return evaluator
 

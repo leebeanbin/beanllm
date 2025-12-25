@@ -21,7 +21,7 @@ class TestGraphFacade:
     @pytest.fixture
     def graph(self):
         """Graph 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.facade.graph_facade.HandlerFactory") as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.final_state = {"result": "Graph result"}
@@ -35,10 +35,12 @@ class TestGraphFacade:
 
             mock_handler_factory = Mock()
             mock_handler_factory.create_graph_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
 
             graph = Graph()
-            graph._graph_handler = mock_handler
             return graph
 
     @pytest.mark.asyncio

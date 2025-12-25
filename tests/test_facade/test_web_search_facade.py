@@ -16,7 +16,7 @@ except ImportError:
 class TestWebSearch:
     @pytest.fixture
     def web_search(self):
-        with patch('llmkit.facade.web_search_facade.HandlerFactory') as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = SearchResponse(
                 query="test query",
@@ -27,13 +27,15 @@ class TestWebSearch:
             async def mock_handle_search(*args, **kwargs):
                 return mock_response
             mock_handler.handle_search = MagicMock(side_effect=mock_handle_search)
-            
+
             mock_handler_factory = Mock()
             mock_handler_factory.create_web_search_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
+
             web = WebSearch(default_engine=SearchEngine.DUCKDUCKGO)
-            web._web_search_handler = mock_handler
             return web
 
     def test_search(self, web_search):

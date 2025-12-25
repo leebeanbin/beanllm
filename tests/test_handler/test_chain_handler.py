@@ -16,27 +16,24 @@ class TestChainHandler:
     @pytest.fixture
     def mock_chain_service(self):
         """Mock ChainService"""
-        service = Mock()
-        service.run_chain = AsyncMock(
-            return_value=ChainResponse(
-                output="Chain output",
-            )
-        )
-        service.run_prompt_chain = AsyncMock(
-            return_value=ChainResponse(
-                output="Prompt chain output",
-            )
-        )
-        service.run_sequential_chain = AsyncMock(
-            return_value=ChainResponse(
-                output="Sequential chain output",
-            )
-        )
-        service.run_parallel_chain = AsyncMock(
-            return_value=ChainResponse(
-                output="Parallel chain output",
-            )
-        )
+        from llmkit.service.chain_service import IChainService
+
+        service = Mock(spec=IChainService)
+
+        # Mock execute method which is the actual method called by handler
+        async def mock_execute(request):
+            if request.chain_type == "basic":
+                return ChainResponse(output="Chain output")
+            elif request.chain_type == "prompt":
+                return ChainResponse(output="Prompt chain output")
+            elif request.chain_type == "sequential":
+                return ChainResponse(output="Sequential chain output")
+            elif request.chain_type == "parallel":
+                return ChainResponse(output="Parallel chain output")
+            else:
+                raise ValueError(f"Unknown chain type: {request.chain_type}")
+
+        service.execute = AsyncMock(side_effect=mock_execute)
         return service
 
     @pytest.fixture
@@ -55,7 +52,7 @@ class TestChainHandler:
         assert response is not None
         assert isinstance(response, ChainResponse)
         assert response.output == "Chain output"
-        chain_handler._chain_service.run_chain.assert_called_once()
+        chain_handler._chain_service.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_run_prompt(self, chain_handler):
@@ -68,7 +65,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Prompt chain output"
-        chain_handler._chain_service.run_prompt_chain.assert_called_once()
+        chain_handler._chain_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_sequential(self, chain_handler):
@@ -81,7 +78,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Sequential chain output"
-        chain_handler._chain_service.run_sequential_chain.assert_called_once()
+        chain_handler._chain_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_parallel(self, chain_handler):
@@ -94,7 +91,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Parallel chain output"
-        chain_handler._chain_service.run_parallel_chain.assert_called_once()
+        chain_handler._chain_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_unknown_type(self, chain_handler):
@@ -161,7 +158,7 @@ class TestChainHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = chain_handler._chain_service.run_chain.call_args[0][0]
+        call_args = chain_handler._chain_service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params
 
 

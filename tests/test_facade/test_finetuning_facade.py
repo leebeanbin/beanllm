@@ -9,6 +9,12 @@ try:
     from llmkit.facade.finetuning_facade import FineTuningManagerFacade
     from llmkit.domain.finetuning.providers import OpenAIFineTuningProvider
     from llmkit.domain.finetuning.types import FineTuningJob, TrainingExample
+    from llmkit.dto.response.finetuning_response import (
+        PrepareDataResponse,
+        StartTrainingResponse,
+        GetJobResponse,
+        GetMetricsResponse,
+    )
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -23,19 +29,11 @@ class TestFineTuningManagerFacade:
 
     @pytest.fixture
     def manager(self, provider):
-        with patch("llmkit.facade.finetuning_facade.HandlerFactory") as mock_factory:
+        # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
+        with patch("llmkit.facade.finetuning_facade.FinetuningHandler") as mock_handler_class:
             mock_handler = MagicMock()
 
             # prepare_data mock
-            mock_prepare_response = Mock()
-            mock_prepare_response.file_id = "file_123"
-
-            async def mock_handle_prepare_data(*args, **kwargs):
-                return mock_prepare_response
-
-            mock_handler.handle_prepare_data = MagicMock(side_effect=mock_handle_prepare_data)
-
-            # start_training mock
             from llmkit.domain.finetuning.enums import FineTuningStatus
 
             mock_job = FineTuningJob(
@@ -44,8 +42,16 @@ class TestFineTuningManagerFacade:
                 status=FineTuningStatus.CREATED,
                 created_at=1234567890,
             )
-            mock_start_response = Mock()
-            mock_start_response.job = mock_job
+
+            mock_prepare_response = PrepareDataResponse(file_id="file_123")
+
+            async def mock_handle_prepare_data(*args, **kwargs):
+                return mock_prepare_response
+
+            mock_handler.handle_prepare_data = MagicMock(side_effect=mock_handle_prepare_data)
+
+            # start_training mock
+            mock_start_response = StartTrainingResponse(job=mock_job)
 
             async def mock_handle_start_training(*args, **kwargs):
                 return mock_start_response
@@ -53,8 +59,7 @@ class TestFineTuningManagerFacade:
             mock_handler.handle_start_training = MagicMock(side_effect=mock_handle_start_training)
 
             # wait_for_completion mock
-            mock_wait_response = Mock()
-            mock_wait_response.job = mock_job
+            mock_wait_response = GetJobResponse(job=mock_job)
 
             async def mock_handle_wait_for_completion(*args, **kwargs):
                 return mock_wait_response
@@ -64,28 +69,28 @@ class TestFineTuningManagerFacade:
             )
 
             # get_job mock
-            mock_get_response = Mock()
-            mock_get_response.job = mock_job
+            mock_get_response = GetJobResponse(job=mock_job)
 
             async def mock_handle_get_job(*args, **kwargs):
                 return mock_get_response
 
             mock_handler.handle_get_job = MagicMock(side_effect=mock_handle_get_job)
 
-            # get_metrics mock
-            mock_metrics_response = Mock()
-            mock_metrics_response.metrics = []
+            # get_metrics mock - metrics를 리스트로 설정
+            from llmkit.domain.finetuning.types import FineTuningMetrics
+            mock_metrics = [FineTuningMetrics(step=1, train_loss=0.5, valid_loss=0.6)]
+            mock_metrics_response = GetMetricsResponse(metrics=mock_metrics)
 
             async def mock_handle_get_metrics(*args, **kwargs):
                 return mock_metrics_response
 
             mock_handler.handle_get_metrics = MagicMock(side_effect=mock_handle_get_metrics)
 
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_finetuning_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+            # Handler 클래스가 인스턴스화될 때 mock_handler 반환
+            mock_handler_class.return_value = mock_handler
 
             manager = FineTuningManagerFacade(provider=provider)
+            # 실제 생성된 Handler를 Mock으로 교체
             manager._finetuning_handler = mock_handler
             return manager
 

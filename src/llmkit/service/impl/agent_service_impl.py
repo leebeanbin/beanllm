@@ -42,6 +42,7 @@ class AgentServiceImpl(IAgentService):
         self,
         chat_service: "IChatService",
         tool_registry: Optional["ToolRegistryProtocol"] = None,
+        max_history_tokens: int = 4000,
     ) -> None:
         """
         의존성 주입을 통한 생성자
@@ -49,9 +50,11 @@ class AgentServiceImpl(IAgentService):
         Args:
             chat_service: 채팅 서비스
             tool_registry: 도구 레지스트리 (선택적)
+            max_history_tokens: 최대 히스토리 토큰 수 (기본값: 4000)
         """
         self._chat_service = chat_service
         self._tool_registry = tool_registry
+        self._max_history_tokens = max_history_tokens
 
     async def run(self, request: AgentRequest) -> AgentResponse:
         """

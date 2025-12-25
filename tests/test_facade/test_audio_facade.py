@@ -7,6 +7,7 @@ from unittest.mock import Mock, patch, MagicMock
 try:
     from llmkit.facade.audio_facade import WhisperSTT, TextToSpeech, AudioRAG
     from llmkit.domain.audio.types import TranscriptionResult, AudioSegment
+    from llmkit.dto.response.audio_response import AudioResponse
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -16,62 +17,69 @@ except ImportError:
 class TestWhisperSTT:
     @pytest.fixture
     def whisper_stt(self):
-        with patch('llmkit.facade.audio_facade.HandlerFactory') as mock_factory:
-            mock_handler = MagicMock()
-            mock_result = TranscriptionResult(
-                text="Test transcription",
-                language="en",
-                segments=[]
-            )
-            async def mock_handle_transcribe(*args, **kwargs):
-                return mock_result
-            mock_handler.handle_transcribe = MagicMock(side_effect=mock_handle_transcribe)
-            
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_audio_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
-            stt = WhisperSTT(model='base')
-            stt._audio_handler = mock_handler
-            return stt
+        # Patch AudioServiceImpl where it's imported
+        patcher = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
+        mock_audio_service_class = patcher.start()
+
+        from unittest.mock import AsyncMock
+
+        # Mock service instance
+        mock_service = Mock()
+        mock_transcription = TranscriptionResult(
+            text="Test transcription",
+            language="en",
+            segments=[]
+        )
+        mock_service.transcribe = AsyncMock(return_value=AudioResponse(
+            transcription_result=mock_transcription
+        ))
+        mock_audio_service_class.return_value = mock_service
+
+        stt = WhisperSTT(model='base')
+
+        yield stt
+
+        patcher.stop()
 
     def test_transcribe(self, whisper_stt):
         result = whisper_stt.transcribe("test_audio.mp3")
         assert isinstance(result, TranscriptionResult)
         assert result.text == "Test transcription"
-        assert whisper_stt._audio_handler.handle_transcribe.called
 
     @pytest.mark.asyncio
     async def test_transcribe_async(self, whisper_stt):
         result = await whisper_stt.transcribe_async("test_audio.mp3")
         assert isinstance(result, TranscriptionResult)
         assert result.text == "Test transcription"
-        assert whisper_stt._audio_handler.handle_transcribe.called
 
 
 @pytest.mark.skipif(not FACADE_AVAILABLE, reason="Audio Facade not available")
 class TestTextToSpeech:
     @pytest.fixture
     def tts(self):
-        with patch('llmkit.facade.audio_facade.HandlerFactory') as mock_factory:
-            mock_handler = MagicMock()
-            mock_audio = Mock(spec=AudioSegment)
-            async def mock_handle_synthesize(*args, **kwargs):
-                return mock_audio
-            mock_handler.handle_synthesize = MagicMock(side_effect=mock_handle_synthesize)
-            
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_audio_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
-            tts = TextToSpeech(provider='openai', voice='alloy')
-            tts._audio_handler = mock_handler
-            return tts
+        # Patch AudioServiceImpl where it's imported
+        patcher = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
+        mock_audio_service_class = patcher.start()
+
+        from unittest.mock import AsyncMock
+
+        # Mock service instance
+        mock_service = Mock()
+        mock_audio = AudioSegment(audio_data=b"fake", format="mp3", sample_rate=24000)
+        mock_service.synthesize = AsyncMock(return_value=AudioResponse(
+            audio_segment=mock_audio
+        ))
+        mock_audio_service_class.return_value = mock_service
+
+        tts = TextToSpeech(provider='openai', voice='alloy')
+
+        yield tts
+
+        patcher.stop()
 
     def test_synthesize(self, tts):
         result = tts.synthesize("Hello, world!")
         assert isinstance(result, AudioSegment)
-        assert tts._audio_handler.handle_synthesize.called
 
 
 @pytest.mark.skipif(not FACADE_AVAILABLE, reason="Audio Facade not available")
@@ -80,28 +88,45 @@ class TestAudioRAG:
     def mock_vector_store(self):
         store = Mock()
         store.similarity_search = Mock(return_value=[])
+        # search 메서드는 리스트를 반환해야 함 (iterate 가능)
+        store.search = Mock(return_value=[])
         return store
 
     @pytest.fixture
     def audio_rag(self, mock_vector_store):
-        with patch('llmkit.facade.audio_facade.HandlerFactory') as mock_factory:
-            from unittest.mock import AsyncMock
-            mock_handler = MagicMock()
-            mock_results = []
-            # AsyncMock을 사용하여 실제 coroutine 반환
-            mock_handler.handle_search_audio = AsyncMock(return_value=mock_results)
-            
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_audio_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
-            rag = AudioRAG(vector_store=mock_vector_store)
-            rag._audio_handler = mock_handler
-            return rag
+        # Patch AudioServiceImpl where it's imported
+        patcher1 = patch("llmkit.service.impl.audio_service_impl.AudioServiceImpl")
+        patcher2 = patch("llmkit.facade.audio_facade.WhisperSTT")
+
+        mock_audio_service_class = patcher1.start()
+        mock_whisper_stt_class = patcher2.start()
+
+        from unittest.mock import AsyncMock
+
+        # Mock WhisperSTT 인스턴스
+        mock_stt = Mock()
+        mock_stt.model_name = "base"
+        mock_stt.device = None
+        mock_stt.language = None
+        mock_whisper_stt_class.return_value = mock_stt
+
+        # Mock service instance
+        mock_service = Mock()
+        mock_results = []
+        mock_service.search_audio = AsyncMock(return_value=AudioResponse(
+            search_results=mock_results
+        ))
+        mock_audio_service_class.return_value = mock_service
+
+        rag = AudioRAG(vector_store=mock_vector_store)
+
+        yield rag
+
+        patcher1.stop()
+        patcher2.stop()
 
     def test_search(self, audio_rag):
         results = audio_rag.search("What was discussed?")
         assert isinstance(results, list)
-        assert audio_rag._audio_handler.handle_search_audio.called
 
 

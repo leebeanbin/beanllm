@@ -17,7 +17,7 @@ except ImportError:
 class TestStateGraph:
     @pytest.fixture
     def graph(self):
-        with patch('llmkit.facade.state_graph_facade.HandlerFactory') as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             from unittest.mock import AsyncMock
             mock_handler = MagicMock()
             mock_response = Mock()
@@ -27,19 +27,21 @@ class TestStateGraph:
             async def mock_handle_invoke(*args, **kwargs):
                 return mock_response
             mock_handler.handle_invoke = AsyncMock(side_effect=mock_handle_invoke)
-            
+
             # stream mock - generator 함수 (node_name, state) 튜플 반환
             def mock_handle_stream(*args, **kwargs):
                 yield ("node1", {"step": 1})  # state는 Dict
                 yield ("node2", {"step": 2})
             mock_handler.handle_stream = MagicMock(return_value=mock_handle_stream())
-            
+
             mock_handler_factory = Mock()
             mock_handler_factory.create_state_graph_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
+
             graph = StateGraph()
-            graph._state_graph_handler = mock_handler
             # 노드와 엣지 설정
             graph.nodes["node1"] = lambda state: state
             graph.entry_point = "node1"

@@ -21,7 +21,7 @@ class TestMultiAgentFacade:
     @pytest.fixture
     def coordinator(self):
         """MultiAgentCoordinator 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.facade.multi_agent_facade.HandlerFactory") as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.final_result = "Multi-agent result"
@@ -37,11 +37,13 @@ class TestMultiAgentFacade:
 
             mock_handler_factory = Mock()
             mock_handler_factory.create_multi_agent_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
 
             agents = {"agent1": Agent(model="gpt-4o-mini")}
             coordinator = MultiAgentCoordinator(agents=agents)
-            coordinator._multi_agent_handler = mock_handler
             return coordinator
 
     @pytest.mark.asyncio

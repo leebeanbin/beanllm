@@ -16,31 +16,24 @@ class TestMultiAgentHandler:
     @pytest.fixture
     def mock_multi_agent_service(self):
         """Mock MultiAgentService"""
-        service = Mock()
-        service.execute_sequential = AsyncMock(
-            return_value=MultiAgentResponse(
-                final_result="Sequential result",
-                strategy="sequential",
-            )
-        )
-        service.execute_parallel = AsyncMock(
-            return_value=MultiAgentResponse(
-                final_result="Parallel result",
-                strategy="parallel",
-            )
-        )
-        service.execute_hierarchical = AsyncMock(
-            return_value=MultiAgentResponse(
-                final_result="Hierarchical result",
-                strategy="hierarchical",
-            )
-        )
-        service.execute_debate = AsyncMock(
-            return_value=MultiAgentResponse(
-                final_result="Debate result",
-                strategy="debate",
-            )
-        )
+        from llmkit.service.multi_agent_service import IMultiAgentService
+
+        service = Mock(spec=IMultiAgentService)
+
+        # Mock execute method which is the actual method called by handler
+        async def mock_execute(request):
+            if request.strategy == "sequential":
+                return MultiAgentResponse(final_result="Sequential result", strategy="sequential")
+            elif request.strategy == "parallel":
+                return MultiAgentResponse(final_result="Parallel result", strategy="parallel")
+            elif request.strategy == "hierarchical":
+                return MultiAgentResponse(final_result="Hierarchical result", strategy="hierarchical")
+            elif request.strategy == "debate":
+                return MultiAgentResponse(final_result="Debate result", strategy="debate")
+            else:
+                raise ValueError(f"Unknown strategy: {request.strategy}")
+
+        service.execute = AsyncMock(side_effect=mock_execute)
         return service
 
     @pytest.fixture
@@ -69,7 +62,7 @@ class TestMultiAgentHandler:
         assert response is not None
         assert isinstance(response, MultiAgentResponse)
         assert response.strategy == "sequential"
-        multi_agent_handler._multi_agent_service.execute_sequential.assert_called_once()
+        multi_agent_handler._multi_agent_service.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_execute_parallel(self, multi_agent_handler, mock_agent):
@@ -84,7 +77,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "parallel"
-        multi_agent_handler._multi_agent_service.execute_parallel.assert_called_once()
+        multi_agent_handler._multi_agent_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_hierarchical(self, multi_agent_handler, mock_agent):
@@ -99,7 +92,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "hierarchical"
-        multi_agent_handler._multi_agent_service.execute_hierarchical.assert_called_once()
+        multi_agent_handler._multi_agent_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_debate(self, multi_agent_handler, mock_agent):
@@ -119,7 +112,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "debate"
-        multi_agent_handler._multi_agent_service.execute_debate.assert_called_once()
+        multi_agent_handler._multi_agent_service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_unknown_strategy(self, multi_agent_handler):
@@ -152,7 +145,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = multi_agent_handler._multi_agent_service.execute_sequential.call_args[0][0]
+        call_args = multi_agent_handler._multi_agent_service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params
 
 

@@ -22,31 +22,55 @@ class TestVisionRAG:
 
     @pytest.fixture
     def vision_rag(self, mock_vector_store):
-        with patch('llmkit.facade.vision_rag_facade.HandlerFactory') as mock_factory:
-            mock_handler = MagicMock()
-            # query는 직접 값을 반환 (str 또는 tuple)
-            async def mock_handle_query(*args, **kwargs):
-                # include_sources에 따라 반환 타입이 달라짐
-                include_sources = kwargs.get('include_sources', False)
-                if include_sources:
-                    return ("Vision RAG answer", [])
-                return "Vision RAG answer"
-            from unittest.mock import AsyncMock
-            mock_handler.handle_query = AsyncMock(side_effect=mock_handle_query)
-            
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_vision_rag_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
-            
-            rag = VisionRAG(vector_store=mock_vector_store)
-            rag._vision_rag_handler = mock_handler
-            return rag
+        patcher = patch("llmkit.utils.di_container.get_container")
+        mock_get_container = patcher.start()
+
+        from llmkit.dto.response.vision_rag_response import VisionRAGResponse
+        from llmkit.dto.response.chat_response import ChatResponse
+        from unittest.mock import AsyncMock
+
+        # Mock vision RAG handler
+        mock_vision_rag_handler = MagicMock()
+        async def mock_handle_query(*args, **kwargs):
+            include_sources = kwargs.get('include_sources', False)
+            return VisionRAGResponse(
+                answer="Vision RAG answer",
+                sources=[] if include_sources else None
+            )
+        mock_vision_rag_handler.handle_query = AsyncMock(side_effect=mock_handle_query)
+
+        # Mock chat handler (for Client used by VisionRAG)
+        mock_chat_handler = MagicMock()
+        async def mock_handle_chat(*args, **kwargs):
+            return ChatResponse(content="Vision RAG answer", model="gpt-4o", provider="openai")
+        mock_chat_handler.handle_chat = AsyncMock(side_effect=mock_handle_chat)
+
+        # Mock handler factory
+        mock_handler_factory = Mock()
+        mock_handler_factory.create_vision_rag_handler.return_value = mock_vision_rag_handler
+        mock_handler_factory.create_chat_handler.return_value = mock_chat_handler
+
+        # Mock service factory
+        mock_service_factory = Mock()
+        mock_chat_service = Mock()
+        mock_service_factory.create_chat_service.return_value = mock_chat_service
+
+        # Mock container
+        mock_container = Mock()
+        mock_container.handler_factory = mock_handler_factory
+        mock_container.get_service_factory.return_value = mock_service_factory
+        mock_get_container.return_value = mock_container
+
+        rag = VisionRAG(vector_store=mock_vector_store)
+
+        yield rag
+
+        patcher.stop()
 
     def test_query(self, vision_rag):
         result = vision_rag.query("Show me images of cats")
         assert isinstance(result, str)
         assert result == "Vision RAG answer"
-        assert vision_rag._vision_rag_handler.handle_query.called
 
     def test_query_with_sources(self, vision_rag):
         result = vision_rag.query("Show me images of cats", include_sources=True)

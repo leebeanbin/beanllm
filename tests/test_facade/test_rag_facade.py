@@ -3,7 +3,7 @@ RAG Facade 테스트 - RAG 인터페이스 테스트
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 try:
     from llmkit.facade.rag_facade import RAGChain
@@ -28,24 +28,35 @@ class TestRAGFacade:
     @pytest.fixture
     def rag_chain(self, mock_vector_store):
         """RAGChain 인스턴스"""
-        with patch("llmkit.facade.rag_facade.HandlerFactory") as mock_factory:
-            mock_handler = MagicMock()
-            mock_response = Mock()
-            mock_response.answer = "Test answer"
-            mock_response.sources = []
+        patcher = patch("llmkit.utils.di_container.get_container")
+        mock_get_container = patcher.start()
 
-            async def mock_handle_query(*args, **kwargs):
-                return mock_response
+        mock_handler = MagicMock()
+        mock_response = Mock()
+        mock_response.answer = "Test answer"
+        mock_response.sources = []
 
-            mock_handler.handle_query = MagicMock(side_effect=mock_handle_query)
+        async def mock_handle_query(*args, **kwargs):
+            return mock_response
 
-            mock_handler_factory = Mock()
-            mock_handler_factory.create_rag_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+        mock_handler.handle_query = AsyncMock(side_effect=mock_handle_query)
 
-            rag = RAGChain(vector_store=mock_vector_store)
-            rag._rag_handler = mock_handler
-            return rag
+        mock_handler_factory = Mock()
+        mock_handler_factory.create_rag_handler.return_value = mock_handler
+
+        mock_service_factory = Mock()
+
+        mock_container = Mock()
+        mock_container.handler_factory = mock_handler_factory
+        mock_container.get_service_factory.return_value = mock_service_factory
+        mock_container.get_handler_factory.return_value = mock_handler_factory
+        mock_get_container.return_value = mock_container
+
+        rag = RAGChain(vector_store=mock_vector_store)
+
+        yield rag
+
+        patcher.stop()
 
     def test_query(self, rag_chain, mock_vector_store):
         """RAG 질의 테스트"""

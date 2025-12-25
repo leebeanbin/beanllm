@@ -98,9 +98,13 @@ Answer:"""
         Returns:
             컨텍스트 (텍스트 또는 멀티모달 메시지)
         """
-        from ...vision_loaders import ImageDocument
+        try:
+            from ...vision_loaders import ImageDocument
+        except ImportError:
+            # vision_loaders가 없으면 텍스트만 사용
+            ImageDocument = None
 
-        if not include_images:
+        if not include_images or ImageDocument is None:
             # 텍스트만 (기존과 동일)
             context_parts = []
             for i, result in enumerate(results, 1):

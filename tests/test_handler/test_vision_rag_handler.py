@@ -16,7 +16,9 @@ class TestVisionRAGHandler:
     @pytest.fixture
     def mock_vision_rag_service(self):
         """Mock VisionRAGService"""
-        service = Mock()
+        from llmkit.service.vision_rag_service import IVisionRAGService
+
+        service = Mock(spec=IVisionRAGService)
         service.retrieve = AsyncMock(
             return_value=VisionRAGResponse(
                 results=[]
@@ -42,40 +44,45 @@ class TestVisionRAGHandler:
     @pytest.mark.asyncio
     async def test_handle_retrieve(self, vision_rag_handler):
         """이미지 검색 테스트"""
-        # handle_retrieve는 List를 반환
-        results = await vision_rag_handler.handle_retrieve(
+        # handle_retrieve는 VisionRAGResponse를 반환
+        response = await vision_rag_handler.handle_retrieve(
             query="Find images of cats",
             k=5,
         )
 
-        assert results is not None
-        assert isinstance(results, list)
+        assert response is not None
+        assert isinstance(response, VisionRAGResponse)
+        assert response.results is not None
+        assert isinstance(response.results, list)
 
     @pytest.mark.asyncio
     async def test_handle_query(self, vision_rag_handler):
         """질문 답변 테스트"""
-        # handle_query는 str 또는 tuple을 반환
+        # handle_query는 VisionRAGResponse를 반환
         response = await vision_rag_handler.handle_query(
             question="What is in these images?",
             k=3,
         )
 
         assert response is not None
-        # str 또는 tuple
-        assert isinstance(response, (str, tuple))
+        assert isinstance(response, VisionRAGResponse)
+        assert response.answer is not None
+        assert isinstance(response.answer, str)
 
     @pytest.mark.asyncio
     async def test_handle_batch_query(self, vision_rag_handler):
         """배치 질문 답변 테스트"""
-        # handle_batch_query는 List[str]을 반환
-        answers = await vision_rag_handler.handle_batch_query(
+        # handle_batch_query는 VisionRAGResponse를 반환
+        response = await vision_rag_handler.handle_batch_query(
             questions=["Question 1?", "Question 2?"],
             k=3,
         )
 
-        assert answers is not None
-        assert isinstance(answers, list)
-        assert len(answers) == 2
+        assert response is not None
+        assert isinstance(response, VisionRAGResponse)
+        assert response.answers is not None
+        assert isinstance(response.answers, list)
+        assert len(response.answers) == 2
 
     @pytest.mark.asyncio
     async def test_handle_query_validation_error(self, vision_rag_handler):

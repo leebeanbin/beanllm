@@ -65,15 +65,3 @@ class TestEmbeddingFactory:
             pytest.skip(f"Ollama embedding not available: {e}")
 
 
-
-                assert embedding.model == "nomic-embed-text"
-        except (ImportError, ValueError, AttributeError) as e:
-            pytest.skip(f"Ollama embedding not available: {e}")
-
-
-
-                assert embedding.model == "nomic-embed-text"
-        except (ImportError, ValueError, AttributeError) as e:
-            pytest.skip(f"Ollama embedding not available: {e}")
-
-

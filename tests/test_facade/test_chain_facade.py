@@ -28,7 +28,7 @@ class TestChainFacade:
     @pytest.fixture
     def chain(self, mock_client):
         """Chain 인스턴스 (Handler를 Mock으로 교체)"""
-        with patch("llmkit.facade.chain_facade.HandlerFactory") as mock_factory:
+        with patch("llmkit.utils.di_container.get_container") as mock_get_container:
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.output = "Chain output"
@@ -44,10 +44,12 @@ class TestChainFacade:
 
             mock_handler_factory = Mock()
             mock_handler_factory.create_chain_handler.return_value = mock_handler
-            mock_factory.return_value = mock_handler_factory
+
+            mock_container = Mock()
+            mock_container.handler_factory = mock_handler_factory
+            mock_get_container.return_value = mock_container
 
             chain = Chain(mock_client)
-            chain._chain_handler = mock_handler
             return chain
 
     @pytest.mark.asyncio

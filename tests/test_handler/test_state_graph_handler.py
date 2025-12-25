@@ -17,7 +17,9 @@ class TestStateGraphHandler:
     @pytest.fixture
     def mock_state_graph_service(self):
         """Mock StateGraphService"""
-        service = Mock()
+        from llmkit.service.state_graph_service import IStateGraphService
+
+        service = Mock(spec=IStateGraphService)
         service.invoke = AsyncMock(
             return_value=StateGraphResponse(
                 final_state={"result": "completed"},
@@ -30,9 +32,8 @@ class TestStateGraphHandler:
             yield ("node1", {"value": 1})
             yield ("node2", {"value": 2})
 
-        service.stream = Mock(
-            return_value=mock_stream(StateGraphRequest(initial_state={}, entry_point="start"))
-        )
+        # Use side_effect to create a new generator for each call
+        service.stream = Mock(side_effect=lambda request: mock_stream(request))
         return service
 
     @pytest.fixture

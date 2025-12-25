@@ -12,7 +12,12 @@ license = {text = "MIT"}
 authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
 ]
-keywords = ["llm", "openai", "claude", "gemini", "ollama", "ai", "model-manager"]
+keywords = [
+    "llm", "llmkit", "kit",
+    "openai", "claude", "gemini", "ollama",
+    "ai", "model-manager", "rag", "langchain",
+    "embedding", "vector-store", "chatbot", "gpt"
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -33,6 +38,7 @@ dependencies = [
     "requests>=2.31.0",  # HTTP requests
     "numpy>=1.24.0",  # Numerical operations
     "tiktoken>=0.5.0",  # Token counting
+    "pytest (>=9.0.2,<10.0.0)",
 ]
 
 # 선택적 의존성 (Provider별로 선택 가능)
@@ -57,12 +63,18 @@ ollama = [
     "ollama>=0.1.0",
 ]
 
+# Audio 기능 (음성 인식/합성)
+audio = [
+    "openai-whisper>=20231117",
+]
+
 # 모든 Provider 사용
 all = [
     "openai>=1.0.0",
     "anthropic>=0.18.0",
     "google-generativeai>=0.3.0",
     "ollama>=0.1.0",
+    "openai-whisper>=20231117",
 ]
 
 # Continuous Evaluation (선택적)
