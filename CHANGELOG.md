@@ -122,4 +122,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 For detailed information about each feature, see the [documentation](docs/).
 
-[0.1.0]: https://github.com/leebeanbin/llmkit/releases/tag/v0.1.0
+[0.1.0]: https://github.com/leebeanbin/beanllm/releases/tag/v0.1.0

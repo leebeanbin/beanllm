@@ -20,7 +20,7 @@ A clear and concise description of what you expected to happen.
 ## Environment
 - OS: [e.g. macOS, Linux, Windows]
 - Python version: [e.g. 3.11]
-- llmkit version: [e.g. 0.1.0]
+- beanllm version: [e.g. 0.1.0]
 - Provider: [e.g. OpenAI, Anthropic, Google, Ollama]
 
 ## Additional context

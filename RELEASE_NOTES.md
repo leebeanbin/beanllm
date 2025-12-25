@@ -1,12 +1,12 @@
-# llmkit v0.1.0 Release Notes
+# beanllm v0.1.0 Release Notes
 
 **Release Date:** December 19, 2024
 
-We're excited to announce the first release of **llmkit** - a unified, production-ready toolkit for managing and using multiple LLM providers with advanced features for RAG, agents, multi-modal AI, and production deployment.
+We're excited to announce the first release of **beanllm** - a unified, production-ready toolkit for managing and using multiple LLM providers with advanced features for RAG, agents, multi-modal AI, and production deployment.
 
 ## 🎯 Overview
 
-llmkit v0.1.0 is a comprehensive LLM toolkit that brings together the best features from multiple providers (OpenAI, Anthropic, Google, Ollama) with a unified interface. This release includes everything needed to build production-grade AI applications, from basic completions to complex multi-agent systems.
+beanllm v0.1.0 is a comprehensive LLM toolkit that brings together the best features from multiple providers (OpenAI, Anthropic, Google, Ollama) with a unified interface. This release includes everything needed to build production-grade AI applications, from basic completions to complex multi-agent systems.
 
 ## ✨ Highlights
 
@@ -56,19 +56,19 @@ llmkit v0.1.0 is a comprehensive LLM toolkit that brings together the best featu
 
 ```bash
 # Basic installation (OpenAI + Anthropic)
-pip install llmkit
+pip install beanllm
 
 # With all providers
-pip install llmkit[all]
+pip install beanllm[all]
 
 # Development installation
-pip install llmkit[dev]
+pip install beanllm[dev]
 ```
 
 ### Quick Start
 
 ```python
-from llmkit import Client
+from beanllm import Client
 
 # Basic usage
 client = Client(model="gpt-4o")
@@ -76,12 +76,12 @@ response = client.chat("Explain quantum computing")
 print(response.content)
 
 # RAG in one line
-from llmkit import RAGChain
+from beanllm import RAGChain
 rag = RAGChain.from_documents("docs/")
 answer = rag.query("What is the main topic?")
 
 # Cost optimization
-from llmkit import estimate_cost, get_cheapest_model
+from beanllm import estimate_cost, get_cheapest_model
 cost = estimate_cost(
     input_text="Your prompt",
     output_text="Expected response",
@@ -93,29 +93,29 @@ cost = estimate_cost(
 
 ### Core Modules (14 total)
 
-1. **llmkit.client** - Unified LLM interface
-2. **llmkit.registry** - Model and provider management
-3. **llmkit.adapters** - Provider-specific implementations
-4. **llmkit.document_loaders** - Document ingestion
-5. **llmkit.text_splitters** - Intelligent chunking
-6. **llmkit.embeddings** - Vector embedding generation
-7. **llmkit.vector_stores** - Vector database integration
-8. **llmkit.rag** - Complete RAG pipeline
-9. **llmkit.agents** - Agent framework
-10. **llmkit.tools** - Tool integration system
-11. **llmkit.memory** - Conversation memory
-12. **llmkit.chains** - Chain of thought and workflows
-13. **llmkit.graphs** - Graph-based workflows
-14. **llmkit.multi_agent** - Multi-agent systems
+1. **beanllm.client** - Unified LLM interface
+2. **beanllm.registry** - Model and provider management
+3. **beanllm.adapters** - Provider-specific implementations
+4. **beanllm.document_loaders** - Document ingestion
+5. **beanllm.text_splitters** - Intelligent chunking
+6. **beanllm.embeddings** - Vector embedding generation
+7. **beanllm.vector_stores** - Vector database integration
+8. **beanllm.rag** - Complete RAG pipeline
+9. **beanllm.agents** - Agent framework
+10. **beanllm.tools** - Tool integration system
+11. **beanllm.memory** - Conversation memory
+12. **beanllm.chains** - Chain of thought and workflows
+13. **beanllm.graphs** - Graph-based workflows
+14. **beanllm.multi_agent** - Multi-agent systems
 
 ### Production Features
 
-- **Token counting** (`llmkit.token_counter`)
-- **Cost estimation** (`llmkit.cost_estimator`)
-- **Prompt templates** (`llmkit.prompts`)
-- **Evaluation metrics** (`llmkit.evaluation`)
-- **Error handling** (`llmkit.error_handling`)
-- **Fine-tuning** (`llmkit.finetuning`)
+- **Token counting** (`beanllm.token_counter`)
+- **Cost estimation** (`beanllm.cost_estimator`)
+- **Prompt templates** (`beanllm.prompts`)
+- **Evaluation metrics** (`beanllm.evaluation`)
+- **Error handling** (`beanllm.error_handling`)
+- **Fine-tuning** (`beanllm.finetuning`)
 
 ### Developer Tools
 
@@ -188,7 +188,7 @@ Key areas for contribution:
 - Async support varies by provider
 - Fine-tuning only supports OpenAI API currently
 
-See [GitHub Issues](https://github.com/leebeanbin/llmkit/issues) for full list.
+See [GitHub Issues](https://github.com/leebeanbin/beanllm/issues) for full list.
 
 ## 🗺️ Roadmap
 
@@ -226,17 +226,17 @@ Built with support from:
 ## 📞 Support
 
 - **Documentation:** [GitHub README](README.md)
-- **Issues:** [GitHub Issues](https://github.com/leebeanbin/llmkit/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/leebeanbin/llmkit/discussions)
+- **Issues:** [GitHub Issues](https://github.com/leebeanbin/beanllm/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/leebeanbin/beanllm/discussions)
 
 ## 🎉 Get Started Today
 
 ```bash
-pip install llmkit
+pip install beanllm
 ```
 
-Start building production-grade AI applications with llmkit!
+Start building production-grade AI applications with beanllm!
 
 ---
 
-**Full Changelog:** https://github.com/leebeanbin/llmkit/blob/main/CHANGELOG.md
+**Full Changelog:** https://github.com/leebeanbin/beanllm/blob/main/CHANGELOG.md

@@ -1,4 +1,4 @@
-# 🚀 llmkit 빠른 시작 가이드
+# 🚀 beanllm 빠른 시작 가이드
 
 ## 📦 설치
 
@@ -6,8 +6,8 @@
 
 ```bash
 # 프로젝트 클론
-git clone https://github.com/yourusername/llmkit.git
-cd llmkit
+git clone https://github.com/yourusername/beanllm.git
+cd beanllm
 
 # Poetry 설치 (없는 경우)
 curl -sSL https://install.python-poetry.org | python3 -
@@ -25,19 +25,19 @@ poetry shell
 
 ```bash
 # 기본 설치
-pip install llmkit
+pip install beanllm
 
 # 특정 Provider 추가
-pip install llmkit[openai]
-pip install llmkit[anthropic]
-pip install llmkit[gemini]
-pip install llmkit[ollama]
+pip install beanllm[openai]
+pip install beanllm[anthropic]
+pip install beanllm[gemini]
+pip install beanllm[ollama]
 
 # 모든 Provider
-pip install llmkit[all]
+pip install beanllm[all]
 
 # 개발 도구 포함
-pip install llmkit[dev,all]
+pip install beanllm[dev,all]
 ```
 
 ---
@@ -71,7 +71,7 @@ OLLAMA_HOST=http://localhost:11434
 
 ```python
 # 자동으로 .env 파일 로드됨
-from llmkit import Client
+from beanllm import Client
 # 또는
 from dotenv import load_dotenv
 load_dotenv()
@@ -84,7 +84,7 @@ load_dotenv()
 ### 1. 간단한 채팅
 
 ```python
-from llmkit import Client
+from beanllm import Client
 
 # Client 생성 (자동으로 사용 가능한 Provider 선택)
 client = Client(model="gpt-4o")
@@ -132,7 +132,7 @@ response = client.chat(
 ### 1. 문서에서 RAG 생성
 
 ```python
-from llmkit import RAGChain
+from beanllm import RAGChain
 
 # 문서 폴더에서 RAG 생성
 rag = RAGChain.from_documents("docs/")
@@ -155,7 +155,7 @@ for source in sources:
 ### 2. 커스텀 RAG 구성
 
 ```python
-from llmkit import (
+from beanllm import (
     DocumentLoader,
     RecursiveCharacterTextSplitter,
     OpenAIEmbedding,
@@ -200,7 +200,7 @@ answer = rag.query("질문")
 ### 1. 기본 Agent
 
 ```python
-from llmkit import Agent, Tool
+from beanllm import Agent, Tool
 
 # 도구 정의
 @Tool.from_function
@@ -229,7 +229,7 @@ print(result.output)
 ### 2. 내장 도구 사용
 
 ```python
-from llmkit import Agent, search_web, get_current_time
+from beanllm import Agent, search_web, get_current_time
 
 # 내장 도구 사용
 agent = Agent(
@@ -247,7 +247,7 @@ result = agent.run("현재 시간을 알려주고, 오늘의 뉴스를 검색해
 ### 1. 간단한 Graph
 
 ```python
-from llmkit import StateGraph, END
+from beanllm import StateGraph, END
 
 # Graph 생성
 graph = StateGraph()
@@ -284,7 +284,7 @@ print(result["output"])
 ### 2. LangGraph 스타일
 
 ```python
-from llmkit import Graph, create_simple_graph
+from beanllm import Graph, create_simple_graph
 
 # 간단한 Graph 생성
 graph = create_simple_graph(
@@ -309,7 +309,7 @@ result = graph.run({"topic": "AI"})
 ### 1. Debate 패턴
 
 ```python
-from llmkit import MultiAgentCoordinator, DebateStrategy, Agent
+from beanllm import MultiAgentCoordinator, DebateStrategy, Agent
 
 # 여러 Agent 생성
 researcher = Agent(
@@ -342,7 +342,7 @@ print(result.final_output)
 ### 2. Sequential 패턴
 
 ```python
-from llmkit import SequentialStrategy
+from beanllm import SequentialStrategy
 
 coordinator = MultiAgentCoordinator(
     agents=[researcher, writer, critic],
@@ -359,7 +359,7 @@ result = coordinator.coordinate("작업을 순차적으로 수행")
 ### 1. 이미지 기반 질의응답
 
 ```python
-from llmkit import VisionRAG, CLIPEmbedding, ImageLoader
+from beanllm import VisionRAG, CLIPEmbedding, ImageLoader
 
 # 이미지 로드
 images = ImageLoader.load("images/")
@@ -388,7 +388,7 @@ answer = vision_rag.query_with_image(
 ### 1. Speech-to-Text
 
 ```python
-from llmkit import WhisperSTT
+from beanllm import WhisperSTT
 
 stt = WhisperSTT()
 result = stt.transcribe("audio.mp3", language="ko")
@@ -402,7 +402,7 @@ for segment in result.segments:
 ### 2. Text-to-Speech
 
 ```python
-from llmkit import TextToSpeech
+from beanllm import TextToSpeech
 
 tts = TextToSpeech(provider="openai")
 audio = tts.synthesize(
@@ -418,7 +418,7 @@ audio.save("output.mp3")
 ### 3. Audio RAG
 
 ```python
-from llmkit import AudioRAG
+from beanllm import AudioRAG
 
 # 오디오 파일에서 RAG 생성
 audio_rag = AudioRAG.from_audio_files([
@@ -437,7 +437,7 @@ answer = audio_rag.query("AI에 대해 무엇이 논의되었나요?")
 ### 1. 웹 검색
 
 ```python
-from llmkit import DuckDuckGoSearch, WebScraper
+from beanllm import DuckDuckGoSearch, WebScraper
 
 # 검색 (API 키 불필요!)
 search = DuckDuckGoSearch()
@@ -460,7 +460,7 @@ print(content)
 ### 1. 텍스트 평가
 
 ```python
-from llmkit import evaluate_text
+from beanllm import evaluate_text
 
 prediction = "고양이가 매트 위에 앉아있다"
 reference = "고양이가 매트 위에 앉아 있습니다"
@@ -479,7 +479,7 @@ print(f"평균 점수: {result.average_score:.4f}")
 ### 2. RAG 평가
 
 ```python
-from llmkit import evaluate_rag
+from beanllm import evaluate_rag
 
 rag_result = evaluate_rag(
     question="AI란 무엇인가요?",
@@ -499,7 +499,7 @@ print(f"Answer Relevance: {rag_result.answer_relevance:.4f}")
 ### 1. Memory 사용
 
 ```python
-from llmkit import BufferMemory
+from beanllm import BufferMemory
 
 memory = BufferMemory(max_messages=10)
 
@@ -515,7 +515,7 @@ print(history)
 ### 2. Output Parsers
 
 ```python
-from llmkit import PydanticOutputParser
+from beanllm import PydanticOutputParser
 from pydantic import BaseModel
 
 class Person(BaseModel):
@@ -536,7 +536,7 @@ print(person.name, person.age)
 ### 3. Prompt Templates
 
 ```python
-from llmkit import PromptTemplate, FewShotPromptTemplate
+from beanllm import PromptTemplate, FewShotPromptTemplate
 
 # 기본 템플릿
 template = PromptTemplate(
@@ -621,7 +621,7 @@ poetry env info
 # Provider 설치 확인
 poetry install --extras all
 # 또는
-pip install llmkit[all]
+pip install beanllm[all]
 ```
 
 ### API 키 오류
@@ -638,8 +638,8 @@ echo $OPENAI_API_KEY
 
 ```python
 # 올바른 import 방법
-from llmkit import Client  # ✅
-# from llmkit.client import Client  # ❌ (구버전)
+from beanllm import Client  # ✅
+# from beanllm.client import Client  # ❌ (구버전)
 ```
 
 ---
