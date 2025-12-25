@@ -109,11 +109,11 @@ package-dir = {"" = "src"}
 # 자동으로 모든 패키지 찾기 (find_packages 사용)
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["llmkit*"]
+include = ["beanllm*"]
 exclude = ["tests*", "*.tests*", "*.tests.*", "tests.*"]
 
 [tool.setuptools.package-data]
-llmkit = ["data/*.json"]
+beanllm = ["data/*.json"]
 
 # Ruff 설정 (linter/formatter)
 [tool.ruff]
@@ -151,5 +151,5 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --cov=llmkit --cov-report=html --cov-report=term"
+addopts = "-v --cov=beanllm --cov-report=html --cov-report=term"
 asyncio_mode = "auto"
