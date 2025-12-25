@@ -1,6 +1,6 @@
 """
 RAG Demo - Document Loading & Text Splitting
-llmkit 방식: 자동 감지 + 스마트 기본값
+beanllm 방식: 자동 감지 + 스마트 기본값
 """
 import asyncio
 from pathlib import Path
@@ -12,13 +12,13 @@ def demo_document_loading():
     print("📄 Document Loading Demo")
     print("="*60)
 
-    from llmkit import DocumentLoader, load_documents
+    from beanllm import DocumentLoader, load_documents
 
     # 1. 텍스트 파일 (자동 감지!)
     print("\n1. Auto-detect Text File:")
     # 테스트 파일 생성
     test_file = Path("test_doc.txt")
-    test_file.write_text("This is a test document.\nWith multiple lines.\nFor testing llmkit!", encoding="utf-8")
+    test_file.write_text("This is a test document.\nWith multiple lines.\nFor testing beanllm!", encoding="utf-8")
 
     docs = DocumentLoader.load(test_file)
     print(f"   Loaded {len(docs)} document(s)")
@@ -57,7 +57,7 @@ def demo_text_splitting():
     print("✂️  Text Splitting Demo")
     print("="*60)
 
-    from llmkit import DocumentLoader, TextSplitter, split_documents, Document
+    from beanllm import DocumentLoader, TextSplitter, split_documents, Document
 
     # 테스트 문서 생성
     long_text = """
@@ -123,7 +123,7 @@ AI continues to evolve rapidly. The future holds exciting possibilities.
 
     # 4. 마크다운 헤더 분할
     print("\n4. Markdown Header Splitting:")
-    from llmkit import MarkdownHeaderTextSplitter
+    from beanllm import MarkdownHeaderTextSplitter
 
     md_splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on=[
@@ -152,7 +152,7 @@ def demo_token_splitting():
         print("\n⚠️  tiktoken not installed. Install with: pip install tiktoken")
         return
 
-    from llmkit import TextSplitter, Document
+    from beanllm import TextSplitter, Document
 
     text = "AI is amazing. " * 100  # 긴 텍스트
     docs = [Document(content=text, metadata={"source": "test"})]
@@ -170,7 +170,7 @@ def demo_token_splitting():
 
     # 특정 모델용
     print("\n2. Model-specific (GPT-4):")
-    from llmkit import TokenTextSplitter
+    from beanllm import TokenTextSplitter
 
     splitter = TokenTextSplitter(
         model_name="gpt-4",
@@ -189,7 +189,7 @@ def demo_full_pipeline():
     print("🚀 Full RAG Pipeline Demo")
     print("="*60)
 
-    from llmkit import DocumentLoader, TextSplitter
+    from beanllm import DocumentLoader, TextSplitter
 
     # 1. 문서 로딩 (자동 감지)
     print("\n1. Load Documents (Auto-detect):")
@@ -231,7 +231,7 @@ The future of AI is bright. New breakthroughs happen constantly.
     test_file.unlink()
 
     print("\n" + "="*60)
-    print("🎉 llmkit RAG: Simple & Pythonic!")
+    print("🎉 beanllm RAG: Simple & Pythonic!")
     print("="*60)
     print("\nKey Features:")
     print("  ✅ Auto-detection (no manual loader selection)")

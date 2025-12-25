@@ -2,7 +2,7 @@
 Vector Store 선택 방법 - 3가지 방법
 Embedding과 같은 패턴으로 통일
 """
-from llmkit import (
+from beanllm import (
     VectorStore,
     Document,
     Embedding,
@@ -224,7 +224,7 @@ def demo_practical_usage():
     print("6️⃣  실전 사용 - RAG 파이프라인")
     print("="*60)
 
-    from llmkit import DocumentLoader, TextSplitter
+    from beanllm import DocumentLoader, TextSplitter
     from pathlib import Path
 
     # 테스트 파일

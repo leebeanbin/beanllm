@@ -43,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/llmkit
+      url: https://pypi.org/p/beanllm
     permissions:
       id-token: write
 
@@ -64,7 +64,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/llmkit
+      url: https://test.pypi.org/p/beanllm
     permissions:
       id-token: write
 

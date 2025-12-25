@@ -3,7 +3,7 @@ Phase 5 통합 데모: Tools, Agent, Memory, Chain
 LangChain 스타일의 고급 기능 시연
 """
 import asyncio
-from llmkit import (
+from beanllm import (
     Client,
     # Tools
     Tool,
@@ -51,7 +51,7 @@ def demo_tools():
         return f"[{target_lang}로 번역됨] {text}"
 
     # 도구 실행
-    from llmkit.tools import get_all_tools
+    from beanllm.tools import get_all_tools
     tools = get_all_tools()
     print(f"\n등록된 도구: {len(tools)}개")
     for tool in tools:

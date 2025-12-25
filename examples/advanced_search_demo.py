@@ -6,7 +6,7 @@
 - Embedding 고급 기능
 """
 from pathlib import Path
-from llmkit import (
+from beanllm import (
     DocumentLoader,
     TextSplitter,
     Embedding,
@@ -329,7 +329,7 @@ def demo_embedding_cache():
     print("="*60)
 
     try:
-        from llmkit import EmbeddingCache
+        from beanllm import EmbeddingCache
         import time
 
         embed = Embedding.openai()

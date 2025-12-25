@@ -3,7 +3,7 @@ Check Providers Example
 각 Provider의 상태와 사용 가능한 모델 확인
 """
 
-from llmkit import get_registry
+from beanllm import get_registry
 
 def main():
     print("=== Provider Status Check ===\n")

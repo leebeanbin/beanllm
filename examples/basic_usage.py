@@ -1,12 +1,12 @@
 """
 Basic Usage Example
-llmkit의 기본 사용법
+beanllm의 기본 사용법
 """
 
-from llmkit import get_registry
+from beanllm import get_registry
 
 def main():
-    print("=== llmkit Basic Usage ===\n")
+    print("=== beanllm Basic Usage ===\n")
 
     # 1. Get registry
     print("1. Getting model registry...")

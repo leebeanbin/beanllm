@@ -3,7 +3,7 @@ RAG Chain - 한 줄로 완전한 RAG 시스템
 가장 간단한 방법부터 고급 사용까지
 """
 from pathlib import Path
-from llmkit import (
+from beanllm import (
     RAGChain,
     RAGBuilder,
     create_rag,

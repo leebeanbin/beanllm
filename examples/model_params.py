@@ -3,7 +3,7 @@ Model Parameters Example
 모델별 파라미터 정보 확인
 """
 
-from llmkit import get_registry
+from beanllm import get_registry
 
 def main():
     print("=== Model Parameters Check ===\n")

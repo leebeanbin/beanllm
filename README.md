@@ -2,9 +2,12 @@
 
 **Production-ready LLM toolkit with Clean Architecture and unified interface for multiple providers**
 
+[![PyPI version](https://badge.fury.io/py/beanllm.svg)](https://badge.fury.io/py/beanllm)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![GitHub](https://img.shields.io/github/stars/leebeanbin/beanllm?style=social)](https://github.com/leebeanbin/beanllm)
+[![Downloads](https://static.pepy.tech/badge/beanllm)](https://pepy.tech/project/beanllm)
+[![Tests](https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml/badge.svg)](https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/leebeanbin/beanllm?style=social)](https://github.com/leebeanbin/beanllm)
 
 **beanllm** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
 

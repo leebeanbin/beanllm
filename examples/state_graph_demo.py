@@ -4,7 +4,7 @@ TypedDict 기반 타입 안전 상태 + Checkpointing
 """
 from typing_extensions import TypedDict
 from typing import Optional
-from llmkit import (
+from beanllm import (
     StateGraph,
     END,
     create_state_graph,
@@ -243,7 +243,7 @@ def demo_checkpointing():
     print("5️⃣  Checkpointing (상태 저장/복원)")
     print("="*60)
 
-    from llmkit import GraphConfig
+    from beanllm import GraphConfig
     from pathlib import Path
     import shutil
 

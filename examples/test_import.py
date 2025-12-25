@@ -1,30 +1,30 @@
 """
 Test Import Example
-다른 프로젝트에서 llmkit을 import해서 사용하는 예제
+다른 프로젝트에서 beanllm을 import해서 사용하는 예제
 """
 
 def test_import():
     """패키지 import 테스트"""
-    print("=== Testing llmkit Import ===\n")
+    print("=== Testing beanllm Import ===\n")
 
     # 1. Basic imports
     print("1. Testing basic imports...")
     try:
-        from llmkit import get_registry
+        from beanllm import get_registry
         print("   ✅ get_registry imported")
     except ImportError as e:
         print(f"   ❌ Failed to import get_registry: {e}")
         return False
 
     try:
-        from llmkit import ProviderFactory
+        from beanllm import ProviderFactory
         print("   ✅ ProviderFactory imported")
     except ImportError as e:
         print(f"   ❌ Failed to import ProviderFactory: {e}")
         return False
 
     try:
-        from llmkit import ModelCapabilityInfo, ProviderInfo
+        from beanllm import ModelCapabilityInfo, ProviderInfo
         print("   ✅ Data classes imported")
     except ImportError as e:
         print(f"   ❌ Failed to import data classes: {e}")
@@ -33,7 +33,7 @@ def test_import():
     # 2. Test utils
     print("\n2. Testing utils imports...")
     try:
-        from llmkit.utils import EnvConfig
+        from beanllm.utils import EnvConfig
         print("   ✅ EnvConfig imported")
         print(f"   Active providers: {EnvConfig.get_active_providers()}")
     except ImportError as e:
@@ -41,7 +41,7 @@ def test_import():
         return False
 
     try:
-        from llmkit.utils import ProviderError, retry, get_logger
+        from beanllm.utils import ProviderError, retry, get_logger
         print("   ✅ Utils imported (ProviderError, retry, get_logger)")
     except ImportError as e:
         print(f"   ❌ Failed to import utils: {e}")
@@ -60,7 +60,7 @@ def test_import():
     # 4. Test CLI
     print("\n4. Testing CLI...")
     try:
-        from llmkit.cli import main
+        from beanllm.cli import main
         print("   ✅ CLI main imported")
     except ImportError as e:
         print(f"   ❌ Failed to import CLI: {e}")

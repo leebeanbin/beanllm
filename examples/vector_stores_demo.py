@@ -1,9 +1,9 @@
 """
 Vector Stores Demo - Fluent API
-llmkit 방식: 쉽고 강력한 벡터 스토어
+beanllm 방식: 쉽고 강력한 벡터 스토어
 """
 import asyncio
-from llmkit import (
+from beanllm import (
     VectorStore,
     VectorStoreBuilder,
     create_vector_store,
@@ -202,7 +202,7 @@ Computer vision enables machines to see and interpret images.
         # 3. 임베딩 준비
         print("\n3. 임베딩 준비:")
         try:
-            from llmkit import embed_sync
+            from beanllm import embed_sync
             embed_func = lambda texts: embed_sync(texts)
             print("   ✓ Using OpenAI embeddings")
         except:
@@ -307,9 +307,9 @@ def demo_provider_selection():
 
 
 def demo_comparison():
-    """LangChain vs llmkit 비교"""
+    """LangChain vs beanllm 비교"""
     print("\n" + "="*60)
-    print("📊 LangChain vs llmkit 비교")
+    print("📊 LangChain vs beanllm 비교")
     print("="*60)
 
     print("\n【 LangChain 방식 】")
@@ -326,16 +326,16 @@ def demo_comparison():
     )
     """)
 
-    print("\n【 llmkit 방식 】")
+    print("\n【 beanllm 방식 】")
     print("""
-    from llmkit import from_documents, Embedding
+    from beanllm import from_documents, Embedding
 
     # 간단하고 직관적
     embed_func = Embedding.openai().embed_sync
     store = from_documents(docs, embed_func, provider="chroma")
     """)
 
-    print("\n✅ llmkit: 더 간단하고 직관적!")
+    print("\n✅ beanllm: 더 간단하고 직관적!")
     print("✅ 통합 인터페이스로 provider 전환 쉬움")
     print("✅ Fluent API로 가독성 향상")
 
@@ -345,7 +345,7 @@ async def main():
     print("="*60)
     print("🎯 Vector Stores 데모")
     print("="*60)
-    print("\nllmkit의 철학:")
+    print("\nbeanllm의 철학:")
     print("  1. 통합 인터페이스 (모든 vector store 동일한 API)")
     print("  2. Fluent API (Builder 패턴)")
     print("  3. 편의 함수 (from_documents)")

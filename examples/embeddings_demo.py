@@ -1,9 +1,9 @@
 """
 Embeddings Demo - 통합 인터페이스
-llmkit 방식: Client와 같은 패턴
+beanllm 방식: Client와 같은 패턴
 """
 import asyncio
-from llmkit import Embedding, embed, embed_sync
+from beanllm import Embedding, embed, embed_sync
 
 
 async def demo_auto_detection():
@@ -162,7 +162,7 @@ async def demo_integration_with_documents():
     print("📄 문서 로딩 + 임베딩 통합")
     print("="*60)
 
-    from llmkit import DocumentLoader, TextSplitter
+    from beanllm import DocumentLoader, TextSplitter
     from pathlib import Path
 
     # 테스트 파일 생성
@@ -201,9 +201,9 @@ Deep learning uses neural networks.
 
 
 def demo_comparison():
-    """LangChain vs llmkit 비교"""
+    """LangChain vs beanllm 비교"""
     print("\n" + "="*60)
-    print("📊 LangChain vs llmkit 비교")
+    print("📊 LangChain vs beanllm 비교")
     print("="*60)
 
     print("\n【 LangChain 방식 】")
@@ -215,9 +215,9 @@ def demo_comparison():
     vectors = embeddings.embed_documents(["text1", "text2"])
     """)
 
-    print("\n【 llmkit 방식 】")
+    print("\n【 beanllm 방식 】")
     print("""
-    from llmkit import Embedding, embed
+    from beanllm import Embedding, embed
 
     # 방법 1: 자동 감지
     emb = Embedding(model="text-embedding-3-small")  # OpenAI 자동
@@ -227,7 +227,7 @@ def demo_comparison():
     vectors = await embed(["text1", "text2"])
     """)
 
-    print("\n✅ llmkit: 자동 감지 + 통합 인터페이스")
+    print("\n✅ beanllm: 자동 감지 + 통합 인터페이스")
     print("✅ Client와 같은 패턴으로 일관성!")
 
 
@@ -236,7 +236,7 @@ async def main():
     print("="*60)
     print("🎯 Embeddings 데모")
     print("="*60)
-    print("\nllmkit의 철학:")
+    print("\nbeanllm의 철학:")
     print("  1. 자동 감지 (Client와 같은 패턴)")
     print("  2. 통합 인터페이스 (일관된 API)")
     print("  3. 간단한 사용 (편의 함수)")

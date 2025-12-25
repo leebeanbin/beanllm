@@ -2,7 +2,7 @@
 개선된 API 데모 - 사용자가 쉽게 설정하고 조정할 수 있는 방법
 """
 from pathlib import Path
-from llmkit import DocumentLoader, TextSplitter, Document
+from beanllm import DocumentLoader, TextSplitter, Document
 
 
 def demo_loader_type_selection():
@@ -247,9 +247,9 @@ AI is used in various fields: healthcare, finance, and more.
 
 
 def demo_comparison():
-    """LangChain vs llmkit 비교"""
+    """LangChain vs beanllm 비교"""
     print("\n" + "="*60)
-    print("📊 LangChain vs llmkit 비교")
+    print("📊 LangChain vs beanllm 비교")
     print("="*60)
 
     print("\n【 LangChain 방식 】(복잡)")
@@ -272,10 +272,10 @@ def demo_comparison():
     chunks = splitter.split_documents(docs)
     """)
 
-    print("\n【 llmkit 방식 】(간단!)")
+    print("\n【 beanllm 방식 】(간단!)")
     print("""
     # 1. Import 한 번
-    from llmkit import DocumentLoader, TextSplitter
+    from beanllm import DocumentLoader, TextSplitter
 
     # 2. 자동 감지 로딩
     docs = DocumentLoader.load("file.txt")
@@ -287,7 +287,7 @@ def demo_comparison():
     chunks = TextSplitter.split(docs)
     """)
 
-    print("\n✅ llmkit: ~10줄 → 2-3줄 (70% 감소!)")
+    print("\n✅ beanllm: ~10줄 → 2-3줄 (70% 감소!)")
     print("✅ 자동 감지 + 스마트 기본값 + 쉬운 커스터마이징")
 
 
@@ -296,7 +296,7 @@ def main():
     print("="*60)
     print("🎯 개선된 API 데모")
     print("="*60)
-    print("\nllmkit의 철학:")
+    print("\nbeanllm의 철학:")
     print("  1. 자동 감지 (80% 케이스)")
     print("  2. 명시적 선택 (세밀한 제어)")
     print("  3. 둘 다 가능!")

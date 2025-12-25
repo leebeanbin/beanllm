@@ -3,7 +3,7 @@ Callbacks - 이벤트 핸들링 시스템
 로깅, 비용 추적, 타이밍, 스트리밍 등
 """
 import time
-from llmkit import (
+from beanllm import (
     BaseCallback,
     LoggingCallback,
     CostTrackingCallback,
@@ -297,7 +297,7 @@ def demo_practical_usage():
 
     print("\n[방법 1: Client에 직접 전달]")
     print("""
-    from llmkit import Client, LoggingCallback, CostTrackingCallback
+    from beanllm import Client, LoggingCallback, CostTrackingCallback
 
     callbacks = [
         LoggingCallback(),
@@ -312,8 +312,8 @@ def demo_practical_usage():
 
     print("\n[방법 2: CallbackManager 사용]")
     print("""
-    from llmkit import Client, create_callback_manager
-    from llmkit import LoggingCallback, CostTrackingCallback
+    from beanllm import Client, create_callback_manager
+    from beanllm import LoggingCallback, CostTrackingCallback
 
     manager = create_callback_manager(
         LoggingCallback(),

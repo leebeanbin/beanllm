@@ -4,7 +4,7 @@ RAG Debugging Demo - RAG 파이프라인 디버깅하기
 """
 import asyncio
 from pathlib import Path
-from llmkit import (
+from beanllm import (
     DocumentLoader,
     TextSplitter,
     Embedding,
@@ -135,7 +135,7 @@ def demo_inspect_vector_store():
 
     try:
         # Vector Store 생성 및 문서 추가
-        from llmkit import Document
+        from beanllm import Document
 
         docs = [
             Document(content="Python is a programming language"),
