@@ -507,6 +507,7 @@ mypy src/beanllm
 
 ## 📚 Documentation
 
+- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - 전체 API 레퍼런스
 - **[QUICK_START.md](QUICK_START.md)** - 빠른 시작 가이드
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - 아키텍처 상세 설명
 - **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - PyPI 배포 가이드
