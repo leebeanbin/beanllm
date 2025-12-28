@@ -84,18 +84,26 @@ load_dotenv()
 ### 1. 간단한 채팅
 
 ```python
+import asyncio
 from beanllm import Client
 
-# Client 생성 (자동으로 사용 가능한 Provider 선택)
-client = Client(model="gpt-4o")
+async def main():
+    # Client 생성 (자동으로 사용 가능한 Provider 선택)
+    client = Client(model="gpt-4o")
 
-# 채팅
-response = client.chat("안녕하세요!")
-print(response.content)
+    # 채팅
+    response = await client.chat(
+        messages=[{"role": "user", "content": "안녕하세요!"}]
+    )
+    print(response.content)
 
-# 스트리밍
-for chunk in client.stream("긴 이야기를 들려주세요"):
-    print(chunk.content, end="", flush=True)
+    # 스트리밍
+    async for chunk in client.stream_chat(
+        messages=[{"role": "user", "content": "긴 이야기를 들려주세요"}]
+    ):
+        print(chunk, end="", flush=True)
+
+asyncio.run(main())
 ```
 
 ### 2. Provider 선택
@@ -117,12 +125,21 @@ client = Client(model="qwen2.5:7b")
 ### 3. 파라미터 설정
 
 ```python
-response = client.chat(
-    "창의적인 이야기를 써주세요",
-    temperature=0.9,      # 창의성
-    max_tokens=1000,      # 최대 토큰
-    system="당신은 창의적인 작가입니다"  # 시스템 메시지
-)
+import asyncio
+from beanllm import Client
+
+async def main():
+    client = Client(model="gpt-4o")
+
+    response = await client.chat(
+        messages=[{"role": "user", "content": "창의적인 이야기를 써주세요"}],
+        temperature=0.9,      # 창의성
+        max_tokens=1000,      # 최대 토큰
+        system="당신은 창의적인 작가입니다"  # 시스템 메시지
+    )
+    print(response.content)
+
+asyncio.run(main())
 ```
 
 ---
@@ -200,44 +217,55 @@ answer = rag.query("질문")
 ### 1. 기본 Agent
 
 ```python
+import asyncio
 from beanllm import Agent, Tool
 
 # 도구 정의
-@Tool.from_function
 def calculator(expression: str) -> str:
     """수학 표현식을 계산합니다"""
     return str(eval(expression))
 
-@Tool.from_function
 def get_weather(city: str) -> str:
     """도시의 날씨를 가져옵니다"""
     # 실제 API 호출
     return f"{city}의 날씨는 맑음입니다"
 
-# Agent 생성
-agent = Agent(
-    llm=Client(model="gpt-4o"),
-    tools=[calculator, get_weather],
-    max_iterations=10
-)
+# Tool 객체 생성
+calc_tool = Tool(name="calculator", func=calculator, description="수학 표현식을 계산합니다")
+weather_tool = Tool(name="get_weather", func=get_weather, description="도시의 날씨를 가져옵니다")
 
-# 실행
-result = agent.run("25 * 17를 계산하고, 서울의 날씨를 알려주세요")
-print(result.output)
+async def main():
+    # Agent 생성
+    agent = Agent(
+        model="gpt-4o",
+        tools=[calc_tool, weather_tool],
+        max_iterations=10
+    )
+
+    # 실행
+    result = await agent.run("25 * 17를 계산하고, 서울의 날씨를 알려주세요")
+    print(result.final_answer)
+
+asyncio.run(main())
 ```
 
 ### 2. 내장 도구 사용
 
 ```python
+import asyncio
 from beanllm import Agent, search_web, get_current_time
 
-# 내장 도구 사용
-agent = Agent(
-    llm=Client(model="gpt-4o"),
-    tools=[search_web, get_current_time]
-)
+async def main():
+    # 내장 도구 사용
+    agent = Agent(
+        model="gpt-4o",
+        tools=[search_web, get_current_time]
+    )
 
-result = agent.run("현재 시간을 알려주고, 오늘의 뉴스를 검색해주세요")
+    result = await agent.run("현재 시간을 알려주고, 오늘의 뉴스를 검색해주세요")
+    print(result.final_answer)
+
+asyncio.run(main())
 ```
 
 ---
@@ -247,38 +275,51 @@ result = agent.run("현재 시간을 알려주고, 오늘의 뉴스를 검색해
 ### 1. 간단한 Graph
 
 ```python
-from beanllm import StateGraph, END
+import asyncio
+from beanllm import StateGraph, END, Client
 
-# Graph 생성
-graph = StateGraph()
+client = Client(model="gpt-4o")
 
-# 노드 정의
-def analyze(state):
-    state["analysis"] = client.chat(f"분석: {state['input']}")
-    return state
+async def main():
+    # Graph 생성
+    graph = StateGraph()
 
-def improve(state):
-    state["output"] = client.chat(f"개선: {state['input']}")
-    return state
+    # 노드 정의
+    async def analyze(state):
+        response = await client.chat(
+            messages=[{"role": "user", "content": f"분석: {state['input']}"}]
+        )
+        state["analysis"] = response
+        return state
 
-# 노드 추가
-graph.add_node("analyze", analyze)
-graph.add_node("improve", improve)
+    async def improve(state):
+        response = await client.chat(
+            messages=[{"role": "user", "content": f"개선: {state['analysis']}"}]
+        )
+        state["output"] = response
+        return state
 
-# 조건부 엣지
-def should_improve(state):
-    score = float(state["analysis"].content.split("점수:")[1])
-    return "improve" if score < 0.8 else "end"
+    # 노드 추가
+    graph.add_node("analyze", analyze)
+    graph.add_node("improve", improve)
+    graph.set_entry_point("analyze")
 
-graph.add_conditional_edges(
-    "analyze",
-    should_improve,
-    {"improve": "improve", "end": END}
-)
+    # 조건부 엣지
+    def should_improve(state):
+        # 간단한 조건 예시
+        return "improve" if len(state.get("analysis", "")) < 100 else "end"
 
-# 실행
-result = graph.compile().invoke({"input": "초안 텍스트"})
-print(result["output"])
+    graph.add_conditional_edge(
+        "analyze",
+        should_improve,
+        {"improve": "improve", "end": END}
+    )
+
+    # 실행
+    result = await graph.invoke({"input": "초안 텍스트"})
+    print(result["output"])
+
+asyncio.run(main())
 ```
 
 ### 2. LangGraph 스타일
@@ -309,47 +350,66 @@ result = graph.run({"topic": "AI"})
 ### 1. Debate 패턴
 
 ```python
-from beanllm import MultiAgentCoordinator, DebateStrategy, Agent
+import asyncio
+from beanllm import MultiAgentCoordinator, Agent, search_web
 
-# 여러 Agent 생성
-researcher = Agent(
-    llm=Client(model="gpt-4o"),
-    role="연구자",
-    tools=[search_web]
-)
+async def main():
+    # 여러 Agent 생성
+    researcher = Agent(
+        model="gpt-4o",
+        tools=[search_web]
+    )
 
-writer = Agent(
-    llm=Client(model="gpt-4o"),
-    role="작가"
-)
+    writer = Agent(
+        model="gpt-4o"
+    )
 
-critic = Agent(
-    llm=Client(model="gpt-4o"),
-    role="비평가"
-)
+    critic = Agent(
+        model="gpt-4o"
+    )
 
-# Coordinator 생성
-coordinator = MultiAgentCoordinator(
-    agents=[researcher, writer, critic],
-    strategy=DebateStrategy(rounds=3)
-)
+    # Coordinator 생성 (agents는 딕셔너리)
+    coordinator = MultiAgentCoordinator(
+        agents={
+            "researcher": researcher,
+            "writer": writer,
+            "critic": critic
+        }
+    )
 
-# 실행
-result = coordinator.coordinate("양자 컴퓨팅에 대한 기사를 작성해주세요")
-print(result.final_output)
+    # 실행 (Debate 전략)
+    result = await coordinator.execute_debate(
+        task="양자 컴퓨팅에 대한 기사를 작성해주세요",
+        agent_ids=["researcher", "writer", "critic"],
+        rounds=3
+    )
+    print(result)
+
+asyncio.run(main())
 ```
 
 ### 2. Sequential 패턴
 
 ```python
-from beanllm import SequentialStrategy
+import asyncio
+from beanllm import MultiAgentCoordinator, Agent
 
-coordinator = MultiAgentCoordinator(
-    agents=[researcher, writer, critic],
-    strategy=SequentialStrategy()
-)
+async def main():
+    researcher = Agent(model="gpt-4o")
+    writer = Agent(model="gpt-4o")
+    critic = Agent(model="gpt-4o")
 
-result = coordinator.coordinate("작업을 순차적으로 수행")
+    coordinator = MultiAgentCoordinator(
+        agents={"researcher": researcher, "writer": writer, "critic": critic}
+    )
+
+    result = await coordinator.execute_sequential(
+        task="작업을 순차적으로 수행",
+        agent_order=["researcher", "writer", "critic"]
+    )
+    print(result)
+
+asyncio.run(main())
 ```
 
 ---
