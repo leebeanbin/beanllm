@@ -5,22 +5,22 @@ Complete API reference for all beanllm components.
 ## Table of Contents
 
 ### Core Components
-- [ClientFacade](#clientfacade) - Basic LLM client
-- [RAGFacade](#ragfacade) - RAG (Retrieval-Augmented Generation) system
-- [AgentFacade](#agentfacade) - AI agent with tools
-- [ChainFacade](#chainfacade) - Chain execution
+- [Client](#client) - Basic LLM client
+- [RAGChain](#ragchain) - RAG (Retrieval-Augmented Generation) system
+- [Agent](#agent) - AI agent with tools
+- [Chain](#chain) - Chain execution
 
 ### Advanced Features
-- [MultiAgentFacade](#multiagentfacade) - Multi-agent collaboration
-- [GraphFacade](#graphfacade) - Graph-based workflows
-- [StateGraphFacade](#stategraphfacade) - State-based graph execution
-- [AudioFacade](#audiofacade) - Audio processing (speech-to-text, text-to-speech)
+- [MultiAgentCoordinator](#multiagentcoordinator) - Multi-agent collaboration
+- [Graph](#graph) - Graph-based workflows
+- [StateGraph](#stategraph) - State-based graph execution
+- [Audio](#audio) - Audio processing (speech-to-text, text-to-speech)
 
 ### Specialized Features
-- [VisionRAGFacade](#visionragfacade) - Vision + RAG with image understanding
-- [WebSearchFacade](#websearchfacade) - Web search integration
-- [EvaluationFacade](#evaluationfacade) - LLM evaluation and metrics
-- [FinetuningFacade](#finetuningfacade) - Model fine-tuning
+- [VisionRAG](#visionrag) - Vision + RAG with image understanding
+- [WebSearch](#websearch) - Web search integration
+- [Evaluator](#evaluator) - LLM evaluation and metrics
+- [FineTuningManager](#finetuningmanager) - Model fine-tuning
 
 ---
 
@@ -42,14 +42,20 @@ pip install beanllm[openai,anthropic]
 ## Quick Start
 
 ```python
-from beanllm import ClientFacade
+import asyncio
+from beanllm import Client
 
-# Initialize client
-client = ClientFacade(model="gpt-4")
+async def main():
+    # Initialize client
+    client = Client(model="gpt-4")
 
-# Simple chat
-response = client.chat("Hello, how are you?")
-print(response.content)
+    # Simple chat
+    response = await client.chat(
+        messages=[{"role": "user", "content": "Hello, how are you?"}]
+    )
+    print(response.content)
+
+asyncio.run(main())
 ```
 
 ---
@@ -58,7 +64,7 @@ print(response.content)
 
 ## Core Components
 
-### ClientFacade
+### Client
 
 기본 LLM 클라이언트. 가장 간단한 채팅 인터페이스를 제공합니다.
 
@@ -72,16 +78,16 @@ print(response.content)
 
 **예제:**
 ```python
-from beanllm import ClientFacade
+from beanllm import Client
 
 # OpenAI
-client = ClientFacade(model="gpt-4")
+client = Client(model="gpt-4")
 
 # Anthropic (provider 자동 감지)
-client = ClientFacade(model="claude-3-opus-20240229")
+client = Client(model="claude-3-opus-20240229")
 
 # 명시적 provider 지정
-client = ClientFacade(model="gpt-4", provider="openai")
+client = Client(model="gpt-4", provider="openai")
 ```
 
 #### `chat(messages, system=None, temperature=None, max_tokens=None, **kwargs)` (async)
@@ -107,7 +113,7 @@ response = await client.chat(
 print(response.content)
 ```
 
-#### `stream(messages, **kwargs)` (async)
+#### `stream_chat(messages, **kwargs)` (async)
 
 스트리밍 방식으로 채팅 완료를 수행합니다.
 
@@ -117,32 +123,37 @@ print(response.content)
 
 **예제:**
 ```python
-async for chunk in client.stream(messages=[{"role": "user", "content": "Tell me a story"}]):
+async for chunk in client.stream_chat(messages=[{"role": "user", "content": "Tell me a story"}]):
     print(chunk, end="", flush=True)
 ```
 
 ---
 
-### RAGFacade
+### RAGChain
 
 RAG (Retrieval-Augmented Generation) 시스템. 문서 기반 질의응답을 제공합니다.
 
-#### `__init__(model, vector_store=None, embedding_model=None, **kwargs)`
+#### `from_documents(source, chunk_size=500, chunk_overlap=50, embedding_model="text-embedding-3-small", llm_model="gpt-4o-mini", **kwargs)`
+
+팩토리 메서드로 RAG 시스템을 생성합니다.
 
 **파라미터:**
-- `model` (str): LLM 모델 이름
-- `vector_store` (str, optional): 벡터 저장소 ("chroma", "faiss", "pinecone" 등)
-- `embedding_model` (str, optional): 임베딩 모델 이름
+- `source` (str | List): 문서 경로 또는 문서 리스트
+- `chunk_size` (int): 청크 크기
+- `chunk_overlap` (int): 청크 겹침
+- `embedding_model` (str): 임베딩 모델 이름
+- `llm_model` (str): LLM 모델 이름
 - `**kwargs`: 추가 설정
 
 **예제:**
 ```python
-from beanllm import RAGFacade
+from beanllm import RAGChain
 
-rag = RAGFacade(
-    model="gpt-4",
-    vector_store="chroma",
-    embedding_model="text-embedding-3-small"
+rag = RAGChain.from_documents(
+    source="documents.txt",
+    chunk_size=500,
+    embedding_model="text-embedding-3-small",
+    llm_model="gpt-4"
 )
 ```
 
@@ -185,25 +196,26 @@ print(response.sources)  # 사용된 문서들
 
 ---
 
-### AgentFacade
+### Agent
 
 도구를 사용할 수 있는 AI 에이전트.
 
-#### `__init__(model, tools=None, **kwargs)`
+#### `__init__(model, tools=None, max_iterations=10, **kwargs)`
 
 **파라미터:**
 - `model` (str): LLM 모델 이름
 - `tools` (List[Tool], optional): 사용할 도구 리스트
+- `max_iterations` (int): 최대 반복 횟수
 - `**kwargs`: 추가 설정
 
 **예제:**
 ```python
-from beanllm import AgentFacade
-from beanllm.domain.tools import Calculator, WebSearch
+from beanllm import Agent
+from beanllm import search_web, calculator
 
-agent = AgentFacade(
+agent = Agent(
     model="gpt-4",
-    tools=[Calculator(), WebSearch()]
+    tools=[search_web, calculator]
 )
 ```
 
@@ -230,112 +242,117 @@ print(response.steps)  # 실행 단계
 
 ---
 
-### ChainFacade
+### Chain
 
 여러 단계를 순차적으로 실행하는 체인.
 
-#### `__init__(steps=None, **kwargs)`
+#### `__init__(client, memory=None, verbose=False)`
 
 **파라미터:**
-- `steps` (List[Callable], optional): 실행할 단계들
-- `**kwargs`: 추가 설정
+- `client` (Client): LLM 클라이언트
+- `memory` (Memory, optional): 메모리 객체
+- `verbose` (bool): 디버그 출력 여부
 
-#### `add_step(step, name=None)`
-
-체인에 단계를 추가합니다.
-
-**파라미터:**
-- `step` (Callable): 실행할 함수
-- `name` (str, optional): 단계 이름
-
-#### `run(input_data, **kwargs)` (async)
+#### `run(user_input, **kwargs)` (async)
 
 체인을 실행합니다.
 
 **파라미터:**
-- `input_data` (Any): 입력 데이터
+- `user_input` (str): 사용자 입력
 - `**kwargs`: 추가 파라미터
 
-**반환:** `ChainResponse`
+**반환:** `ChainResult`
 
 **예제:**
 ```python
-from beanllm import ChainFacade
+from beanllm import Chain, Client
 
-chain = ChainFacade()
-chain.add_step(lambda x: x.upper(), name="uppercase")
-chain.add_step(lambda x: x + "!", name="add_exclamation")
+client = Client(model="gpt-4")
+chain = Chain(client=client)
 
-response = await chain.run("hello")
-print(response.result)  # "HELLO!"
+response = await chain.run("Translate 'hello' to French")
+print(response.output)
 ```
 
 ---
 
 ## Advanced Features
 
-### MultiAgentFacade
+### MultiAgentCoordinator
 
 여러 에이전트가 협업하는 시스템.
 
-#### `__init__(agents=None, strategy="sequential", **kwargs)`
+#### `__init__(agents, communication_bus=None)`
 
 **파라미터:**
-- `agents` (List[Agent], optional): 에이전트 리스트
-- `strategy` (str): 협업 전략 ("sequential", "parallel", "debate")
-- `**kwargs`: 추가 설정
+- `agents` (Dict[str, Agent]): 에이전트 딕셔너리 (id: agent)
+- `communication_bus` (CommunicationBus, optional): 통신 버스
 
-#### `run(task, **kwargs)` (async)
+#### `execute_sequential(task, agent_order, **kwargs)` (async)
 
-멀티 에이전트 시스템을 실행합니다.
+순차적으로 에이전트를 실행합니다.
 
-**반환:** `MultiAgentResponse`
+**파라미터:**
+- `task` (str): 작업
+- `agent_order` (List[str]): 에이전트 실행 순서
+
+#### `execute_debate(task, agent_ids=None, rounds=3, **kwargs)` (async)
+
+토론 방식으로 에이전트를 실행합니다.
 
 **예제:**
 ```python
-from beanllm import MultiAgentFacade, AgentFacade
+from beanllm import MultiAgentCoordinator, Agent
 
-researcher = AgentFacade(model="gpt-4", name="Researcher")
-writer = AgentFacade(model="gpt-4", name="Writer")
+researcher = Agent(model="gpt-4")
+writer = Agent(model="gpt-4")
 
-multi_agent = MultiAgentFacade(
-    agents=[researcher, writer],
-    strategy="sequential"
+coordinator = MultiAgentCoordinator(
+    agents={"researcher": researcher, "writer": writer}
 )
 
-response = await multi_agent.run("Research AI trends and write a summary")
+result = await coordinator.execute_sequential(
+    task="Research AI trends and write a summary",
+    agent_order=["researcher", "writer"]
+)
 ```
 
 ---
 
-### GraphFacade
+### Graph
 
 그래프 기반 워크플로우.
 
-#### `add_node(node, name)`
+#### `__init__(enable_cache=True)`
+
+**파라미터:**
+- `enable_cache` (bool): 캐싱 활성화 여부
+
+#### `add_node(node)`
 
 그래프에 노드를 추가합니다.
 
-#### `add_edge(from_node, to_node, condition=None)`
+#### `add_edge(from_node, to_node)`
 
 노드 간 엣지를 추가합니다.
 
-#### `run(initial_state, **kwargs)` (async)
+#### `run(initial_state, verbose=False)` (async)
 
 그래프를 실행합니다.
 
 ---
 
-### StateGraphFacade
+### StateGraph
 
 상태 기반 그래프 실행 시스템.
 
-#### `__init__(state_schema=None, **kwargs)`
+#### `__init__(state_schema=None, config=None)`
 
 **파라미터:**
 - `state_schema` (Dict, optional): 상태 스키마 정의
+- `config` (GraphConfig, optional): 그래프 설정
 
-#### `add_node(name, function)`
+#### `add_node(name, func)`
 
 상태 그래프에 노드를 추가합니다.
 
@@ -343,19 +360,19 @@ response = await multi_agent.run("Research AI trends and write a summary")
 
 진입점을 설정합니다.
 
-#### `add_conditional_edges(source, condition_fn, mapping)`
+#### `add_conditional_edge(from_node, condition_func, edge_mapping=None)`
 
 조건부 엣지를 추가합니다.
 
-#### `run(initial_state, **kwargs)` (async)
+#### `invoke(initial_state, execution_id=None)` (async)
 
 상태 그래프를 실행합니다.
 
 **예제:**
 ```python
-from beanllm import StateGraphFacade
+from beanllm import StateGraph
 
-graph = StateGraphFacade(state_schema={"count": 0, "message": ""})
+graph = StateGraph(state_schema={"count": 0, "message": ""})
 
 def increment(state):
     state["count"] += 1
@@ -364,142 +381,166 @@ def increment(state):
 graph.add_node("increment", increment)
 graph.set_entry_point("increment")
 
-result = await graph.run({"count": 0, "message": "start"})
+result = await graph.invoke({"count": 0, "message": "start"})
 ```
 
 ---
 
-### AudioFacade
+### Audio
 
 음성 처리 (STT, TTS).
 
-#### `transcribe(audio_file, **kwargs)` (async)
+#### WhisperSTT - Speech-to-Text
 
-음성을 텍스트로 변환합니다 (Speech-to-Text).
-
-**파라미터:**
-- `audio_file` (str | bytes): 오디오 파일 경로 또는 바이트
-- `**kwargs`: 추가 파라미터
-
-**반환:** `AudioResponse`
-
-**예제:**
 ```python
-from beanllm import AudioFacade
+from beanllm import WhisperSTT
 
-audio = AudioFacade(model="whisper-1")
-response = await audio.transcribe("speech.mp3")
-print(response.text)
+stt = WhisperSTT(model="base")
+text = stt.transcribe("speech.mp3")
+print(text)
 ```
 
-#### `synthesize(text, voice="alloy", **kwargs)` (async)
+#### TextToSpeech - Text-to-Speech
 
-텍스트를 음성으로 변환합니다 (Text-to-Speech).
+```python
+from beanllm import TextToSpeech
 
-**파라미터:**
-- `text` (str): 변환할 텍스트
-- `voice` (str): 음성 종류
-- `**kwargs`: 추가 파라미터
+tts = TextToSpeech(provider="openai", voice="alloy")
+audio_bytes = tts.synthesize("Hello, world!")
+```
 
-**반환:** 오디오 바이트
+#### AudioRAG - 오디오 검색 및 QA
+
+```python
+from beanllm import AudioRAG
+
+audio_rag = AudioRAG()
+audio_rag.add_audio("interview.mp3", audio_id="interview_1")
+results = audio_rag.search("What did they say about AI?", top_k=3)
+```
 
 ---
 
 ## Specialized Features
 
-### VisionRAGFacade
+### VisionRAG
 
 이미지 + 텍스트 기반 RAG.
 
-#### `add_images(image_paths)` (async)
+#### `from_images(source, generate_captions=True, llm_model="gpt-4o", **kwargs)`
 
-이미지를 벡터 저장소에 추가합니다.
+이미지로부터 VisionRAG를 생성합니다.
 
-#### `query(question, image_context=True, **kwargs)` (async)
+**파라미터:**
+- `source` (str | List): 이미지 경로 또는 리스트
+- `generate_captions` (bool): 자동 캡션 생성 여부
+- `llm_model` (str): LLM 모델
 
-이미지 컨텍스트를 포함하여 질의합니다.
+**예제:**
+```python
+from beanllm import VisionRAG
+
+vision_rag = VisionRAG.from_images(
+    source="images/",
+    generate_captions=True,
+    llm_model="gpt-4o"
+)
+
+# 이미지 검색 및 질의
+response = vision_rag.query(
+    question="What objects are in the images?",
+    k=3,
+    include_images=True
+)
+```
 
 ---
 
-### WebSearchFacade
+### WebSearch
 
 웹 검색 통합.
 
-#### `search(query, num_results=5, **kwargs)` (async)
+#### `search(query, engine=None, **kwargs)`
 
 웹 검색을 수행합니다.
 
 **파라미터:**
 - `query` (str): 검색 쿼리
-- `num_results` (int): 결과 수
+- `engine` (str, optional): 검색 엔진 ("google", "bing", "duckduckgo")
 
 **예제:**
 ```python
-from beanllm import WebSearchFacade
+from beanllm import WebSearch
 
-search = WebSearchFacade(engine="google")
-results = await search.search("latest AI news", num_results=5)
+search = WebSearch(default_engine="duckduckgo")
+results = search.search("latest AI news")
+
+for result in results:
+    print(result.title, result.url)
 ```
 
 ---
 
-### EvaluationFacade
+### Evaluator
 
 LLM 평가 및 메트릭.
 
-#### `evaluate(predictions, references, metrics=None, **kwargs)` (async)
+#### `evaluate(prediction, reference, **kwargs)`
 
 모델 출력을 평가합니다.
 
 **파라미터:**
-- `predictions` (List[str]): 예측 결과
-- `references` (List[str]): 정답 참조
-- `metrics` (List[str], optional): 사용할 메트릭 ("bleu", "rouge", etc.)
+- `prediction` (str): 예측 결과
+- `reference` (str): 정답 참조
 
-**반환:** `EvaluationResponse`
+**반환:** `EvaluationResult`
 
 **예제:**
 ```python
-from beanllm import EvaluationFacade
+from beanllm import Evaluator
 
-evaluator = EvaluationFacade()
-results = await evaluator.evaluate(
-    predictions=["The cat sat on the mat"],
-    references=["A cat was sitting on the mat"],
-    metrics=["bleu", "rouge"]
+evaluator = Evaluator(metrics=["bleu", "rouge", "f1"])
+result = evaluator.evaluate(
+    prediction="The cat sat on the mat",
+    reference="A cat was sitting on the mat"
 )
-print(results.scores)
+print(result.scores)
 ```
 
 ---
 
-### FinetuningFacade
+### FineTuningManager
 
 모델 파인튜닝.
 
-#### `create_job(training_data, model, **kwargs)` (async)
+#### `prepare_and_upload(examples, output_path, validate=True)`
 
-파인튜닝 작업을 생성합니다.
+훈련 데이터를 준비하고 업로드합니다.
 
-**파라미터:**
-- `training_data` (str | List): 훈련 데이터 파일 경로 또는 데이터
-- `model` (str): 기본 모델
-- `**kwargs`: 추가 파라미터
+#### `start_training(model, training_file, validation_file=None, **kwargs)`
 
-#### `check_status(job_id)` (async)
-
-파인튜닝 작업 상태를 확인합니다.
+파인튜닝 작업을 시작합니다.
 
 **예제:**
 ```python
-from beanllm import FinetuningFacade
+from beanllm import FineTuningManager
 
-finetuner = FinetuningFacade(provider="openai")
-job = await finetuner.create_job(
-    training_data="training.jsonl",
-    model="gpt-3.5-turbo"
+manager = FineTuningManager(provider="openai")
+
+# 데이터 준비
+file_id = manager.prepare_and_upload(
+    examples=[...],
+    output_path="training.jsonl"
 )
-status = await finetuner.check_status(job.id)
+
+# 훈련 시작
+job = manager.start_training(
+    model="gpt-3.5-turbo",
+    training_file=file_id
+)
+
+# 진행 상황 확인
+progress = manager.get_training_progress(job.id)
 ```
 
 ---
@@ -531,14 +572,21 @@ Most facades support these common parameters:
 ## Error Handling
 
 ```python
-from beanllm import ClientFacade
-from beanllm.utils.exceptions import BeanLLMError
+import asyncio
+from beanllm import Client
+from beanllm.utils.exceptions import LLMKitError
 
-try:
-    client = ClientFacade(model="gpt-4")
-    response = client.chat("Hello")
-except BeanLLMError as e:
-    print(f"Error: {e}")
+async def main():
+    try:
+        client = Client(model="gpt-4")
+        response = await client.chat(
+            messages=[{"role": "user", "content": "Hello"}]
+        )
+        print(response.content)
+    except LLMKitError as e:
+        print(f"Error: {e}")
+
+asyncio.run(main())
 ```
 
 ---
