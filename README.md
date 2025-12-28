@@ -1,15 +1,29 @@
-# 🚀 beanllm
+<h1 align="center">🚀 beanllm</h1>
 
-**Production-ready LLM toolkit with Clean Architecture and unified interface for multiple providers**
+<p align="center">
+  <em>Production-ready LLM toolkit with Clean Architecture and unified interface for multiple providers</em>
+</p>
 
-[![PyPI version](https://badge.fury.io/py/beanllm.svg)](https://badge.fury.io/py/beanllm)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://static.pepy.tech/badge/beanllm)](https://pepy.tech/project/beanllm)
-[![Tests](https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml/badge.svg)](https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml)
-[![GitHub Stars](https://img.shields.io/github/stars/leebeanbin/beanllm?style=social)](https://github.com/leebeanbin/beanllm)
+<p align="center">
+  <a href="https://badge.fury.io/py/beanllm"><img src="https://badge.fury.io/py/beanllm.svg" alt="PyPI version"></a>
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.11+-blue.svg" alt="Python 3.11+"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <a href="https://pepy.tech/project/beanllm"><img src="https://static.pepy.tech/badge/beanllm" alt="Downloads"></a>
+  <a href="https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml"><img src="https://github.com/leebeanbin/beanllm/actions/workflows/tests.yml/badge.svg" alt="Tests"></a>
+  <a href="https://github.com/leebeanbin/beanllm"><img src="https://img.shields.io/github/stars/leebeanbin/beanllm?style=social" alt="GitHub Stars"></a>
+</p>
 
 **beanllm** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
+
+---
+
+## 📚 Documentation
+
+- **[Quick Start Guide](QUICK_START.md)** - Get started in 5 minutes
+- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- **[Architecture Guide](ARCHITECTURE.md)** - Design principles and patterns
+- **[Examples](examples/)** - 15+ working examples
+- **[PyPI Package](https://pypi.org/project/beanllm/)** - Installation and releases
 
 ---
 
