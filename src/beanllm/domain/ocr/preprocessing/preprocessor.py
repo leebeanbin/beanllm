@@ -17,7 +17,15 @@ from typing import Optional
 
 import numpy as np
 
-from ..models import OCRConfig
+from ..models import (
+    BinarizeConfig,
+    ContrastConfig,
+    DenoiseConfig,
+    DeskewConfig,
+    OCRConfig,
+    ResizeConfig,
+    SharpenConfig,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -101,28 +109,28 @@ class ImagePreprocessor:
             gray = image.copy()
 
         # 1. 크기 조정 (먼저 수행)
-        if config.max_image_size:
-            gray = self._resize(gray, config.max_image_size)
+        if config.resize_config.enabled and config.resize_config.max_size:
+            gray = self._resize(gray, config.resize_config)
 
         # 2. 노이즈 제거
-        if config.denoise:
-            gray = self._denoise(gray)
+        if config.denoise_config.enabled:
+            gray = self._denoise(gray, config.denoise_config)
 
         # 3. 대비 조정
-        if config.contrast_adjustment:
-            gray = self._adjust_contrast(gray)
+        if config.contrast_config.enabled:
+            gray = self._adjust_contrast(gray, config.contrast_config)
 
         # 4. 기울기 보정
-        if config.deskew:
-            gray = self._deskew(gray)
+        if config.deskew_config.enabled:
+            gray = self._deskew(gray, config.deskew_config)
 
         # 5. 이진화
-        if config.binarize:
-            gray = self._binarize(gray)
+        if config.binarize_config.enabled:
+            gray = self._binarize(gray, config.binarize_config)
 
         # 6. 선명화
-        if config.sharpen:
-            gray = self._sharpen(gray)
+        if config.sharpen_config.enabled:
+            gray = self._sharpen(gray, config.sharpen_config)
 
         # Grayscale → RGB (OCR 엔진은 RGB를 받음)
         if len(gray.shape) == 2:
@@ -132,13 +140,13 @@ class ImagePreprocessor:
 
         return result
 
-    def _resize(self, image: np.ndarray, max_size: int) -> np.ndarray:
+    def _resize(self, image: np.ndarray, config: ResizeConfig) -> np.ndarray:
         """
         이미지 크기 조정
 
         Args:
             image: 입력 이미지
-            max_size: 최대 크기 (픽셀)
+            config: 크기 조정 설정
 
         Returns:
             np.ndarray: 크기 조정된 이미지
@@ -146,16 +154,25 @@ class ImagePreprocessor:
         h, w = image.shape[:2]
         max_dim = max(h, w)
 
-        if max_dim > max_size:
-            scale = max_size / max_dim
+        if config.max_size and max_dim > config.max_size:
+            scale = config.max_size / max_dim
             new_w = int(w * scale)
             new_h = int(h * scale)
-            image = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_AREA)
-            logger.debug(f"Resized image from {w}x{h} to {new_w}x{new_h}")
+
+            # 보간 방법 매핑
+            interp_map = {
+                "area": cv2.INTER_AREA,
+                "linear": cv2.INTER_LINEAR,
+                "cubic": cv2.INTER_CUBIC,
+            }
+            interpolation = interp_map.get(config.interpolation, cv2.INTER_AREA)
+
+            image = cv2.resize(image, (new_w, new_h), interpolation=interpolation)
+            logger.debug(f"Resized image from {w}x{h} to {new_w}x{new_h} (interpolation={config.interpolation})")
 
         return image
 
-    def _denoise(self, image: np.ndarray) -> np.ndarray:
+    def _denoise(self, image: np.ndarray, config: DenoiseConfig) -> np.ndarray:
         """
         노이즈 제거
 
@@ -163,19 +180,31 @@ class ImagePreprocessor:
 
         Args:
             image: 입력 이미지 (grayscale)
+            config: 노이즈 제거 설정
 
         Returns:
             np.ndarray: 노이즈 제거된 이미지
         """
+        # Strength에 따라 커널 크기 조정
+        if config.strength == "light":
+            gaussian_kernel = (3, 3)
+            median_kernel = 3
+        elif config.strength == "strong":
+            gaussian_kernel = (5, 5)
+            median_kernel = 5
+        else:  # medium
+            gaussian_kernel = config.gaussian_kernel
+            median_kernel = config.median_kernel
+
         # Gaussian blur (가벼운 블러)
-        denoised = cv2.GaussianBlur(image, (3, 3), 0)
+        denoised = cv2.GaussianBlur(image, gaussian_kernel, 0)
 
         # Median filter (salt-and-pepper 노이즈 제거)
-        denoised = cv2.medianBlur(denoised, 3)
+        denoised = cv2.medianBlur(denoised, median_kernel)
 
         return denoised
 
-    def _adjust_contrast(self, image: np.ndarray) -> np.ndarray:
+    def _adjust_contrast(self, image: np.ndarray, config: ContrastConfig) -> np.ndarray:
         """
         대비 조정
 
@@ -183,34 +212,50 @@ class ImagePreprocessor:
 
         Args:
             image: 입력 이미지 (grayscale)
+            config: 대비 조정 설정
 
         Returns:
             np.ndarray: 대비 조정된 이미지
         """
         # CLAHE (Adaptive histogram equalization)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        clahe = cv2.createCLAHE(clipLimit=config.clip_limit, tileGridSize=config.tile_grid_size)
         enhanced = clahe.apply(image)
 
         return enhanced
 
-    def _binarize(self, image: np.ndarray) -> np.ndarray:
+    def _binarize(self, image: np.ndarray, config: BinarizeConfig) -> np.ndarray:
         """
         이진화
 
-        Otsu's method를 사용한 자동 임계값 이진화.
+        설정에 따라 Otsu, Adaptive, Manual 이진화 지원.
 
         Args:
             image: 입력 이미지 (grayscale)
+            config: 이진화 설정
 
         Returns:
             np.ndarray: 이진화된 이미지
         """
-        # Otsu's binarization
-        _, binary = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        if config.method == "otsu":
+            # Otsu's binarization
+            _, binary = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        elif config.method == "adaptive":
+            # Adaptive thresholding
+            binary = cv2.adaptiveThreshold(
+                image,
+                255,
+                cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv2.THRESH_BINARY,
+                config.block_size,
+                config.c,
+            )
+        else:  # manual
+            # Manual thresholding
+            _, binary = cv2.threshold(image, config.threshold, 255, cv2.THRESH_BINARY)
 
         return binary
 
-    def _deskew(self, image: np.ndarray) -> np.ndarray:
+    def _deskew(self, image: np.ndarray, config: DeskewConfig) -> np.ndarray:
         """
         기울기 보정
 
@@ -218,6 +263,7 @@ class ImagePreprocessor:
 
         Args:
             image: 입력 이미지 (grayscale)
+            config: 기울기 보정 설정
 
         Returns:
             np.ndarray: 기울기 보정된 이미지
@@ -246,8 +292,8 @@ class ImagePreprocessor:
         # 중간값 각도 사용 (outlier 제거)
         median_angle = np.median(angles)
 
-        # 회전 변환 (작은 각도만 보정)
-        if abs(median_angle) > 0.5:  # 0.5도 이상만 보정
+        # 회전 변환 (설정된 임계값 이상만 보정)
+        if abs(median_angle) > config.angle_threshold:
             h, w = image.shape[:2]
             center = (w // 2, h // 2)
             M = cv2.getRotationMatrix2D(center, median_angle, 1.0)
@@ -259,7 +305,7 @@ class ImagePreprocessor:
 
         return image
 
-    def _sharpen(self, image: np.ndarray) -> np.ndarray:
+    def _sharpen(self, image: np.ndarray, config: SharpenConfig) -> np.ndarray:
         """
         이미지 선명화
 
@@ -267,6 +313,7 @@ class ImagePreprocessor:
 
         Args:
             image: 입력 이미지 (grayscale)
+            config: 선명화 설정
 
         Returns:
             np.ndarray: 선명화된 이미지
@@ -274,8 +321,10 @@ class ImagePreprocessor:
         # Gaussian blur
         blurred = cv2.GaussianBlur(image, (0, 0), 3)
 
-        # Unsharp masking
-        sharpened = cv2.addWeighted(image, 1.5, blurred, -0.5, 0)
+        # Unsharp masking (strength에 따라 가중치 조정)
+        alpha = 1.0 + config.strength
+        beta = -config.strength
+        sharpened = cv2.addWeighted(image, alpha, blurred, beta, 0)
 
         return sharpened
 
