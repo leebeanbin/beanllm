@@ -215,6 +215,72 @@ class FineTuningManager:
     def __init__(self, provider: BaseFineTuningProvider):
         self.provider = provider
 
+    @staticmethod
+    def create(provider: str, **kwargs) -> "FineTuningManager":
+        """
+        파인튜닝 매니저 생성 (Factory 메서드)
+
+        Args:
+            provider: 프로바이더 종류
+                - "openai": OpenAI Fine-tuning
+                - "axolotl": Axolotl (로컬)
+                - "unsloth": Unsloth (로컬)
+            **kwargs: 프로바이더별 초기화 파라미터
+
+        Returns:
+            FineTuningManager 인스턴스
+
+        Example:
+            ```python
+            # OpenAI
+            manager = FineTuningManager.create(
+                provider="openai",
+                api_key="sk-..."
+            )
+
+            # Axolotl
+            manager = FineTuningManager.create(
+                provider="axolotl",
+                output_dir="./axolotl_outputs"
+            )
+
+            # Unsloth
+            manager = FineTuningManager.create(
+                provider="unsloth",
+                output_dir="./unsloth_outputs"
+            )
+            ```
+        """
+        from .providers import OpenAIFineTuningProvider
+
+        if provider == "openai":
+            provider_instance = OpenAIFineTuningProvider(**kwargs)
+        elif provider == "axolotl":
+            try:
+                from .local_providers import AxolotlProvider
+                provider_instance = AxolotlProvider(**kwargs)
+            except ImportError:
+                raise ImportError(
+                    "AxolotlProvider requires axolotl. "
+                    "Install with: pip install axolotl-ai"
+                )
+        elif provider == "unsloth":
+            try:
+                from .local_providers import UnslothProvider
+                provider_instance = UnslothProvider(**kwargs)
+            except ImportError:
+                raise ImportError(
+                    "UnslothProvider requires unsloth. "
+                    "Install with: pip install unsloth"
+                )
+        else:
+            raise ValueError(
+                f"Unknown provider: {provider}. "
+                f"Available: openai, axolotl, unsloth"
+            )
+
+        return FineTuningManager(provider_instance)
+
     def prepare_and_upload(
         self, examples: List[TrainingExample], output_path: str, validate: bool = True
     ) -> str:
