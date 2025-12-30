@@ -260,6 +260,8 @@ class OCRConfig:
             "surya",
             "tesseract",
             "cloud",
+            "cloud-google",
+            "cloud-aws",
         }
         if self.engine not in valid_engines:
             raise ValueError(

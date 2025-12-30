@@ -30,3 +30,43 @@ try:
     __all__.append("EasyOCREngine")
 except ImportError:
     pass
+
+# Tesseract 엔진 (optional dependency)
+try:
+    from .tesseract_engine import TesseractEngine
+
+    __all__.append("TesseractEngine")
+except ImportError:
+    pass
+
+# TrOCR 엔진 (optional dependency)
+try:
+    from .trocr_engine import TrOCREngine
+
+    __all__.append("TrOCREngine")
+except ImportError:
+    pass
+
+# Nougat 엔진 (optional dependency)
+try:
+    from .nougat_engine import NougatEngine
+
+    __all__.append("NougatEngine")
+except ImportError:
+    pass
+
+# Surya 엔진 (optional dependency)
+try:
+    from .surya_engine import SuryaEngine
+
+    __all__.append("SuryaEngine")
+except ImportError:
+    pass
+
+# Cloud OCR 엔진 (optional dependency)
+try:
+    from .cloud_engine import CloudOCREngine
+
+    __all__.append("CloudOCREngine")
+except ImportError:
+    pass
