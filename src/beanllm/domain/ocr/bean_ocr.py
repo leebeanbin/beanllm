@@ -81,12 +81,13 @@ class beanOCR:
         # 엔진 초기화
         self._engine = self._create_engine(self.config.engine)
 
-        # 전처리기 (TODO: Phase 3에서 구현)
-        # if self.config.enable_preprocessing:
-        #     from .preprocessing import ImagePreprocessor
-        #     self._preprocessor = ImagePreprocessor()
+        # 전처리기
+        if self.config.enable_preprocessing:
+            from .preprocessing import ImagePreprocessor
 
-        # 후처리기 (TODO: Phase 3에서 구현)
+            self._preprocessor = ImagePreprocessor()
+
+        # 후처리기 (TODO: Phase 4에서 구현)
         # if self.config.enable_llm_postprocessing:
         #     from .postprocessing import LLMPostprocessor
         #     self._postprocessor = LLMPostprocessor(
@@ -270,9 +271,9 @@ class beanOCR:
         # 1. 이미지 로드
         image = self._load_image(image_or_path)
 
-        # 2. 전처리 (TODO: Phase 3에서 구현)
-        # if self._preprocessor:
-        #     image = self._preprocessor.process(image, self.config)
+        # 2. 전처리
+        if self._preprocessor:
+            image = self._preprocessor.process(image, self.config)
 
         # 3. OCR 실행
         if self._engine is None:
@@ -280,7 +281,7 @@ class beanOCR:
 
         raw_result = self._engine.recognize(image, self.config)
 
-        # 4. 후처리 (TODO: Phase 3에서 구현)
+        # 4. 후처리 (TODO: Phase 4에서 구현)
         # if self._postprocessor:
         #     raw_result = await self._postprocessor.process(raw_result, self.config)
 
