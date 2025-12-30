@@ -23,6 +23,8 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from .base_framework import BaseEvaluationFramework
+
 try:
     from ...utils.logger import get_logger
 except ImportError:
@@ -40,7 +42,7 @@ except ImportError:
     HAS_LM_EVAL = False
 
 
-class LMEvalHarnessWrapper:
+class LMEvalHarnessWrapper(BaseEvaluationFramework):
     """
     LM Evaluation Harness 통합 래퍼
 
