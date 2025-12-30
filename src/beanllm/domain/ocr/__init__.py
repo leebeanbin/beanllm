@@ -33,6 +33,8 @@ Example:
 
 from .bean_ocr import beanOCR
 from .experiment import OCRExperiment
+from .grid_search import GridSearchTuner
+from .interactive_widget import OCRInteractiveWidget
 from .models import (
     BinarizeConfig,
     BoundingBox,
@@ -63,4 +65,6 @@ __all__ = [
     "OCRVisualizer",
     "ConfigPresets",
     "OCRExperiment",
+    "GridSearchTuner",
+    "OCRInteractiveWidget",
 ]
