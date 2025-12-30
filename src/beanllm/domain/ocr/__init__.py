@@ -32,7 +32,21 @@ Example:
 """
 
 from .bean_ocr import beanOCR
-from .models import BoundingBox, OCRConfig, OCRResult, OCRTextLine
+from .experiment import OCRExperiment
+from .models import (
+    BinarizeConfig,
+    BoundingBox,
+    ContrastConfig,
+    DenoiseConfig,
+    DeskewConfig,
+    OCRConfig,
+    OCRResult,
+    OCRTextLine,
+    ResizeConfig,
+    SharpenConfig,
+)
+from .presets import ConfigPresets
+from .visualizer import OCRVisualizer
 
 __all__ = [
     "beanOCR",
@@ -40,4 +54,13 @@ __all__ = [
     "OCRTextLine",
     "OCRResult",
     "OCRConfig",
+    "DenoiseConfig",
+    "ContrastConfig",
+    "BinarizeConfig",
+    "DeskewConfig",
+    "SharpenConfig",
+    "ResizeConfig",
+    "OCRVisualizer",
+    "ConfigPresets",
+    "OCRExperiment",
 ]
