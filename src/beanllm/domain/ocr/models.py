@@ -5,7 +5,20 @@ OCR 결과와 설정을 위한 데이터 클래스 정의.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
+
+__all__ = [
+    "BoundingBox",
+    "OCRTextLine",
+    "OCRResult",
+    "DenoiseConfig",
+    "ContrastConfig",
+    "BinarizeConfig",
+    "DeskewConfig",
+    "SharpenConfig",
+    "ResizeConfig",
+    "OCRConfig",
+]
 
 
 @dataclass
@@ -163,6 +176,98 @@ class OCRResult:
 
 
 @dataclass
+class DenoiseConfig:
+    """
+    노이즈 제거 세부 설정
+
+    Attributes:
+        enabled: 노이즈 제거 활성화
+        gaussian_kernel: Gaussian blur 커널 크기 (기본: (3, 3))
+        median_kernel: Median filter 커널 크기 (기본: 3)
+        strength: 노이즈 제거 강도 (light/medium/strong)
+    """
+    enabled: bool = True
+    gaussian_kernel: tuple[int, int] = (3, 3)
+    median_kernel: int = 3
+    strength: Literal["light", "medium", "strong"] = "medium"
+
+
+@dataclass
+class ContrastConfig:
+    """
+    대비 조정 세부 설정 (CLAHE)
+
+    Attributes:
+        enabled: 대비 조정 활성화
+        clip_limit: CLAHE clip limit (기본: 2.0, 높을수록 강함)
+        tile_grid_size: CLAHE tile grid 크기 (기본: (8, 8))
+    """
+    enabled: bool = True
+    clip_limit: float = 2.0
+    tile_grid_size: tuple[int, int] = (8, 8)
+
+
+@dataclass
+class BinarizeConfig:
+    """
+    이진화 세부 설정
+
+    Attributes:
+        enabled: 이진화 활성화
+        method: 이진화 방법 (otsu/adaptive/manual)
+        threshold: 수동 임계값 (method='manual'일 때, 0-255)
+        block_size: Adaptive 블록 크기 (method='adaptive'일 때, 홀수)
+        c: Adaptive 상수 (method='adaptive'일 때)
+    """
+    enabled: bool = True
+    method: Literal["otsu", "adaptive", "manual"] = "otsu"
+    threshold: int = 127
+    block_size: int = 11
+    c: int = 2
+
+
+@dataclass
+class DeskewConfig:
+    """
+    기울기 보정 세부 설정
+
+    Attributes:
+        enabled: 기울기 보정 활성화
+        angle_threshold: 보정 각도 임계값 (degrees, 이 값 이상만 보정)
+    """
+    enabled: bool = True
+    angle_threshold: float = 0.5
+
+
+@dataclass
+class SharpenConfig:
+    """
+    선명화 세부 설정
+
+    Attributes:
+        enabled: 선명화 활성화
+        strength: 선명화 강도 (0.0-1.0, 기본: 0.5)
+    """
+    enabled: bool = True
+    strength: float = 0.5
+
+
+@dataclass
+class ResizeConfig:
+    """
+    크기 조정 세부 설정
+
+    Attributes:
+        enabled: 크기 조정 활성화
+        max_size: 최대 크기 (픽셀, None이면 조정 안 함)
+        interpolation: 보간 방법 (area/linear/cubic)
+    """
+    enabled: bool = True
+    max_size: Optional[int] = None
+    interpolation: Literal["area", "linear", "cubic"] = "area"
+
+
+@dataclass
 class OCRConfig:
     """
     OCR 설정
@@ -230,13 +335,21 @@ class OCRConfig:
     use_gpu: bool = True
     confidence_threshold: float = 0.5
 
-    # 전처리 옵션
+    # 전처리 옵션 (레거시 호환성)
     enable_preprocessing: bool = True
     denoise: bool = True
     contrast_adjustment: bool = True
-    rotation_correction: bool = True
-    binarization: bool = True
-    resolution_optimization: bool = True
+    binarize: bool = True
+    deskew: bool = True
+    sharpen: bool = False
+
+    # 전처리 세부 설정 (고급)
+    denoise_config: Optional[DenoiseConfig] = None
+    contrast_config: Optional[ContrastConfig] = None
+    binarize_config: Optional[BinarizeConfig] = None
+    deskew_config: Optional[DeskewConfig] = None
+    sharpen_config: Optional[SharpenConfig] = None
+    resize_config: Optional[ResizeConfig] = None
 
     # 후처리 옵션
     enable_llm_postprocessing: bool = False
@@ -250,7 +363,7 @@ class OCRConfig:
     output_format: str = "text"  # text, json, markdown
 
     def __post_init__(self):
-        """설정 유효성 검증"""
+        """설정 유효성 검증 및 기본값 초기화"""
         # 엔진 유효성 검사
         valid_engines = {
             "paddleocr",
@@ -290,6 +403,23 @@ class OCRConfig:
         if self.enable_llm_postprocessing and not self.llm_model:
             raise ValueError(
                 "llm_model must be specified when enable_llm_postprocessing is True"
+            )
+
+        # 세부 설정 초기화 (레거시 bool 필드 기반)
+        if self.denoise_config is None:
+            self.denoise_config = DenoiseConfig(enabled=self.denoise)
+        if self.contrast_config is None:
+            self.contrast_config = ContrastConfig(enabled=self.contrast_adjustment)
+        if self.binarize_config is None:
+            self.binarize_config = BinarizeConfig(enabled=self.binarize)
+        if self.deskew_config is None:
+            self.deskew_config = DeskewConfig(enabled=self.deskew)
+        if self.sharpen_config is None:
+            self.sharpen_config = SharpenConfig(enabled=self.sharpen)
+        if self.resize_config is None:
+            self.resize_config = ResizeConfig(
+                enabled=(self.max_image_size is not None),
+                max_size=self.max_image_size
             )
 
     def __repr__(self) -> str:
