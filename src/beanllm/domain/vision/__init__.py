@@ -2,7 +2,13 @@
 Vision Domain - 비전 및 멀티모달 도메인
 """
 
-from .embeddings import CLIPEmbedding, MultimodalEmbedding, create_vision_embedding
+from .embeddings import (
+    CLIPEmbedding,
+    MobileCLIPEmbedding,
+    MultimodalEmbedding,
+    SigLIPEmbedding,
+    create_vision_embedding,
+)
 from .loaders import (
     ImageDocument,
     ImageLoader,
@@ -14,6 +20,8 @@ from .loaders import (
 __all__ = [
     # Embeddings
     "CLIPEmbedding",
+    "SigLIPEmbedding",
+    "MobileCLIPEmbedding",
     "MultimodalEmbedding",
     "create_vision_embedding",
     # Loaders
