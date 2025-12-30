@@ -17,6 +17,14 @@ from .loaders import (
     load_pdf_with_images,
 )
 
+# Vision Task Models (선택적 의존성, 2024-2025)
+try:
+    from .models import Florence2Wrapper, SAMWrapper, YOLOWrapper
+except ImportError:
+    Florence2Wrapper = None  # type: ignore
+    SAMWrapper = None  # type: ignore
+    YOLOWrapper = None  # type: ignore
+
 __all__ = [
     # Embeddings
     "CLIPEmbedding",
@@ -30,4 +38,8 @@ __all__ = [
     "PDFWithImagesLoader",
     "load_images",
     "load_pdf_with_images",
+    # Task Models (2024-2025)
+    "SAMWrapper",
+    "Florence2Wrapper",
+    "YOLOWrapper",
 ]
