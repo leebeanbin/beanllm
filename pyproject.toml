@@ -40,6 +40,10 @@ dependencies = [
     "numpy>=1.24.0",  # Numerical operations
     "tiktoken>=0.5.0",  # Token counting
     "pytest (>=9.0.2,<10.0.0)",
+    # beanPDFLoader 의존성
+    "PyMuPDF>=1.23.0",  # Fast PDF 파싱 (fitz)
+    "pdfplumber>=0.10.0",  # 정확한 테이블 추출
+    "pandas>=2.0.0",  # 테이블 데이터 처리
 ]
 
 # 선택적 의존성 (Provider별로 선택 가능)
@@ -69,6 +73,12 @@ audio = [
     "openai-whisper>=20231117",
 ]
 
+# ML-based PDF processing (marker-pdf)
+ml = [
+    "marker-pdf>=0.2.0",
+    "torch>=2.0.0",
+]
+
 # 모든 Provider 사용
 all = [
     "openai>=1.0.0",
@@ -76,6 +86,8 @@ all = [
     "google-generativeai>=0.3.0",
     "ollama>=0.1.0",
     "openai-whisper>=20231117",
+    "marker-pdf>=0.2.0",
+    "torch>=2.0.0",
 ]
 
 # Continuous Evaluation (선택적)
