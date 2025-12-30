@@ -10,6 +10,11 @@ Complete API reference for all beanllm components.
 - [Agent](#agent) - AI agent with tools
 - [Chain](#chain) - Chain execution
 
+### Document Processing
+- [beanPDFLoader](#beanpdfloader) - Advanced PDF processing with 3-layer architecture
+- [Document Loaders](#document-loaders) - Text, CSV, and other document loaders
+- [Text Splitters](#text-splitters) - Semantic text chunking
+
 ### Advanced Features
 - [MultiAgentCoordinator](#multiagentcoordinator) - Multi-agent collaboration
 - [Graph](#graph) - Graph-based workflows
@@ -272,6 +277,192 @@ chain = Chain(client=client)
 
 response = await chain.run("Translate 'hello' to French")
 print(response.output)
+```
+
+---
+
+## Document Processing
+
+### beanPDFLoader
+
+고급 PDF 처리를 위한 3-Layer 아키텍처 로더.
+
+**3-Layer 아키텍처:**
+- **Fast Layer** (PyMuPDF): 빠른 처리 (~130 pages/sec), 이미지 추출
+- **Accurate Layer** (pdfplumber): 정확한 테이블 추출 (~10 pages/sec)
+- **ML Layer** (marker-pdf): 구조 보존 Markdown 변환 (98% 정확도)
+
+#### `__init__(file_path, strategy="auto", extract_tables=True, extract_images=False, to_markdown=False, **kwargs)`
+
+**파라미터:**
+- `file_path` (str | Path): PDF 파일 경로
+- `strategy` (str): 파싱 전략
+  - `"auto"`: 자동 선택 (기본값)
+  - `"fast"`: PyMuPDF (빠른 처리)
+  - `"accurate"`: pdfplumber (정확한 테이블)
+  - `"ml"`: marker-pdf (ML 기반, optional)
+- `extract_tables` (bool): 테이블 추출 여부 (기본: True)
+- `extract_images` (bool): 이미지 추출 여부 (기본: False)
+- `to_markdown` (bool): Markdown 변환 여부 (기본: False)
+- `enable_ocr` (bool): OCR 활성화 (향후 구현)
+- `layout_analysis` (bool): 레이아웃 분석 (향후 구현)
+- `max_pages` (int, optional): 최대 처리 페이지 수
+- `page_range` (tuple[int, int], optional): 처리할 페이지 범위
+
+**예제:**
+```python
+from beanllm.domain.loaders.pdf import beanPDFLoader
+
+# 기본 사용 (자동 전략)
+loader = beanPDFLoader("document.pdf")
+docs = loader.load()
+
+# 테이블 추출
+loader = beanPDFLoader("report.pdf", extract_tables=True)
+docs = loader.load()
+tables = loader._result["tables"]
+
+# Markdown 변환
+loader = beanPDFLoader("article.pdf", to_markdown=True)
+docs = loader.load()
+markdown = loader._result["markdown"]
+
+# ML Layer 사용 (marker-pdf 필요)
+loader = beanPDFLoader("complex.pdf", strategy="ml", to_markdown=True)
+docs = loader.load()
+```
+
+#### `load()` → `List[Document]`
+
+PDF를 로딩하여 Document 리스트를 반환합니다.
+
+**반환값:**
+- `List[Document]`: 페이지별 Document 리스트
+
+**예제:**
+```python
+loader = beanPDFLoader("document.pdf")
+docs = loader.load()
+
+for doc in docs:
+    print(f"Page {doc.metadata['page']}: {doc.content[:100]}...")
+```
+
+#### 고급 기능
+
+**1. 테이블 추출 및 변환**
+
+```python
+from beanllm.domain.loaders.pdf import beanPDFLoader
+from beanllm.domain.loaders.pdf.extractors import TableExtractor
+
+# 테이블 추출
+loader = beanPDFLoader("report.pdf", extract_tables=True)
+docs = loader.load()
+
+# 테이블 조회
+extractor = TableExtractor(docs)
+all_tables = extractor.get_all_tables()
+high_quality = extractor.get_high_quality_tables(min_confidence=0.8)
+
+# Markdown 변환
+markdown_tables = extractor.export_to_markdown()
+```
+
+**2. Markdown 변환 및 Layout Analysis**
+
+```python
+from beanllm.domain.loaders.pdf import beanPDFLoader
+from beanllm.domain.loaders.pdf.utils import LayoutAnalyzer
+
+# Markdown 변환
+loader = beanPDFLoader("article.pdf", to_markdown=True)
+docs = loader.load()
+markdown = loader._result["markdown"]
+
+# Layout 분석
+analyzer = LayoutAnalyzer()
+for doc in docs:
+    page_data = {"text": doc.content, "width": doc.metadata["width"],
+                 "height": doc.metadata["height"], "metadata": doc.metadata}
+    layout = analyzer.analyze_layout(page_data)
+    print(f"Columns: {layout['columns']}, Multi-column: {layout['is_multi_column']}")
+```
+
+**3. MarkerEngine (ML Layer)**
+
+```python
+# ML Layer 사용 (marker-pdf 설치 필요: pip install beanllm[ml])
+from beanllm.domain.loaders.pdf.engines import MarkerEngine
+
+engine = MarkerEngine(
+    use_gpu=False,      # GPU 사용 여부
+    enable_cache=True,  # 결과 캐싱
+    cache_size=10,      # 캐시 크기
+)
+
+# 단일 PDF 처리
+result = engine.extract("document.pdf", {
+    "to_markdown": True,
+    "extract_tables": True,
+    "extract_images": True,
+})
+
+# Batch 처리
+results = engine.extract_batch(
+    ["doc1.pdf", "doc2.pdf", "doc3.pdf"],
+    {"to_markdown": True}
+)
+
+# 캐시 통계
+stats = engine.get_cache_stats()
+print(f"Cache: {stats['cache_size']}/{stats['cache_limit']}")
+```
+
+**4. 성능 벤치마크**
+
+```
+Engine       Time(s)    Pages/s    Memory(MB)
+------------------------------------------------
+PyMuPDF      0.03       129.61     0.20
+pdfplumber   0.42       9.59       41.41
+marker-pdf   ~10s/100pg (GPU), 98% accuracy
+```
+
+---
+
+### Document Loaders
+
+텍스트, CSV 등 다양한 문서 형식 지원.
+
+```python
+from beanllm.domain.loaders import TextLoader, CSVLoader
+
+# Text 파일
+text_loader = TextLoader("document.txt")
+docs = text_loader.load()
+
+# CSV 파일
+csv_loader = CSVLoader("data.csv")
+docs = csv_loader.load()
+```
+
+---
+
+### Text Splitters
+
+의미 단위로 텍스트 분할.
+
+```python
+from beanllm.domain.splitters import RecursiveCharacterTextSplitter
+
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500,
+    chunk_overlap=50,
+    separators=["\n\n", "\n", " "]
+)
+
+chunks = splitter.split_documents(docs)
 ```
 
 ---

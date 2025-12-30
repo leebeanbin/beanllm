@@ -1,0 +1,8 @@
+# PDF 테스트 픽스처 디렉토리
+# 
+# 필요한 테스트 파일:
+# - simple.pdf: 텍스트만 포함된 간단한 PDF
+# - tables.pdf: 테이블이 포함된 PDF
+# - images.pdf: 이미지가 포함된 PDF
+# - large.pdf: 100+ 페이지 대용량 PDF
+
