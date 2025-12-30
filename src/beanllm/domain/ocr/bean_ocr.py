@@ -116,6 +116,7 @@ class beanOCR:
                     f"PaddleOCR is required for engine '{engine_name}'. "
                     f"Install it with: pip install paddleocr"
                 ) from e
+
         elif engine_name == "easyocr":
             try:
                 from .engines.easyocr_engine import EasyOCREngine
@@ -125,12 +126,72 @@ class beanOCR:
                     f"EasyOCR is required for engine '{engine_name}'. "
                     f"Install it with: pip install easyocr"
                 ) from e
-        # TODO: 다른 엔진들 추가 (TrOCR, Nougat, Surya, Tesseract, Cloud)
+
+        elif engine_name == "tesseract":
+            try:
+                from .engines.tesseract_engine import TesseractEngine
+                return TesseractEngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"pytesseract is required for engine '{engine_name}'. "
+                    f"Install it with: pip install pytesseract\n"
+                    f"Also install Tesseract OCR: brew install tesseract (macOS)"
+                ) from e
+
+        elif engine_name == "trocr":
+            try:
+                from .engines.trocr_engine import TrOCREngine
+                return TrOCREngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"transformers and torch are required for engine '{engine_name}'. "
+                    f"Install them with: pip install transformers torch"
+                ) from e
+
+        elif engine_name == "nougat":
+            try:
+                from .engines.nougat_engine import NougatEngine
+                return NougatEngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"transformers and torch are required for engine '{engine_name}'. "
+                    f"Install them with: pip install transformers torch"
+                ) from e
+
+        elif engine_name == "surya":
+            try:
+                from .engines.surya_engine import SuryaEngine
+                return SuryaEngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"surya-ocr and torch are required for engine '{engine_name}'. "
+                    f"Install them with: pip install surya-ocr torch"
+                ) from e
+
+        elif engine_name == "cloud-google":
+            try:
+                from .engines.cloud_engine import CloudOCREngine
+                return CloudOCREngine(provider="google")
+            except ImportError as e:
+                raise ImportError(
+                    f"google-cloud-vision is required for engine '{engine_name}'. "
+                    f"Install it with: pip install google-cloud-vision"
+                ) from e
+
+        elif engine_name == "cloud-aws":
+            try:
+                from .engines.cloud_engine import CloudOCREngine
+                return CloudOCREngine(provider="aws")
+            except ImportError as e:
+                raise ImportError(
+                    f"boto3 is required for engine '{engine_name}'. "
+                    f"Install it with: pip install boto3"
+                ) from e
 
         # 지원하지 않는 엔진
         raise NotImplementedError(
             f"Engine '{engine_name}' is not yet implemented. "
-            f"Currently supported: paddleocr, easyocr"
+            f"Currently supported: paddleocr, easyocr, tesseract, trocr, nougat, surya, cloud-google, cloud-aws"
         )
 
     def _load_image(self, image_or_path: Union[str, Path, np.ndarray, Image.Image]) -> np.ndarray:
