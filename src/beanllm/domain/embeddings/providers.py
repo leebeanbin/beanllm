@@ -441,3 +441,298 @@ class CohereEmbedding(BaseEmbedding):
         except Exception as e:
             logger.error(f"Cohere embedding failed: {e}")
             raise
+
+
+class HuggingFaceEmbedding(BaseEmbedding):
+    """
+    HuggingFace Sentence Transformers 범용 임베딩 (로컬)
+
+    sentence-transformers 라이브러리를 사용하여 HuggingFace Hub의
+    모든 임베딩 모델을 지원합니다.
+
+    지원 모델 예시:
+    - NVIDIA NV-Embed: "nvidia/NV-Embed-v2" (MTEB #1, 69.32)
+    - SFR-Embedding: "Salesforce/SFR-Embedding-Mistral"
+    - GTE: "Alibaba-NLP/gte-large-en-v1.5"
+    - BGE: "BAAI/bge-large-en-v1.5"
+    - E5: "intfloat/e5-large-v2"
+    - MiniLM: "sentence-transformers/all-MiniLM-L6-v2"
+    - 기타 7,000+ 모델
+
+    Features:
+    - Lazy loading (첫 사용 시 모델 로드)
+    - GPU/CPU 자동 선택
+    - 배치 처리
+    - 임베딩 정규화 옵션
+    - Mean pooling with attention mask
+
+    Example:
+        ```python
+        from beanllm.domain.embeddings import HuggingFaceEmbedding
+
+        # NVIDIA NV-Embed (MTEB #1)
+        emb = HuggingFaceEmbedding(model="nvidia/NV-Embed-v2", use_gpu=True)
+        vectors = emb.embed_sync(["text1", "text2"])
+
+        # SFR-Embedding-Mistral
+        emb = HuggingFaceEmbedding(model="Salesforce/SFR-Embedding-Mistral")
+        vectors = emb.embed_sync(["query: what is AI?"])
+
+        # 경량 모델 (MiniLM, 22MB)
+        emb = HuggingFaceEmbedding(model="sentence-transformers/all-MiniLM-L6-v2")
+        vectors = emb.embed_sync(["text"])
+        ```
+    """
+
+    def __init__(
+        self,
+        model: str = "sentence-transformers/all-MiniLM-L6-v2",
+        use_gpu: bool = True,
+        normalize: bool = True,
+        batch_size: int = 32,
+        **kwargs,
+    ):
+        """
+        Args:
+            model: HuggingFace 모델 이름
+            use_gpu: GPU 사용 여부 (기본: True)
+            normalize: 임베딩 정규화 여부 (기본: True)
+            batch_size: 배치 크기 (기본: 32)
+            **kwargs: 추가 파라미터 (max_seq_length 등)
+        """
+        super().__init__(model, **kwargs)
+
+        self.use_gpu = use_gpu
+        self.normalize = normalize
+        self.batch_size = batch_size
+
+        # Lazy loading
+        self._model = None
+        self._device = None
+
+    def _load_model(self):
+        """모델 로딩 (lazy loading)"""
+        if self._model is not None:
+            return
+
+        try:
+            from sentence_transformers import SentenceTransformer
+            import torch
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers is required for HuggingFaceEmbedding. "
+                "Install it with: pip install sentence-transformers"
+            )
+
+        # Device 설정
+        if self.use_gpu and torch.cuda.is_available():
+            self._device = "cuda"
+        else:
+            self._device = "cpu"
+
+        logger.info(f"Loading HuggingFace model: {self.model} on {self._device}")
+
+        # 모델 로드
+        self._model = SentenceTransformer(self.model, device=self._device)
+
+        # max_seq_length 설정 (kwargs에서)
+        if "max_seq_length" in self.kwargs:
+            self._model.max_seq_length = self.kwargs["max_seq_length"]
+
+        logger.info(
+            f"HuggingFace model loaded: {self.model} "
+            f"(max_seq_length: {self._model.max_seq_length})"
+        )
+
+    async def embed(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 (비동기)"""
+        # sentence-transformers는 async 지원 안 함, sync 사용
+        return self.embed_sync(texts)
+
+    def embed_sync(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 (동기)"""
+        # 모델 로드
+        self._load_model()
+
+        try:
+            # Encode with batch processing
+            embeddings = self._model.encode(
+                texts,
+                batch_size=self.batch_size,
+                normalize_embeddings=self.normalize,
+                show_progress_bar=False,
+                convert_to_numpy=True,
+            )
+
+            logger.info(
+                f"Embedded {len(texts)} texts using {self.model} "
+                f"(shape: {embeddings.shape}, device: {self._device})"
+            )
+
+            # Convert to list
+            return embeddings.tolist()
+
+        except Exception as e:
+            logger.error(f"HuggingFace embedding failed: {e}")
+            raise
+
+
+class NVEmbedEmbedding(BaseEmbedding):
+    """
+    NVIDIA NV-Embed-v2 임베딩 (MTEB 1위, 2024-2025)
+
+    NVIDIA의 최신 임베딩 모델로 MTEB 벤치마크 1위 (69.32)를 달성했습니다.
+
+    성능:
+    - MTEB Score: 69.32 (1위)
+    - Retrieval: 60.92
+    - Classification: 80.19
+    - Clustering: 54.23
+    - Pair Classification: 89.68
+    - Reranking: 62.58
+    - STS: 87.86
+
+    Features:
+    - Instruction-aware embedding
+    - Passage 및 Query prefix 지원
+    - Latent attention layer
+    - 최대 32K 토큰 지원
+
+    Example:
+        ```python
+        from beanllm.domain.embeddings import NVEmbedEmbedding
+
+        # 기본 사용 (passage)
+        emb = NVEmbedEmbedding(use_gpu=True)
+        vectors = emb.embed_sync(["This is a passage."])
+
+        # Query 임베딩
+        emb = NVEmbedEmbedding(prefix="query")
+        vectors = emb.embed_sync(["What is AI?"])
+
+        # Instruction 사용
+        emb = NVEmbedEmbedding(
+            prefix="query",
+            instruction="Retrieve relevant passages for the query"
+        )
+        vectors = emb.embed_sync(["machine learning"])
+        ```
+    """
+
+    def __init__(
+        self,
+        model: str = "nvidia/NV-Embed-v2",
+        use_gpu: bool = True,
+        prefix: str = "passage",
+        instruction: Optional[str] = None,
+        normalize: bool = True,
+        batch_size: int = 32,
+        **kwargs,
+    ):
+        """
+        Args:
+            model: NVIDIA NV-Embed 모델 이름
+            use_gpu: GPU 사용 여부 (기본: True, 권장)
+            prefix: "passage" 또는 "query" (기본: "passage")
+            instruction: 추가 instruction (선택)
+            normalize: 임베딩 정규화 여부 (기본: True)
+            batch_size: 배치 크기 (기본: 32)
+            **kwargs: 추가 파라미터
+        """
+        super().__init__(model, **kwargs)
+
+        self.use_gpu = use_gpu
+        self.prefix = prefix
+        self.instruction = instruction
+        self.normalize = normalize
+        self.batch_size = batch_size
+
+        # Lazy loading
+        self._model = None
+        self._device = None
+
+    def _load_model(self):
+        """모델 로딩 (lazy loading)"""
+        if self._model is not None:
+            return
+
+        try:
+            from sentence_transformers import SentenceTransformer
+            import torch
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers is required for NVEmbedEmbedding. "
+                "Install it with: pip install sentence-transformers"
+            )
+
+        # Device 설정
+        if self.use_gpu and torch.cuda.is_available():
+            self._device = "cuda"
+        else:
+            self._device = "cpu"
+            logger.warning("NV-Embed works best on GPU. CPU mode may be slow.")
+
+        logger.info(f"Loading NVIDIA NV-Embed-v2 on {self._device}")
+
+        # 모델 로드
+        self._model = SentenceTransformer(self.model, device=self._device, trust_remote_code=True)
+
+        logger.info(
+            f"NVIDIA NV-Embed-v2 loaded (max_seq_length: {self._model.max_seq_length})"
+        )
+
+    def _prepare_texts(self, texts: List[str]) -> List[str]:
+        """
+        NV-Embed 포맷으로 텍스트 준비
+
+        Format:
+        - Passage: "passage: {text}"
+        - Query: "query: {text}"
+        - Instruction: "Instruct: {instruction}\nQuery: {text}"
+        """
+        prepared = []
+
+        for text in texts:
+            if self.instruction:
+                # Instruction mode
+                prepared_text = f"Instruct: {self.instruction}\nQuery: {text}"
+            else:
+                # Prefix mode
+                prepared_text = f"{self.prefix}: {text}"
+
+            prepared.append(prepared_text)
+
+        return prepared
+
+    async def embed(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 (비동기)"""
+        return self.embed_sync(texts)
+
+    def embed_sync(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 (동기)"""
+        # 모델 로드
+        self._load_model()
+
+        try:
+            # NV-Embed 포맷으로 준비
+            prepared_texts = self._prepare_texts(texts)
+
+            # Encode
+            embeddings = self._model.encode(
+                prepared_texts,
+                batch_size=self.batch_size,
+                normalize_embeddings=self.normalize,
+                show_progress_bar=False,
+                convert_to_numpy=True,
+            )
+
+            logger.info(
+                f"Embedded {len(texts)} texts using NVIDIA NV-Embed-v2 "
+                f"(prefix: {self.prefix}, shape: {embeddings.shape})"
+            )
+
+            return embeddings.tolist()
+
+        except Exception as e:
+            logger.error(f"NVIDIA NV-Embed embedding failed: {e}")
+            raise

@@ -13,6 +13,17 @@ except ImportError:
     EvaluationRun = None  # type: ignore
     EvaluationTask = None  # type: ignore
 
+# 외부 평가 프레임워크 (선택적 의존성)
+try:
+    from .deepeval_wrapper import DeepEvalWrapper
+except ImportError:
+    DeepEvalWrapper = None  # type: ignore
+
+try:
+    from .lm_eval_harness_wrapper import LMEvalHarnessWrapper
+except ImportError:
+    LMEvalHarnessWrapper = None  # type: ignore
+
 from .drift_detection import DriftAlert, DriftDetector
 from .enums import MetricType
 from .evaluator import Evaluator
@@ -85,4 +96,7 @@ __all__ = [
     "EvaluationAnalytics",
     "MetricTrend",
     "CorrelationAnalysis",
+    # External Frameworks (2024-2025)
+    "DeepEvalWrapper",
+    "LMEvalHarnessWrapper",
 ]
