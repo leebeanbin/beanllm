@@ -2,6 +2,7 @@
 Local Fine-tuning Providers - 로컬 파인튜닝 프로바이더 (2024-2025)
 
 Axolotl과 Unsloth를 사용한 로컬 LLM 파인튜닝.
+BaseFineTuningProvider를 상속하여 인터페이스 통일.
 
 주요 프레임워크:
 - Axolotl: 종합 파인튜닝 프레임워크 (8K+ stars)
@@ -15,11 +16,13 @@ Requirements:
 import json
 import logging
 import subprocess
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from .enums import FineTuningStatus
-from .types import FineTuningConfig, FineTuningJob, TrainingExample
+from .providers import BaseFineTuningProvider
+from .types import FineTuningConfig, FineTuningJob, FineTuningMetrics, TrainingExample
 
 try:
     from ...utils.logger import get_logger
@@ -31,11 +34,12 @@ except ImportError:
 logger = get_logger(__name__)
 
 
-class AxolotlProvider:
+class AxolotlProvider(BaseFineTuningProvider):
     """
     Axolotl 파인튜닝 프로바이더 (로컬)
 
     OpenAccess AI Collective의 Axolotl을 사용한 종합 파인튜닝 프레임워크.
+    BaseFineTuningProvider를 상속하여 표준 인터페이스 제공.
 
     Axolotl 특징:
     - LoRA, QLoRA, Full Fine-tuning 지원
@@ -47,31 +51,39 @@ class AxolotlProvider:
 
     Example:
         ```python
-        from beanllm.domain.finetuning import AxolotlProvider
+        from beanllm.domain.finetuning import AxolotlProvider, FineTuningConfig, TrainingExample
 
-        # 기본 LoRA 파인튜닝
+        # Provider 생성
         provider = AxolotlProvider(
             base_model="meta-llama/Llama-3.2-1B",
             output_dir="./outputs/llama-lora"
         )
 
-        # YAML 설정으로 작업 생성
-        config = {
-            "adapter": "lora",
-            "lora_r": 16,
-            "lora_alpha": 32,
-            "lora_dropout": 0.05,
-            "learning_rate": 2e-4,
-            "num_epochs": 3,
-        }
+        # 훈련 데이터 준비
+        examples = [
+            TrainingExample(messages=[
+                {"role": "user", "content": "What is AI?"},
+                {"role": "assistant", "content": "AI is..."}
+            ])
+        ]
+        data_file = provider.prepare_data(examples, "train.jsonl")
 
-        job_id = provider.create_job(
-            dataset_path="data/train.jsonl",
-            config=config
+        # 작업 생성
+        config = FineTuningConfig(
+            model="meta-llama/Llama-3.2-1B",
+            training_file=data_file,
+            n_epochs=3,
+            metadata={
+                "adapter": "lora",
+                "lora_r": 16,
+                "lora_alpha": 32,
+            }
         )
+        job = provider.create_job(config)
 
-        # 훈련 실행
-        provider.train(job_id)
+        # 작업 상태 확인
+        job_status = provider.get_job(job.job_id)
+        print(job_status.status)
         ```
     """
 
@@ -100,6 +112,9 @@ class AxolotlProvider:
         # Output directory 생성
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Jobs 추적
+        self._jobs: Dict[str, FineTuningJob] = {}
+
         # Axolotl 설치 확인
         self._check_dependencies()
 
@@ -113,115 +128,54 @@ class AxolotlProvider:
                 "Install it with: pip install axolotl-core"
             )
 
-    def create_config(
-        self,
-        dataset_path: str,
-        adapter: str = "lora",
-        lora_r: int = 16,
-        lora_alpha: int = 32,
-        lora_dropout: float = 0.05,
-        learning_rate: float = 2e-4,
-        num_epochs: int = 3,
-        batch_size: int = 4,
-        gradient_accumulation_steps: int = 4,
-        max_seq_length: int = 2048,
-        warmup_steps: int = 100,
-        save_steps: int = 100,
-        logging_steps: int = 10,
-        **kwargs,
-    ) -> Dict[str, Any]:
+    def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
-        Axolotl 설정 생성
+        훈련 데이터 준비
 
         Args:
-            dataset_path: 데이터셋 경로
-            adapter: 어댑터 타입 (lora/qlora/full)
-            lora_r: LoRA rank
-            lora_alpha: LoRA alpha
-            lora_dropout: LoRA dropout
-            learning_rate: 학습률
-            num_epochs: 에폭 수
-            batch_size: 배치 크기
-            gradient_accumulation_steps: Gradient accumulation 스텝
-            max_seq_length: 최대 시퀀스 길이
-            warmup_steps: Warmup 스텝
-            save_steps: 저장 간격
-            logging_steps: 로깅 간격
-            **kwargs: 추가 설정
+            examples: 훈련 예제 리스트
+            output_path: 출력 파일 경로 (.jsonl)
 
         Returns:
-            Axolotl 설정 딕셔너리
+            파일 경로
         """
-        config = {
-            # Base model
-            "base_model": self.base_model,
-            "model_type": "AutoModelForCausalLM",
-            "tokenizer_type": "AutoTokenizer",
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
-            # Dataset
-            "datasets": [
-                {
-                    "path": dataset_path,
-                    "type": "alpaca",  # alpaca/sharegpt/completion
-                }
-            ],
+        # JSONL 형식으로 저장 (Alpaca 형식)
+        with open(output_file, "w", encoding="utf-8") as f:
+            for example in examples:
+                # Alpaca 형식 변환
+                if len(example.messages) >= 2:
+                    instruction = example.messages[0].get("content", "")
+                    response = example.messages[-1].get("content", "")
 
-            # Adapter
-            "adapter": adapter,
-            "lora_r": lora_r,
-            "lora_alpha": lora_alpha,
-            "lora_dropout": lora_dropout,
-            "lora_target_modules": kwargs.get("lora_target_modules", [
-                "q_proj", "v_proj", "k_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj"
-            ]),
+                    alpaca_format = {
+                        "instruction": instruction,
+                        "output": response,
+                        "input": "",  # Alpaca format requires this
+                    }
+                    f.write(json.dumps(alpaca_format, ensure_ascii=False) + "\n")
 
-            # Training
-            "sequence_len": max_seq_length,
-            "num_epochs": num_epochs,
-            "micro_batch_size": batch_size,
-            "gradient_accumulation_steps": gradient_accumulation_steps,
-            "learning_rate": learning_rate,
-            "warmup_steps": warmup_steps,
-            "save_steps": save_steps,
-            "logging_steps": logging_steps,
+        logger.info(f"Prepared {len(examples)} examples at {output_file}")
+        return str(output_file)
 
-            # Optimizer
-            "optimizer": kwargs.get("optimizer", "adamw_torch"),
-            "lr_scheduler": kwargs.get("lr_scheduler", "cosine"),
-
-            # Performance
-            "flash_attention": self.use_flash_attention,
-            "device_map": self.device_map,
-            "bf16": kwargs.get("bf16", True),
-            "fp16": kwargs.get("fp16", False),
-
-            # Output
-            "output_dir": str(self.output_dir),
-
-            # W&B (optional)
-            "wandb_project": kwargs.get("wandb_project"),
-            "wandb_run_name": kwargs.get("wandb_run_name"),
-        }
-
-        # 추가 설정 병합
-        config.update(kwargs)
-
-        return config
-
-    def save_config(self, config: Dict[str, Any], config_path: Optional[Path] = None) -> Path:
+    def create_job(self, config: FineTuningConfig) -> FineTuningJob:
         """
-        설정을 YAML 파일로 저장
+        파인튜닝 작업 생성
 
         Args:
-            config: Axolotl 설정
-            config_path: 설정 파일 경로 (None이면 자동 생성)
+            config: 파인튜닝 설정
 
         Returns:
-            설정 파일 경로
+            파인튜닝 작업
         """
-        if config_path is None:
-            config_path = self.output_dir / "axolotl_config.yml"
+        # Axolotl config 생성
+        axolotl_config = self._create_axolotl_config(config)
+
+        # Config 파일 저장
+        job_id = f"axolotl_{int(time.time())}"
+        config_path = self.output_dir / f"{job_id}_config.yml"
 
         try:
             import yaml
@@ -229,72 +183,236 @@ class AxolotlProvider:
             raise ImportError("PyYAML required. Install with: pip install pyyaml")
 
         with open(config_path, "w", encoding="utf-8") as f:
-            yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+            yaml.dump(axolotl_config, f, default_flow_style=False, allow_unicode=True)
 
-        logger.info(f"Axolotl config saved to: {config_path}")
-        return config_path
+        # FineTuningJob 생성
+        job = FineTuningJob(
+            job_id=job_id,
+            model=config.model,
+            status=FineTuningStatus.CREATED,
+            created_at=int(time.time()),
+            training_file=config.training_file,
+            validation_file=config.validation_file,
+            hyperparameters=config.metadata,
+            metadata={
+                "config_path": str(config_path),
+                "output_dir": str(self.output_dir),
+                "provider": "axolotl",
+            },
+        )
 
-    def create_job(
-        self,
-        dataset_path: str,
-        config: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ) -> str:
+        # Jobs 추적에 추가
+        self._jobs[job_id] = job
+
+        logger.info(f"Axolotl job created: {job_id}")
+
+        return job
+
+    def get_job(self, job_id: str) -> FineTuningJob:
         """
-        파인튜닝 작업 생성
+        작업 상태 조회
 
         Args:
-            dataset_path: 데이터셋 경로
-            config: Axolotl 설정 (None이면 기본값)
-            **kwargs: create_config에 전달할 추가 인자
+            job_id: 작업 ID
 
         Returns:
-            작업 ID (설정 파일 경로)
+            파인튜닝 작업
         """
-        # Config 생성
-        if config is None:
-            config = self.create_config(dataset_path, **kwargs)
-        else:
-            # dataset_path 추가
-            if "datasets" not in config:
-                config["datasets"] = [{"path": dataset_path, "type": "alpaca"}]
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
 
-        # Config 저장
-        config_path = self.save_config(config)
+        job = self._jobs[job_id]
 
-        logger.info(f"Axolotl job created: {config_path}")
+        # 로그 파일에서 상태 업데이트 (선택적)
+        log_file = self.output_dir / f"{job_id}.log"
+        if log_file.exists():
+            job = self._update_job_from_log(job, log_file)
 
-        return str(config_path)
+        return job
+
+    def list_jobs(self, limit: int = 20) -> List[FineTuningJob]:
+        """
+        작업 목록 조회
+
+        Args:
+            limit: 최대 개수
+
+        Returns:
+            작업 목록
+        """
+        jobs = list(self._jobs.values())
+        jobs.sort(key=lambda x: x.created_at, reverse=True)
+        return jobs[:limit]
+
+    def cancel_job(self, job_id: str) -> FineTuningJob:
+        """
+        작업 취소
+
+        Args:
+            job_id: 작업 ID
+
+        Returns:
+            파인튜닝 작업
+        """
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
+
+        job = self._jobs[job_id]
+
+        # 프로세스 kill (실제 구현에서는 PID 추적 필요)
+        job.status = FineTuningStatus.CANCELLED
+        job.finished_at = int(time.time())
+
+        logger.info(f"Job {job_id} cancelled")
+
+        return job
+
+    def get_metrics(self, job_id: str) -> List[FineTuningMetrics]:
+        """
+        훈련 메트릭 조회
+
+        Args:
+            job_id: 작업 ID
+
+        Returns:
+            메트릭 리스트
+        """
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
+
+        # 로그 파일에서 메트릭 추출
+        log_file = self.output_dir / f"{job_id}.log"
+        if not log_file.exists():
+            return []
+
+        metrics = self._extract_metrics_from_log(log_file)
+
+        return metrics
+
+    def _create_axolotl_config(self, config: FineTuningConfig) -> Dict[str, Any]:
+        """Axolotl 설정 생성"""
+        metadata = config.metadata or {}
+
+        axolotl_config = {
+            # Base model
+            "base_model": config.model,
+            "model_type": "AutoModelForCausalLM",
+            "tokenizer_type": "AutoTokenizer",
+
+            # Dataset
+            "datasets": [
+                {
+                    "path": config.training_file,
+                    "type": "alpaca",
+                }
+            ],
+
+            # Adapter
+            "adapter": metadata.get("adapter", "lora"),
+            "lora_r": metadata.get("lora_r", 16),
+            "lora_alpha": metadata.get("lora_alpha", 32),
+            "lora_dropout": metadata.get("lora_dropout", 0.05),
+            "lora_target_modules": metadata.get("lora_target_modules", [
+                "q_proj", "v_proj", "k_proj", "o_proj",
+                "gate_proj", "up_proj", "down_proj"
+            ]),
+
+            # Training
+            "sequence_len": metadata.get("max_seq_length", 2048),
+            "num_epochs": config.n_epochs,
+            "micro_batch_size": config.batch_size or 4,
+            "gradient_accumulation_steps": metadata.get("gradient_accumulation_steps", 4),
+            "learning_rate": metadata.get("learning_rate", 2e-4),
+            "warmup_steps": metadata.get("warmup_steps", 100),
+            "save_steps": metadata.get("save_steps", 100),
+            "logging_steps": metadata.get("logging_steps", 10),
+
+            # Optimizer
+            "optimizer": metadata.get("optimizer", "adamw_torch"),
+            "lr_scheduler": metadata.get("lr_scheduler", "cosine"),
+
+            # Performance
+            "flash_attention": self.use_flash_attention,
+            "device_map": self.device_map,
+            "bf16": metadata.get("bf16", True),
+            "fp16": metadata.get("fp16", False),
+
+            # Output
+            "output_dir": str(self.output_dir),
+
+            # W&B (optional)
+            "wandb_project": metadata.get("wandb_project"),
+            "wandb_run_name": metadata.get("wandb_run_name"),
+        }
+
+        return axolotl_config
+
+    def _update_job_from_log(self, job: FineTuningJob, log_file: Path) -> FineTuningJob:
+        """로그 파일에서 작업 상태 업데이트"""
+        # 로그 파일 파싱 로직 (간단한 구현)
+        try:
+            with open(log_file, "r", encoding="utf-8") as f:
+                log_content = f.read()
+
+            if "Training completed" in log_content:
+                job.status = FineTuningStatus.SUCCEEDED
+                job.finished_at = int(time.time())
+            elif "Error" in log_content or "Failed" in log_content:
+                job.status = FineTuningStatus.FAILED
+                job.finished_at = int(time.time())
+            else:
+                job.status = FineTuningStatus.RUNNING
+
+        except Exception as e:
+            logger.warning(f"Failed to update job from log: {e}")
+
+        return job
+
+    def _extract_metrics_from_log(self, log_file: Path) -> List[FineTuningMetrics]:
+        """로그 파일에서 메트릭 추출"""
+        metrics = []
+
+        try:
+            with open(log_file, "r", encoding="utf-8") as f:
+                for line in f:
+                    # 간단한 파싱 (실제로는 더 정교해야 함)
+                    if "loss" in line.lower():
+                        # Parse loss values
+                        # This is a placeholder - actual implementation depends on log format
+                        pass
+
+        except Exception as e:
+            logger.warning(f"Failed to extract metrics: {e}")
+
+        return metrics
 
     def train(
         self,
-        config_path: str,
+        job_id: str,
         accelerate: bool = False,
         deepspeed: Optional[str] = None,
     ) -> subprocess.CompletedProcess:
         """
-        훈련 실행
+        훈련 실행 (추가 헬퍼 메서드)
 
         Args:
-            config_path: Axolotl 설정 파일 경로
+            job_id: 작업 ID
             accelerate: Accelerate 사용 여부
             deepspeed: DeepSpeed 설정 파일 경로
 
         Returns:
             subprocess.CompletedProcess
-
-        Example:
-            ```python
-            # 기본 훈련
-            provider.train("config.yml")
-
-            # Accelerate로 훈련
-            provider.train("config.yml", accelerate=True)
-
-            # DeepSpeed로 훈련
-            provider.train("config.yml", deepspeed="ds_config.json")
-            ```
         """
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
+
+        job = self._jobs[job_id]
+        config_path = job.metadata.get("config_path")
+
+        if not config_path:
+            raise ValueError("Config path not found in job metadata")
+
+        # 명령어 구성
         if accelerate:
             cmd = ["accelerate", "launch", "-m", "axolotl.cli.train", config_path]
         elif deepspeed:
@@ -304,12 +422,22 @@ class AxolotlProvider:
 
         logger.info(f"Running Axolotl training: {' '.join(cmd)}")
 
+        # 작업 상태 업데이트
+        job.status = FineTuningStatus.RUNNING
+
+        # 실행
         result = subprocess.run(cmd, capture_output=True, text=True)
 
-        if result.returncode != 0:
-            logger.error(f"Axolotl training failed: {result.stderr}")
-        else:
+        # 상태 업데이트
+        if result.returncode == 0:
+            job.status = FineTuningStatus.SUCCEEDED
             logger.info("Axolotl training completed successfully")
+        else:
+            job.status = FineTuningStatus.FAILED
+            job.error = result.stderr
+            logger.error(f"Axolotl training failed: {result.stderr}")
+
+        job.finished_at = int(time.time())
 
         return result
 
@@ -320,11 +448,12 @@ class AxolotlProvider:
         )
 
 
-class UnslothProvider:
+class UnslothProvider(BaseFineTuningProvider):
     """
     Unsloth 파인튜닝 프로바이더 (로컬)
 
     Unsloth AI의 초고속 파인튜닝 프레임워크.
+    BaseFineTuningProvider를 상속하여 표준 인터페이스 제공.
 
     Unsloth 특징:
     - 2-5x 빠른 훈련 속도
@@ -336,265 +465,168 @@ class UnslothProvider:
 
     Example:
         ```python
-        from beanllm.domain.finetuning import UnslothProvider
+        from beanllm.domain.finetuning import UnslothProvider, FineTuningConfig, TrainingExample
 
-        # Unsloth로 LoRA 파인튜닝
+        # Provider 생성
         provider = UnslothProvider(
             model_name="unsloth/llama-3.2-1b-bnb-4bit",
-            max_seq_length=2048
+            output_dir="./outputs/unsloth"
         )
 
-        # 데이터셋 로드 및 훈련
-        provider.load_dataset("yahma/alpaca-cleaned")
-        provider.train(
-            output_dir="./outputs/unsloth-lora",
-            num_train_epochs=3,
-            per_device_train_batch_size=2,
-            learning_rate=2e-4,
-        )
+        # 훈련 데이터 준비
+        examples = [...]
+        data_file = provider.prepare_data(examples, "train.jsonl")
 
-        # 모델 저장
-        provider.save_model("./my-finetuned-model")
+        # 작업 생성
+        config = FineTuningConfig(
+            model="unsloth/llama-3.2-1b-bnb-4bit",
+            training_file=data_file,
+            n_epochs=3,
+        )
+        job = provider.create_job(config)
         ```
     """
 
     def __init__(
         self,
         model_name: str,
+        output_dir: Union[str, Path],
         max_seq_length: int = 2048,
         dtype: Optional[str] = None,
         load_in_4bit: bool = True,
-        lora_r: int = 16,
-        lora_alpha: int = 16,
-        lora_dropout: float = 0.0,
         **kwargs,
     ):
         """
         Args:
             model_name: 모델 이름 (unsloth/... 또는 HuggingFace)
+            output_dir: 출력 디렉토리
             max_seq_length: 최대 시퀀스 길이
             dtype: 데이터 타입 (None=auto, float16, bfloat16)
             load_in_4bit: 4-bit 양자화 로드
-            lora_r: LoRA rank
-            lora_alpha: LoRA alpha
-            lora_dropout: LoRA dropout
             **kwargs: 추가 Unsloth 설정
         """
         self.model_name = model_name
+        self.output_dir = Path(output_dir)
         self.max_seq_length = max_seq_length
         self.dtype = dtype
         self.load_in_4bit = load_in_4bit
-        self.lora_r = lora_r
-        self.lora_alpha = lora_alpha
-        self.lora_dropout = lora_dropout
         self.kwargs = kwargs
+
+        # Output directory 생성
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Jobs 추적
+        self._jobs: Dict[str, FineTuningJob] = {}
 
         # Unsloth 설치 확인
         self._check_dependencies()
-
-        # 모델과 토크나이저 (lazy loading)
-        self._model = None
-        self._tokenizer = None
 
     def _check_dependencies(self):
         """의존성 확인"""
         try:
             from unsloth import FastLanguageModel
         except ImportError:
-            raise ImportError(
-                "unsloth is required for UnslothProvider. "
+            logger.warning(
+                "unsloth not installed. "
                 "Install it with: pip install unsloth"
             )
 
-    def load_model(self):
-        """모델 및 토크나이저 로드 (lazy loading)"""
-        if self._model is not None:
-            return self._model, self._tokenizer
-
-        from unsloth import FastLanguageModel
-
-        logger.info(f"Loading Unsloth model: {self.model_name}")
-
-        self._model, self._tokenizer = FastLanguageModel.from_pretrained(
-            model_name=self.model_name,
-            max_seq_length=self.max_seq_length,
-            dtype=self.dtype,
-            load_in_4bit=self.load_in_4bit,
-            **self.kwargs,
-        )
-
-        # LoRA 적용
-        self._model = FastLanguageModel.get_peft_model(
-            self._model,
-            r=self.lora_r,
-            target_modules=[
-                "q_proj", "k_proj", "v_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj"
-            ],
-            lora_alpha=self.lora_alpha,
-            lora_dropout=self.lora_dropout,
-            bias="none",
-            use_gradient_checkpointing="unsloth",  # Unsloth 최적화
-            random_state=42,
-        )
-
-        logger.info("Unsloth model loaded with LoRA")
-
-        return self._model, self._tokenizer
-
-    def load_dataset(
-        self,
-        dataset_name: str,
-        split: str = "train",
-        dataset_text_field: str = "text",
-    ):
+    def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
-        데이터셋 로드
+        훈련 데이터 준비
 
         Args:
-            dataset_name: HuggingFace 데이터셋 이름
-            split: 데이터셋 split
-            dataset_text_field: 텍스트 필드 이름
+            examples: 훈련 예제 리스트
+            output_path: 출력 파일 경로 (.jsonl)
 
         Returns:
-            Dataset
+            파일 경로
         """
-        from datasets import load_dataset
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info(f"Loading dataset: {dataset_name}")
+        # JSONL 형식으로 저장
+        with open(output_file, "w", encoding="utf-8") as f:
+            for example in examples:
+                # Unsloth 형식 (chat template)
+                f.write(example.to_jsonl() + "\n")
 
-        dataset = load_dataset(dataset_name, split=split)
+        logger.info(f"Prepared {len(examples)} examples at {output_file}")
+        return str(output_file)
 
-        return dataset
-
-    def train(
-        self,
-        output_dir: str,
-        dataset: Optional[Any] = None,
-        dataset_name: Optional[str] = None,
-        num_train_epochs: int = 3,
-        per_device_train_batch_size: int = 2,
-        gradient_accumulation_steps: int = 4,
-        learning_rate: float = 2e-4,
-        warmup_steps: int = 5,
-        logging_steps: int = 10,
-        save_steps: int = 100,
-        **kwargs,
-    ):
+    def create_job(self, config: FineTuningConfig) -> FineTuningJob:
         """
-        훈련 실행
+        파인튜닝 작업 생성
 
         Args:
-            output_dir: 출력 디렉토리
-            dataset: 훈련 데이터셋 (None이면 dataset_name 사용)
-            dataset_name: HuggingFace 데이터셋 이름
-            num_train_epochs: 에폭 수
-            per_device_train_batch_size: 배치 크기
-            gradient_accumulation_steps: Gradient accumulation
-            learning_rate: 학습률
-            warmup_steps: Warmup 스텝
-            logging_steps: 로깅 간격
-            save_steps: 저장 간격
-            **kwargs: 추가 TrainingArguments
+            config: 파인튜닝 설정
 
         Returns:
-            Trainer
+            파인튜닝 작업
         """
-        from transformers import TrainingArguments
-        from trl import SFTTrainer
+        job_id = f"unsloth_{int(time.time())}"
 
-        # 모델 로드
-        model, tokenizer = self.load_model()
-
-        # 데이터셋 로드 (선택)
-        if dataset is None and dataset_name:
-            dataset = self.load_dataset(dataset_name)
-
-        # Training arguments
-        training_args = TrainingArguments(
-            output_dir=output_dir,
-            num_train_epochs=num_train_epochs,
-            per_device_train_batch_size=per_device_train_batch_size,
-            gradient_accumulation_steps=gradient_accumulation_steps,
-            learning_rate=learning_rate,
-            warmup_steps=warmup_steps,
-            logging_steps=logging_steps,
-            save_steps=save_steps,
-            optim="adamw_8bit",  # Unsloth 최적화
-            weight_decay=0.01,
-            fp16=not self.load_in_4bit,  # 4-bit이면 fp16 비활성화
-            bf16=False,
-            max_grad_norm=1.0,
-            lr_scheduler_type="cosine",
-            seed=42,
-            **kwargs,
+        # FineTuningJob 생성
+        job = FineTuningJob(
+            job_id=job_id,
+            model=config.model,
+            status=FineTuningStatus.CREATED,
+            created_at=int(time.time()),
+            training_file=config.training_file,
+            validation_file=config.validation_file,
+            hyperparameters=config.metadata or {},
+            metadata={
+                "output_dir": str(self.output_dir / job_id),
+                "provider": "unsloth",
+                "max_seq_length": self.max_seq_length,
+                "load_in_4bit": self.load_in_4bit,
+            },
         )
 
-        # Trainer
-        trainer = SFTTrainer(
-            model=model,
-            tokenizer=tokenizer,
-            train_dataset=dataset,
-            args=training_args,
-            max_seq_length=self.max_seq_length,
-            dataset_text_field=kwargs.get("dataset_text_field", "text"),
-            packing=kwargs.get("packing", False),
-        )
+        # Jobs 추적에 추가
+        self._jobs[job_id] = job
 
-        logger.info("Starting Unsloth training...")
+        logger.info(f"Unsloth job created: {job_id}")
 
-        # 훈련 시작
-        trainer.train()
+        return job
 
-        logger.info("Unsloth training completed")
+    def get_job(self, job_id: str) -> FineTuningJob:
+        """작업 상태 조회"""
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
 
-        return trainer
+        return self._jobs[job_id]
 
-    def save_model(
-        self,
-        output_dir: str,
-        save_method: str = "merged_16bit",
-    ):
-        """
-        모델 저장
+    def list_jobs(self, limit: int = 20) -> List[FineTuningJob]:
+        """작업 목록 조회"""
+        jobs = list(self._jobs.values())
+        jobs.sort(key=lambda x: x.created_at, reverse=True)
+        return jobs[:limit]
 
-        Args:
-            output_dir: 출력 디렉토리
-            save_method: 저장 방법
-                - "merged_16bit": LoRA 병합 + 16bit
-                - "merged_4bit": LoRA 병합 + 4bit
-                - "lora": LoRA 어댑터만
+    def cancel_job(self, job_id: str) -> FineTuningJob:
+        """작업 취소"""
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
 
-        Returns:
-            None
-        """
-        if self._model is None:
-            raise ValueError("Model not loaded. Call load_model() first.")
+        job = self._jobs[job_id]
+        job.status = FineTuningStatus.CANCELLED
+        job.finished_at = int(time.time())
 
-        logger.info(f"Saving Unsloth model to: {output_dir} ({save_method})")
+        logger.info(f"Job {job_id} cancelled")
 
-        if save_method == "merged_16bit":
-            self._model.save_pretrained_merged(
-                output_dir,
-                self._tokenizer,
-                save_method="merged_16bit"
-            )
-        elif save_method == "merged_4bit":
-            self._model.save_pretrained_merged(
-                output_dir,
-                self._tokenizer,
-                save_method="merged_4bit"
-            )
-        elif save_method == "lora":
-            self._model.save_pretrained(output_dir)
-            self._tokenizer.save_pretrained(output_dir)
-        else:
-            raise ValueError(f"Unknown save_method: {save_method}")
+        return job
 
-        logger.info("Unsloth model saved successfully")
+    def get_metrics(self, job_id: str) -> List[FineTuningMetrics]:
+        """훈련 메트릭 조회"""
+        if job_id not in self._jobs:
+            raise ValueError(f"Job {job_id} not found")
+
+        # Unsloth는 Trainer 로그에서 메트릭 추출
+        # 실제 구현에서는 wandb 또는 로그 파일 파싱
+        return []
 
     def __repr__(self) -> str:
         return (
             f"UnslothProvider(model={self.model_name}, "
-            f"lora_r={self.lora_r}, 4bit={self.load_in_4bit})"
+            f"4bit={self.load_in_4bit})"
         )
