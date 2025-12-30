@@ -10,6 +10,7 @@ from .embeddings import (
     SigLIPEmbedding,
     create_vision_embedding,
 )
+from .factory import create_vision_task_model, list_available_models
 from .loaders import (
     ImageDocument,
     ImageLoader,
@@ -45,4 +46,6 @@ __all__ = [
     "SAMWrapper",
     "Florence2Wrapper",
     "YOLOWrapper",
+    "create_vision_task_model",
+    "list_available_models",
 ]
