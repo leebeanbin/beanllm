@@ -47,6 +47,7 @@ from .models import (
     ResizeConfig,
     SharpenConfig,
 )
+from .postprocessing import LLMPostprocessor
 from .presets import ConfigPresets
 from .visualizer import OCRVisualizer
 
@@ -67,4 +68,5 @@ __all__ = [
     "OCRExperiment",
     "GridSearchTuner",
     "OCRInteractiveWidget",
+    "LLMPostprocessor",
 ]
