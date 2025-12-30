@@ -23,6 +23,8 @@ References:
 import logging
 from typing import Any, Dict, List, Optional, Union
 
+from .base_framework import BaseEvaluationFramework
+
 try:
     from ...utils.logger import get_logger
 except ImportError:
@@ -40,7 +42,7 @@ except ImportError:
     HAS_DEEPEVAL = False
 
 
-class DeepEvalWrapper:
+class DeepEvalWrapper(BaseEvaluationFramework):
     """
     DeepEval 통합 래퍼
 
@@ -502,6 +504,91 @@ class DeepEvalWrapper:
         logger.info(f"DeepEval batch evaluation completed: {len(results)} items")
 
         return results
+
+    # BaseEvaluationFramework 추상 메서드 구현
+
+    def evaluate(self, metric: str, data: Union[Dict[str, Any], List[Dict[str, Any]]], **kwargs) -> Dict[str, Any]:
+        """
+        평가 실행 (BaseEvaluationFramework 인터페이스)
+
+        Args:
+            metric: 메트릭 이름 (answer_relevancy, faithfulness 등)
+            data: 평가 데이터 (단일 또는 리스트)
+            **kwargs: 메트릭별 추가 파라미터
+
+        Returns:
+            평가 결과
+
+        Example:
+            ```python
+            # 단일 평가
+            result = evaluator.evaluate(
+                metric="answer_relevancy",
+                data={"question": "What is AI?", "answer": "AI is..."}
+            )
+
+            # 배치 평가
+            results = evaluator.evaluate(
+                metric="faithfulness",
+                data=[
+                    {"answer": "A1", "context": ["C1"]},
+                    {"answer": "A2", "context": ["C2"]}
+                ]
+            )
+            ```
+        """
+        if isinstance(data, list):
+            # 배치 평가
+            return {"results": self.batch_evaluate(metric=metric, data=data, **kwargs)}
+        else:
+            # 단일 평가
+            if metric == "answer_relevancy":
+                return self.evaluate_answer_relevancy(**data, **kwargs)
+            elif metric == "faithfulness":
+                return self.evaluate_faithfulness(**data, **kwargs)
+            elif metric == "contextual_precision":
+                return self.evaluate_contextual_precision(**data, **kwargs)
+            elif metric == "contextual_recall":
+                return self.evaluate_contextual_recall(**data, **kwargs)
+            elif metric == "hallucination":
+                return self.evaluate_hallucination(**data, **kwargs)
+            elif metric == "toxicity":
+                return self.evaluate_toxicity(**data, **kwargs)
+            else:
+                raise ValueError(
+                    f"Unknown metric: {metric}. "
+                    f"Available: {list(self.list_tasks().keys())}"
+                )
+
+    def list_tasks(self) -> Dict[str, str]:
+        """
+        사용 가능한 메트릭 목록 (BaseEvaluationFramework 인터페이스)
+
+        Returns:
+            {"metric_name": "description", ...}
+
+        Example:
+            ```python
+            metrics = evaluator.list_tasks()
+            print(metrics)
+            # {
+            #     "answer_relevancy": "답변이 질문과 얼마나 관련있는지",
+            #     "faithfulness": "답변이 컨텍스트에 충실한지",
+            #     ...
+            # }
+            ```
+        """
+        return {
+            "answer_relevancy": "답변이 질문과 얼마나 관련있는지",
+            "faithfulness": "답변이 컨텍스트에 충실한지 (Hallucination 방지)",
+            "contextual_precision": "검색된 컨텍스트의 정밀도",
+            "contextual_recall": "검색된 컨텍스트의 재현율",
+            "hallucination": "환각 감지",
+            "toxicity": "독성 평가",
+            "bias": "편향 평가",
+            "summarization": "요약 품질",
+            "geval": "커스텀 평가 기준",
+        }
 
     def __repr__(self) -> str:
         return (
