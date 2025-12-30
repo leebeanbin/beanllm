@@ -44,15 +44,28 @@ class TestBeanOCRInitialization:
         """OCRConfig 객체로 초기화"""
         config = OCRConfig(engine="paddleocr", language="ko")
 
-        # 엔진이 아직 구현되지 않았으므로 NotImplementedError 발생 예상
-        with pytest.raises(NotImplementedError):
-            beanOCR(config=config)
+        # PaddleOCR가 설치되지 않았으면 ImportError 발생
+        try:
+            import paddleocr  # noqa: F401
+            # paddleocr가 설치된 경우 정상 초기화
+            ocr = beanOCR(config=config)
+            assert ocr.config.engine == "paddleocr"
+        except ImportError:
+            # paddleocr가 없으면 ImportError 발생 예상
+            with pytest.raises(ImportError, match="PaddleOCR is required"):
+                beanOCR(config=config)
 
     def test_bean_ocr_init_with_kwargs(self):
         """kwargs로 초기화"""
-        # 엔진이 아직 구현되지 않았으므로 NotImplementedError 발생 예상
-        with pytest.raises(NotImplementedError):
-            beanOCR(engine="paddleocr", language="ko")
+        try:
+            import paddleocr  # noqa: F401
+            # paddleocr가 설치된 경우 정상 초기화
+            ocr = beanOCR(engine="paddleocr", language="ko")
+            assert ocr.config.engine == "paddleocr"
+        except ImportError:
+            # paddleocr가 없으면 ImportError 발생 예상
+            with pytest.raises(ImportError, match="PaddleOCR is required"):
+                beanOCR(engine="paddleocr", language="ko")
 
     def test_bean_ocr_init_with_mock_engine(self):
         """Mock 엔진으로 초기화"""
