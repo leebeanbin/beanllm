@@ -28,6 +28,7 @@ except ImportError:
 from .drift_detection import DriftAlert, DriftDetector
 from .enums import MetricType
 from .evaluator import Evaluator
+from .factory import create_evaluation_framework, list_available_frameworks
 from .human_feedback import (
     ComparisonFeedback,
     ComparisonWinner,
@@ -101,4 +102,6 @@ __all__ = [
     # External Frameworks (2024-2025)
     "DeepEvalWrapper",
     "LMEvalHarnessWrapper",
+    "create_evaluation_framework",
+    "list_available_frameworks",
 ]
