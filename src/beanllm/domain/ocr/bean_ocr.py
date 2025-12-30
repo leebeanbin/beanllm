@@ -107,20 +107,24 @@ class beanOCR:
             ImportError: 엔진 의존성이 설치되지 않은 경우
             ValueError: 지원하지 않는 엔진
         """
-        # TODO: Phase 2에서 각 엔진 구현 후 추가
-        # 현재는 엔진이 구현되지 않았으므로 None 반환
-        # if engine_name == "paddleocr":
-        #     from .engines.paddleocr_engine import PaddleOCREngine
-        #     return PaddleOCREngine()
+        if engine_name == "paddleocr":
+            try:
+                from .engines.paddleocr_engine import PaddleOCREngine
+                return PaddleOCREngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"PaddleOCR is required for engine '{engine_name}'. "
+                    f"Install it with: pip install paddleocr"
+                ) from e
         # elif engine_name == "easyocr":
         #     from .engines.easyocr_engine import EasyOCREngine
         #     return EasyOCREngine()
-        # ...
+        # TODO: 다른 엔진들 추가
 
-        # 임시: 엔진이 구현되지 않은 경우 예외 발생
+        # 지원하지 않는 엔진
         raise NotImplementedError(
             f"Engine '{engine_name}' is not yet implemented. "
-            f"Supported engines will be added in Phase 2."
+            f"Currently supported: paddleocr"
         )
 
     def _load_image(self, image_or_path: Union[str, Path, np.ndarray, Image.Image]) -> np.ndarray:
