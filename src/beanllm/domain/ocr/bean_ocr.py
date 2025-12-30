@@ -116,15 +116,21 @@ class beanOCR:
                     f"PaddleOCR is required for engine '{engine_name}'. "
                     f"Install it with: pip install paddleocr"
                 ) from e
-        # elif engine_name == "easyocr":
-        #     from .engines.easyocr_engine import EasyOCREngine
-        #     return EasyOCREngine()
-        # TODO: 다른 엔진들 추가
+        elif engine_name == "easyocr":
+            try:
+                from .engines.easyocr_engine import EasyOCREngine
+                return EasyOCREngine()
+            except ImportError as e:
+                raise ImportError(
+                    f"EasyOCR is required for engine '{engine_name}'. "
+                    f"Install it with: pip install easyocr"
+                ) from e
+        # TODO: 다른 엔진들 추가 (TrOCR, Nougat, Surya, Tesseract, Cloud)
 
         # 지원하지 않는 엔진
         raise NotImplementedError(
             f"Engine '{engine_name}' is not yet implemented. "
-            f"Currently supported: paddleocr"
+            f"Currently supported: paddleocr, easyocr"
         )
 
     def _load_image(self, image_or_path: Union[str, Path, np.ndarray, Image.Image]) -> np.ndarray:
