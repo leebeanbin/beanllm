@@ -17,6 +17,13 @@ from .utils import (
     FineTuningManager,
 )
 
+# 로컬 Fine-tuning Providers (선택적 의존성)
+try:
+    from .local_providers import AxolotlProvider, UnslothProvider
+except ImportError:
+    AxolotlProvider = None  # type: ignore
+    UnslothProvider = None  # type: ignore
+
 __all__ = [
     "FineTuningStatus",
     "ModelProvider",
@@ -30,4 +37,7 @@ __all__ = [
     "DataValidator",
     "FineTuningManager",
     "FineTuningCostEstimator",
+    # Local Providers (2024-2025)
+    "AxolotlProvider",
+    "UnslothProvider",
 ]
