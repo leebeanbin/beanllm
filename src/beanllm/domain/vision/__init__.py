@@ -2,6 +2,7 @@
 Vision Domain - 비전 및 멀티모달 도메인
 """
 
+from .base_task_model import BaseVisionTaskModel
 from .embeddings import (
     CLIPEmbedding,
     MobileCLIPEmbedding,
@@ -26,6 +27,8 @@ except ImportError:
     YOLOWrapper = None  # type: ignore
 
 __all__ = [
+    # Base Classes
+    "BaseVisionTaskModel",
     # Embeddings
     "CLIPEmbedding",
     "SigLIPEmbedding",

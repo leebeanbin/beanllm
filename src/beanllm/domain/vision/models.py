@@ -16,6 +16,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
+from .base_task_model import BaseVisionTaskModel
+
 try:
     from ...utils.logger import get_logger
 except ImportError:
@@ -26,7 +28,7 @@ except ImportError:
 logger = get_logger(__name__)
 
 
-class SAMWrapper:
+class SAMWrapper(BaseVisionTaskModel):
     """
     Segment Anything Model (SAM) 래퍼
 
@@ -242,11 +244,46 @@ class SAMWrapper:
 
         return masks
 
+    # BaseVisionTaskModel 추상 메서드 구현
+
+    def predict(
+        self,
+        image: Union[str, Path, np.ndarray],
+        points: Optional[List[List[int]]] = None,
+        labels: Optional[List[int]] = None,
+        boxes: Optional[List[List[int]]] = None,
+        multimask_output: bool = True,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        예측 실행 (BaseVisionTaskModel 인터페이스)
+
+        기본적으로 segment() 메서드를 호출합니다.
+
+        Args:
+            image: 이미지
+            points: 포인트 프롬프트 (optional)
+            labels: 포인트 레이블 (optional)
+            boxes: 박스 프롬프트 (optional)
+            multimask_output: 여러 마스크 출력 여부
+            **kwargs: 추가 파라미터
+
+        Returns:
+            {"masks": np.ndarray, "scores": List[float], "logits": np.ndarray}
+        """
+        return self.segment(
+            image=image,
+            points=points,
+            labels=labels,
+            boxes=boxes,
+            multimask_output=multimask_output,
+        )
+
     def __repr__(self) -> str:
         return f"SAMWrapper(model_type={self.model_type}, device={self.device})"
 
 
-class Florence2Wrapper:
+class Florence2Wrapper(BaseVisionTaskModel):
     """
     Florence-2 모델 래퍼 (Microsoft)
 
@@ -448,11 +485,65 @@ class Florence2Wrapper:
         result = self._run_task("<VQA>", image, text_input=question)
         return result.get("<VQA>", "")
 
+    # BaseVisionTaskModel 추상 메서드 구현
+
+    def predict(
+        self,
+        image: Union[str, Path, np.ndarray],
+        task: str = "caption",
+        **kwargs,
+    ) -> Union[str, List[Dict[str, Any]]]:
+        """
+        예측 실행 (BaseVisionTaskModel 인터페이스)
+
+        Args:
+            image: 이미지
+            task: 태스크 종류 (caption/detect/vqa)
+            **kwargs: 태스크별 추가 파라미터
+                - caption: detailed=False
+                - vqa: question (필수)
+
+        Returns:
+            태스크별 결과
+            - caption: str
+            - detect: List[Dict]
+            - vqa: str
+
+        Example:
+            ```python
+            # Caption
+            caption = model.predict(image="photo.jpg", task="caption")
+
+            # Object detection
+            objects = model.predict(image="photo.jpg", task="detect")
+
+            # VQA
+            answer = model.predict(
+                image="photo.jpg",
+                task="vqa",
+                question="What is this?"
+            )
+            ```
+        """
+        if task == "caption":
+            return self.caption(image, **kwargs)
+        elif task == "detect":
+            return self.detect_objects(image)
+        elif task == "vqa":
+            if "question" not in kwargs:
+                raise ValueError("VQA task requires 'question' parameter")
+            return self.vqa(image, kwargs["question"])
+        else:
+            raise ValueError(
+                f"Unknown task: {task}. "
+                f"Available: caption, detect, vqa"
+            )
+
     def __repr__(self) -> str:
         return f"Florence2Wrapper(model_size={self.model_size}, device={self.device})"
 
 
-class YOLOWrapper:
+class YOLOWrapper(BaseVisionTaskModel):
     """
     YOLO (You Only Look Once) 래퍼
 
@@ -612,6 +703,44 @@ class YOLOWrapper:
         logger.info(f"YOLO segmented {len(segments)} objects")
 
         return segments
+
+    # BaseVisionTaskModel 추상 메서드 구현
+
+    def predict(
+        self,
+        image: Union[str, Path, np.ndarray],
+        conf: float = 0.25,
+        iou: float = 0.7,
+        **kwargs,
+    ) -> List[Dict[str, Any]]:
+        """
+        예측 실행 (BaseVisionTaskModel 인터페이스)
+
+        태스크에 따라 detect() 또는 segment()를 호출합니다.
+
+        Args:
+            image: 이미지
+            conf: 신뢰도 임계값
+            iou: IoU 임계값
+            **kwargs: 추가 파라미터
+
+        Returns:
+            Detection 또는 Segmentation 결과
+
+        Example:
+            ```python
+            # Detection
+            detections = model.predict("photo.jpg", conf=0.5)
+
+            # Segmentation (task="segment"로 초기화된 경우)
+            segments = model.predict("photo.jpg", conf=0.5)
+            ```
+        """
+        if self.task == "segment":
+            return self.segment(image=image, conf=conf, iou=iou)
+        else:
+            # detect가 기본
+            return self.detect(image=image, conf=conf, iou=iou)
 
     def __repr__(self) -> str:
         return f"YOLOWrapper(version={self.version}, size={self.model_size}, task={self.task})"
