@@ -1,10 +1,13 @@
 """
 beanPDFLoader - 고급 PDF 로더
 
-3-Layer 아키텍처를 통한 최적화된 PDF 처리:
+다층 아키텍처를 통한 최적화된 PDF 처리:
 - Fast Layer: PyMuPDF (빠른 처리)
 - Accurate Layer: pdfplumber (정확한 테이블 추출)
 - ML Layer: marker-pdf (구조 보존 Markdown 변환)
+- Advanced Layer (2024-2025):
+  - PDF-Extract-Kit: DocLayout-YOLO + StructTable-InternVL2
+  - Docling: DocLayNet + TableFormer (IBM)
 
 기존 PDFLoader와 호환되면서 고급 기능을 제공합니다.
 """
@@ -32,10 +35,13 @@ class beanPDFLoader(BaseDocumentLoader):
     """
     beanPDFLoader - 고급 PDF 로더
 
-    3-Layer 아키텍처를 통한 최적화된 PDF 처리:
+    다층 아키텍처를 통한 최적화된 PDF 처리:
     - Fast Layer: PyMuPDF (빠른 처리, 이미지 추출)
     - Accurate Layer: pdfplumber (정확한 테이블 추출)
     - ML Layer: marker-pdf (구조 보존 Markdown 변환)
+    - Advanced Layer (2024-2025):
+      - PDF-Extract-Kit: DocLayout-YOLO + StructTable-InternVL2
+      - Docling: DocLayNet + TableFormer (IBM, 고정밀)
 
     Example:
         ```python
@@ -55,6 +61,15 @@ class beanPDFLoader(BaseDocumentLoader):
 
         # 명시적 전략 선택
         loader = beanPDFLoader("large.pdf", strategy="fast")
+        docs = loader.load()
+
+        # 최신 엔진 사용 (2024-2025)
+        # PDF-Extract-Kit (레이아웃 + 테이블 고정밀)
+        loader = beanPDFLoader("complex.pdf", strategy="pdf-extract-kit")
+        docs = loader.load()
+
+        # Docling (구조적 충실도 최우선)
+        loader = beanPDFLoader("report.pdf", strategy="docling", extract_tables=True)
         docs = loader.load()
         ```
     """
@@ -91,6 +106,8 @@ class beanPDFLoader(BaseDocumentLoader):
                 - "fast": PyMuPDF (빠른 처리)
                 - "accurate": pdfplumber (정확한 테이블 추출)
                 - "ml": marker-pdf (ML 기반 Markdown 변환)
+                - "pdf-extract-kit": PDF-Extract-Kit (DocLayout-YOLO + StructTable, 2024-2025)
+                - "docling": Docling (DocLayNet + TableFormer, IBM, 2024-2025)
             extract_tables: 테이블 추출 여부
             extract_images: 이미지 추출 여부
             to_markdown: Markdown 변환 여부
@@ -161,6 +178,24 @@ class beanPDFLoader(BaseDocumentLoader):
             logger.debug("Marker engine initialized (ML Layer)")
         except ImportError as e:
             logger.debug(f"Marker engine not available: {e}")
+
+        # PDF-Extract-Kit Engine (2024-2025, optional)
+        try:
+            from .engines.pdf_extract_kit_engine import PDFExtractKitEngine
+
+            self._engines["pdf-extract-kit"] = PDFExtractKitEngine(use_gpu=False)
+            logger.debug("PDF-Extract-Kit engine initialized")
+        except ImportError as e:
+            logger.debug(f"PDF-Extract-Kit engine not available: {e}")
+
+        # Docling Engine (IBM, 2024-2025, optional)
+        try:
+            from .engines.docling_engine import DoclingEngine
+
+            self._engines["docling"] = DoclingEngine(use_gpu=False)
+            logger.debug("Docling engine initialized")
+        except ImportError as e:
+            logger.debug(f"Docling engine not available: {e}")
 
         if not self._engines:
             raise ImportError(
