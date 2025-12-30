@@ -82,3 +82,4 @@ docs = load_documents("document.pdf", loader_type="beanpdf", extract_tables=True
 - [ ] 자동 Fallback (beanPDFLoader 실패 시 PDFLoader로)
 
 
+
