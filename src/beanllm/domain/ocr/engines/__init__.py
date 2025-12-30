@@ -13,10 +13,20 @@ OCR 엔진 모듈
 
 from .base import BaseOCREngine
 
+__all__ = ["BaseOCREngine"]
+
 # PaddleOCR 엔진 (optional dependency)
 try:
     from .paddleocr_engine import PaddleOCREngine
 
-    __all__ = ["BaseOCREngine", "PaddleOCREngine"]
+    __all__.append("PaddleOCREngine")
 except ImportError:
-    __all__ = ["BaseOCREngine"]
+    pass
+
+# EasyOCR 엔진 (optional dependency)
+try:
+    from .easyocr_engine import EasyOCREngine
+
+    __all__.append("EasyOCREngine")
+except ImportError:
+    pass
