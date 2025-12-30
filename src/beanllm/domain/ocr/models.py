@@ -283,6 +283,9 @@ class OCRConfig:
             - "surya": Surya (복잡한 레이아웃)
             - "tesseract": Tesseract 5.x (Fallback)
             - "cloud": Cloud API (Google Vision, AWS Textract 등)
+            - "qwen2vl-2b/7b/72b": Qwen2.5-VL (오픈소스 최고 성능, 2024-2025)
+            - "minicpm": MiniCPM-o 2.6 (OCRBench 1위, 2024-2025)
+            - "deepseek-ocr": DeepSeek-OCR (토큰 압축, 효율적, 2024-2025)
 
         language: 언어 설정
             - "auto": 자동 감지
@@ -375,6 +378,12 @@ class OCRConfig:
             "cloud",
             "cloud-google",
             "cloud-aws",
+            "qwen2vl",
+            "qwen2vl-2b",
+            "qwen2vl-7b",
+            "qwen2vl-72b",
+            "minicpm",
+            "deepseek-ocr",
         }
         if self.engine not in valid_engines:
             raise ValueError(
