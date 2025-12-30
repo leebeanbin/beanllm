@@ -87,12 +87,13 @@ class beanOCR:
 
             self._preprocessor = ImagePreprocessor()
 
-        # 후처리기 (TODO: Phase 4에서 구현)
-        # if self.config.enable_llm_postprocessing:
-        #     from .postprocessing import LLMPostprocessor
-        #     self._postprocessor = LLMPostprocessor(
-        #         model=self.config.llm_model
-        #     )
+        # 후처리기
+        if self.config.enable_llm_postprocessing:
+            from .postprocessing import LLMPostprocessor
+
+            self._postprocessor = LLMPostprocessor(
+                model=self.config.llm_model
+            )
 
     def _create_engine(self, engine_name: str) -> BaseOCREngine:
         """
@@ -281,11 +282,7 @@ class beanOCR:
 
         raw_result = self._engine.recognize(image, self.config)
 
-        # 4. 후처리 (TODO: Phase 4에서 구현)
-        # if self._postprocessor:
-        #     raw_result = await self._postprocessor.process(raw_result, self.config)
-
-        # 5. OCRResult 생성
+        # 4. OCRResult 생성
         result = OCRResult(
             text=raw_result["text"],
             lines=raw_result["lines"],
@@ -295,6 +292,10 @@ class beanOCR:
             processing_time=time.time() - start_time,
             metadata=raw_result.get("metadata", {}),
         )
+
+        # 5. 후처리 (LLM 보정)
+        if self._postprocessor:
+            result = self._postprocessor.process(result)
 
         return result
 
