@@ -398,6 +398,33 @@ class PDFExtractKitEngine:
 
 ---
 
+## 구현 현황 (Implementation Status)
+
+### ✅ Phase 1 완료 (2025-12-30)
+- **Audio/STT**: 6개 엔진 구현
+  - Whisper V3 Turbo, Distil-Whisper, Parakeet, Canary, Canary-Flash, Moonshine
+- **Vision Embeddings**: 2개 모델 추가
+  - SigLIP 2, MobileCLIP2
+- **PDF Parsing**: 2개 엔진 추가
+  - PDF-Extract-Kit (DocLayout-YOLO + StructTable)
+  - Docling (DocLayNet + TableFormer)
+
+### ✅ Phase 2 완료 (2025-12-30)
+- **Text Embeddings**: 2개 클래스 구현
+  - HuggingFaceEmbedding (범용, 7,000+ 모델 지원)
+  - NVEmbedEmbedding (NVIDIA NV-Embed-v2, MTEB #1)
+- **Evaluation**: 2개 프레임워크 통합
+  - DeepEvalWrapper (14+ RAG 메트릭)
+  - LMEvalHarnessWrapper (60+ 벤치마크)
+
+### 📋 Phase 3 계획 (향후)
+- Fine-tuning 로컬 지원 (Axolotl, Unsloth)
+- Vision 모델 확장 (SAM 3, Florence-2, YOLOv12)
+- OCR 추가 모델 (Qwen2.5-VL-7B/72B)
+
+---
+
 **생성일**: 2025-12-30
+**최종 업데이트**: 2025-12-30
 **작성자**: Claude Code
 **목적**: beanLLM 도메인별 최신 모델 리서치 및 업데이트 가이드
