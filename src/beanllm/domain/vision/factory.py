@@ -28,10 +28,12 @@ def create_vision_task_model(
             - "sam" or "sam2": Segment Anything Model (Segmentation)
             - "florence2" or "florence-2": Florence-2 (Captioning, Detection, VQA)
             - "yolo": YOLO (Object Detection, Segmentation)
+            - "qwen3vl" or "qwen-vl": Qwen3-VL (Vision-Language Model, VQA, Captioning, OCR)
         **kwargs: 모델별 초기화 파라미터
             - SAM: model_type="sam2_hiera_large", device=None
             - Florence-2: model_size="large", device=None
             - YOLO: version="11", model_size="m", task="detect"
+            - Qwen3-VL: model_size="8B", device=None
 
     Returns:
         BaseVisionTaskModel 인스턴스
@@ -105,7 +107,7 @@ def create_vision_task_model(
                 "Install with: pip install transformers"
             )
 
-    elif model in ["yolo", "yolov8", "yolov11"]:
+    elif model in ["yolo", "yolov8", "yolov11", "yolov12"]:
         try:
             from .models import YOLOWrapper
             logger.info("Creating YOLO model")
@@ -116,10 +118,21 @@ def create_vision_task_model(
                 "Install with: pip install ultralytics"
             )
 
+    elif model in ["qwen3vl", "qwen-vl", "qwen3-vl"]:
+        try:
+            from .models import Qwen3VLWrapper
+            logger.info("Creating Qwen3-VL model")
+            return Qwen3VLWrapper(**kwargs)
+        except ImportError:
+            raise ImportError(
+                "transformers required for Qwen3-VL. "
+                "Install with: pip install transformers torch"
+            )
+
     else:
         raise ValueError(
             f"Unknown model: {model}. "
-            f"Available: sam, florence2, yolo"
+            f"Available: sam, florence2, yolo, qwen3vl"
         )
 
 
@@ -144,7 +157,8 @@ def list_available_models() -> dict:
         ```
     """
     return {
-        "sam": "Segment Anything Model (SAM/SAM2) - 제로샷 segmentation",
+        "sam": "Segment Anything Model (SAM 3/SAM 2) - 제로샷 segmentation",
         "florence2": "Florence-2 (Microsoft) - Captioning, Detection, VQA",
-        "yolo": "YOLO (YOLOv8/v11) - Object Detection, Segmentation",
+        "yolo": "YOLO (YOLOv12/v11/v8) - Object Detection, Segmentation",
+        "qwen3vl": "Qwen3-VL (Alibaba) - Vision-Language Model, VQA, Captioning, OCR",
     }
