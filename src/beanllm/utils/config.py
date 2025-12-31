@@ -28,6 +28,8 @@ class EnvConfig:
     OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY")
     ANTHROPIC_API_KEY: Optional[str] = os.getenv("ANTHROPIC_API_KEY")
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
+    DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
+    PERPLEXITY_API_KEY: Optional[str] = os.getenv("PERPLEXITY_API_KEY")
 
     # Hosts
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -42,6 +44,10 @@ class EnvConfig:
             providers.append("anthropic")
         if cls.GEMINI_API_KEY:
             providers.append("google")
+        if cls.DEEPSEEK_API_KEY:
+            providers.append("deepseek")
+        if cls.PERPLEXITY_API_KEY:
+            providers.append("perplexity")
         providers.append("ollama")  # 항상 가능
         return providers
 
@@ -53,6 +59,8 @@ class EnvConfig:
             "anthropic": cls.ANTHROPIC_API_KEY,
             "google": cls.GEMINI_API_KEY,
             "gemini": cls.GEMINI_API_KEY,
+            "deepseek": cls.DEEPSEEK_API_KEY,
+            "perplexity": cls.PERPLEXITY_API_KEY,
             "ollama": True,  # 항상 가능
         }
         return bool(provider_map.get(provider.lower()))

@@ -50,6 +50,7 @@ from .evaluation import (
     FaithfulnessMetric,
     LLMJudgeMetric,
     MetricType,
+    RAGASWrapper,
     ROUGEMetric,
     SemanticSimilarityMetric,
 )
@@ -86,8 +87,11 @@ from .loaders import (
     BaseDocumentLoader,
     CSVLoader,
     DirectoryLoader,
+    DoclingLoader,
     Document,
     DocumentLoader,
+    HTMLLoader,
+    JupyterLoader,
     PDFLoader,
     TextLoader,
     load_documents,
@@ -132,6 +136,18 @@ from .parsers import (
     parse_bool,
     parse_json,
     parse_list,
+)
+
+# Retrieval (Rerankers & Hybrid Search)
+from .retrieval import (
+    BaseReranker,
+    BGEReranker,
+    CohereReranker,
+    CrossEncoderReranker,
+    HybridRetriever,
+    PositionEngineeringReranker,
+    RerankResult,
+    SearchResult,
 )
 
 # Prompts
@@ -254,6 +270,9 @@ __all__ = [
     "PDFLoader",
     "CSVLoader",
     "DirectoryLoader",
+    "HTMLLoader",
+    "JupyterLoader",
+    "DoclingLoader",
     "DocumentLoader",
     "load_documents",
     # Embeddings
@@ -421,6 +440,7 @@ __all__ = [
     "ContextPrecisionMetric",
     "FaithfulnessMetric",
     "CustomMetric",
+    "RAGASWrapper",
     # Fine-tuning
     "FineTuningStatus",
     "ModelProvider",
@@ -439,4 +459,13 @@ __all__ = [
     "TranscriptionResult",
     "WhisperModel",
     "TTSProvider",
+    # Retrieval
+    "RerankResult",
+    "SearchResult",
+    "BaseReranker",
+    "BGEReranker",
+    "CohereReranker",
+    "CrossEncoderReranker",
+    "PositionEngineeringReranker",
+    "HybridRetriever",
 ]

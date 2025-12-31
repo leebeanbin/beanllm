@@ -30,6 +30,16 @@ try:
 except ImportError:
     OpenAIProvider = None  # type: ignore
 
+try:
+    from .deepseek_provider import DeepSeekProvider
+except ImportError:
+    DeepSeekProvider = None  # type: ignore
+
+try:
+    from .perplexity_provider import PerplexityProvider
+except ImportError:
+    PerplexityProvider = None  # type: ignore
+
 logger = get_logger(__name__)
 
 
@@ -51,6 +61,12 @@ class ProviderFactory:
 
         if GeminiProvider is not None:
             priority.append(("gemini", GeminiProvider, "GEMINI_API_KEY"))
+
+        if DeepSeekProvider is not None:
+            priority.append(("deepseek", DeepSeekProvider, "DEEPSEEK_API_KEY"))
+
+        if PerplexityProvider is not None:
+            priority.append(("perplexity", PerplexityProvider, "PERPLEXITY_API_KEY"))
 
         if OllamaProvider is not None:
             priority.append(("ollama", OllamaProvider, "OLLAMA_HOST"))  # API 키 없음
@@ -78,6 +94,10 @@ class ProviderFactory:
                 elif env_key == "ANTHROPIC_API_KEY" and EnvConfig.ANTHROPIC_API_KEY:
                     available.append(name)
                 elif env_key == "GEMINI_API_KEY" and EnvConfig.GEMINI_API_KEY:
+                    available.append(name)
+                elif env_key == "DEEPSEEK_API_KEY" and EnvConfig.DEEPSEEK_API_KEY:
+                    available.append(name)
+                elif env_key == "PERPLEXITY_API_KEY" and EnvConfig.PERPLEXITY_API_KEY:
                     available.append(name)
             except Exception as e:
                 logger.debug(f"Provider {name} not available: {e}")
@@ -134,6 +154,16 @@ class ProviderFactory:
                     logger.debug(f"Provider {name} not available (missing {env_key})")
                     continue
                 elif env_key == "GEMINI_API_KEY" and not EnvConfig.GEMINI_API_KEY:
+                    if not fallback:
+                        continue
+                    logger.debug(f"Provider {name} not available (missing {env_key})")
+                    continue
+                elif env_key == "DEEPSEEK_API_KEY" and not EnvConfig.DEEPSEEK_API_KEY:
+                    if not fallback:
+                        continue
+                    logger.debug(f"Provider {name} not available (missing {env_key})")
+                    continue
+                elif env_key == "PERPLEXITY_API_KEY" and not EnvConfig.PERPLEXITY_API_KEY:
                     if not fallback:
                         continue
                     logger.debug(f"Provider {name} not available (missing {env_key})")

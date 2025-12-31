@@ -244,3 +244,158 @@ def query_expansion(
                 break
 
     return expanded
+
+
+def truncate_embedding(
+    embedding: List[float],
+    dimension: int,
+) -> List[float]:
+    """
+    Matryoshka Representation Learning: 임베딩 차원 축소
+
+    Matryoshka 임베딩은 하나의 큰 벡터를 여러 작은 차원으로 축소할 수 있습니다.
+    이를 통해 저장 공간과 계산 비용을 줄이면서도 성능을 유지할 수 있습니다.
+
+    Args:
+        embedding: 원본 임베딩 벡터
+        dimension: 축소할 차원 (원본 차원보다 작아야 함)
+
+    Returns:
+        축소된 임베딩 벡터
+
+    Example:
+        ```python
+        from beanllm.domain.embeddings import OpenAIEmbedding, truncate_embedding
+
+        # 1536차원 임베딩 생성
+        emb = OpenAIEmbedding(model="text-embedding-3-large")
+        vectors = emb.embed_sync(["Hello world"])
+
+        # 768차원으로 축소 (50% 저장 공간 절약)
+        truncated = truncate_embedding(vectors[0], dimension=768)
+
+        # 256차원으로 축소 (83% 저장 공간 절약)
+        small = truncate_embedding(vectors[0], dimension=256)
+        ```
+
+    References:
+        - "Matryoshka Representation Learning" (NeurIPS 2022)
+        - https://arxiv.org/abs/2205.13147
+    """
+    if dimension > len(embedding):
+        logger.warning(
+            f"Requested dimension ({dimension}) is larger than "
+            f"embedding dimension ({len(embedding)}). Returning original."
+        )
+        return embedding
+
+    truncated = embedding[:dimension]
+
+    logger.info(
+        f"Truncated embedding: {len(embedding)} -> {dimension} "
+        f"({100 * (1 - dimension / len(embedding)):.1f}% reduction)"
+    )
+
+    return truncated
+
+
+def batch_truncate_embeddings(
+    embeddings: List[List[float]],
+    dimension: int,
+) -> List[List[float]]:
+    """
+    배치 임베딩 차원 축소
+
+    Args:
+        embeddings: 임베딩 벡터 리스트
+        dimension: 축소할 차원
+
+    Returns:
+        축소된 임베딩 벡터 리스트
+
+    Example:
+        ```python
+        from beanllm.domain.embeddings import embed_sync, batch_truncate_embeddings
+
+        # 여러 텍스트 임베딩
+        vectors = embed_sync(["text1", "text2", "text3"])
+
+        # 모두 256차원으로 축소
+        truncated_vectors = batch_truncate_embeddings(vectors, dimension=256)
+        ```
+    """
+    return [truncate_embedding(emb, dimension) for emb in embeddings]
+
+
+class MatryoshkaEmbedding(BaseEmbedding):
+    """
+    Matryoshka Embedding Wrapper
+
+    기존 임베딩 모델을 Matryoshka 방식으로 사용할 수 있게 래핑합니다.
+    차원을 동적으로 축소하여 저장 공간과 계산 비용을 절감합니다.
+
+    지원 차원:
+    - 1536 -> 768: 50% 절약, ~5% 성능 손실
+    - 1536 -> 512: 67% 절약, ~10% 성능 손실
+    - 1536 -> 256: 83% 절약, ~15% 성능 손실
+
+    Example:
+        ```python
+        from beanllm.domain.embeddings import MatryoshkaEmbedding, OpenAIEmbedding
+
+        # 기존 임베딩 모델
+        base_emb = OpenAIEmbedding(model="text-embedding-3-large")
+
+        # Matryoshka 래퍼 (512차원으로 축소)
+        mat_emb = MatryoshkaEmbedding(
+            base_embedding=base_emb,
+            output_dimension=512
+        )
+
+        # 사용 (자동으로 512차원으로 축소됨)
+        vectors = mat_emb.embed_sync(["text1", "text2"])
+        print(len(vectors[0]))  # 512
+        ```
+    """
+
+    def __init__(
+        self,
+        base_embedding: BaseEmbedding,
+        output_dimension: int = 768,
+        **kwargs,
+    ):
+        """
+        Args:
+            base_embedding: 기본 임베딩 모델
+            output_dimension: 출력 차원 (축소할 차원)
+            **kwargs: 추가 파라미터
+        """
+        super().__init__(model=base_embedding.model, **kwargs)
+
+        self.base_embedding = base_embedding
+        self.output_dimension = output_dimension
+
+        logger.info(
+            f"MatryoshkaEmbedding initialized: "
+            f"model={base_embedding.model}, output_dim={output_dimension}"
+        )
+
+    async def embed(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 후 차원 축소 (비동기)"""
+        # 기본 임베딩 생성
+        embeddings = await self.base_embedding.embed(texts)
+
+        # 차원 축소
+        truncated = batch_truncate_embeddings(embeddings, self.output_dimension)
+
+        return truncated
+
+    def embed_sync(self, texts: List[str]) -> List[List[float]]:
+        """텍스트들을 임베딩 후 차원 축소 (동기)"""
+        # 기본 임베딩 생성
+        embeddings = self.base_embedding.embed_sync(texts)
+
+        # 차원 축소
+        truncated = batch_truncate_embeddings(embeddings, self.output_dimension)
+
+        return truncated

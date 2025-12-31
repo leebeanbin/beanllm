@@ -21,9 +21,10 @@ from .loaders import (
 
 # Vision Task Models (선택적 의존성, 2024-2025)
 try:
-    from .models import Florence2Wrapper, SAMWrapper, YOLOWrapper
+    from .models import Florence2Wrapper, Qwen3VLWrapper, SAMWrapper, YOLOWrapper
 except ImportError:
     Florence2Wrapper = None  # type: ignore
+    Qwen3VLWrapper = None  # type: ignore
     SAMWrapper = None  # type: ignore
     YOLOWrapper = None  # type: ignore
 
@@ -46,6 +47,7 @@ __all__ = [
     "SAMWrapper",
     "Florence2Wrapper",
     "YOLOWrapper",
+    "Qwen3VLWrapper",
     "create_vision_task_model",
     "list_available_models",
 ]

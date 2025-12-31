@@ -7,6 +7,9 @@ from .factory import VectorStore, VectorStoreBuilder, create_vector_store, from_
 from .implementations import (
     ChromaVectorStore,
     FAISSVectorStore,
+    LanceDBVectorStore,
+    MilvusVectorStore,
+    PgvectorVectorStore,
     PineconeVectorStore,
     QdrantVectorStore,
     WeaviateVectorStore,
@@ -26,6 +29,9 @@ __all__ = [
     "FAISSVectorStore",
     "QdrantVectorStore",
     "WeaviateVectorStore",
+    "MilvusVectorStore",
+    "LanceDBVectorStore",
+    "PgvectorVectorStore",
     # Factory
     "VectorStore",
     "VectorStoreBuilder",

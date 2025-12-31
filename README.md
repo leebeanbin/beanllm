@@ -13,180 +13,121 @@
   <a href="https://github.com/leebeanbin/beanllm"><img src="https://img.shields.io/github/stars/leebeanbin/beanllm?style=social" alt="GitHub Stars"></a>
 </p>
 
-**beanllm** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
+**beanllm** is a comprehensive, production-ready toolkit for building LLM applications with a unified interface across OpenAI, Anthropic, Google, DeepSeek, Perplexity, and Ollama. Built with **Clean Architecture** and **SOLID principles** for maintainability and scalability.
 
 ---
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](QUICK_START.md)** - Get started in 5 minutes
-- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
-- **[Architecture Guide](ARCHITECTURE.md)** - Design principles and patterns
-- **[Enhancement Proposal](docs/ENHANCEMENT_PROPOSAL.md)** - 🚀 Future roadmap and advanced features
-- **[Examples](examples/)** - 15+ working examples
-- **[PyPI Package](https://pypi.org/project/beanllm/)** - Installation and releases
+- 📖 **[Quick Start Guide](QUICK_START.md)** - Get started in 5 minutes
+- 📘 **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
+- 🏗️ **[Architecture Guide](ARCHITECTURE.md)** - Design principles and patterns
+- ⚡ **[Advanced Features](docs/ADVANCED_FEATURES.md)** - Structured Outputs, Prompt Caching, Tool Calling
+- 🆕 **[2024-2025 Updates](docs/UPDATES_2025.md)** - Latest features and integrations
+- 💡 **[Examples](examples/)** - 15+ working examples
+- 📦 **[PyPI Package](https://pypi.org/project/beanllm/)** - Installation and releases
 
 ---
 
 ## ✨ Key Features
 
 ### 🎯 **Core Features**
-- 🔄 **Unified Interface** - Single API for OpenAI, Anthropic, Google, Ollama
+- 🔄 **Unified Interface** - Single API for 7 LLM providers (OpenAI, Claude, Gemini, DeepSeek, Perplexity, Ollama)
 - 🎛️ **Intelligent Adaptation** - Automatic parameter conversion between providers
 - 📊 **Model Registry** - Auto-detect available models from API keys
 - 🔍 **CLI Tools** - Inspect models and capabilities from command line
 - 💰 **Cost Tracking** - Accurate token counting and cost estimation
 - 🏗️ **Clean Architecture** - Layered architecture with clear separation of concerns
 
-### 🏗️ **RAG & Document Processing**
-- 📄 **Document Loaders** - PDF, CSV, TXT with automatic format detection
+### 📄 **RAG & Document Processing**
+- 📑 **Document Loaders** - PDF, DOCX, XLSX, PPTX (Docling), Jupyter Notebooks, HTML, CSV, TXT
 - 🚀 **beanPDFLoader** - Advanced PDF processing with 3-layer architecture
-  - Fast Layer (PyMuPDF): ~2s/100 pages, image extraction
-  - Accurate Layer (pdfplumber): 95% accuracy, table extraction
-  - ML Layer (marker-pdf): 98% accuracy, structure-preserving Markdown
-  - Auto strategy selection & DataFrame/Markdown conversion
+  - ⚡ Fast Layer (PyMuPDF): ~2s/100 pages, image extraction
+  - 🎯 Accurate Layer (pdfplumber): 95% accuracy, table extraction
+  - 🤖 ML Layer (marker-pdf): 98% accuracy, structure-preserving Markdown
 - ✂️ **Smart Text Splitters** - Semantic chunking with tiktoken
-- 🔍 **Vector Search** - Chroma, FAISS, Pinecone, Qdrant, Weaviate
+- 🗄️ **Vector Search** - Chroma, FAISS, Pinecone, Qdrant, Weaviate, Milvus, LanceDB, pgvector
 - 🎯 **RAG Pipeline** - Complete question-answering system in one line
-- 🐛 **RAG Debugging** - Comprehensive debugging toolkit
+- 📊 **RAG Evaluation** - TruLens integration, context recall metrics
+
+### 🧠 **Embeddings**
+- 📝 **Text Embeddings** - OpenAI, Gemini, Voyage, Jina, Mistral, Cohere, HuggingFace, Ollama
+- 🌏 **Multilingual** - Qwen3-Embedding-8B (top multilingual model)
+- 💻 **Code Embeddings** - Specialized embeddings for code search
+- 🖼️ **Vision Embeddings** - CLIP, SigLIP, MobileCLIP for image-text matching
+- 🎨 **Advanced Features** - Matryoshka (dimension reduction), MMR search, hard negative mining
+
+### 👁️ **Vision AI**
+- ✂️ **Segmentation** - SAM 3 (zero-shot segmentation)
+- 🎯 **Object Detection** - YOLOv12 (latest detection/segmentation)
+- 🤖 **Vision-Language** - Qwen3-VL (VQA, OCR, captioning, 128K context)
+- 🖼️ **Image Understanding** - Florence-2 (detection, captioning, VQA)
+- 🔍 **Vision RAG** - Image-based question answering with CLIP embeddings
+
+### 🎙️ **Audio Processing**
+- 🎤 **Speech-to-Text** - 8 STT engines with multilingual support
+  - ⚡ **SenseVoice-Small**: 15x faster than Whisper-Large, emotion recognition, 한국어 지원
+  - 🏢 **Granite Speech 8B**: Open ASR Leaderboard #2 (WER 5.85%), enterprise-grade
+  - 🔥 Whisper V3 Turbo, Distil-Whisper, Parakeet TDT, Canary, Moonshine
+- 🔊 **Text-to-Speech** - Multi-provider TTS (OpenAI, Azure, Google)
+- 🎧 **Audio RAG** - Search and QA across audio files
 
 ### 🤖 **Advanced LLM Features**
 - 🛠️ **Tools & Agents** - Function calling with ReAct pattern
 - 🧠 **Memory Systems** - Buffer, window, token-based, summary memory
 - ⛓️ **Chains** - Sequential, parallel, and custom chain composition
 - 📊 **Output Parsers** - Pydantic, JSON, datetime, enum parsing
-- 🔁 **Streaming** - Real-time response streaming with stats
+- 💫 **Streaming** - Real-time response streaming
+- 🎯 **Structured Outputs** - 100% schema accuracy (OpenAI strict mode)
+- 💾 **Prompt Caching** - 85% latency reduction, 10x cost savings (Anthropic)
+- ⚡ **Parallel Tool Calling** - Concurrent function execution
 
-### 📈 **Graph & Multi-Agent**
-- 🕸️ **Graph Workflows** - LangGraph-style DAG execution
+### 🕸️ **Graph & Multi-Agent**
+- 📊 **Graph Workflows** - LangGraph-style DAG execution
 - 🤝 **Multi-Agent** - Sequential, parallel, hierarchical, debate patterns
-- 🔄 **State Management** - Automatic state threading and checkpoints
+- 💾 **State Management** - Automatic state threading and checkpoints
 - 📞 **Communication** - Inter-agent message passing
 
-### 🎨 **Multimodal AI**
-- 🖼️ **Vision RAG** - Image-based question answering with CLIP
-- 🎙️ **Audio Processing** - Whisper STT, multi-provider TTS
-- 🔊 **Audio RAG** - Search and QA across audio files
-- 🌐 **Web Search** - Google, Bing, DuckDuckGo integration
-- 🧮 **ML Integration** - TensorFlow, PyTorch, Scikit-learn
-
 ### 🏭 **Production Features**
-- 💵 **Token & Cost** - tiktoken-based accurate counting, cost optimization
-- 📝 **Prompt Templates** - Few-shot, chat, chain-of-thought templates
-- 📊 **Evaluation** - BLEU, ROUGE, LLM-as-Judge, RAG metrics, Context Recall
-- 👤 **Human-in-the-Loop** - 피드백 수집 및 하이브리드 평가
-- 🔄 **Continuous Evaluation** - 정기 평가 및 추적
-- 📉 **Drift Detection** - 모델 드리프트 감지
-- 📈 **Evaluation Dashboard** - 평가 결과 시각화
-- 📋 **Rubric-Driven Grading** - 구조화된 루브릭 기반 평가
-- ✅ **CheckEval** - 체크리스트 기반 Boolean 평가
-- 📊 **Evaluation Analytics** - 트렌드 및 상관관계 분석
+- 📈 **Evaluation** - BLEU, ROUGE, LLM-as-Judge, RAG metrics, context recall
+- 👤 **Human-in-the-Loop** - Feedback collection and hybrid evaluation
+- 🔄 **Continuous Evaluation** - Scheduled evaluation and tracking
+- 📉 **Drift Detection** - Model performance monitoring
 - 🎯 **Fine-tuning** - OpenAI fine-tuning API integration
 - 🛡️ **Error Handling** - Retry, circuit breaker, rate limiting
-- 📈 **Tracing** - Distributed tracing with OpenTelemetry export
-
----
-
-## 🏗️ Architecture
-
-beanllm은 **Clean Architecture**와 **SOLID 원칙**을 따르는 계층형 아키텍처를 사용합니다.
-
-### 레이어 구조
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Facade Layer                          │
-│  (사용자 친화적 API) - Client, RAGChain, Agent 등       │
-└──────────────────────┬────────────────────────────────────┘
-                       │
-┌──────────────────────▼────────────────────────────────────┐
-│                    Handler Layer                          │
-│  (Controller 역할) - 입력 검증, 에러 처리                  │
-└──────────────────────┬────────────────────────────────────┘
-                       │
-┌──────────────────────▼────────────────────────────────────┐
-│                    Service Layer                          │
-│  (비즈니스 로직) - 인터페이스 + 구현체                     │
-└──────────────────────┬────────────────────────────────────┘
-                       │
-┌──────────────────────▼────────────────────────────────────┐
-│                    Domain Layer                           │
-│  (핵심 비즈니스) - 엔티티, 인터페이스, 규칙              │
-└──────────────────────┬────────────────────────────────────┘
-                       │
-┌──────────────────────▼────────────────────────────────────┐
-│                Infrastructure Layer                       │
-│  (외부 시스템) - Provider, Vector Store 구현              │
-└───────────────────────────────────────────────────────────┘
-```
-
-### 디렉토리 구조
-
-```
-src/beanllm/
-├── facade/          # 외부 인터페이스 (Facade 패턴)
-├── handler/         # 요청 처리 (Controller 역할)
-├── service/         # 비즈니스 로직 (Service 인터페이스 + 구현체)
-├── domain/          # 도메인 모델 및 비즈니스 규칙
-├── infrastructure/ # 외부 시스템 인터페이스
-├── dto/             # 데이터 전송 객체
-├── decorators/      # 공통 데코레이터
-└── utils/           # 유틸리티 함수
-```
-
-### SOLID 원칙 적용
-
-- **SRP**: 각 레이어가 단일 책임만 담당
-- **OCP**: 인터페이스 기반 확장 가능
-- **LSP**: 인터페이스 구현체는 언제든 교체 가능
-- **ISP**: 작은, 특화된 인터페이스
-- **DIP**: 인터페이스에 의존, 구현체에 의존하지 않음
-
-자세한 아키텍처 설명은 [ARCHITECTURE.md](ARCHITECTURE.md)를 참고하세요.
+- 📊 **Tracing** - Distributed tracing with OpenTelemetry
 
 ---
 
 ## 📦 Installation
 
-### Poetry 사용 (권장)
+### Using pip
 
 ```bash
-# 프로젝트 클론
-git clone https://github.com/yourusername/beanllm.git
-cd beanllm
-
-# 의존성 설치
-poetry install --extras all  # 모든 Provider 포함
-# 또는
-poetry install --extras openai  # OpenAI만
-
-# 가상 환경 활성화
-poetry shell
-```
-
-### pip 사용
-
-```bash
-# 기본 설치 (의존성 없음)
+# Basic installation
 pip install beanllm
 
-# 특정 Provider 추가
+# Specific providers
 pip install beanllm[openai]
 pip install beanllm[anthropic]
 pip install beanllm[gemini]
-pip install beanllm[ollama]
-
-# ML-based PDF processing (marker-pdf)
-pip install beanllm[ml]
-
-# 모든 Provider
 pip install beanllm[all]
 
-# 개발 도구 포함
+# ML-based PDF processing
+pip install beanllm[ml]
+
+# Development tools
 pip install beanllm[dev,all]
 ```
 
-> **참고**: Provider와 ML 기능은 선택적 의존성입니다. 필요한 기능만 설치하면 됩니다.
+### Using Poetry (권장)
+
+```bash
+git clone https://github.com/yourusername/beanllm.git
+cd beanllm
+poetry install --extras all
+poetry shell
+```
 
 ---
 
@@ -194,19 +135,19 @@ pip install beanllm[dev,all]
 
 ### Environment Setup
 
-`.env` 파일을 프로젝트 루트에 생성하세요:
+Create `.env` file in project root:
 
 ```bash
-# .env 파일 생성
-cat > .env << EOF
+# LLM Providers
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=...
+DEEPSEEK_API_KEY=sk-...
+PERPLEXITY_API_KEY=pplx-...
 OLLAMA_HOST=http://localhost:11434
-EOF
 ```
 
-### Basic Usage
+### 💬 Basic Chat
 
 ```python
 import asyncio
@@ -216,16 +157,16 @@ async def main():
     # Unified interface - works with any provider
     client = Client(model="gpt-4o")
     response = await client.chat(
-        messages=[{"role": "user", "content": "Explain quantum computing in simple terms"}]
+        messages=[{"role": "user", "content": "Explain quantum computing"}]
     )
     print(response.content)
-    
+
     # Switch providers seamlessly
-    client = Client(model="claude-3-5-sonnet-20241022")
+    client = Client(model="claude-sonnet-4-20250514")
     response = await client.chat(
         messages=[{"role": "user", "content": "Same question, different provider"}]
     )
-    
+
     # Streaming
     async for chunk in client.stream_chat(
         messages=[{"role": "user", "content": "Tell me a story"}]
@@ -235,7 +176,7 @@ async def main():
 asyncio.run(main())
 ```
 
-### RAG in One Line
+### 📚 RAG in One Line
 
 ```python
 import asyncio
@@ -244,25 +185,25 @@ from beanllm import RAGChain
 async def main():
     # Create RAG system from documents
     rag = RAGChain.from_documents("docs/")
-    
+
     # Ask questions
     answer = await rag.query("What is this document about?")
     print(answer)
-    
+
     # With sources
     result = await rag.query("Explain the main concept", include_sources=True)
     print(result.answer)
     for source in result.sources:
-        print(f"Source: {source.metadata.get('source', 'unknown')}")
-    
+        print(f"📄 Source: {source.metadata.get('source', 'unknown')}")
+
     # Streaming query
-    async for chunk in rag.stream_query("질문"):
+    async for chunk in rag.stream_query("Tell me more"):
         print(chunk, end="", flush=True)
 
 asyncio.run(main())
 ```
 
-### Tools & Agents
+### 🛠️ Tools & Agents
 
 ```python
 import asyncio
@@ -275,22 +216,27 @@ async def main():
         """Evaluate a math expression"""
         return str(eval(expression))
 
+    @Tool.from_function
+    def get_weather(city: str) -> str:
+        """Get weather for a city"""
+        return f"Sunny, 22°C in {city}"
+
     # Create agent
     agent = Agent(
         model="gpt-4o-mini",
-        tools=[calculator],
+        tools=[calculator, get_weather],
         max_iterations=10
     )
-    
+
     # Run agent
-    result = await agent.run("What is 25 * 17?")
+    result = await agent.run("What is 25 * 17? Also what's the weather in Seoul?")
     print(result.answer)
-    print(f"Steps: {result.total_steps}")
+    print(f"⏱️ Steps: {result.total_steps}")
 
 asyncio.run(main())
 ```
 
-### Graph Workflows
+### 🕸️ Graph Workflows
 
 ```python
 import asyncio
@@ -298,30 +244,40 @@ from beanllm import StateGraph, Client
 
 async def main():
     client = Client(model="gpt-4o-mini")
-    
+
     # Create graph
     graph = StateGraph()
-    
+
     async def analyze(state):
         response = await client.chat(
             messages=[{"role": "user", "content": f"Analyze: {state['input']}"}]
         )
         state["analysis"] = response.content
         return state
-    
+
+    async def improve(state):
+        response = await client.chat(
+            messages=[{"role": "user", "content": f"Improve: {state['input']}"}]
+        )
+        state["improved"] = response.content
+        return state
+
     def decide(state):
-        score = float(state["analysis"].split("Score:")[1]) if "Score:" in state["analysis"] else 0.5
+        score = 0.9 if "excellent" in state["analysis"].lower() else 0.5
         return "good" if score > 0.8 else "bad"
-    
+
     # Build graph
     graph.add_node("analyze", analyze)
+    graph.add_node("improve", improve)
     graph.add_conditional_edges("analyze", decide, {
         "good": "END",
         "bad": "improve"
     })
-    
+    graph.add_edge("improve", "END")
+    graph.set_entry_point("analyze")
+
     # Run
-    result = await graph.invoke({"input": "Draft text"})
+    result = await graph.invoke({"input": "Draft proposal"})
     print(result)
 
 asyncio.run(main())
@@ -329,162 +285,131 @@ asyncio.run(main())
 
 ---
 
-## 📖 Examples
+## 🎨 Advanced Features
 
-더 많은 사용 예제는 [examples/](examples/) 디렉토리를 참고하세요:
+### 🎯 Structured Outputs (100% Schema Accuracy)
 
-- `basic_usage.py` - 기본 사용법
-- `rag_demo.py` - RAG 파이프라인 예제
-- `rag_chain_demo.py` - RAG Chain 예제
-- `state_graph_demo.py` - Graph Workflow 예제
-- `embeddings_demo.py` - 임베딩 예제
-- `vector_stores_demo.py` - Vector Store 예제
+```python
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
+
+response = await client.chat.completions.create(
+    model="gpt-4o-2024-08-06",
+    messages=[{"role": "user", "content": "Extract: John Doe, 30, john@example.com"}],
+    response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "user_info",
+            "strict": True,  # ✅ 100% accuracy
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "age": {"type": "integer"},
+                    "email": {"type": "string"}
+                },
+                "required": ["name", "age", "email"]
+            }
+        }
+    }
+)
+```
+
+### 💾 Prompt Caching (10x Cost Savings)
+
+```python
+from anthropic import AsyncAnthropic
+
+client = AsyncAnthropic()
+
+response = await client.messages.create(
+    model="claude-sonnet-4-20250514",
+    system=[{
+        "type": "text",
+        "text": "Long system prompt..." * 1000,
+        "cache_control": {"type": "ephemeral"}  # 💰 10x cheaper
+    }],
+    messages=[{"role": "user", "content": "Question"}],
+    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"}
+)
+
+# Check cache savings
+print(f"💾 Cache created: {response.usage.cache_creation_input_tokens}")
+print(f"⚡ Cache read: {response.usage.cache_read_input_tokens}")
+```
+
+See **[Advanced Features Guide](docs/ADVANCED_FEATURES.md)** for more details.
 
 ---
 
-## 📚 Core Modules
+## 🎯 Model Support
 
-### 1. Client & Adapters
+### 🤖 LLM Providers (7 providers)
+- **OpenAI**: GPT-5, GPT-4o, GPT-4.1, GPT-4o-mini
+- **Anthropic**: Claude Opus 4, Claude Sonnet 4.5, Claude Haiku 3.5
+- **Google**: Gemini 2.5 Pro, Gemini 2.5 Flash
+- **DeepSeek**: DeepSeek-V3 (671B MoE, open-source top performance)
+- **Perplexity**: Sonar (real-time web search + LLM)
+- **Meta**: Llama 3.3 70B (via Ollama)
+- **Ollama**: Local LLM support
 
-Unified interface with automatic parameter adaptation:
+### 🎤 Speech-to-Text (8 engines)
+- **SenseVoice-Small**: 15x faster than Whisper-Large, emotion recognition
+- **Granite Speech 8B**: Open ASR Leaderboard #2 (WER 5.85%)
+- **Whisper V3 Turbo**: Latest OpenAI model
+- **Distil-Whisper**: 6x faster with similar accuracy
+- **Parakeet TDT**: Real-time optimized (RTFx >2000)
+- **Canary**: Multilingual + translation
+- **Moonshine**: On-device optimized
 
-```python
-from beanllm import Client
+### 👁️ Vision Models
+- **SAM 3**: Zero-shot segmentation
+- **YOLOv12**: Latest object detection
+- **Qwen3-VL**: Vision-language model (VQA, OCR, captioning)
+- **Florence-2**: Microsoft multimodal model
 
-# Works across all providers
-client = Client(model="gpt-4o")
+### 🧠 Embeddings
+- **Qwen3-Embedding-8B**: Top multilingual model
+- **Code Embeddings**: Specialized for code search
+- **CLIP/SigLIP**: Vision-text embeddings
+- **OpenAI**: text-embedding-3-small/large
+- **Voyage, Jina, Cohere, Mistral**: Alternative providers
 
-# Parameters automatically adapted
-response = await client.chat(
-    messages=[{"role": "user", "content": "Hello"}],
-    temperature=0.7,
-    max_tokens=1000,  # → max_completion_tokens for GPT-5
-                       # → max_output_tokens for Gemini
-                       # → num_predict for Ollama
-)
+---
+
+## 🏗️ Architecture
+
+beanllm follows **Clean Architecture** with **SOLID principles**.
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Facade Layer                       │
+│  사용자 친화적 API (Client, RAGChain, Agent)       │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│                 Handler Layer                       │
+│  Controller 역할 (입력 검증, 에러 처리)             │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│                 Service Layer                       │
+│  비즈니스 로직 (인터페이스 + 구현체)                │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│                 Domain Layer                        │
+│  핵심 비즈니스 (엔티티, 인터페이스, 규칙)          │
+└──────────────────┬──────────────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────────────┐
+│            Infrastructure Layer                     │
+│  외부 시스템 (Provider, Vector Store 구현)          │
+└─────────────────────────────────────────────────────┘
 ```
 
-### 2. Document Processing
-
-```python
-from beanllm import DocumentLoader, RecursiveCharacterTextSplitter
-from beanllm.domain.loaders import beanPDFLoader
-
-# Load documents (basic)
-docs = DocumentLoader.load("docs/")  # PDF, CSV, TXT
-
-# Advanced PDF loading with beanPDFLoader
-loader = beanPDFLoader("document.pdf")
-pdf_docs = loader.load()  # Auto strategy selection
-
-# Extract tables
-loader = beanPDFLoader("report.pdf", extract_tables=True)
-pdf_docs = loader.load()  # Uses Accurate Layer (pdfplumber)
-# Access table data in metadata
-for doc in pdf_docs:
-    if "tables" in doc.metadata:
-        for table in doc.metadata["tables"]:
-            print(f"Table {table['table_index']}: {table['rows']}x{table['cols']}")
-
-# Extract images
-loader = beanPDFLoader("images.pdf", extract_images=True, strategy="fast")
-pdf_docs = loader.load()  # Uses Fast Layer (PyMuPDF)
-
-# Markdown conversion
-loader = beanPDFLoader("document.pdf", to_markdown=True, extract_tables=True)
-pdf_docs = loader.load()
-markdown_text = loader._result["markdown"]  # Full document as Markdown
-print(markdown_text)  # Structured Markdown with headings, tables, images
-
-# ML Layer (marker-pdf) for complex documents
-# Requires: pip install beanllm[ml]
-loader = beanPDFLoader("complex.pdf", strategy="ml", to_markdown=True)
-pdf_docs = loader.load()  # Uses ML Layer (marker-pdf, 98% accuracy)
-
-# Layout analysis
-from beanllm.domain.loaders.pdf.utils import LayoutAnalyzer
-
-analyzer = LayoutAnalyzer()
-# Analyze page structure
-for doc in pdf_docs:
-    page_data = {"text": doc.content, "width": doc.metadata["width"],
-                 "height": doc.metadata["height"], "metadata": doc.metadata}
-    layout_info = analyzer.analyze_layout(page_data)
-    print(f"Columns: {layout_info['columns']}, Blocks: {len(layout_info['blocks'])}")
-    print(f"Multi-column: {layout_info['is_multi_column']}")
-
-# 메타데이터를 구조화하여 효율적으로 조회
-from beanllm.domain.loaders.pdf.extractors import TableExtractor, ImageExtractor
-
-# 테이블 메타데이터 추출 및 조회
-table_extractor = TableExtractor(pdf_docs)
-all_tables = table_extractor.get_all_tables()  # 모든 테이블 정보
-high_quality = table_extractor.get_high_quality_tables(min_confidence=0.8)  # 고품질만
-summary = table_extractor.get_summary()  # 요약 정보
-print(f"Total tables: {summary['total_tables']}, Avg confidence: {summary['avg_confidence']:.2f}")
-
-# 이미지 메타데이터 추출 및 조회
-image_extractor = ImageExtractor(pdf_docs)
-all_images = image_extractor.get_all_images()  # 모든 이미지 정보
-large_images = image_extractor.get_large_images(min_dimension=800)  # 큰 이미지만
-img_summary = image_extractor.get_summary()  # 요약 정보
-print(f"Total images: {img_summary['total_images']}, Formats: {img_summary['formats']}")
-
-# Smart splitting
-splitter = RecursiveCharacterTextSplitter(
-    chunk_size=500,
-    chunk_overlap=50,
-    separators=["\n\n", "\n", " "]
-)
-chunks = splitter.split_documents(docs)
-```
-
-### 3. Embeddings & Vector Stores
-
-```python
-from beanllm import OpenAIEmbedding, ChromaVectorStore
-
-# Create embeddings
-embedding = OpenAIEmbedding(model="text-embedding-3-small")
-
-# Vector store
-store = ChromaVectorStore.from_documents(
-    documents=chunks,
-    embedding=embedding,
-    persist_directory="./chroma_db"
-)
-
-# Search
-results = store.similarity_search("query", k=5)
-
-# MMR search (diversity)
-diverse_results = store.mmr_search("query", k=5, lambda_mult=0.5)
-```
-
-### 4. Multi-Agent Systems
-
-```python
-import asyncio
-from beanllm import MultiAgentCoordinator, Agent
-
-async def main():
-    # Create agents
-    researcher = Agent(model="gpt-4o-mini", tools=[], max_iterations=10)
-    writer = Agent(model="gpt-4o-mini", tools=[], max_iterations=10)
-    
-    # Coordinate
-    coordinator = MultiAgentCoordinator(
-        agents={"researcher": researcher, "writer": writer}
-    )
-    
-    result = await coordinator.execute_sequential(
-        task="Write an article about quantum computing",
-        agent_order=["researcher", "writer"]
-    )
-    print(result["final_result"])
-
-asyncio.run(main())
-```
+자세한 아키텍처 설명은 **[ARCHITECTURE.md](ARCHITECTURE.md)**를 참고하세요.
 
 ---
 
@@ -522,32 +447,32 @@ pytest --cov=src/beanllm --cov-report=html
 pytest tests/test_facade/ -v
 ```
 
-**현재 테스트 커버리지**: 61% (624 tests, 593 passed)
+**Test Coverage**: 61% (624 tests, 593 passed)
 
 ---
 
 ## 🛠️ Development
 
-### Makefile 사용 (권장)
+### Using Makefile (권장)
 
 ```bash
-# 개발 도구 설치
+# Install dev tools
 make install-dev
 
-# 빠른 자동 수정
+# Quick auto-fix
 make quick-fix
 
-# 타입 체크
+# Type check
 make type-check
 
-# 린트 체크
+# Lint check
 make lint
 
-# 전체 검사 및 수정
+# Run all checks
 make all
 ```
 
-### 수동 실행
+### Manual
 
 ```bash
 # Install in editable mode
@@ -567,50 +492,24 @@ mypy src/beanllm
 
 ## 🗺️ Roadmap
 
-### ✅ 완료된 주요 기능
+### ✅ Completed (2024-2025)
 - ✅ Clean Architecture & SOLID principles
-- ✅ Unified multi-provider interface (OpenAI, Anthropic, Google, Ollama)
-- ✅ RAG pipeline & Document Processing
-- ✅ **beanPDFLoader** - Advanced PDF processing with 3-layer architecture
-  - Fast Layer (PyMuPDF), Accurate Layer (pdfplumber), ML Layer (marker-pdf)
-  - Table/image extraction, Markdown conversion, Layout analysis
-  - 112 unit tests with 100% pass rate
-- ✅ Tools & Agents (ReAct pattern)
-- ✅ Graph workflows (LangGraph-style)
+- ✅ Unified multi-provider interface (7 providers)
+- ✅ RAG pipeline & document processing
+- ✅ beanPDFLoader with 3-layer architecture
+- ✅ Vision AI (SAM 3, YOLOv12, Qwen3-VL)
+- ✅ Audio processing (8 STT engines)
+- ✅ Embeddings (Qwen3-Embedding-8B, Matryoshka, Code)
+- ✅ Vector stores (Milvus, LanceDB, pgvector)
+- ✅ RAG evaluation (TruLens, HyDE)
+- ✅ Advanced features (Structured Outputs, Prompt Caching, Parallel Tool Calling)
+- ✅ Tools, agents, graph workflows
 - ✅ Multi-agent systems
-- ✅ Vision & Audio processing
 - ✅ Production features (evaluation, monitoring, cost tracking)
-- ✅ 프롬프트 버전 관리 & A/B 테스트
-- ✅ 스트리밍 응답 버퍼링
-- ✅ 평가 시스템 확장 (Human-in-the-Loop, Continuous Evaluation, Drift Detection)
-- ✅ 내부 성능 최적화 (병렬 처리, 배치 검색, 히스토리 압축)
 
-### 📋 계획 중
-- ⬜ 벤치마크 시스템
-
----
-
-## 📚 Documentation
-
-- **[API_REFERENCE.md](docs/API_REFERENCE.md)** - 전체 API 레퍼런스
-- **[QUICK_START.md](QUICK_START.md)** - 빠른 시작 가이드
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - 아키텍처 상세 설명
-- **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** - PyPI 배포 가이드
-- **[docs/theory/](docs/theory/)** - 이론 문서 및 학습 자료
-- **[docs/tutorials/](docs/tutorials/)** - 튜토리얼 코드
-- **[examples/](examples/)** - 사용 예제 코드
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Please:
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
+### 📋 Planned
+- ⬜ Benchmark system
+- ⬜ Advanced agent frameworks integration
 
 ---
 
@@ -628,10 +527,9 @@ Inspired by:
 - **[Anthropic Claude](https://www.anthropic.com/)** - Clear code philosophy
 
 Special thanks to:
-- OpenAI for GPT models and APIs
-- Anthropic for Claude API
-- Google for Gemini API
+- OpenAI, Anthropic, Google, DeepSeek, Perplexity for APIs
 - Ollama team for local LLM support
+- Open-source AI community
 
 ---
 

@@ -25,6 +25,16 @@ try:
 except ImportError:
     LMEvalHarnessWrapper = None  # type: ignore
 
+try:
+    from .ragas_wrapper import RAGASWrapper
+except ImportError:
+    RAGASWrapper = None  # type: ignore
+
+try:
+    from .trulens_wrapper import TruLensWrapper
+except ImportError:
+    TruLensWrapper = None  # type: ignore
+
 from .drift_detection import DriftAlert, DriftDetector
 from .enums import MetricType
 from .evaluator import Evaluator
@@ -102,6 +112,8 @@ __all__ = [
     # External Frameworks (2024-2025)
     "DeepEvalWrapper",
     "LMEvalHarnessWrapper",
+    "RAGASWrapper",
+    "TruLensWrapper",
     "create_evaluation_framework",
     "list_available_frameworks",
 ]

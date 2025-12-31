@@ -19,14 +19,16 @@ class beanSTT:
     """
     통합 STT 인터페이스
 
-    6개 STT 엔진을 통합하여 사용하기 쉬운 인터페이스 제공.
+    8개 STT 엔진을 통합하여 사용하기 쉬운 인터페이스 제공.
 
     Features:
-    - 6개 STT 엔진 지원 (Whisper V3 Turbo, Distil-Whisper, Parakeet, Canary, Moonshine)
+    - 8개 STT 엔진 지원 (Whisper V3 Turbo, Distil-Whisper, Parakeet, Canary, Moonshine, SenseVoice, Granite)
     - 99+ 언어 지원 (엔진별 차이 있음)
     - 실시간 전사
     - 번역 지원
     - 배치 처리
+    - 감정 분석 (SenseVoice)
+    - 엔터프라이즈급 정확도 (Granite)
 
     Example:
         ```python
@@ -163,11 +165,41 @@ class beanSTT:
                     f"Install them with: pip install transformers torch torchaudio"
                 ) from e
 
+        elif engine_name in ["sensevoice", "sensevoice-small"]:
+            try:
+                from .engines.sensevoice_engine import SenseVoiceEngine
+                return SenseVoiceEngine(model_size="small", use_gpu=self.config.use_gpu)
+            except ImportError as e:
+                raise ImportError(
+                    f"funasr is required for engine '{engine_name}'. "
+                    f"Install it with: pip install funasr modelscope"
+                ) from e
+
+        elif engine_name == "sensevoice-large":
+            try:
+                from .engines.sensevoice_engine import SenseVoiceEngine
+                return SenseVoiceEngine(model_size="large", use_gpu=self.config.use_gpu)
+            except ImportError as e:
+                raise ImportError(
+                    f"funasr is required for engine '{engine_name}'. "
+                    f"Install it with: pip install funasr modelscope"
+                ) from e
+
+        elif engine_name in ["granite", "granite-8b", "granite-speech"]:
+            try:
+                from .engines.granite_engine import GraniteEngine
+                return GraniteEngine(use_gpu=self.config.use_gpu)
+            except ImportError as e:
+                raise ImportError(
+                    f"transformers and torch are required for engine '{engine_name}'. "
+                    f"Install them with: pip install transformers torch torchaudio"
+                ) from e
+
         # 지원하지 않는 엔진
         raise NotImplementedError(
             f"Engine '{engine_name}' is not yet implemented. "
             f"Currently supported: whisper-v3-turbo, distil-whisper, parakeet, "
-            f"canary, canary-flash, moonshine-tiny, moonshine-base"
+            f"canary, canary-flash, moonshine-tiny, moonshine-base, sensevoice, granite"
         )
 
     def transcribe(
