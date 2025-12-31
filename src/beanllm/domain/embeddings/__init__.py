@@ -2,11 +2,19 @@
 Embeddings Domain - 임베딩 도메인
 """
 
-from .advanced import find_hard_negatives, mmr_search, query_expansion
+from .advanced import (
+    MatryoshkaEmbedding,
+    batch_truncate_embeddings,
+    find_hard_negatives,
+    mmr_search,
+    query_expansion,
+    truncate_embedding,
+)
 from .base import BaseEmbedding
 from .cache import EmbeddingCache
 from .factory import Embedding, embed, embed_sync
 from .providers import (
+    CodeEmbedding,
     CohereEmbedding,
     GeminiEmbedding,
     HuggingFaceEmbedding,
@@ -15,6 +23,7 @@ from .providers import (
     NVEmbedEmbedding,
     OllamaEmbedding,
     OpenAIEmbedding,
+    Qwen3Embedding,
     VoyageEmbedding,
 )
 from .types import EmbeddingResult
@@ -37,6 +46,8 @@ __all__ = [
     "CohereEmbedding",
     "HuggingFaceEmbedding",
     "NVEmbedEmbedding",
+    "Qwen3Embedding",
+    "CodeEmbedding",
     "Embedding",
     "EmbeddingCache",
     "embed",
@@ -48,4 +59,7 @@ __all__ = [
     "find_hard_negatives",
     "mmr_search",
     "query_expansion",
+    "truncate_embedding",
+    "batch_truncate_embeddings",
+    "MatryoshkaEmbedding",
 ]

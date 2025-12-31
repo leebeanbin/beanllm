@@ -25,9 +25,11 @@ def create_evaluation_framework(
 
     Args:
         framework: 프레임워크 종류
+            - "ragas": RAGAS (Reference-free RAG 평가)
             - "deepeval": DeepEval (LLM-as-a-Judge, RAG 평가)
             - "lm-eval" or "lm-eval-harness": LM Evaluation Harness (표준 벤치마크)
         **kwargs: 프레임워크별 초기화 파라미터
+            - RAGAS: model="gpt-4o-mini", embeddings="text-embedding-3-small", ...
             - DeepEval: model="gpt-4o-mini", api_key=None, threshold=0.5, ...
             - LM Eval Harness: model="hf", model_args="...", batch_size="auto", ...
 
@@ -41,6 +43,18 @@ def create_evaluation_framework(
     Example:
         ```python
         from beanllm.domain.evaluation import create_evaluation_framework
+
+        # RAGAS (Reference-free RAG 평가)
+        evaluator = create_evaluation_framework(
+            framework="ragas",
+            model="gpt-4o-mini",
+            embeddings="text-embedding-3-small"
+        )
+
+        result = evaluator.evaluate(
+            metric="faithfulness",
+            data={"question": "Q", "answer": "A", "contexts": ["C"]}
+        )
 
         # DeepEval
         evaluator = create_evaluation_framework(
@@ -69,7 +83,18 @@ def create_evaluation_framework(
     """
     framework = framework.lower()
 
-    if framework == "deepeval":
+    if framework == "ragas":
+        try:
+            from .ragas_wrapper import RAGASWrapper
+            logger.info("Creating RAGAS framework")
+            return RAGASWrapper(**kwargs)
+        except ImportError:
+            raise ImportError(
+                "ragas is required for RAGASWrapper. "
+                "Install it with: pip install ragas"
+            )
+
+    elif framework == "deepeval":
         try:
             from .deepeval_wrapper import DeepEvalWrapper
             logger.info("Creating DeepEval framework")
@@ -94,7 +119,7 @@ def create_evaluation_framework(
     else:
         raise ValueError(
             f"Unknown framework: {framework}. "
-            f"Available: deepeval, lm-eval"
+            f"Available: ragas, deepeval, lm-eval"
         )
 
 
@@ -118,6 +143,7 @@ def list_available_frameworks() -> dict:
         ```
     """
     return {
+        "ragas": "RAGAS - Reference-free RAG 평가 (Faithfulness, Answer Relevancy 등)",
         "deepeval": "DeepEval - LLM-as-a-Judge, RAG 평가 (14+ metrics)",
         "lm-eval": "LM Evaluation Harness - 표준 벤치마크 (60+ tasks)",
     }
