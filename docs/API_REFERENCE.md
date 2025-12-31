@@ -6,26 +6,34 @@ Complete API reference for all beanllm components.
 
 ### Core Components
 - [Client](#client) - Basic LLM client
+- [LLM Providers](#llm-providers) - 7 LLM providers (OpenAI, Anthropic, Google, DeepSeek, Perplexity, Ollama)
 - [RAGChain](#ragchain) - RAG (Retrieval-Augmented Generation) system
 - [Agent](#agent) - AI agent with tools
 - [Chain](#chain) - Chain execution
 
 ### Document Processing
 - [beanPDFLoader](#beanpdfloader) - Advanced PDF processing with 3-layer architecture
-- [Document Loaders](#document-loaders) - Text, CSV, and other document loaders
+- [Document Loaders](#document-loaders) - Docling, Jupyter, HTML, Text, CSV loaders
 - [Text Splitters](#text-splitters) - Semantic text chunking
+
+### Embeddings & Retrieval
+- [Embeddings](#embeddings) - Qwen3-Embedding-8B, Code, Matryoshka embeddings
+- [Vector Stores](#vector-stores) - Milvus, LanceDB, pgvector, Chroma, FAISS
+- [Retrieval](#retrieval) - HyDE, Hybrid Search, Reranking
 
 ### Advanced Features
 - [MultiAgentCoordinator](#multiagentcoordinator) - Multi-agent collaboration
 - [Graph](#graph) - Graph-based workflows
 - [StateGraph](#stategraph) - State-based graph execution
-- [Audio](#audio) - Audio processing (speech-to-text, text-to-speech)
+- [Audio](#audio) - 8 STT engines (SenseVoice, Granite, Whisper, etc.)
+- [Vision](#vision) - Qwen3-VL, YOLOv12, SAM 3, Florence-2
 
 ### Specialized Features
 - [VisionRAG](#visionrag) - Vision + RAG with image understanding
 - [WebSearch](#websearch) - Web search integration
-- [Evaluator](#evaluator) - LLM evaluation and metrics
+- [Evaluator](#evaluator) - LLM evaluation (TruLens, RAGAS)
 - [FineTuningManager](#finetuningmanager) - Model fine-tuning
+- [Advanced LLM Features](#advanced-llm-features) - Structured Outputs, Prompt Caching, Parallel Tool Calling
 
 ---
 
@@ -130,6 +138,59 @@ print(response.content)
 ```python
 async for chunk in client.stream_chat(messages=[{"role": "user", "content": "Tell me a story"}]):
     print(chunk, end="", flush=True)
+```
+
+---
+
+### LLM Providers
+
+beanllm supports 7 LLM providers with automatic fallback and unified interface.
+
+#### Supported Providers
+
+| Provider | Models | Features |
+|----------|---------|----------|
+| **OpenAI** | GPT-4, GPT-4o, GPT-4o-mini | Structured Outputs, Vision, Tool Calling |
+| **Anthropic** | Claude Opus 4, Sonnet 4.5, Haiku 3.5 | Prompt Caching, Vision, Tool Calling |
+| **Google** | Gemini 2.5 Pro, Flash | Large context (2M tokens), Vision |
+| **DeepSeek** | DeepSeek-V3 (671B MoE) | Cost-efficient, OpenAI-compatible |
+| **Perplexity** | Sonar, Sonar-Pro | Real-time web search, Citations |
+| **Ollama** | Llama 3.3, Qwen2.5, etc. | Local deployment, Privacy |
+| **X.AI** | Grok 2 | Coming soon |
+
+#### Usage Examples
+
+```python
+from beanllm import Client
+
+# OpenAI
+client = Client(model="gpt-4o")
+
+# Anthropic
+client = Client(model="claude-sonnet-4-20250514")
+
+# Google Gemini
+client = Client(model="gemini-2.5-pro")
+
+# DeepSeek (cost-efficient)
+client = Client(model="deepseek-chat")
+
+# Perplexity (real-time web search)
+client = Client(model="sonar-pro")
+
+# Ollama (local)
+client = Client(model="llama3.3:70b", provider="ollama")
+```
+
+#### Environment Variables
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="..."
+export DEEPSEEK_API_KEY="sk-..."
+export PERPLEXITY_API_KEY="pplx-..."
+export OLLAMA_HOST="http://localhost:11434"  # Optional
 ```
 
 ---
@@ -433,7 +494,53 @@ marker-pdf   ~10s/100pg (GPU), 98% accuracy
 
 ### Document Loaders
 
-텍스트, CSV 등 다양한 문서 형식 지원.
+다양한 문서 형식 지원 (Office, Jupyter, HTML, Text, CSV).
+
+#### DoclingLoader - Office Files (97.9% accuracy)
+
+```python
+from beanllm.domain.loaders import DoclingLoader
+
+# PDF, DOCX, XLSX, PPTX, HTML 지원
+loader = DoclingLoader(
+    "document.docx",
+    extract_tables=True,
+    extract_images=False,
+    ocr_enabled=False
+)
+docs = loader.load()
+
+# 테이블 데이터 접근
+tables = loader.get_tables()
+```
+
+#### JupyterLoader - Jupyter Notebooks
+
+```python
+from beanllm.domain.loaders import JupyterLoader
+
+loader = JupyterLoader(
+    "notebook.ipynb",
+    include_outputs=True,
+    filter_cell_types=["code", "markdown"]  # Optional
+)
+docs = loader.load()
+```
+
+#### HTMLLoader - Multi-tier Fallback
+
+```python
+from beanllm.domain.loaders import HTMLLoader
+
+# 3-tier fallback: Trafilatura → Readability → BeautifulSoup
+loader = HTMLLoader(
+    "https://example.com",
+    fallback_chain=["trafilatura", "readability", "beautifulsoup"]
+)
+docs = loader.load()
+```
+
+#### Text & CSV Loaders
 
 ```python
 from beanllm.domain.loaders import TextLoader, CSVLoader
@@ -463,6 +570,144 @@ splitter = RecursiveCharacterTextSplitter(
 )
 
 chunks = splitter.split_documents(docs)
+```
+
+---
+
+## Embeddings & Retrieval
+
+### Embeddings
+
+최신 임베딩 모델 지원 (Qwen3-Embedding-8B, Code, Matryoshka).
+
+#### Qwen3-Embedding-8B - Top Multilingual Model
+
+```python
+from beanllm.domain.embeddings import Qwen3Embedding
+
+# Qwen3-Embedding (SOTA multilingual)
+qwen3 = Qwen3Embedding(model_size="8B")  # or "4B", "2B"
+vectors = qwen3.embed_sync(["한글 텍스트", "English text", "日本語"])
+```
+
+#### Code Embeddings - Specialized for Code Search
+
+```python
+from beanllm.domain.embeddings import CodeEmbedding
+
+# Code-specialized embeddings
+code_emb = CodeEmbedding(model="jinaai/jina-embeddings-v3")
+code_vectors = code_emb.embed_sync([
+    "def hello_world():",
+    "class MyClass:",
+    "import numpy as np"
+])
+```
+
+#### Matryoshka Embeddings - 83% Storage Savings
+
+```python
+from beanllm.domain.embeddings import MatryoshkaEmbedding, OpenAIEmbedding, truncate_embedding
+
+# Dimension reduction (1536 → 512)
+base_emb = OpenAIEmbedding(model="text-embedding-3-large")
+mat_emb = MatryoshkaEmbedding(base_embedding=base_emb, output_dimension=512)
+reduced_vectors = mat_emb.embed_sync(["text"])  # 512 dims instead of 1536
+
+# Or truncate existing embeddings
+full_vector = base_emb.embed_sync(["text"])[0]  # 1536 dims
+reduced = truncate_embedding(full_vector, target_dim=512)  # 512 dims
+```
+
+---
+
+### Vector Stores
+
+고성능 벡터 데이터베이스 지원 (Milvus, LanceDB, pgvector, Chroma, FAISS).
+
+#### Milvus - High Performance
+
+```python
+from beanllm.domain.vector_stores import MilvusVectorStore
+
+milvus = MilvusVectorStore(
+    collection_name="docs",
+    embedding=embedding,
+    connection_args={"host": "localhost", "port": "19530"}
+)
+milvus.add_documents(docs)
+results = milvus.similarity_search("query", k=5)
+```
+
+#### LanceDB - Modern Vector DB
+
+```python
+from beanllm.domain.vector_stores import LanceDBVectorStore
+
+lancedb = LanceDBVectorStore(
+    table_name="docs",
+    embedding=embedding,
+    uri="./lancedb_data"
+)
+lancedb.add_documents(docs)
+results = lancedb.similarity_search("query", k=5)
+```
+
+#### pgvector - PostgreSQL Extension
+
+```python
+from beanllm.domain.vector_stores import PGVectorStore
+
+pgvector = PGVectorStore(
+    collection_name="docs",
+    embedding=embedding,
+    connection_string="postgresql://user:pass@localhost/dbname"
+)
+pgvector.add_documents(docs)
+results = pgvector.similarity_search("query", k=5)
+```
+
+---
+
+### Retrieval
+
+고급 검색 기법 (HyDE, Hybrid Search, Reranking).
+
+#### HyDE - Hypothetical Document Embeddings
+
+```python
+from beanllm.domain.retrieval import HyDE
+
+# Query expansion using LLM
+hyde = HyDE(llm=client, embedding=embedding)
+expanded_query = hyde.expand_query("What is quantum computing?")
+# Returns: hypothetical answer + original query
+```
+
+#### Hybrid Search - Combine Vector + Keyword
+
+```python
+from beanllm.domain.retrieval import HybridSearch
+
+hybrid = HybridSearch(
+    vector_store=vector_store,
+    keyword_search=bm25_search,
+    alpha=0.5  # 0.5 = equal weight
+)
+results = hybrid.search("query", k=10)
+```
+
+#### Reranking - Cross-Encoder
+
+```python
+from beanllm.domain.retrieval import Reranker
+
+reranker = Reranker(model="cross-encoder/ms-marco-MiniLM-L-6-v2")
+reranked = reranker.rerank(
+    query="query",
+    documents=initial_results,
+    top_k=5
+)
 ```
 
 ---
@@ -579,16 +824,48 @@ result = await graph.invoke({"count": 0, "message": "start"})
 
 ### Audio
 
-음성 처리 (STT, TTS).
+8개 STT 엔진 지원 (SenseVoice, Granite, Whisper, etc.)
 
-#### WhisperSTT - Speech-to-Text
+#### SenseVoice - 15x Faster + Emotion Recognition
 
 ```python
-from beanllm import WhisperSTT
+from beanllm.domain.audio import beanSTT
 
-stt = WhisperSTT(model="base")
-text = stt.transcribe("speech.mp3")
-print(text)
+# 15x faster than Whisper-Large
+stt = beanSTT(engine="sensevoice", language="ko")
+result = stt.transcribe("korean_audio.mp3")
+print(result.text)
+print(result.metadata["emotion"])  # Emotion recognition (SER)
+print(result.metadata["events"])   # Audio event detection (AED)
+```
+
+#### Granite Speech 8B - Enterprise-grade (WER 5.85%)
+
+```python
+from beanllm.domain.audio import beanSTT
+
+# Open ASR Leaderboard #2
+stt = beanSTT(engine="granite", language="en")
+result = stt.transcribe("english_audio.mp3")
+print(f"Transcription: {result.text}")
+print(f"WER: {result.metadata.get('wer', 'N/A')}")  # 5.85%
+```
+
+#### All 8 STT Engines
+
+```python
+from beanllm.domain.audio import beanSTT
+
+# 1. SenseVoice-Small (Alibaba) - 15x faster, emotion
+# 2. Granite Speech 8B (IBM) - WER 5.85%, enterprise
+# 3. Whisper V3 Turbo (OpenAI) - Balanced
+# 4. Distil-Whisper - Efficient
+# 5. Parakeet TDT (NVIDIA) - High accuracy
+# 6. Canary (NVIDIA) - Multilingual
+# 7. Moonshine (Useful Sensors) - Edge devices
+
+engines = ["sensevoice", "granite", "whisper-v3-turbo", "distil-whisper",
+           "parakeet", "canary", "moonshine"]
 ```
 
 #### TextToSpeech - Text-to-Speech
@@ -608,6 +885,81 @@ from beanllm import AudioRAG
 audio_rag = AudioRAG()
 audio_rag.add_audio("interview.mp3", audio_id="interview_1")
 results = audio_rag.search("What did they say about AI?", top_k=3)
+```
+
+---
+
+### Vision
+
+최신 Vision AI 모델 지원 (Qwen3-VL, YOLOv12, SAM 3, Florence-2).
+
+#### Qwen3-VL - Vision-Language Model (128K context)
+
+```python
+from beanllm.domain.vision import create_vision_task_model
+
+# Qwen3-VL (VQA, OCR, Captioning, Multi-image Chat)
+qwen = create_vision_task_model("qwen3vl", model_size="8B")
+
+# Image Captioning
+caption = qwen.caption(image="photo.jpg")
+
+# Visual Question Answering
+answer = qwen.vqa(image="photo.jpg", question="What is in this image?")
+
+# OCR Text Extraction
+text = qwen.ocr(image="document.jpg")
+
+# Multi-image Chat (128K context)
+response = qwen.chat(
+    images=["img1.jpg", "img2.jpg", "img3.jpg"],
+    prompt="Compare these images and describe the differences"
+)
+```
+
+#### YOLOv12 - Object Detection & Segmentation
+
+```python
+from beanllm.domain.vision import create_vision_task_model
+
+# YOLOv12 (latest)
+yolo = create_vision_task_model("yolo", version="12")
+detections = yolo.predict(image="photo.jpg", conf=0.5)
+
+for det in detections:
+    print(f"Object: {det['class']}, Confidence: {det['confidence']:.2f}")
+```
+
+#### SAM 3 - Segment Anything Model
+
+```python
+from beanllm.domain.vision import create_vision_task_model
+
+# SAM 3 (Zero-shot segmentation)
+sam = create_vision_task_model("sam2")
+masks = sam.predict(
+    image="photo.jpg",
+    points=[[500, 375]],  # Click point
+    labels=[1]  # 1=foreground, 0=background
+)
+```
+
+#### Florence-2 - Unified Vision Tasks
+
+```python
+from beanllm.domain.vision import create_vision_task_model
+
+# Florence-2 (Captioning, Detection, OCR, Grounding)
+florence = create_vision_task_model("florence2", model_size="large")
+
+# Dense Captioning
+captions = florence.caption(image="photo.jpg", task="dense")
+
+# Object Detection
+detections = florence.detect(image="photo.jpg")
+
+# OCR
+text = florence.ocr(image="document.jpg")
 ```
 
 ---
@@ -674,19 +1026,44 @@ for result in results:
 
 ### Evaluator
 
-LLM 평가 및 메트릭.
+RAG 평가 및 모니터링 (TruLens, RAGAS).
 
-#### `evaluate(prediction, reference, **kwargs)`
+#### TruLens - RAG Performance Evaluation
 
-모델 출력을 평가합니다.
+```python
+from beanllm.domain.evaluation import TruLensEvaluator
 
-**파라미터:**
-- `prediction` (str): 예측 결과
-- `reference` (str): 정답 참조
+# TruLens로 RAG 성능 평가
+evaluator = TruLensEvaluator(app_name="my_rag")
+results = evaluator.evaluate(
+    query="What is quantum computing?",
+    response="Quantum computing uses quantum mechanics...",
+    context=["Document 1 text", "Document 2 text"]
+)
 
-**반환:** `EvaluationResult`
+# Metrics: Groundedness, Context Relevance, Answer Relevance
+print(results.scores)
+# {'groundedness': 0.95, 'context_relevance': 0.88, 'answer_relevance': 0.92}
+```
 
-**예제:**
+#### RAGAS - RAG Assessment
+
+```python
+from beanllm.domain.evaluation import RAGASEvaluator
+
+# RAGAS metrics
+evaluator = RAGASEvaluator(metrics=["faithfulness", "answer_relevancy"])
+result = evaluator.evaluate(
+    question="What is Python?",
+    answer="Python is a programming language",
+    contexts=["Python is a high-level language..."],
+    ground_truth="Python is a programming language"  # Optional
+)
+print(result.scores)
+```
+
+#### Traditional Metrics
+
 ```python
 from beanllm import Evaluator
 
@@ -732,6 +1109,85 @@ job = manager.start_training(
 
 # 진행 상황 확인
 progress = manager.get_training_progress(job.id)
+```
+
+---
+
+### Advanced LLM Features
+
+고급 LLM 기능 (Structured Outputs, Prompt Caching, Parallel Tool Calling).
+
+자세한 내용은 [ADVANCED_FEATURES.md](ADVANCED_FEATURES.md)를 참조하세요.
+
+#### Structured Outputs - 100% Schema Accuracy
+
+```python
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
+
+response = await client.chat.completions.create(
+    model="gpt-4o-2024-08-06",
+    messages=[{"role": "user", "content": "Extract: John Doe, 30, john@example.com"}],
+    response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "user_info",
+            "strict": True,  # 100% accuracy guarantee
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "age": {"type": "integer"},
+                    "email": {"type": "string"}
+                },
+                "required": ["name", "age", "email"]
+            }
+        }
+    }
+)
+```
+
+#### Prompt Caching - 85% Latency Reduction, 10x Cost Savings
+
+```python
+from anthropic import AsyncAnthropic
+
+client = AsyncAnthropic()
+
+response = await client.messages.create(
+    model="claude-sonnet-4-20250514",
+    system=[{
+        "type": "text",
+        "text": "Long system prompt..." * 1000,
+        "cache_control": {"type": "ephemeral"}  # Cache for 5 minutes
+    }],
+    messages=[{"role": "user", "content": "Question"}],
+    extra_headers={"anthropic-beta": "prompt-caching-2024-07-31"}
+)
+
+# Check cache usage
+print(response.usage.cache_read_input_tokens)  # Cached tokens
+```
+
+#### Parallel Tool Calling - Concurrent Execution
+
+```python
+from openai import AsyncOpenAI
+
+client = AsyncOpenAI()
+
+tools = [
+    {"type": "function", "function": {"name": "get_weather", "description": "..."}},
+    {"type": "function", "function": {"name": "get_time", "description": "..."}}
+]
+
+response = await client.chat.completions.create(
+    model="gpt-4o",
+    messages=[{"role": "user", "content": "Weather in Seoul and time in Tokyo?"}],
+    tools=tools,
+    parallel_tool_calls=True  # Execute both simultaneously
+)
 ```
 
 ---
@@ -787,16 +1243,15 @@ asyncio.run(main())
 beanllm uses environment variables for API keys:
 
 ```bash
-# OpenAI
-export OPENAI_API_KEY="your-key"
+# LLM Providers (7 providers)
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+export GEMINI_API_KEY="..."
+export DEEPSEEK_API_KEY="sk-..."
+export PERPLEXITY_API_KEY="pplx-..."
+export OLLAMA_HOST="http://localhost:11434"  # Optional
 
-# Anthropic
-export ANTHROPIC_API_KEY="your-key"
-
-# Google
-export GOOGLE_API_KEY="your-key"
-
-# Or use .env file
+# Or use .env file in project root
 ```
 
 ---
@@ -810,5 +1265,5 @@ export GOOGLE_API_KEY="your-key"
 
 ---
 
-**Last Updated:** 2025-12-28
-**Version:** 0.1.1
+**Last Updated:** 2025-12-31
+**Version:** 0.2.0 (2024-2025 Update)
