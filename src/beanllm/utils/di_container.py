@@ -10,7 +10,7 @@ SOLID 원칙:
 import threading
 from typing import Any, Dict, Optional
 
-from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
+from ..providers.provider_factory import ProviderFactory as SourceProviderFactory
 from ..facade.client_facade import SourceProviderFactoryAdapter
 from ..handler.factory import HandlerFactory
 from ..service.factory import ServiceFactory

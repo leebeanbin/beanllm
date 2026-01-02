@@ -2,6 +2,10 @@
 ML Models Integration - TensorFlow, PyTorch, Scikit-learn 등 머신러닝 모델 통합
 """
 
+import hashlib
+import hmac
+import logging
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, List, Optional, Union
@@ -10,6 +14,11 @@ try:
     import numpy as np
 except ImportError:
     np = None
+
+# 보안: 모델 서명용 비밀 키 (환경변수에서 로드)
+MODEL_SIGNATURE_KEY = os.getenv("MODEL_SIGNATURE_KEY", "change-this-secret-key-in-production")
+
+logger = logging.getLogger(__name__)
 
 
 class BaseMLModel(ABC):
@@ -307,14 +316,59 @@ class SklearnModel(BaseMLModel):
         super().__init__()
         self.model = model
 
-    def load(self, model_path: Union[str, Path]):
+    def load(self, model_path: Union[str, Path], verify_signature: bool = True):
         """
-        모델 로드 (pickle 또는 joblib)
+        모델 로드 (pickle 또는 joblib) - HMAC 서명 검증 포함
 
         Args:
             model_path: 모델 파일 경로
+            verify_signature: 서명 검증 여부 (기본: True)
+
+        Warning:
+            pickle/joblib 역직렬화는 보안 위험이 있습니다.
+            신뢰할 수 있는 소스의 모델만 로드하세요.
         """
         model_path = Path(model_path)
+
+        # 서명 검증 (보안 강화)
+        if verify_signature:
+            sig_path = Path(f"{model_path}.sig")
+            if not sig_path.exists():
+                logger.warning(
+                    f"No signature file found for {model_path}. "
+                    "Set verify_signature=False to skip verification."
+                )
+                raise ValueError(
+                    f"Signature file {sig_path} not found. "
+                    "Model integrity cannot be verified."
+                )
+
+            # 파일 내용 읽기
+            with open(model_path, "rb") as f:
+                model_bytes = f.read()
+
+            # 서명 읽기
+            with open(sig_path, "r") as f:
+                expected_sig = f.read().strip()
+
+            # 서명 계산
+            actual_sig = hmac.new(
+                MODEL_SIGNATURE_KEY.encode(), model_bytes, hashlib.sha256
+            ).hexdigest()
+
+            # 서명 검증 (타이밍 공격 방지)
+            if not hmac.compare_digest(expected_sig, actual_sig):
+                raise ValueError(
+                    f"Signature verification failed for {model_path}! "
+                    "Model may be tampered or corrupted."
+                )
+
+            logger.info(f"Signature verified successfully for {model_path}")
+
+        # 보안 경고
+        logger.warning(
+            "Loading model using pickle/joblib. Only load models from trusted sources!"
+        )
 
         # joblib 시도
         try:
@@ -385,13 +439,14 @@ class SklearnModel(BaseMLModel):
 
         self.model.fit(X, y, **kwargs)
 
-    def save(self, save_path: Union[str, Path], use_joblib: bool = True):
+    def save(self, save_path: Union[str, Path], use_joblib: bool = True, sign: bool = True):
         """
-        모델 저장
+        모델 저장 - HMAC 서명 생성 포함
 
         Args:
             save_path: 저장 경로
             use_joblib: joblib 사용 여부 (False면 pickle)
+            sign: 서명 생성 여부 (기본: True)
         """
         if self.model is None:
             raise ValueError("No model to save")
@@ -414,6 +469,21 @@ class SklearnModel(BaseMLModel):
 
             with open(save_path, "wb") as f:
                 pickle.dump(self.model, f)
+
+        # 서명 생성 (무결성 보호)
+        if sign:
+            with open(save_path, "rb") as f:
+                model_bytes = f.read()
+
+            signature = hmac.new(
+                MODEL_SIGNATURE_KEY.encode(), model_bytes, hashlib.sha256
+            ).hexdigest()
+
+            sig_path = Path(f"{save_path}.sig")
+            with open(sig_path, "w") as f:
+                f.write(signature)
+
+            logger.info(f"Model saved with signature: {sig_path}")
 
     @classmethod
     def from_pickle(cls, model_path: Union[str, Path]) -> "SklearnModel":

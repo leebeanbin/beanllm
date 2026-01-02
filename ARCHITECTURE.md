@@ -114,7 +114,8 @@ src/beanllm/
 │   │   ├── chat_request.py
 │   │   ├── rag_request.py
 │   │   └── agent_request.py
-│   └── response/            # 응답 DTO
+│   └── response/    
+        # 응답 DTO
 │       ├── __init__.py
 │       ├── chat_response.py
 │       ├── rag_response.py
