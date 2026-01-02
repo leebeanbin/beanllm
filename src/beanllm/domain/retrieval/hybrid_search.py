@@ -21,6 +21,7 @@ References:
     - Robertson & Zaragoza (2009): "The Probabilistic Relevance Framework: BM25"
 """
 
+import heapq
 import logging
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -199,9 +200,13 @@ class HybridRetriever:
             # Fallback (안전장치)
             final_scores = self._reciprocal_rank_fusion(bm25_scores, dense_scores)
 
-        # 4. Top-k 선택
-        sorted_results = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
-        top_results = sorted_results[:top_k]
+        # 4. Top-k 선택 (heapq.nlargest 최적화: O(n log n) → O(n log k))
+        # 전체 정렬 대신 상위 k개만 선택하여 성능 향상 (k << n일 때 효과적)
+        top_results = heapq.nlargest(
+            top_k,
+            final_scores.items(),
+            key=lambda x: x[1]
+        )
 
         # SearchResult 생성
         results = [

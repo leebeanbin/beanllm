@@ -57,6 +57,28 @@ from .exceptions import ModelNotFoundError, ProviderError, RateLimitError
 # Logger
 from .logger import get_logger
 
+# Dependency Manager (NEW - v0.2.1)
+from .dependency import (
+    DependencyManager,
+    check_available,
+    require,
+    require_any,
+)
+
+# Lazy Loading (NEW - v0.2.1)
+from .lazy_loading import (
+    LazyLoadMixin,
+    LazyLoader,
+    lazy_property,
+)
+
+# Structured Logger (NEW - v0.2.1)
+from .structured_logger import (
+    LogLevel,
+    StructuredLogger,
+    get_structured_logger,
+)
+
 # Retry
 from .retry import retry
 
@@ -189,6 +211,19 @@ __all__ = [
     "RateLimitError",
     # Logger
     "get_logger",
+    # Dependency Manager (NEW - v0.2.1)
+    "DependencyManager",
+    "require",
+    "check_available",
+    "require_any",
+    # Lazy Loading (NEW - v0.2.1)
+    "LazyLoadMixin",
+    "LazyLoader",
+    "lazy_property",
+    # Structured Logger (NEW - v0.2.1)
+    "StructuredLogger",
+    "LogLevel",
+    "get_structured_logger",
     # Retry
     "retry",
     # Error Handling

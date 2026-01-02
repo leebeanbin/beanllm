@@ -14,10 +14,10 @@ from ..dto.response.chat_response import ChatResponse
 from ..infrastructure.registry import get_model_registry
 
 if TYPE_CHECKING:
-    from .._source_providers.base_provider import BaseLLMProvider
-    from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
+    from ..providers.base_provider import BaseLLMProvider
+    from ..providers.provider_factory import ProviderFactory as SourceProviderFactory
 else:
-    from .._source_providers.provider_factory import ProviderFactory as SourceProviderFactory
+    from ..providers.provider_factory import ProviderFactory as SourceProviderFactory
 
 
 class Client:
@@ -193,7 +193,7 @@ class SourceProviderFactoryAdapter:
     def __init__(self, source_factory: SourceProviderFactory) -> None:
         """
         Args:
-            source_factory: _source_providers의 ProviderFactory
+            source_factory: providers의 ProviderFactory
         """
         self._source_factory = source_factory
         self._provider_name_map = {
@@ -231,7 +231,7 @@ class SourceProviderFactoryAdapter:
 
         # chat 메서드가 dict를 반환하도록 래핑 (LLMResponse -> dict)
         if not hasattr(provider, "_wrapped"):
-            from .._source_providers.base_provider import LLMResponse
+            from ..providers.base_provider import LLMResponse
 
             original_chat = provider.chat
             original_stream_chat = provider.stream_chat

@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from ..base import BaseDocumentLoader
+from ..security import validate_file_path
 from ..types import Document
 from .models import PDFLoadConfig
 
@@ -86,6 +87,7 @@ class beanPDFLoader(BaseDocumentLoader):
         max_pages: Optional[int] = None,
         page_range: Optional[tuple[int, int]] = None,
         password: Optional[str] = None,
+        validate_path: bool = True,
         # PyMuPDF 고급 옵션
         pymupdf_text_mode: str = "text",
         pymupdf_extract_fonts: bool = False,
@@ -116,8 +118,14 @@ class beanPDFLoader(BaseDocumentLoader):
             max_pages: 최대 처리 페이지 수 (None이면 전체)
             page_range: 처리할 페이지 범위 (start, end) (None이면 전체)
             password: PDF 비밀번호
+            validate_path: 경로 검증 여부 (기본: True, Path Traversal 방지)
         """
-        self.file_path = Path(file_path)
+        # 경로 검증 (Path Traversal 방지)
+        if validate_path:
+            self.file_path = validate_file_path(file_path)
+        else:
+            self.file_path = Path(file_path)
+
         self.password = password
 
         # Config 생성
@@ -260,6 +268,100 @@ class beanPDFLoader(BaseDocumentLoader):
             Document 객체
         """
         yield from self.load()
+
+    def load_streaming(self):
+        """
+        스트리밍 로딩 (메모리 효율적 페이지별 처리)
+
+        대용량 PDF를 메모리에 한 번에 올리지 않고 페이지별로 스트리밍 처리합니다.
+        각 페이지가 처리되는 즉시 yield되므로 메모리 사용량이 일정하게 유지됩니다.
+
+        Yields:
+            Document 객체 (페이지별)
+
+        Example:
+            ```python
+            loader = beanPDFLoader("large.pdf")
+            for doc in loader.load_streaming():
+                print(f"Page {doc.metadata['page']}: {len(doc.content)} chars")
+                process_document(doc)  # 즉시 처리 가능
+            ```
+        """
+        # 파일 검증
+        if not self.file_path.exists():
+            raise FileNotFoundError(f"PDF file not found: {self.file_path}")
+
+        # 전략 선택
+        strategy = self._select_strategy()
+
+        if strategy not in self._engines:
+            raise ValueError(f"Strategy '{strategy}' not available")
+
+        engine = self._engines[strategy]
+
+        # Config를 딕셔너리로 변환
+        config_dict = self.config.to_dict()
+
+        # 엔진이 스트리밍을 지원하는지 확인
+        if hasattr(engine, 'extract_streaming'):
+            # 스트리밍 지원 엔진
+            for page_result in engine.extract_streaming(self.file_path, config_dict):
+                # 페이지별 Document 생성
+                metadata = {
+                    "source": str(self.file_path),
+                    "page": page_result["page"],
+                    "engine": strategy,
+                    "strategy": strategy,
+                    "width": page_result.get("width", 0.0),
+                    "height": page_result.get("height", 0.0),
+                }
+
+                # 페이지 메타데이터 추가
+                if "metadata" in page_result:
+                    metadata.update(page_result["metadata"])
+
+                # 테이블 정보 추가
+                if "tables" in page_result:
+                    metadata["tables"] = [
+                        {
+                            "table_index": table.get("table_index"),
+                            "rows": table.get("metadata", {}).get("rows", 0),
+                            "cols": table.get("metadata", {}).get("cols", 0),
+                            "confidence": table.get("confidence", 0.0),
+                            "has_dataframe": "dataframe" in table,
+                            "has_markdown": "markdown" in table,
+                            "has_csv": "csv" in table,
+                        }
+                        for table in page_result["tables"]
+                    ]
+
+                # 이미지 정보 추가
+                if "images" in page_result:
+                    metadata["images"] = [
+                        {
+                            "image_index": img.get("image_index"),
+                            "format": img.get("format"),
+                            "width": img.get("width"),
+                            "height": img.get("height"),
+                            "size": img.get("size"),
+                        }
+                        for img in page_result["images"]
+                    ]
+
+                document = Document(
+                    content=page_result.get("text", ""),
+                    metadata=metadata,
+                )
+
+                yield document
+
+        else:
+            # 스트리밍 미지원 엔진 - lazy_load로 fallback
+            logger.warning(
+                f"Engine '{strategy}' does not support streaming, "
+                f"falling back to lazy_load"
+            )
+            yield from self.lazy_load()
 
     def _select_strategy(self) -> str:
         """

@@ -906,3 +906,216 @@ def timeout(seconds: float):
         return wrapper
 
     return decorator
+
+
+# ===== Production Error Sanitization =====
+
+
+import re
+import traceback as tb_module
+from typing import Pattern
+
+
+class ProductionErrorSanitizer:
+    """
+    프로덕션 환경용 에러 메시지 정제기
+
+    민감한 정보를 제거하여 안전한 에러 메시지를 생성합니다:
+    - API 키, 비밀번호 패턴 마스킹
+    - 파일 경로 제거/축약
+    - 스택 트레이스 간소화
+    - 데이터베이스 스키마 정보 제거
+    - IP 주소, 포트 번호 마스킹
+
+    Security Benefits:
+        - API 키 노출 방지
+        - 내부 파일 구조 숨김
+        - 데이터베이스 스키마 보호
+        - 네트워크 토폴로지 보호
+    """
+
+    # 민감 정보 패턴
+    PATTERNS: Dict[str, Pattern] = {
+        # API 키 패턴 (예: sk-..., api_key_..., token_...)
+        "api_key": re.compile(
+            r"(api[_-]?key|token|secret|password|passwd|pwd)['\"\s:=]+([a-zA-Z0-9_\-./]{10,})",
+            re.IGNORECASE,
+        ),
+        # 환경변수 패턴 (예: OPENAI_API_KEY=sk-...)
+        "env_var": re.compile(
+            r"([A-Z_]+_(?:API_KEY|TOKEN|SECRET|PASSWORD))['\"\s:=]+([a-zA-Z0-9_\-./]{10,})"
+        ),
+        # Bearer 토큰
+        "bearer": re.compile(r"Bearer\s+([a-zA-Z0-9_\-./]{10,})", re.IGNORECASE),
+        # 절대 파일 경로 (Unix/Windows)
+        "abs_path": re.compile(r"(/[a-zA-Z0-9_./\-]+/[a-zA-Z0-9_./\-]+|[C-Z]:\\[^\s]+)"),
+        # IP 주소
+        "ipv4": re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b"),
+        # 포트 번호 포함 주소
+        "host_port": re.compile(r"(localhost|127\.0\.0\.1|0\.0\.0\.0):(\d{2,5})"),
+        # 데이터베이스 연결 문자열
+        "db_conn": re.compile(
+            r"(postgresql|mysql|mongodb)://([^:]+):([^@]+)@([^:/]+)(:\d+)?(/[^\s]+)?",
+            re.IGNORECASE,
+        ),
+        # SQL 테이블/컬럼명
+        "sql_schema": re.compile(r"\b(table|column|schema)\s+['\"]?([a-zA-Z0-9_]+)['\"]?", re.IGNORECASE),
+    }
+
+    # 마스킹 문자열
+    MASK_STR = "***"
+    MASK_PATH = "[PATH]"
+    MASK_IP = "[IP]"
+    MASK_PORT = "[PORT]"
+    MASK_DB = "[DB_CONN]"
+
+    @classmethod
+    def sanitize_message(cls, message: str, production: bool = True) -> str:
+        """
+        에러 메시지 정제
+
+        Args:
+            message: 원본 에러 메시지
+            production: 프로덕션 모드 (기본: True)
+
+        Returns:
+            정제된 에러 메시지
+
+        Example:
+            >>> ProductionErrorSanitizer.sanitize_message(
+            ...     "API key sk-1234567890 failed at /home/user/app/config.py:42"
+            ... )
+            'API key *** failed at [PATH]'
+        """
+        if not production:
+            return message
+
+        sanitized = message
+
+        # API 키/토큰 마스킹
+        sanitized = cls.PATTERNS["api_key"].sub(rf"\1={cls.MASK_STR}", sanitized)
+        sanitized = cls.PATTERNS["env_var"].sub(rf"\1={cls.MASK_STR}", sanitized)
+        sanitized = cls.PATTERNS["bearer"].sub(f"Bearer {cls.MASK_STR}", sanitized)
+
+        # 데이터베이스 연결 문자열 마스킹
+        sanitized = cls.PATTERNS["db_conn"].sub(cls.MASK_DB, sanitized)
+
+        # 파일 경로 마스킹
+        sanitized = cls.PATTERNS["abs_path"].sub(cls.MASK_PATH, sanitized)
+
+        # IP 주소 마스킹 (localhost 제외)
+        sanitized = cls.PATTERNS["ipv4"].sub(
+            lambda m: m.group(0) if m.group(0).startswith("127.") else cls.MASK_IP, sanitized
+        )
+
+        # 포트 번호 마스킹
+        sanitized = cls.PATTERNS["host_port"].sub(rf"\1:{cls.MASK_PORT}", sanitized)
+
+        # SQL 스키마 정보 마스킹
+        sanitized = cls.PATTERNS["sql_schema"].sub(rf"\1 {cls.MASK_STR}", sanitized)
+
+        return sanitized
+
+    @classmethod
+    def sanitize_traceback(cls, traceback_str: str, production: bool = True, max_frames: int = 3) -> str:
+        """
+        스택 트레이스 정제
+
+        Args:
+            traceback_str: 원본 트레이스백 문자열
+            production: 프로덕션 모드 (기본: True)
+            max_frames: 표시할 최대 프레임 수 (프로덕션 모드)
+
+        Returns:
+            정제된 트레이스백
+
+        Example:
+            >>> ProductionErrorSanitizer.sanitize_traceback(
+            ...     "File '/home/user/app.py', line 42..."
+            ... )
+            'File [PATH], line 42...'
+        """
+        if not production:
+            return traceback_str
+
+        # 파일 경로 마스킹
+        sanitized = cls.PATTERNS["abs_path"].sub(cls.MASK_PATH, traceback_str)
+
+        # 프로덕션 모드: 스택 프레임 수 제한
+        lines = sanitized.split("\n")
+        if len(lines) > max_frames * 2:  # 각 프레임은 보통 2줄
+            # 처음 몇 프레임만 유지
+            sanitized = "\n".join(lines[: max_frames * 2] + ["  ... (truncated for security)"])
+
+        return sanitized
+
+    @classmethod
+    def create_safe_error(cls, exception: Exception, production: bool = True) -> Dict[str, Any]:
+        """
+        안전한 에러 응답 생성
+
+        Args:
+            exception: 원본 예외
+            production: 프로덕션 모드 (기본: True)
+
+        Returns:
+            안전한 에러 정보 딕셔너리
+
+        Example:
+            >>> try:
+            ...     raise ValueError("API key sk-123 is invalid")
+            ... except Exception as e:
+            ...     safe_error = ProductionErrorSanitizer.create_safe_error(e)
+            ...     print(safe_error["message"])
+            'API key *** is invalid'
+        """
+        error_type = type(exception).__name__
+        error_message = str(exception)
+
+        # 메시지 정제
+        safe_message = cls.sanitize_message(error_message, production)
+
+        result = {
+            "error_type": error_type,
+            "message": safe_message,
+            "production": production,
+        }
+
+        # 스택 트레이스 (프로덕션에서는 제한적)
+        if production:
+            # 프로덕션: 간소화된 트레이스
+            traceback_str = tb_module.format_exc()
+            result["traceback"] = cls.sanitize_traceback(traceback_str, production, max_frames=2)
+        else:
+            # 개발: 전체 트레이스
+            result["traceback"] = tb_module.format_exc()
+
+        return result
+
+
+def sanitize_error_message(message: str, production: bool = True) -> str:
+    """
+    에러 메시지 정제 (헬퍼 함수)
+
+    Args:
+        message: 원본 에러 메시지
+        production: 프로덕션 모드
+
+    Returns:
+        정제된 에러 메시지
+    """
+    return ProductionErrorSanitizer.sanitize_message(message, production)
+
+
+def create_safe_error_response(exception: Exception, production: bool = True) -> Dict[str, Any]:
+    """
+    안전한 에러 응답 생성 (헬퍼 함수)
+
+    Args:
+        exception: 원본 예외
+        production: 프로덕션 모드
+
+    Returns:
+        안전한 에러 정보
+    """
+    return ProductionErrorSanitizer.create_safe_error(exception, production)
