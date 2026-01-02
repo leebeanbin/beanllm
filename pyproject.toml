@@ -69,7 +69,7 @@ ollama = [
 
 # Audio 기능 (음성 인식/합성)
 audio = [
-    "openai-whisper>=20231117,<20250000",
+    "openai-whisper>=20231117,<20250626",
 ]
 
 # ML-based PDF processing (marker-pdf)
@@ -84,7 +84,7 @@ all = [
     "anthropic>=0.18.0,<1.0.0",
     "google-generativeai>=0.3.0,<1.0.0",
     "ollama>=0.1.0,<1.0.0",
-    "openai-whisper>=20231117,<20250000",
+    "openai-whisper>=20231117,<20250626",
     "marker-pdf>=0.2.0,<1.0.0",
     "torch>=2.0.0,<3.0.0",
 ]
