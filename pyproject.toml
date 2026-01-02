@@ -32,77 +32,76 @@ classifiers = [
 
 # 필수 의존성 (핵심 기능만)
 dependencies = [
-    "httpx>=0.24.0",  # HTTP 클라이언트
-    "python-dotenv>=1.0.0",  # .env 파일 로드
-    "rich>=13.0.0",  # 터미널 UI
-    "beautifulsoup4>=4.12.0",  # Web scraping
-    "requests>=2.31.0",  # HTTP requests
-    "numpy>=1.24.0",  # Numerical operations
-    "tiktoken>=0.5.0",  # Token counting
-    "pytest (>=9.0.2,<10.0.0)",
+    "httpx>=0.24.0,<1.0.0",  # HTTP 클라이언트
+    "python-dotenv>=1.0.0,<2.0.0",  # .env 파일 로드
+    "rich>=13.0.0,<14.0.0",  # 터미널 UI
+    "beautifulsoup4>=4.12.0,<5.0.0",  # Web scraping
+    "requests>=2.31.0,<3.0.0",  # HTTP requests
+    "numpy>=1.24.0,<2.0.0",  # Numerical operations
+    "tiktoken>=0.5.0,<1.0.0",  # Token counting
     # beanPDFLoader 의존성
-    "PyMuPDF>=1.23.0",  # Fast PDF 파싱 (fitz)
-    "pdfplumber>=0.10.0",  # 정확한 테이블 추출
-    "pandas>=2.0.0",  # 테이블 데이터 처리
+    "PyMuPDF>=1.23.0,<2.0.0",  # Fast PDF 파싱 (fitz)
+    "pdfplumber>=0.10.0,<1.0.0",  # 정확한 테이블 추출
+    "pandas>=2.0.0,<3.0.0",  # 테이블 데이터 처리
 ]
 
 # 선택적 의존성 (Provider별로 선택 가능)
 [project.optional-dependencies]
 # OpenAI 사용
 openai = [
-    "openai>=1.0.0",
+    "openai>=1.0.0,<2.0.0",
 ]
 
 # Anthropic Claude 사용
 anthropic = [
-    "anthropic>=0.18.0",
+    "anthropic>=0.18.0,<1.0.0",
 ]
 
 # Google Gemini 사용
 gemini = [
-    "google-generativeai>=0.3.0",
+    "google-generativeai>=0.3.0,<1.0.0",
 ]
 
 # Ollama 사용 (로컬 모델)
 ollama = [
-    "ollama>=0.1.0",
+    "ollama>=0.1.0,<1.0.0",
 ]
 
 # Audio 기능 (음성 인식/합성)
 audio = [
-    "openai-whisper>=20231117",
+    "openai-whisper>=20231117,<20250000",
 ]
 
 # ML-based PDF processing (marker-pdf)
 ml = [
-    "marker-pdf>=0.2.0",
-    "torch>=2.0.0",
+    "marker-pdf>=0.2.0,<1.0.0",
+    "torch>=2.0.0,<3.0.0",
 ]
 
 # 모든 Provider 사용
 all = [
-    "openai>=1.0.0",
-    "anthropic>=0.18.0",
-    "google-generativeai>=0.3.0",
-    "ollama>=0.1.0",
-    "openai-whisper>=20231117",
-    "marker-pdf>=0.2.0",
-    "torch>=2.0.0",
+    "openai>=1.0.0,<2.0.0",
+    "anthropic>=0.18.0,<1.0.0",
+    "google-generativeai>=0.3.0,<1.0.0",
+    "ollama>=0.1.0,<1.0.0",
+    "openai-whisper>=20231117,<20250000",
+    "marker-pdf>=0.2.0,<1.0.0",
+    "torch>=2.0.0,<3.0.0",
 ]
 
 # Continuous Evaluation (선택적)
 evaluation = [
-    "apscheduler>=3.10.0",
+    "apscheduler>=3.10.0,<4.0.0",
 ]
 
 # 개발 도구
 dev = [
-    "pytest>=7.0.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
+    "pytest>=9.0.2,<10.0.0",  # 필수 의존성에서 이동됨
+    "pytest-asyncio>=0.21.0,<1.0.0",
+    "pytest-cov>=4.0.0,<5.0.0",
+    "black>=23.0.0,<25.0.0",
+    "ruff>=0.1.0,<1.0.0",
+    "mypy>=1.0.0,<2.0.0",
 ]
 
 [project.urls]

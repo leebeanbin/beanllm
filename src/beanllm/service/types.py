@@ -17,7 +17,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from .._source_providers.base_provider import BaseLLMProvider
+    from ..providers.base_provider import BaseLLMProvider
 
 
 # TypeVar 정의

@@ -90,17 +90,47 @@ class ExternalAPITool:
         self.session.headers.update(self.config.headers)
 
     def _rate_limit_check(self):
-        """Rate limiting (Token Bucket Algorithm)"""
+        """
+        Rate limiting (Token Bucket Algorithm)
+
+        Token Bucket Algorithm:
+        - Bucket has capacity of 'burst_size' tokens
+        - Tokens refill at rate of 'rate_limit' per minute
+        - Each request consumes 1 token
+        - If no tokens available, wait until token is available
+        """
         if self.config.rate_limit is None:
             return
 
-        # Simple implementation: ensure minimum time between requests
-        min_interval = 60.0 / self.config.rate_limit  # seconds per request
         current_time = time.time()
-        elapsed = current_time - self._last_request_time
 
-        if elapsed < min_interval:
-            time.sleep(min_interval - elapsed)
+        # Initialize token bucket on first call
+        if not hasattr(self, "_token_bucket"):
+            burst_size = max(1, self.config.rate_limit // 10)  # 10% burst capacity
+            self._token_bucket = {
+                "tokens": float(burst_size),  # Start with full bucket
+                "capacity": float(burst_size),
+                "refill_rate": self.config.rate_limit / 60.0,  # tokens per second
+                "last_refill": current_time,
+            }
+
+        # Refill tokens based on time elapsed
+        elapsed = current_time - self._token_bucket["last_refill"]
+        tokens_to_add = elapsed * self._token_bucket["refill_rate"]
+        self._token_bucket["tokens"] = min(
+            self._token_bucket["capacity"], self._token_bucket["tokens"] + tokens_to_add
+        )
+        self._token_bucket["last_refill"] = current_time
+
+        # Consume token or wait
+        if self._token_bucket["tokens"] >= 1.0:
+            self._token_bucket["tokens"] -= 1.0
+        else:
+            # Wait until next token is available
+            wait_time = (1.0 - self._token_bucket["tokens"]) / self._token_bucket["refill_rate"]
+            time.sleep(wait_time)
+            self._token_bucket["tokens"] = 0.0
+            self._token_bucket["last_refill"] = time.time()
 
         self._last_request_time = time.time()
 

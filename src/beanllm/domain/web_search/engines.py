@@ -12,6 +12,7 @@ from typing import Dict, Optional
 import httpx
 import requests
 
+from .security import validate_url
 from .types import SearchResponse
 
 # DuckDuckGo는 선택적 의존성
@@ -48,6 +49,7 @@ class BaseSearchEngine(ABC):
         max_results: int = 10,
         timeout: int = 10,
         cache_ttl: int = 3600,
+        validate_urls: bool = False,
     ):
         """
         Args:
@@ -55,11 +57,13 @@ class BaseSearchEngine(ABC):
             max_results: 최대 결과 수
             timeout: 요청 타임아웃 (초)
             cache_ttl: 캐시 유효 시간 (초)
+            validate_urls: 검색 결과 URL 검증 여부 (기본: False, SSRF 방지)
         """
         self.api_key = api_key
         self.max_results = max_results
         self.timeout = timeout
         self.cache_ttl = cache_ttl
+        self.validate_urls = validate_urls
         self._cache: Dict[str, tuple[SearchResponse, float]] = {}
 
     def search(self, query: str, **kwargs) -> SearchResponse:
@@ -101,6 +105,29 @@ class BaseSearchEngine(ABC):
     def _save_to_cache(self, query: str, response: SearchResponse):
         """캐시에 저장"""
         self._cache[query] = (response, time.time())
+
+    def _validate_result_url(self, url: str) -> Optional[str]:
+        """
+        검색 결과 URL 검증 (SSRF 방지)
+
+        Args:
+            url: 검증할 URL
+
+        Returns:
+            검증된 URL (실패 시 None)
+        """
+        if not self.validate_urls:
+            return url
+
+        try:
+            return validate_url(url)
+        except ValueError as e:
+            # URL 검증 실패 - 로그만 남기고 None 반환
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Search result URL validation failed: {url} - {e}")
+            return None
 
 
 class GoogleSearch(BaseSearchEngine):
@@ -168,10 +195,17 @@ class GoogleSearch(BaseSearchEngine):
             # Parse results
             results = []
             for item in data.get("items", []):
+                result_url = item.get("link", "")
+
+                # URL 검증 (SSRF 방지)
+                validated_url = self._validate_result_url(result_url)
+                if validated_url is None:
+                    continue  # Skip invalid URLs
+
                 results.append(
                     SearchResult(
                         title=item.get("title", ""),
-                        url=item.get("link", ""),
+                        url=validated_url,
                         snippet=item.get("snippet", ""),
                         source="google",
                         score=1.0,  # Google doesn't provide scores
@@ -240,10 +274,17 @@ class GoogleSearch(BaseSearchEngine):
 
                 results = []
                 for item in data.get("items", []):
+                    result_url = item.get("link", "")
+
+                    # URL 검증 (SSRF 방지)
+                    validated_url = self._validate_result_url(result_url)
+                    if validated_url is None:
+                        continue  # Skip invalid URLs
+
                     results.append(
                         SearchResult(
                             title=item.get("title", ""),
-                            url=item.get("link", ""),
+                            url=validated_url,
                             snippet=item.get("snippet", ""),
                             source="google",
                             score=1.0,
@@ -336,10 +377,17 @@ class BingSearch(BaseSearchEngine):
             # Parse web pages
             results = []
             for item in data.get("webPages", {}).get("value", []):
+                result_url = item.get("url", "")
+
+                # URL 검증 (SSRF 방지)
+                validated_url = self._validate_result_url(result_url)
+                if validated_url is None:
+                    continue  # Skip invalid URLs
+
                 results.append(
                     SearchResult(
                         title=item.get("name", ""),
-                        url=item.get("url", ""),
+                        url=validated_url,
                         snippet=item.get("snippet", ""),
                         source="bing",
                         score=1.0,
@@ -401,10 +449,17 @@ class BingSearch(BaseSearchEngine):
 
                 results = []
                 for item in data.get("webPages", {}).get("value", []):
+                    result_url = item.get("url", "")
+
+                    # URL 검증 (SSRF 방지)
+                    validated_url = self._validate_result_url(result_url)
+                    if validated_url is None:
+                        continue  # Skip invalid URLs
+
                     results.append(
                         SearchResult(
                             title=item.get("name", ""),
-                            url=item.get("url", ""),
+                            url=validated_url,
                             snippet=item.get("snippet", ""),
                             source="bing",
                             score=1.0,
@@ -498,10 +553,17 @@ class DuckDuckGoSearch(BaseSearchEngine):
 
             results = []
             for item in raw_results:
+                result_url = item.get("href", "")
+
+                # URL 검증 (SSRF 방지)
+                validated_url = self._validate_result_url(result_url)
+                if validated_url is None:
+                    continue  # Skip invalid URLs
+
                 results.append(
                     SearchResult(
                         title=item.get("title", ""),
-                        url=item.get("href", ""),
+                        url=validated_url,
                         snippet=item.get("body", ""),
                         source="duckduckgo",
                         score=1.0,

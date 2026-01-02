@@ -8,6 +8,8 @@ import httpx
 import requests
 from bs4 import BeautifulSoup
 
+from .security import validate_url
+
 
 class WebScraper:
     """
@@ -17,13 +19,14 @@ class WebScraper:
     """
 
     @staticmethod
-    def scrape(url: str, timeout: int = 10) -> Dict[str, Any]:
+    def scrape(url: str, timeout: int = 10, validate: bool = True) -> Dict[str, Any]:
         """
         URL에서 콘텐츠 추출
 
         Args:
             url: 대상 URL
             timeout: 타임아웃 (초)
+            validate: URL 검증 여부 (기본: True, SSRF 방지)
 
         Returns:
             {
@@ -34,6 +37,10 @@ class WebScraper:
             }
         """
         try:
+            # URL 검증 (SSRF 방지)
+            if validate:
+                url = validate_url(url)
+
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
             response = requests.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
@@ -69,9 +76,20 @@ class WebScraper:
             return {"title": "", "text": "", "links": [], "metadata": {"error": str(e)}}
 
     @staticmethod
-    async def scrape_async(url: str, timeout: int = 10) -> Dict[str, Any]:
-        """비동기 스크래핑"""
+    async def scrape_async(url: str, timeout: int = 10, validate: bool = True) -> Dict[str, Any]:
+        """
+        비동기 스크래핑
+
+        Args:
+            url: 대상 URL
+            timeout: 타임아웃 (초)
+            validate: URL 검증 여부 (기본: True, SSRF 방지)
+        """
         try:
+            # URL 검증 (SSRF 방지)
+            if validate:
+                url = validate_url(url)
+
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
             async with httpx.AsyncClient(timeout=timeout) as client:
