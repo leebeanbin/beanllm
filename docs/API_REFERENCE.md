@@ -35,6 +35,12 @@ Complete API reference for all beanllm components.
 - [FineTuningManager](#finetuningmanager) - Model fine-tuning
 - [Advanced LLM Features](#advanced-llm-features) - Structured Outputs, Prompt Caching, Parallel Tool Calling
 
+### Utilities (New in v0.2.1)
+- [DependencyManager](#dependencymanager) - Centralized dependency checking with decorators
+- [LazyLoadMixin](#lazyloadmixin) - Deferred initialization for memory efficiency
+- [StructuredLogger](#structuredlogger) - Structured JSON logging with context tracking
+- [LRU Cache](#lru-cache) - Thread-safe LRU cache with TTL support
+
 ---
 
 ## Installation
@@ -1252,6 +1258,198 @@ export PERPLEXITY_API_KEY="pplx-..."
 export OLLAMA_HOST="http://localhost:11434"  # Optional
 
 # Or use .env file in project root
+```
+
+---
+
+## Utilities (New in v0.2.1)
+
+### DependencyManager
+
+Centralized dependency checking with decorators to eliminate 261+ duplicate import error handling patterns.
+
+```python
+from beanllm.utils import DependencyManager, require
+
+# Method 1: Decorator pattern
+@require("transformers", "torch")
+def load_model():
+    from transformers import AutoModel
+    return AutoModel.from_pretrained("model-name")
+
+# Method 2: Class method
+class MyModel:
+    @DependencyManager.require("sentence-transformers")
+    def load_embeddings(self):
+        from sentence_transformers import SentenceTransformer
+        return SentenceTransformer("model-name")
+
+# Method 3: Check availability
+if DependencyManager.check_available("transformers"):
+    from transformers import AutoModel
+
+# Method 4: Require any of alternatives
+DependencyManager.require_any(["torch", "tensorflow", "jax"])
+```
+
+**Benefits**:
+- Eliminates 261+ duplicate try/except ImportError patterns
+- Consistent error messages with installation commands
+- Centralized dependency management
+
+---
+
+### LazyLoadMixin
+
+Deferred initialization pattern to reduce memory usage and startup time.
+
+```python
+from beanllm.utils import LazyLoadMixin, lazy_property, LazyLoader
+
+# Pattern 1: Mixin class
+class MyModel(LazyLoadMixin):
+    def __init__(self):
+        super().__init__()
+        self.model_name = "gpt-4"
+
+    @property
+    def model(self):
+        return self.lazy_property("_model", self._load_model_impl)
+
+    def _load_model_impl(self):
+        # Heavy initialization only when accessed
+        return load_expensive_model(self.model_name)
+
+# Pattern 2: Decorator
+class MyModel:
+    @lazy_property
+    def model(self):
+        return load_expensive_model()  # Cached after first access
+
+# Pattern 3: Standalone loader
+loader = LazyLoader(lambda: load_expensive_model())
+model = loader.get()  # Loads on first call, cached thereafter
+```
+
+**Benefits**:
+- Memory efficient: Models loaded only when accessed
+- Faster startup time
+- Eliminated 23+ duplicate lazy loading implementations
+
+---
+
+### StructuredLogger
+
+Structured JSON logging with domain-specific methods for consistent logging across 510+ logger calls.
+
+```python
+from beanllm.utils import StructuredLogger, get_structured_logger
+
+# Create logger
+logger = StructuredLogger(__name__, enable_structured=True)
+
+# Domain-specific logging methods
+logger.log_file_load("data.csv", count=100, success=True)
+# Output: {"operation": "file_load", "status": "success", "filepath": "data.csv", "document_count": 100}
+
+logger.log_api_call(
+    provider="openai",
+    model="gpt-4",
+    tokens=500,
+    cost_usd=0.015,
+    success=True
+)
+
+logger.log_embedding_generation(
+    count=50,
+    model="text-embedding-3-small",
+    duration_ms=234.5
+)
+
+# Duration tracking with context manager
+with logger.log_duration("database_query", query="SELECT * FROM users") as ctx:
+    results = db.query("SELECT * FROM users")
+    ctx["rows_returned"] = len(results)
+# Output: {"operation": "database_query", "status": "completed", "duration_ms": 45.2, "query": "...", "rows_returned": 100}
+
+# Custom operations
+logger.log_operation(
+    level="info",
+    operation="custom_task",
+    status="success",
+    custom_field="value"
+)
+```
+
+**Methods**:
+- `log_file_load()` - File loading operations
+- `log_api_call()` - LLM API calls with cost tracking
+- `log_embedding_generation()` - Embedding generation
+- `log_vector_search()` - Vector similarity search
+- `log_duration()` - Context manager for duration tracking
+- `log_operation()` - Generic structured logging
+
+**Benefits**:
+- Standardized 510+ logger calls
+- Structured JSON output for easy parsing
+- Built-in duration tracking
+- Domain-specific methods
+
+---
+
+### LRU Cache
+
+Thread-safe LRU (Least Recently Used) cache with TTL (Time To Live) support.
+
+```python
+from beanllm.utils import LRUCache
+
+# Create cache
+cache = LRUCache(
+    capacity=1000,      # Maximum items
+    ttl_seconds=3600,   # 1 hour expiration
+    cleanup_interval=300  # Cleanup every 5 minutes
+)
+
+# Basic operations
+cache.put("key1", "value1")
+value = cache.get("key1")  # Returns "value1"
+
+# Check existence
+if "key1" in cache:  # or cache.contains("key1")
+    print("Key exists")
+
+# Cache stats
+stats = cache.get_stats()
+print(f"Hits: {stats['hits']}, Misses: {stats['misses']}, Size: {stats['size']}")
+
+# Clear cache
+cache.clear()
+
+# Automatic cleanup (background thread)
+# Expired items are removed automatically
+```
+
+**Features**:
+- Thread-safe operations
+- TTL expiration
+- Automatic cleanup of expired items
+- Hit/miss statistics
+- Used across embeddings, prompts, and graph node caches
+
+**Unified Usage**:
+```python
+# Previously: 3 different cache implementations
+# Now: Single unified LRUCache
+
+from beanllm.domain.embeddings import EmbeddingCache
+from beanllm.domain.prompts import PromptCache
+from beanllm.domain.graph import NodeCache
+
+# All use the same LRUCache internally
+embedding_cache = EmbeddingCache(capacity=1000, ttl_seconds=3600)
+prompt_cache = PromptCache(capacity=500, ttl_seconds=1800)
+node_cache = NodeCache(capacity=100, ttl_seconds=600)
 ```
 
 ---
