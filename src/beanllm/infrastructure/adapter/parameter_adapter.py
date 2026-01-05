@@ -7,8 +7,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from ...infrastructure.models import MODELS
-from ...utils.logger import get_logger
+from beanllm.infrastructure.models import MODELS
+from beanllm.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

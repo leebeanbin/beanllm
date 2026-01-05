@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from ...domain.evaluation.evaluator import Evaluator
-from ...domain.evaluation.metrics import (
+from beanllm.domain.evaluation.evaluator import Evaluator
+from beanllm.domain.evaluation.metrics import (
     AnswerRelevanceMetric,
     BLEUMetric,
     ContextPrecisionMetric,
@@ -17,14 +17,14 @@ from ...domain.evaluation.metrics import (
     ROUGEMetric,
     SemanticSimilarityMetric,
 )
-from ...dto.request.evaluation_request import (
+from beanllm.dto.request.evaluation_request import (
     BatchEvaluationRequest,
     CreateEvaluatorRequest,
     EvaluationRequest,
     RAGEvaluationRequest,
     TextEvaluationRequest,
 )
-from ...dto.response.evaluation_response import (
+from beanllm.dto.response.evaluation_response import (
     BatchEvaluationResponse,
     EvaluationResponse,
 )

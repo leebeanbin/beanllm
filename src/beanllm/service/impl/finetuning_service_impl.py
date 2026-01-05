@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from ...domain.finetuning.providers import BaseFineTuningProvider, OpenAIFineTuningProvider
-from ...domain.finetuning.types import FineTuningJob
-from ...domain.finetuning.utils import DatasetBuilder, FineTuningManager
-from ...dto.request.finetuning_request import (
+from beanllm.domain.finetuning.providers import BaseFineTuningProvider, OpenAIFineTuningProvider
+from beanllm.domain.finetuning.types import FineTuningJob
+from beanllm.domain.finetuning.utils import DatasetBuilder, FineTuningManager
+from beanllm.dto.request.finetuning_request import (
     CancelJobRequest,
     CreateJobRequest,
     GetJobRequest,
@@ -20,7 +20,7 @@ from ...dto.request.finetuning_request import (
     StartTrainingRequest,
     WaitForCompletionRequest,
 )
-from ...dto.response.finetuning_response import (
+from beanllm.dto.response.finetuning_response import (
     CancelJobResponse,
     CreateJobResponse,
     GetJobResponse,

@@ -1,13 +1,27 @@
 """
-Custom Exceptions
-독립적인 예외 클래스들
+beanllm.utils.exceptions - Custom Exception Classes
+커스텀 예외 클래스들
+
+이 모듈은 beanllm에서 사용하는 모든 커스텀 예외를 정의합니다.
 """
+
+
+# ===== Base Exceptions =====
 
 
 class LLMManagerError(Exception):
     """Base exception for llm-model-manager"""
 
     pass
+
+
+class LLMKitError(Exception):
+    """beanllm 베이스 예외"""
+
+    pass
+
+
+# ===== Provider Exceptions =====
 
 
 class ProviderError(LLMManagerError):
@@ -26,16 +40,46 @@ class ModelNotFoundError(LLMManagerError):
         super().__init__(f"Model not found: {model_name}")
 
 
-class RateLimitError(ProviderError):
-    """Rate limit 초과"""
+class AuthenticationError(ProviderError):
+    """인증 실패"""
 
-    def __init__(self, message: str, provider: str = None, retry_after: int = None):
+    pass
+
+
+# ===== Error Handling Exceptions =====
+
+
+class RateLimitError(ProviderError):
+    """Rate limit 에러"""
+
+    def __init__(self, message: str = None, provider: str = None, retry_after: int = None):
         self.retry_after = retry_after
+        # Support both old and new usage patterns
+        if message is None:
+            message = "Rate limit exceeded"
         super().__init__(message, provider)
 
 
-class AuthenticationError(ProviderError):
-    """인증 실패"""
+class TimeoutError(LLMKitError):
+    """Timeout 에러"""
+
+    pass
+
+
+class ValidationError(LLMKitError):
+    """검증 에러"""
+
+    pass
+
+
+class CircuitBreakerError(LLMKitError):
+    """Circuit breaker open 에러"""
+
+    pass
+
+
+class MaxRetriesExceededError(LLMKitError):
+    """최대 재시도 횟수 초과"""
 
     pass
 

@@ -11,10 +11,10 @@ try:
 except ImportError:
     genai = None  # type: ignore
 
-from ...utils.config import EnvConfig
-from ...utils.exceptions import ProviderError
-from ...utils.logger import get_logger
-from ...utils.retry import retry
+from beanllm.utils.config import EnvConfig
+from beanllm.utils.exceptions import ProviderError
+from beanllm.utils.logger import get_logger
+from beanllm.utils.retry import retry
 from .base_provider import BaseLLMProvider, LLMResponse
 
 logger = get_logger(__name__)

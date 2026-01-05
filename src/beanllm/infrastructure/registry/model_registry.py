@@ -6,7 +6,7 @@ Model Registry
 import logging
 from typing import Any, Dict, List, Optional
 
-from ...infrastructure.models import (
+from beanllm.infrastructure.models import (
     ModelCapabilityInfo,
     ModelStatus,
     ParameterInfo,
@@ -15,7 +15,7 @@ from ...infrastructure.models import (
     get_default_model,
     get_models_by_provider,
 )
-from ...utils.config import Config
+from beanllm.utils.config import Config
 
 logger = logging.getLogger(__name__)
 

@@ -10,9 +10,9 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ...dto.request.chain_request import ChainRequest
-from ...dto.response.chain_response import ChainResponse
-from ...utils.logger import get_logger
+from beanllm.dto.request.chain_request import ChainRequest
+from beanllm.dto.response.chain_response import ChainResponse
+from beanllm.utils.logger import get_logger
 from ..chain_service import IChainService
 
 if TYPE_CHECKING:

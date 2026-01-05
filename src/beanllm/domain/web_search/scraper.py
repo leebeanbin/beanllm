@@ -5,7 +5,7 @@ Web Scraper - 웹 페이지 콘텐츠 추출기
 from typing import Any, Dict
 
 import httpx
-import requests
+import httpx
 from bs4 import BeautifulSoup
 
 from .security import validate_url
@@ -42,7 +42,7 @@ class WebScraper:
                 url = validate_url(url)
 
             headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-            response = requests.get(url, headers=headers, timeout=timeout)
+            response = httpx.get(url, headers=headers, timeout=timeout)
             response.raise_for_status()
 
             soup = BeautifulSoup(response.content, "html.parser")

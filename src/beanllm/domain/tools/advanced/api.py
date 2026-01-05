@@ -14,7 +14,7 @@ except ImportError:
     httpx = None
 
 try:
-    import requests
+    import httpx
     from requests.auth import HTTPBasicAuth
 except ImportError:
     requests = None
