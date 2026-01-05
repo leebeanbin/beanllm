@@ -6,7 +6,7 @@
 
 ```bash
 # 프로젝트 클론
-git clone https://github.com/yourusername/beanllm.git
+git clone https://github.com/leebeanbin/beanllm.git
 cd beanllm
 
 # Poetry 설치 (없는 경우)
