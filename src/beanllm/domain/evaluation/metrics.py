@@ -286,7 +286,7 @@ class SemanticSimilarityMetric(BaseMetric):
         if self.embedding_model is None:
             # beanllm의 기본 임베딩 사용
             try:
-                from ...domain.embeddings import OpenAIEmbedding
+                from beanllm.domain.embeddings import OpenAIEmbedding
 
                 self.embedding_model = OpenAIEmbedding()
             except Exception:
@@ -343,7 +343,7 @@ class LLMJudgeMetric(BaseMetric):
         """클라이언트 lazy loading"""
         if self.client is None:
             try:
-                from ...facade.client_facade import create_client
+                from beanllm.facade.client_facade import create_client
 
                 self.client = create_client()
             except Exception:
@@ -525,7 +525,7 @@ class FaithfulnessMetric(BaseMetric):
         """클라이언트 lazy loading"""
         if self.client is None:
             try:
-                from ...facade.client_facade import create_client
+                from beanllm.facade.client_facade import create_client
 
                 self.client = create_client()
             except Exception:

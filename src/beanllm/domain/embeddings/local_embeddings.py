@@ -17,7 +17,7 @@ from typing import List, Optional
 from .base import BaseLocalEmbedding
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

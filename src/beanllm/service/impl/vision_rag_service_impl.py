@@ -15,10 +15,10 @@ from beanllm.utils.logger import get_logger
 from ..vision_rag_service import IVisionRAGService
 
 if TYPE_CHECKING:
-    from ...facade.client_facade import Client
-    from ...service.chat_service import IChatService
-    from ...service.types import VectorStoreProtocol
-    from ...vision_embeddings import CLIPEmbedding, MultimodalEmbedding
+    from beanllm.facade.client_facade import Client
+    from beanllm.service.chat_service import IChatService
+    from beanllm.service.types import VectorStoreProtocol
+    from beanllm.vision_embeddings import CLIPEmbedding, MultimodalEmbedding
 
 logger = get_logger(__name__)
 
@@ -99,7 +99,7 @@ Answer:"""
             컨텍스트 (텍스트 또는 멀티모달 메시지)
         """
         try:
-            from ...vision_loaders import ImageDocument
+            from beanllm.vision_loaders import ImageDocument
         except ImportError:
             # vision_loaders가 없으면 텍스트만 사용
             ImageDocument = None
@@ -178,7 +178,7 @@ Answer:"""
                 response = await self._llm.chat(messages)
                 answer = response.content
             elif self._chat_service:
-                from ...dto.request.chat_request import ChatRequest
+                from beanllm.dto.request.chat_request import ChatRequest
 
                 chat_request = ChatRequest(messages=messages, model=request.llm_model)
                 chat_response = await self._chat_service.chat(chat_request)
@@ -195,7 +195,7 @@ Answer:"""
                 response = await self._llm.chat(prompt)
                 answer = response.content
             elif self._chat_service:
-                from ...dto.request.chat_request import ChatRequest
+                from beanllm.dto.request.chat_request import ChatRequest
 
                 chat_request = ChatRequest(
                     messages=[{"role": "user", "content": prompt}], model=request.llm_model

@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -147,7 +147,7 @@ class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # 결과 변환
         search_results = []
         for result in results:
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             text = result.get("text", "")
             metadata = result.get("metadata", {})
@@ -169,7 +169,7 @@ class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
             vectors = all_data["vector"].tolist()
             documents = []
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for _, row in all_data.iterrows():
                 doc = Document(content=row["text"], metadata=row.get("metadata", {}))
@@ -190,7 +190,7 @@ class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         search_results = []
         for result in results:
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             text = result.get("text", "")
             metadata = result.get("metadata", {})

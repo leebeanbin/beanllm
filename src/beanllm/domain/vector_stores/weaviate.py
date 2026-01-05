@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -117,7 +117,7 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
                 score = 1 / (1 + distance)
 
                 # 런타임에 Document import
-                from ...domain.loaders import Document
+                from beanllm.domain.loaders import Document
 
                 doc = Document(content=text, metadata=metadata)
                 search_results.append(
@@ -139,7 +139,7 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
             vectors = []
             documents = []
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for obj in results.get("data", {}).get("Get", {}).get(self.class_name, []):
                 vector = obj.get("_additional", {}).get("vector", [])
@@ -172,7 +172,7 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
             metadata = obj.get("metadata", {})
             certainty = obj.get("_additional", {}).get("certainty", 0.0)
 
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=text, metadata=metadata)
             search_results.append(

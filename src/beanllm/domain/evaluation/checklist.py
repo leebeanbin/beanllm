@@ -68,7 +68,7 @@ class ChecklistGrader(BaseMetric):
         """클라이언트 lazy loading"""
         if self.client is None:
             try:
-                from ...facade.client_facade import create_client
+                from beanllm.facade.client_facade import create_client
 
                 self.client = create_client()
             except Exception:

@@ -7,8 +7,8 @@ from typing import Dict, List
 from .types import ScannedModel
 
 try:
-    from ...utils.config import EnvConfig
-    from ...utils.logger import get_logger
+    from beanllm.utils.config import EnvConfig
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

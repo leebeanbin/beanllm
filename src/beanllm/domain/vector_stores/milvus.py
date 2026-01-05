@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -189,7 +189,7 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
         search_results = []
         for hits in results:
             for hit in hits:
-                from ...domain.loaders import Document
+                from beanllm.domain.loaders import Document
 
                 text = hit.entity.get("text")
                 metadata = hit.entity.get("metadata", {})
@@ -216,7 +216,7 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
             vectors = []
             documents = []
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for result in results:
                 vectors.append(result["embedding"])
@@ -245,7 +245,7 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
         search_results = []
         for hits in results:
             for hit in hits:
-                from ...domain.loaders import Document
+                from beanllm.domain.loaders import Document
 
                 text = hit.entity.get("text")
                 metadata = hit.entity.get("metadata", {})

@@ -15,7 +15,7 @@ from .security import validate_file_path
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)
@@ -114,7 +114,7 @@ class JupyterLoader(BaseDocumentLoader):
                     if cell_content:
                         content_parts.append(cell_content)
 
-                combined_content = "\n\n" + "="*80 + "\n\n".join(content_parts)
+                combined_content = ("\n\n" + "="*80 + "\n\n").join(content_parts)
 
                 return [Document(content=combined_content, metadata=nb_metadata)]
 

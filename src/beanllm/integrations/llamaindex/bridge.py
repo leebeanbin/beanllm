@@ -8,7 +8,7 @@ import logging
 from typing import Any, Callable, List, Optional
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
 
     def get_logger(name: str):
@@ -104,7 +104,7 @@ class LlamaIndexBridge:
             beanLLM Document 리스트
         """
         try:
-            from ...domain.loaders import Document as BeanDocument
+            from beanllm.domain.loaders import Document as BeanDocument
         except ImportError:
             raise ImportError("beanLLM Document not available")
 

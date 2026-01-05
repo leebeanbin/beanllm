@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Union
 
 try:
-    from ....utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -225,7 +225,7 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
     def load(self, path: str):
         """인덱스 로드"""
         import json
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
 
         # FAISS 인덱스 로드
         self.index = self.faiss.read_index(f"{path}.index")

@@ -410,9 +410,9 @@ class MultimodalEmbedding(BaseEmbedding):
         """
         super().__init__(model=text_model)
         try:
-            from ...domain.embeddings import Embedding  # 이미 위에서 import됨
+            from beanllm.domain.embeddings import Embedding  # 이미 위에서 import됨
         except ImportError:
-            from ...domain.embeddings import Embedding
+            from beanllm.domain.embeddings import Embedding
 
         self.text_embedder = Embedding(model=text_model)
         self.vision_embedder = CLIPEmbedding(model=vision_model)

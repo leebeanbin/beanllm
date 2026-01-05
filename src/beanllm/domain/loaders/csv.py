@@ -4,6 +4,7 @@ CSV Loader
 CSV 파일 로더
 """
 
+import csv
 import logging
 import mmap
 import re
@@ -15,7 +16,7 @@ from .security import validate_file_path
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)

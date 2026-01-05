@@ -25,8 +25,8 @@ from beanllm.utils.logger import get_logger
 from ..audio_service import IAudioService
 
 if TYPE_CHECKING:
-    from ...domain.embeddings import BaseEmbedding
-    from ...service.types import VectorStoreProtocol
+    from beanllm.domain.embeddings import BaseEmbedding
+    from beanllm.service.types import VectorStoreProtocol
 
 logger = get_logger(__name__)
 
@@ -407,7 +407,7 @@ class AudioServiceImpl(IAudioService):
         # Vector store에 추가 (있는 경우) (기존과 동일)
         if self._vector_store is not None and self._embedding_model is not None:
             # 각 세그먼트를 별도 문서로 추가
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             documents = []
             for i, segment in enumerate(transcription_result.segments):

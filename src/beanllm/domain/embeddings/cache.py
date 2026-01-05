@@ -7,8 +7,8 @@ Updated to use generic LRUCache with automatic TTL cleanup
 from typing import Any, Dict, List, Optional
 
 try:
-    from ...utils.cache import LRUCache
-    from ...utils.logger import get_logger
+    from beanllm.utils.cache import LRUCache
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

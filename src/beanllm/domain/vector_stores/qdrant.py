@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -111,7 +111,7 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
             text = payload.pop("text", "")
 
             # 런타임에 Document import
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=text, metadata=payload)
             search_results.append(
@@ -131,7 +131,7 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
             vectors = []
             documents = []
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for point in points[0]:  # points는 (points, next_offset) 튜플
                 vectors.append(point.vector)
@@ -156,7 +156,7 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
         for result in results:
             payload = result.payload
             text = payload.pop("text", "")
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=text, metadata=payload)
             search_results.append(

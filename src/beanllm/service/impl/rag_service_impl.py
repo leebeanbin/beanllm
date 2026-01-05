@@ -16,8 +16,8 @@ from ..rag_service import IRAGService
 from .search_strategy import SearchStrategyFactory
 
 if TYPE_CHECKING:
-    from ...service.chat_service import IChatService
-    from ...service.types import (
+    from beanllm.service.chat_service import IChatService
+    from beanllm.service.types import (
         DocumentLoaderProtocol,
         EmbeddingServiceProtocol,
         TextSplitterProtocol,
@@ -89,7 +89,7 @@ class RAGServiceImpl(IRAGService):
         prompt = self._build_prompt(request.query, context, request.prompt_template)
 
         # 4. LLM 호출 (비즈니스 로직)
-        from ...dto.request.chat_request import ChatRequest
+        from beanllm.dto.request.chat_request import ChatRequest
 
         chat_request = ChatRequest(
             messages=[{"role": "user", "content": prompt}],
@@ -230,7 +230,7 @@ Answer:"""
         prompt = self._build_prompt(request.query, context, request.prompt_template)
 
         # 4. 스트리밍 LLM 호출 (기존: llm.stream(prompt))
-        from ...dto.request.chat_request import ChatRequest
+        from beanllm.dto.request.chat_request import ChatRequest
 
         chat_request = ChatRequest(
             messages=[{"role": "user", "content": prompt}],
