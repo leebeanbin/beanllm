@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beanllm"
-version = "0.2.0"
+version = "0.2.1"
 description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
 ]
@@ -22,7 +22,6 @@ keywords = [
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
