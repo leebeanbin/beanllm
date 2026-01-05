@@ -308,7 +308,7 @@ def get_models_by_type(model_type: str) -> Dict[str, Dict]:
 
 def get_default_model(provider: Optional[str] = None, model_type: str = "llm") -> Optional[str]:
     """기본 모델 조회"""
-    from ...utils.config import Config
+    from beanllm.utils.config import Config
 
     if provider:
         models = get_models_by_provider(provider)

@@ -16,7 +16,7 @@ from beanllm.utils.logger import get_logger
 from ..graph_service import IGraphService
 
 if TYPE_CHECKING:
-    from ...domain.graph import BaseNode
+    from beanllm.domain.graph import BaseNode
 
 logger = get_logger(__name__)
 

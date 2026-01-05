@@ -10,7 +10,7 @@ from typing import Any, Callable, Dict, List, Optional
 from .bridge import LlamaIndexBridge
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
 
     def get_logger(name: str):

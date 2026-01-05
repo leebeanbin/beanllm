@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -90,7 +90,7 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
         search_results = []
         for i in range(len(results["ids"][0])):
             # 런타임에 Document import
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
             score = 1 - results["distances"][0][i]  # Cosine distance -> similarity
@@ -113,7 +113,7 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
             texts = all_data.get("documents", [])
             metadatas = all_data.get("metadatas", [{}] * len(texts))
 
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for i, text in enumerate(texts):
                 doc = Document(content=text, metadata=metadatas[i] if i < len(metadatas) else {})
@@ -132,7 +132,7 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         search_results = []
         for i in range(len(results["ids"][0])):
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
             score = 1 - results["distances"][0][i]  # Cosine distance -> similarity

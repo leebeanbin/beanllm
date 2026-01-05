@@ -15,7 +15,7 @@ from .security import validate_file_path
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)

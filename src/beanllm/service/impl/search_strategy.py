@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
-    from ...service.types import VectorStoreProtocol
+    from beanllm.service.types import VectorStoreProtocol
 
 
 class SearchStrategy(ABC):

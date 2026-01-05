@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.audio import AudioSegment, TranscriptionResult
+    from beanllm.domain.audio import AudioSegment, TranscriptionResult
 
 
 @dataclass

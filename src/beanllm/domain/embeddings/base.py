@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

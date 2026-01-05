@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -288,7 +288,7 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # 결과 변환
         search_results = []
         for row in results:
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             id_, text, embedding, metadata, similarity = row
 
@@ -316,7 +316,7 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
             vectors = []
             documents = []
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             for row in results:
                 text, embedding, metadata = row
@@ -350,7 +350,7 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         search_results = []
         for row in results:
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             id_, text, embedding, metadata, similarity = row
 

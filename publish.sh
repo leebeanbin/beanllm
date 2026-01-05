@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# llmkit PyPI 배포 스크립트
+# beanllm PyPI 배포 스크립트
 # 사용법: ./publish.sh [test|prod]
 
 set -e  # 에러 발생시 중단
 
-echo "🚀 llmkit PyPI 배포 스크립트"
+echo "🚀 beanllm PyPI 배포 스크립트"
 echo "=============================="
 
 # 인자 확인
@@ -27,7 +27,7 @@ echo ""
 echo "🔍 Step 2: 코드 품질 체크..."
 if command -v ruff &> /dev/null; then
     echo "  - Ruff 린트 실행 중..."
-    ruff check src/llmkit --fix || echo "  ⚠️  경고가 있지만 계속 진행합니다."
+    ruff check src/beanllm --fix || echo "  ⚠️  경고가 있지만 계속 진행합니다."
 else
     echo "  ⚠️  Ruff가 설치되어 있지 않습니다. 건너뜁니다."
 fi
@@ -67,14 +67,14 @@ ls -lh dist/
 echo ""
 if [ "$MODE" = "test" ]; then
     echo "🧪 Step 5: TestPyPI에 업로드 중..."
-    echo "  TestPyPI: https://test.pypi.org/project/llmkit/"
+    echo "  TestPyPI: https://test.pypi.org/project/beanllm/"
     python -m twine upload --repository testpypi dist/*
 
     echo ""
     echo "✅ TestPyPI 업로드 완료!"
     echo ""
     echo "테스트 설치 방법:"
-    echo "  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ llmkit"
+    echo "  pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ beanllm"
 
 elif [ "$MODE" = "prod" ]; then
     echo "🚀 Step 5: PyPI에 업로드 중..."
@@ -90,9 +90,9 @@ elif [ "$MODE" = "prod" ]; then
         echo "✅ PyPI 업로드 완료!"
         echo ""
         echo "설치 방법:"
-        echo "  pip install llmkit"
+        echo "  pip install beanllm"
         echo ""
-        echo "PyPI 페이지: https://pypi.org/project/llmkit/"
+        echo "PyPI 페이지: https://pypi.org/project/beanllm/"
     else
         echo "❌ 배포가 취소되었습니다."
         exit 1

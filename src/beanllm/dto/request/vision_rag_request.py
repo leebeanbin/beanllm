@@ -10,9 +10,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 if TYPE_CHECKING:
-    from ...facade.client_facade import Client
-    from ...service.types import VectorStoreProtocol
-    from ...vision_embeddings import CLIPEmbedding, MultimodalEmbedding
+    from beanllm.facade.client_facade import Client
+    from beanllm.service.types import VectorStoreProtocol
+    from beanllm.vision_embeddings import CLIPEmbedding, MultimodalEmbedding
 
 
 @dataclass

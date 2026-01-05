@@ -18,8 +18,8 @@ from beanllm.utils.logger import get_logger
 from ..agent_service import IAgentService
 
 if TYPE_CHECKING:
-    from ...service.chat_service import IChatService
-    from ...service.types import ToolRegistryProtocol
+    from beanllm.service.chat_service import IChatService
+    from beanllm.service.types import ToolRegistryProtocol
 
 logger = get_logger(__name__)
 
@@ -73,7 +73,7 @@ class AgentServiceImpl(IAgentService):
             - 도구 호출 비즈니스 로직
             - if-else/try-catch 없음 (Handler에서 처리)
         """
-        from ...dto.request.chat_request import ChatRequest
+        from beanllm.dto.request.chat_request import ChatRequest
 
         # 기존 agent.py의 run() 로직을 정확히 마이그레이션
         steps: List[Dict[str, Any]] = []

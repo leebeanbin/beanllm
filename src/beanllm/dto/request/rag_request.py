@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 if TYPE_CHECKING:
-    from ...service.types import VectorStoreProtocol
+    from beanllm.service.types import VectorStoreProtocol
 
 
 @dataclass

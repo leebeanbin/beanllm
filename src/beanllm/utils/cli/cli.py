@@ -26,9 +26,9 @@ except ImportError:
     Tree = None
 
 try:
-    from ...infrastructure.hybrid import create_hybrid_manager
-    from ...infrastructure.registry import get_model_registry
-    from ...ui import ErrorPattern, get_console, print_logo
+    from beanllm.infrastructure.hybrid import create_hybrid_manager
+    from beanllm.infrastructure.registry import get_model_registry
+    from beanllm.ui import ErrorPattern, get_console, print_logo
 except ImportError:
     # Fallback
     def get_console():

@@ -10,7 +10,7 @@ from .loaders import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

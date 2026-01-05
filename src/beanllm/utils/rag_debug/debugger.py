@@ -37,7 +37,7 @@ except ImportError:
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     # 런타임에만 import (순환 참조 방지)
     # Document는 함수 내부에서만 import
