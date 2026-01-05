@@ -9,15 +9,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...domain.multi_agent.strategies import (
+from beanllm.domain.multi_agent.strategies import (
     DebateStrategy,
     HierarchicalStrategy,
     ParallelStrategy,
     SequentialStrategy,
 )
-from ...dto.request.multi_agent_request import MultiAgentRequest
-from ...dto.response.multi_agent_response import MultiAgentResponse
-from ...utils.logger import get_logger
+from beanllm.dto.request.multi_agent_request import MultiAgentRequest
+from beanllm.dto.response.multi_agent_response import MultiAgentResponse
+from beanllm.utils.logger import get_logger
 from ..multi_agent_service import IMultiAgentService
 
 if TYPE_CHECKING:

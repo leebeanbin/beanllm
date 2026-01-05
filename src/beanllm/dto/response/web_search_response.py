@@ -8,7 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from ...domain.web_search import SearchResult
+from beanllm.domain.web_search import SearchResult
 
 
 @dataclass

@@ -12,16 +12,16 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Optional, Union
 
-from ...domain.audio import (
+from beanllm.domain.audio import (
     AudioSegment,
     TranscriptionResult,
     TranscriptionSegment,
     TTSProvider,
     WhisperModel,
 )
-from ...dto.request.audio_request import AudioRequest
-from ...dto.response.audio_response import AudioResponse
-from ...utils.logger import get_logger
+from beanllm.dto.request.audio_request import AudioRequest
+from beanllm.dto.response.audio_response import AudioResponse
+from beanllm.utils.logger import get_logger
 from ..audio_service import IAudioService
 
 if TYPE_CHECKING:
@@ -334,7 +334,7 @@ class AudioServiceImpl(IAudioService):
         **kwargs,
     ) -> AudioSegment:
         """ElevenLabs TTS (기존 audio_speech.py의 TextToSpeech._synthesize_elevenlabs() 정확히 마이그레이션)"""
-        import requests
+        import httpx
 
         if not voice:
             voice = "21m00Tcm4TlvDq8ikWAM"  # Default voice
@@ -356,7 +356,7 @@ class AudioServiceImpl(IAudioService):
             },
         }
 
-        response = requests.post(url, json=data, headers=headers)
+        response = httpx.post(url, json=data, headers=headers)
         response.raise_for_status()
 
         return AudioSegment(

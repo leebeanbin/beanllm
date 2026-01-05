@@ -36,7 +36,7 @@ except ImportError:
             pass
 
 
-from ...utils.logger import get_logger
+from beanllm.utils.logger import get_logger
 from .graph_state import GraphState
 
 logger = get_logger(__name__)

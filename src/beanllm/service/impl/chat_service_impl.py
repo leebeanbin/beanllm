@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, AsyncIterator, Optional
 
-from ...decorators.logger import log_service_call
-from ...dto.request.chat_request import ChatRequest
-from ...dto.response.chat_response import ChatResponse
-from ...infrastructure.adapter import ParameterAdapter
+from beanllm.decorators.logger import log_service_call
+from beanllm.dto.request.chat_request import ChatRequest
+from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.infrastructure.adapter import ParameterAdapter
 from ..chat_service import IChatService
 from .base_service import BaseService
 

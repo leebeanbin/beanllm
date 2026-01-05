@@ -11,7 +11,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from ...infrastructure.adapter import ParameterAdapter, adapt_parameters
+from beanllm.infrastructure.adapter import ParameterAdapter, adapt_parameters
 
 if TYPE_CHECKING:
     from ...service.types import ProviderFactoryProtocol

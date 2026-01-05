@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List
 
-from ...utils.logger import get_logger
+from beanllm.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

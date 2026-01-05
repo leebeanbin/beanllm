@@ -10,16 +10,16 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from ...domain.web_search import (
+from beanllm.domain.web_search import (
     BingSearch,
     DuckDuckGoSearch,
     GoogleSearch,
     SearchEngine,
     WebScraper,
 )
-from ...dto.request.web_search_request import WebSearchRequest
-from ...dto.response.web_search_response import WebSearchResponse
-from ...utils.logger import get_logger
+from beanllm.dto.request.web_search_request import WebSearchRequest
+from beanllm.dto.response.web_search_response import WebSearchResponse
+from beanllm.utils.logger import get_logger
 from ..web_search_service import IWebSearchService
 
 if TYPE_CHECKING:

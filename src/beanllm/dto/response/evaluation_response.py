@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import List
 
-from ...domain.evaluation.results import BatchEvaluationResult
+from beanllm.domain.evaluation.results import BatchEvaluationResult
 
 
 class EvaluationResponse:
