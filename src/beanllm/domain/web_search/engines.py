@@ -10,7 +10,6 @@ from enum import Enum
 from typing import Dict, Optional
 
 import httpx
-import httpx
 
 from .security import validate_url
 from .types import SearchResponse
@@ -234,7 +233,7 @@ class GoogleSearch(BaseSearchEngine):
 
             return search_response
 
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             return SearchResponse(
                 query=query,
                 results=[],
@@ -410,7 +409,7 @@ class BingSearch(BaseSearchEngine):
             self._save_to_cache(cache_key, search_response)
             return search_response
 
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             return SearchResponse(
                 query=query,
                 results=[],

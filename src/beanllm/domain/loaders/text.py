@@ -6,6 +6,7 @@ Text Loader
 
 import logging
 import mmap
+import os
 import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Union

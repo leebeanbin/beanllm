@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 
 # transformers 설치 여부 체크
 try:
-    from transformers import AutoModelForCausalLM, AutoTokenizer
     import torch
     from PIL import Image
+    from transformers import AutoModelForCausalLM, AutoTokenizer
 
     HAS_DEEPSEEK_OCR = True
 except ImportError:

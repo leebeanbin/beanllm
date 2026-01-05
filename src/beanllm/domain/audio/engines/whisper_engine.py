@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 
 # transformers 설치 여부 체크
 try:
-    from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
     import torch
+    from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 
     HAS_WHISPER = True
 except ImportError:

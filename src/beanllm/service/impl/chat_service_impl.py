@@ -15,6 +15,7 @@ from beanllm.decorators.logger import log_service_call
 from beanllm.dto.request.chat_request import ChatRequest
 from beanllm.dto.response.chat_response import ChatResponse
 from beanllm.infrastructure.adapter import ParameterAdapter
+
 from ..chat_service import IChatService
 from .base_service import BaseService
 

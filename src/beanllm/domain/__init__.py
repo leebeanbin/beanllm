@@ -138,18 +138,6 @@ from .parsers import (
     parse_list,
 )
 
-# Retrieval (Rerankers & Hybrid Search)
-from .retrieval import (
-    BaseReranker,
-    BGEReranker,
-    CohereReranker,
-    CrossEncoderReranker,
-    HybridRetriever,
-    PositionEngineeringReranker,
-    RerankResult,
-    SearchResult,
-)
-
 # Prompts
 from .prompts import (
     BasePromptTemplate,
@@ -172,6 +160,18 @@ from .prompts import (
     create_prompt_template,
     get_cache_stats,
     get_cached_prompt,
+)
+
+# Retrieval (Rerankers & Hybrid Search)
+from .retrieval import (
+    BaseReranker,
+    BGEReranker,
+    CohereReranker,
+    CrossEncoderReranker,
+    HybridRetriever,
+    PositionEngineeringReranker,
+    RerankResult,
+    SearchResult as RetrievalSearchResult,
 )
 
 # Text Splitters

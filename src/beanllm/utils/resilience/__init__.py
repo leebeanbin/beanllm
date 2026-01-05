@@ -10,27 +10,12 @@ beanllm.utils.resilience - Resilience Patterns
 """
 
 # Retry
-from .retry import (
-    RetryConfig,
-    RetryHandler,
-    RetryStrategy,
-    retry,
-)
-
 # Circuit Breaker
 from .circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitState,
     circuit_breaker,
-)
-
-# Rate Limiter
-from .rate_limiter import (
-    AsyncTokenBucket,
-    RateLimitConfig,
-    RateLimiter,
-    rate_limit,
 )
 
 # Error Tracker
@@ -42,6 +27,20 @@ from .error_tracker import (
     create_safe_error_response,
     get_error_tracker,
     sanitize_error_message,
+)
+
+# Rate Limiter
+from .rate_limiter import (
+    AsyncTokenBucket,
+    RateLimitConfig,
+    RateLimiter,
+    rate_limit,
+)
+from .retry import (
+    RetryConfig,
+    RetryHandler,
+    RetryStrategy,
+    retry,
 )
 
 __all__ = [

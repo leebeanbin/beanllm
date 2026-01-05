@@ -222,8 +222,9 @@ class OCRInteractiveWidget:
 
                 # 시각화 (옵션)
                 try:
-                    from .visualizer import OCRVisualizer
                     import matplotlib.pyplot as plt
+
+                    from .visualizer import OCRVisualizer
 
                     viz = OCRVisualizer()
 

@@ -26,9 +26,9 @@ logger = logging.getLogger(__name__)
 
 # transformers 설치 여부 체크
 try:
-    from transformers import AutoModel, AutoTokenizer
     import torch
     from PIL import Image
+    from transformers import AutoModel, AutoTokenizer
 
     HAS_MINICPM = True
 except ImportError:

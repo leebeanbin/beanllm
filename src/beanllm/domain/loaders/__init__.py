@@ -17,7 +17,7 @@ from .types import Document
 
 # beanPDFLoader (고급 PDF 로더)
 try:
-    from .pdf import beanPDFLoader, PDFLoadConfig
+    from .pdf import PDFLoadConfig, beanPDFLoader
 except ImportError:
     # 의존성이 없을 수 있음
     beanPDFLoader = None  # type: ignore

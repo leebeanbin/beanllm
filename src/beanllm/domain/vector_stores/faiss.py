@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """FAISS vector store - 로컬, 매우 빠름"""
 
@@ -225,6 +226,7 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
     def load(self, path: str):
         """인덱스 로드"""
         import json
+
         from beanllm.domain.loaders import Document
 
         # FAISS 인덱스 로드

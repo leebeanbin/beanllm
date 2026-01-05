@@ -193,8 +193,8 @@ class HTMLLoader(BaseDocumentLoader):
     def _parse_with_readability(self, html_content: str) -> str:
         """Readability로 파싱 (fallback 1)"""
         try:
-            from readability import Document as ReadabilityDocument
             from bs4 import BeautifulSoup
+            from readability import Document as ReadabilityDocument
         except ImportError:
             raise ImportError(
                 "readability-lxml and beautifulsoup4 required. "

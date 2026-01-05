@@ -16,13 +16,13 @@ This file re-exports all implementations for backward compatibility.
 
 # Re-export all implementations
 from .chroma import ChromaVectorStore
-from .pinecone import PineconeVectorStore
 from .faiss import FAISSVectorStore
+from .lancedb import LanceDBVectorStore
+from .milvus import MilvusVectorStore
+from .pgvector import PgvectorVectorStore
+from .pinecone import PineconeVectorStore
 from .qdrant import QdrantVectorStore
 from .weaviate import WeaviateVectorStore
-from .milvus import MilvusVectorStore
-from .lancedb import LanceDBVectorStore
-from .pgvector import PgvectorVectorStore
 
 __all__ = [
     "ChromaVectorStore",

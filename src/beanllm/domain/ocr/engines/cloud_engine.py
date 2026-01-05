@@ -166,9 +166,10 @@ class CloudOCREngine(BaseOCREngine):
 
     def _recognize_google(self, image: np.ndarray, config: OCRConfig) -> Dict:
         """Google Vision API로 OCR"""
+        import io
+
         from google.cloud import vision
         from PIL import Image
-        import io
 
         # numpy array를 PIL Image로 변환
         pil_image = Image.fromarray(image)
@@ -227,9 +228,10 @@ class CloudOCREngine(BaseOCREngine):
 
     def _recognize_aws(self, image: np.ndarray, config: OCRConfig) -> Dict:
         """AWS Textract로 OCR"""
+        import io
+
         import boto3
         from PIL import Image
-        import io
 
         # numpy array를 PIL Image로 변환
         pil_image = Image.fromarray(image)

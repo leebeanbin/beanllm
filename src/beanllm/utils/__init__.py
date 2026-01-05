@@ -20,6 +20,14 @@ from .callbacks import (
 from .cli import main
 from .config import Config, EnvConfig
 
+# Dependency Manager (NEW - v0.2.1)
+from .dependency import (
+    DependencyManager,
+    check_available,
+    require,
+    require_any,
+)
+
 # DI Container
 from .di_container import get_container
 
@@ -54,30 +62,15 @@ from .error_handling import (
 # Exceptions
 from .exceptions import ModelNotFoundError, ProviderError, RateLimitError
 
-# Logger
-from .logger import get_logger
-
-# Dependency Manager (NEW - v0.2.1)
-from .dependency import (
-    DependencyManager,
-    check_available,
-    require,
-    require_any,
-)
-
 # Lazy Loading (NEW - v0.2.1)
 from .lazy_loading import (
-    LazyLoadMixin,
     LazyLoader,
+    LazyLoadMixin,
     lazy_property,
 )
 
-# Structured Logger (NEW - v0.2.1)
-from .structured_logger import (
-    LogLevel,
-    StructuredLogger,
-    get_structured_logger,
-)
+# Logger
+from .logger import get_logger
 
 # Retry
 from .retry import retry
@@ -91,6 +84,13 @@ from .streaming import (
     stream_collect,
     stream_print,
     stream_response,
+)
+
+# Structured Logger (NEW - v0.2.1)
+from .structured_logger import (
+    LogLevel,
+    StructuredLogger,
+    get_structured_logger,
 )
 
 # Streaming Wrapper

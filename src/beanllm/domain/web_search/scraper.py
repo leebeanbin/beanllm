@@ -5,7 +5,6 @@ Web Scraper - 웹 페이지 콘텐츠 추출기
 from typing import Any, Dict
 
 import httpx
-import httpx
 from bs4 import BeautifulSoup
 
 from .security import validate_url

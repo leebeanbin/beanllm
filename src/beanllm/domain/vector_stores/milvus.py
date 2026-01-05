@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """
     Milvus vector store - 오픈소스, 확장 가능, 엔터프라이즈급 (2024-2025)
