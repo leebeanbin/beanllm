@@ -73,7 +73,7 @@ audio = [
 
 # ML-based PDF processing (marker-pdf)
 ml = [
-    "marker-pdf>=0.2.0,<1.0.0",
+    "marker-pdf>=0.2.0,<2.0.0",
     "torch>=2.0.0,<3.0.0",
 ]
 
@@ -84,7 +84,7 @@ all = [
     "google-generativeai>=0.3.0,<1.0.0",
     "ollama>=0.1.0,<1.0.0",
     "openai-whisper>=20231117,<20250626",
-    "marker-pdf>=0.2.0,<1.0.0",
+    "marker-pdf>=0.2.0,<2.0.0",
     "torch>=2.0.0,<3.0.0",
 ]
 
