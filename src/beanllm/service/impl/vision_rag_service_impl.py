@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-from ...dto.request.vision_rag_request import VisionRAGRequest
-from ...dto.response.vision_rag_response import VisionRAGResponse
-from ...utils.logger import get_logger
+from beanllm.dto.request.vision_rag_request import VisionRAGRequest
+from beanllm.dto.response.vision_rag_response import VisionRAGResponse
+from beanllm.utils.logger import get_logger
 from ..vision_rag_service import IVisionRAGService
 
 if TYPE_CHECKING:

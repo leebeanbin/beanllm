@@ -119,12 +119,12 @@ class HTMLLoader(BaseDocumentLoader):
     def _fetch_url(self) -> str:
         """URL에서 HTML 가져오기"""
         try:
-            import requests
+            import httpx
         except ImportError:
             raise ImportError("requests is required for URL loading. Install: pip install requests")
 
         try:
-            response = requests.get(self.source, headers=self.headers, timeout=self.timeout)
+            response = httpx.get(self.source, headers=self.headers, timeout=self.timeout)
             response.raise_for_status()
             response.encoding = response.apparent_encoding or "utf-8"
             return response.text

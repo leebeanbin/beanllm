@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from ...domain.finetuning.types import FineTuningJob, FineTuningMetrics
+from beanllm.domain.finetuning.types import FineTuningJob, FineTuningMetrics
 
 
 class PrepareDataResponse:

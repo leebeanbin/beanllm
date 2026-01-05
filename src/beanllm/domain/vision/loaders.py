@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Union
 
-from ...domain.loaders import BaseDocumentLoader, Document
+from beanllm.domain.loaders import BaseDocumentLoader, Document
 
 
 @dataclass

@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Dict, Optional
 
 import httpx
-import requests
+import httpx
 
 from .security import validate_url
 from .types import SearchResponse
@@ -188,7 +188,7 @@ class GoogleSearch(BaseSearchEngine):
         }
 
         try:
-            response = requests.get(self.base_url, params=params, timeout=self.timeout)
+            response = httpx.get(self.base_url, params=params, timeout=self.timeout)
             response.raise_for_status()
             data = response.json()
 
@@ -368,7 +368,7 @@ class BingSearch(BaseSearchEngine):
         }
 
         try:
-            response = requests.get(
+            response = httpx.get(
                 self.base_url, headers=headers, params=params, timeout=self.timeout
             )
             response.raise_for_status()

@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from typing import Any, Dict, List, Optional
 
-from ...utils.logger import get_logger
+from beanllm.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

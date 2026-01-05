@@ -4,7 +4,7 @@ Tool Registry - 도구 레지스트리
 
 from typing import Any, Callable, Dict, List, Optional
 
-from ...utils.logger import get_logger
+from beanllm.utils.logger import get_logger
 from .tool import Tool
 
 logger = get_logger(__name__)

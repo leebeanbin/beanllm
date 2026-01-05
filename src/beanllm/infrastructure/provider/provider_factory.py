@@ -5,7 +5,7 @@ Provider Factory
 
 from typing import List, Optional
 
-from ...utils.config import Config
+from beanllm.utils.config import Config
 
 
 class ProviderFactory:

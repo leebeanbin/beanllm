@@ -5,7 +5,7 @@ Vision Embeddings - 이미지 임베딩 및 멀티모달 임베딩
 from pathlib import Path
 from typing import List, Optional, Union
 
-from ...domain.embeddings import BaseEmbedding
+from beanllm.domain.embeddings import BaseEmbedding
 
 
 class CLIPEmbedding(BaseEmbedding):

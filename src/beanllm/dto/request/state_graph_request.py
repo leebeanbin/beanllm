@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Type, Union
 
-from ...domain.state_graph import END
+from beanllm.domain.state_graph import END
 
 
 @dataclass
