@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-01-05
+
+### Dependency Updates
+
+**Core Dependencies**:
+- **rich**: 13.0.0-14.0.0 → 13.0.0-15.0.0 (Terminal UI improvements)
+- **numpy**: 1.24.0-2.0.0 → 1.24.0-3.0.0 (NumPy 2.x support)
+
+**Optional Dependencies**:
+- **openai**: 1.0.0-2.0.0 → 1.0.0-3.0.0 (Latest OpenAI SDK support)
+- **openai-whisper**: <20250000 → <20250626 (Latest Whisper updates)
+- **marker-pdf**: 0.2.0-1.0.0 → 0.2.0-2.0.0 (Enhanced PDF processing)
+
+**Development Dependencies**:
+- **black**: 23.0.0-25.0.0 → 23.0.0-26.0.0 (Code formatter)
+- **pytest-asyncio**: 0.21.0-1.0.0 → 0.21.0-2.0.0 (Async testing)
+
+**GitHub Actions**:
+- **actions/upload-artifact**: v4 → v6 (Faster artifact uploads)
+- **actions/upload-pages-artifact**: v3 → v4 (Pages deployment)
+
+**Impact**:
+- Updated 9 dependencies for better compatibility
+- NumPy 2.x support for latest scientific computing features
+- OpenAI SDK 2.x support for latest API features
+- GitHub Actions performance improvements
+
+---
+
 ## [0.2.1] - 2026-01-05
 
 ### Project Structure & Configuration Improvements
