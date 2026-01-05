@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """Pinecone vector store - 클라우드, 확장 가능"""
 

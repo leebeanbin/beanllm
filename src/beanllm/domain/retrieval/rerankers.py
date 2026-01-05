@@ -100,8 +100,8 @@ class BGEReranker(BaseReranker):
             return
 
         try:
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer
             import torch
+            from transformers import AutoModelForSequenceClassification, AutoTokenizer
         except ImportError:
             raise ImportError(
                 "transformers and torch required for BGEReranker. "

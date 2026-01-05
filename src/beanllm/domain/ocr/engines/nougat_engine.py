@@ -87,8 +87,8 @@ class NougatEngine(BaseOCREngine):
         if self._model is not None:
             return
 
-        from transformers import NougatProcessor, VisionEncoderDecoderModel
         import torch
+        from transformers import NougatProcessor, VisionEncoderDecoderModel
 
         logger.info("Initializing Nougat model (academic documents)")
 
@@ -132,8 +132,8 @@ class NougatEngine(BaseOCREngine):
             print(result["text"])  # Markdown with LaTeX
             ```
         """
-        from PIL import Image
         import torch
+        from PIL import Image
 
         # 모델 초기화 (lazy loading)
         self._init_model(config.use_gpu)

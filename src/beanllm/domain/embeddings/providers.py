@@ -22,21 +22,21 @@ Embeddings Providers - 임베딩 Provider 구현체들 (Re-export Module)
 
 # API-based embeddings (7개)
 from .api_embeddings import (
-    OpenAIEmbedding,
+    CohereEmbedding,
     GeminiEmbedding,
-    OllamaEmbedding,
-    VoyageEmbedding,
     JinaEmbedding,
     MistralEmbedding,
-    CohereEmbedding,
+    OllamaEmbedding,
+    OpenAIEmbedding,
+    VoyageEmbedding,
 )
 
 # Local-based embeddings (4개)
 from .local_embeddings import (
+    CodeEmbedding,
     HuggingFaceEmbedding,
     NVEmbedEmbedding,
     Qwen3Embedding,
-    CodeEmbedding,
 )
 
 # Explicit __all__ for better IDE support

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, List, Optional
 
 from beanllm.dto.request.rag_request import RAGRequest
 from beanllm.dto.response.rag_response import RAGResponse
+
 from ..rag_service import IRAGService
 from .search_strategy import SearchStrategyFactory
 

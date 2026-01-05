@@ -100,8 +100,8 @@ class Florence2Wrapper(BaseVisionTaskModel):
             return
 
         try:
-            from transformers import AutoModelForCausalLM, AutoProcessor
             import torch
+            from transformers import AutoModelForCausalLM, AutoProcessor
 
             model_map = {
                 "base": "microsoft/Florence-2-base",

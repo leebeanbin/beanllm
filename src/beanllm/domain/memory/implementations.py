@@ -5,6 +5,7 @@ Memory Implementations
 from typing import Any, List, Optional
 
 from beanllm.utils.logger import get_logger
+
 from .base import BaseMemory, Message
 
 logger = get_logger(__name__)

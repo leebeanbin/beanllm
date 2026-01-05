@@ -28,25 +28,11 @@ from .exceptions import (
     TimeoutError,
     ValidationError,
 )
-
-# ===== Re-export Resilience Components =====
-from .resilience.retry import (
-    RetryConfig,
-    RetryHandler,
-    RetryStrategy,
-    retry,
-)
 from .resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitState,
     circuit_breaker,
-)
-from .resilience.rate_limiter import (
-    AsyncTokenBucket,
-    RateLimitConfig,
-    RateLimiter,
-    rate_limit,
 )
 from .resilience.error_tracker import (
     ErrorRecord,
@@ -57,7 +43,20 @@ from .resilience.error_tracker import (
     get_error_tracker,
     sanitize_error_message,
 )
+from .resilience.rate_limiter import (
+    AsyncTokenBucket,
+    RateLimitConfig,
+    RateLimiter,
+    rate_limit,
+)
 
+# ===== Re-export Resilience Components =====
+from .resilience.retry import (
+    RetryConfig,
+    RetryHandler,
+    RetryStrategy,
+    retry,
+)
 
 # ===== Combined Error Handler =====
 

@@ -100,7 +100,7 @@ class LlamaIndexQueryEngine:
             LlamaIndexQueryEngine 인스턴스
         """
         try:
-            from llama_index.core import VectorStoreIndex, Settings
+            from llama_index.core import Settings, VectorStoreIndex
         except ImportError:
             raise ImportError(
                 "llama-index is required. " "Install it with: pip install llama-index"

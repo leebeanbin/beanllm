@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """Chroma vector store - 로컬, 사용하기 쉬움"""
 

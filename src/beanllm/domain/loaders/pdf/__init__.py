@@ -8,8 +8,8 @@ beanPDFLoader - 고급 PDF 로더 모듈
 """
 
 from .bean_pdf_loader import beanPDFLoader
-from .models import PDFLoadConfig, PageData, TableData, ImageData, PDFLoadResult
-from .extractors import TableExtractor, ImageExtractor
+from .extractors import ImageExtractor, TableExtractor
+from .models import ImageData, PageData, PDFLoadConfig, PDFLoadResult, TableData
 
 __all__ = [
     "beanPDFLoader",

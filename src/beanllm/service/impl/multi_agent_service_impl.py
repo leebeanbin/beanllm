@@ -18,6 +18,7 @@ from beanllm.domain.multi_agent.strategies import (
 from beanllm.dto.request.multi_agent_request import MultiAgentRequest
 from beanllm.dto.response.multi_agent_response import MultiAgentResponse
 from beanllm.utils.logger import get_logger
+
 from ..multi_agent_service import IMultiAgentService
 
 if TYPE_CHECKING:

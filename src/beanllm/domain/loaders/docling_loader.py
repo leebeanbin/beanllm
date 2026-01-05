@@ -125,8 +125,8 @@ class DoclingLoader(BaseDocumentLoader):
     def load(self) -> List[Document]:
         """Docling으로 문서 로딩"""
         try:
-            from docling.document_converter import DocumentConverter
             from docling.datamodel.base_models import InputFormat
+            from docling.document_converter import DocumentConverter
         except ImportError:
             raise ImportError(
                 "docling is required for DoclingLoader. "

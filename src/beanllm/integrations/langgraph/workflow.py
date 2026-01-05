@@ -155,7 +155,7 @@ class WorkflowBuilder:
             **kwargs: 추가 파라미터
         """
         try:
-            from langgraph.graph import StateGraph, END
+            from langgraph.graph import END, StateGraph
         except ImportError:
             raise ImportError(
                 "langgraph is required for WorkflowBuilder. "

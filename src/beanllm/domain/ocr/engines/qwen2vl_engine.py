@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 
 # transformers 설치 여부 체크
 try:
-    from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
     import torch
+    from transformers import AutoProcessor, Qwen2VLForConditionalGeneration
 
     HAS_QWEN2VL = True
 except ImportError:

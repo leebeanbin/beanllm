@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """
     pgvector vector store - PostgreSQL 확장, 신뢰성 높음 (2024-2025)
@@ -86,8 +87,8 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         try:
             import psycopg2
-            from psycopg2 import pool, sql
             from pgvector.psycopg2 import register_vector
+            from psycopg2 import pool, sql
         except ImportError:
             raise ImportError(
                 "psycopg2 and pgvector are required for PgvectorVectorStore. "

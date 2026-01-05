@@ -165,8 +165,9 @@ class PDFExtractKitEngine(BasePDFEngine):
                 img_data = pix.tobytes("png")
 
                 # PIL Image로 변환
-                from PIL import Image
                 import io
+
+                from PIL import Image
 
                 page_image = Image.open(io.BytesIO(img_data))
 

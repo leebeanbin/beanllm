@@ -7,8 +7,8 @@ PDF 로딩 및 추출 결과를 표현하는 데이터 클래스들
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Union
 from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 
 @dataclass

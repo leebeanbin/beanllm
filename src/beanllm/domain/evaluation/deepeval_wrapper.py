@@ -156,14 +156,14 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         # 메트릭 import
         from deepeval.metrics import (
             AnswerRelevancyMetric,
-            FaithfulnessMetric,
+            BiasMetric,
             ContextualPrecisionMetric,
             ContextualRecallMetric,
-            HallucinationMetric,
-            ToxicityMetric,
-            BiasMetric,
-            SummarizationMetric,
+            FaithfulnessMetric,
             GEval,
+            HallucinationMetric,
+            SummarizationMetric,
+            ToxicityMetric,
         )
 
         # 메트릭 생성

@@ -58,9 +58,10 @@ class LangGraphBridge:
             LangGraph State 클래스
         """
         try:
-            from langgraph.graph import MessagesState
-            from typing import TypedDict, Annotated
             import operator
+            from typing import Annotated, TypedDict
+
+            from langgraph.graph import MessagesState
         except ImportError:
             raise ImportError(
                 "langgraph is required for LangGraphBridge. "

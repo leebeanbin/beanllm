@@ -11,8 +11,8 @@ PDF 엔진 모듈
 """
 
 from .base import BasePDFEngine
-from .pymupdf_engine import PyMuPDFEngine
 from .pdfplumber_engine import PDFPlumberEngine
+from .pymupdf_engine import PyMuPDFEngine
 
 __all__ = [
     "BasePDFEngine",

@@ -11,8 +11,8 @@ Features:
 - 페이지 구분자 삽입
 """
 
-from typing import Dict, List, Optional
 import re
+from typing import Dict, List, Optional
 
 try:
     from beanllm.utils.logger import get_logger

@@ -22,6 +22,7 @@ from beanllm.domain.audio import (
 from beanllm.dto.request.audio_request import AudioRequest
 from beanllm.dto.response.audio_response import AudioResponse
 from beanllm.utils.logger import get_logger
+
 from ..audio_service import IAudioService
 
 if TYPE_CHECKING:
