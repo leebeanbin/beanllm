@@ -24,12 +24,22 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: '3.11'
+        cache: 'pip'
+
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-docs-${{ hashFiles('pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-docs-
+          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        # Sphinx는 현재 사용하지 않으므로 제거
         pip install -e ".[all]"
-        pip install sphinx sphinx-rtd-theme myst-parser
 
     - name: Build documentation
       run: |
