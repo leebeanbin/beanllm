@@ -9,11 +9,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 # 순환 참조 방지를 위해 TYPE_CHECKING 사용
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     # 런타임에만 import
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -105,7 +105,7 @@ class BaseVectorStore(ABC):
             추가된 문서 ID 리스트
         """
         # 런타임에 Document import
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
 
         documents = [
             Document(content=text, metadata=metadatas[i] if metadatas else {})

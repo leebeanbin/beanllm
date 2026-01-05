@@ -8,7 +8,7 @@ import json
 from typing import Any, Dict, Optional
 
 try:
-    from ...utils.cache import LRUCache
+    from beanllm.utils.cache import LRUCache
 except ImportError:
     # Fallback: simple dict-based cache without TTL
     class LRUCache:

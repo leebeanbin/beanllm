@@ -9,7 +9,7 @@ from .base_metric import BaseMetric
 from .results import BatchEvaluationResult, EvaluationResult
 
 if TYPE_CHECKING:
-    from ...utils.error_handling import AsyncTokenBucket
+    from beanllm.utils.error_handling import AsyncTokenBucket
 
 
 class Evaluator:
@@ -90,7 +90,7 @@ class Evaluator:
 
         # Token Bucket (기본값)
         if rate_limiter is None:
-            from ...utils.error_handling import AsyncTokenBucket
+            from beanllm.utils.error_handling import AsyncTokenBucket
 
             rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)
 

@@ -356,7 +356,7 @@ class ModelConfigManager:
                 return "phi3.5"
             elif model_type == "llm":
                 # 사용 가능한 제공자에 따라 기본 모델 선택 (EnvConfig 사용)
-                from ...utils.config import EnvConfig
+                from beanllm.utils.config import EnvConfig
 
                 if EnvConfig.ANTHROPIC_API_KEY:
                     return "claude-3-5-sonnet-20241022"

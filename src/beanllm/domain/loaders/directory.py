@@ -15,7 +15,7 @@ from .security import validate_file_path
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)
@@ -95,7 +95,6 @@ class DirectoryLoader(BaseDocumentLoader):
 
         # 제외 패턴 사전 컴파일 (성능 최적화: O(n×m×p) → O(n×m))
         # Path.match()는 매번 패턴을 컴파일하므로, 미리 컴파일하면 1000배 빠름
-        import re
         from fnmatch import translate
 
         self._compiled_exclude_patterns = []

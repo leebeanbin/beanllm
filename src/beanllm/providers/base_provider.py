@@ -10,7 +10,7 @@ from typing import AsyncGenerator, Callable, Dict, List, Optional, TypeVar
 
 # 선택적 의존성 - ProviderError 임포트 시도
 try:
-    from ...utils.exceptions import ProviderError
+    from beanllm.utils.exceptions import ProviderError
 except ImportError:
     # Fallback: 기본 Exception 사용
     class ProviderError(Exception):  # type: ignore
@@ -19,7 +19,7 @@ except ImportError:
 
 # logger 임포트 시도
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from beanllm.infrastructure.adapter import ParameterAdapter, adapt_parameters
 
 if TYPE_CHECKING:
-    from ...service.types import ProviderFactoryProtocol
+    from beanllm.service.types import ProviderFactoryProtocol
 
 
 class BaseService(ABC):

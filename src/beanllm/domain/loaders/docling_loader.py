@@ -6,16 +6,17 @@ Docling 고급 문서 로더
 
 import logging
 import mmap
+import os
 import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import Any, Dict, Iterator, List, Optional, Union
 
 from .base import BaseDocumentLoader
 from .security import validate_file_path
 from .types import Document
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)

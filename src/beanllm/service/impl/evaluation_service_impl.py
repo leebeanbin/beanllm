@@ -31,8 +31,8 @@ from beanllm.dto.response.evaluation_response import (
 from ..evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
-    from ...domain.embeddings.base import Embedding
-    from ...facade.client_facade import Client
+    from beanllm.domain.embeddings.base import Embedding
+    from beanllm.facade.client_facade import Client
 
 
 class EvaluationServiceImpl(IEvaluationService):
@@ -67,7 +67,7 @@ class EvaluationServiceImpl(IEvaluationService):
 
         # 내부적으로 자동 병렬 처리 (사용자는 신경 쓸 필요 없음)
         # 기본 설정: max_concurrent=10, rate_limiter 자동 생성
-        from ...utils.error_handling import AsyncTokenBucket
+        from beanllm.utils.error_handling import AsyncTokenBucket
 
         rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)
         max_concurrent = 10

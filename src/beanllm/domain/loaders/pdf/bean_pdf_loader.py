@@ -21,7 +21,7 @@ from ..types import Document
 from .models import PDFLoadConfig
 
 try:
-    from ....utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

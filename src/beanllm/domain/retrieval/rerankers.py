@@ -9,7 +9,7 @@ from .base import BaseReranker
 from .types import RerankResult
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

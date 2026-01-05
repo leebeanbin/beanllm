@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Callable, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample
+    from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample
 
 
 class PrepareDataRequest:

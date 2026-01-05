@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-llmkit 환영 메시지 및 빠른 시작 가이드
+beanllm 환영 메시지 및 빠른 시작 가이드
 디자인 시스템 적용
 """
 import sys
@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 try:
-    from llmkit.ui import (
+    from beanllm.ui import (
         print_logo,
         OnboardingPattern,
         InfoPattern,
@@ -30,7 +30,7 @@ def print_welcome():
     """환영 메시지 출력 (디자인 시스템 적용)"""
     if not use_ui:
         print("=" * 70)
-        print("🚀 Welcome to llmkit!")
+        print("🚀 Welcome to beanllm!")
         print("=" * 70)
         return
     
@@ -43,7 +43,7 @@ def print_quick_start():
     if not use_ui:
         print("\n📚 Quick Start:")
         print("  1. Set environment variables: export OPENAI_API_KEY='your-key'")
-        print("  2. Try: python -c \"from llmkit import get_registry; print(get_registry().get_available_models())\"")
+        print("  2. Try: python -c \"from beanllm import Client; print(Client().list_models())\"")
         return
     
     # 온보딩 패턴 사용
@@ -56,15 +56,15 @@ def print_quick_start():
             },
             {
                 "title": "Try it out",
-                "description": "from llmkit import get_registry; r = get_registry()"
+                "description": "from beanllm import Client; client = Client()"
             },
             {
                 "title": "Use CLI",
-                "description": "llmkit list"
+                "description": "beanllm list"
             },
             {
                 "title": "Read docs",
-                "description": "https://github.com/yourusername/llmkit"
+                "description": "https://github.com/leebeanbin/beanllm"
             }
         ]
     )
@@ -98,14 +98,14 @@ def print_providers_status():
         import google.generativeai
         providers.append((StatusIcon.success(), "Gemini", Badge.success("Installed")))
     except ImportError:
-        providers.append((StatusIcon.warning(), "Gemini", "Optional - pip install llmkit[gemini]"))
+        providers.append((StatusIcon.warning(), "Gemini", "Optional - pip install beanllm[gemini]"))
     
     # Ollama
     try:
         import ollama
         providers.append((StatusIcon.success(), "Ollama", Badge.success("Installed")))
     except ImportError:
-        providers.append((StatusIcon.warning(), "Ollama", "Optional - pip install llmkit[ollama]"))
+        providers.append((StatusIcon.warning(), "Ollama", "Optional - pip install beanllm[ollama]"))
     
     console = get_console()
     table = Table(title="[bold cyan]📦 Provider Status[/bold cyan]", box=box.ROUNDED, show_header=True)
@@ -129,8 +129,8 @@ def main():
     # 추가 정보
     if use_ui:
         InfoPattern.render(
-            "💡 Tip: Set LLMKIT_SHOW_BANNER=true to see this on import",
-            details=["📚 Docs: https://github.com/yourusername/llmkit"]
+            "💡 Tip: Set BEANLLM_SHOW_BANNER=true to see this on import",
+            details=["📚 Docs: https://github.com/leebeanbin/beanllm"]
         )
 
 

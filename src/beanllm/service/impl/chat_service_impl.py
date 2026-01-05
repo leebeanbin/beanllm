@@ -19,7 +19,7 @@ from ..chat_service import IChatService
 from .base_service import BaseService
 
 if TYPE_CHECKING:
-    from ...service.types import ProviderFactoryProtocol
+    from beanllm.service.types import ProviderFactoryProtocol
 
 
 class ChatServiceImpl(BaseService, IChatService):

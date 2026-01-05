@@ -351,7 +351,7 @@ Answer:"""
         # 내부적으로 병렬 처리 사용 (사용자는 신경 쓸 필요 없음)
         import asyncio
 
-        from ...utils.error_handling import AsyncTokenBucket
+        from beanllm.utils.error_handling import AsyncTokenBucket
 
         # 자동 최적화 설정
         rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)

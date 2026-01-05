@@ -9,10 +9,10 @@ import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.loaders import Document
+    from beanllm.domain.loaders import Document
 else:
     try:
-        from ...domain.loaders import Document
+        from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
 
@@ -99,7 +99,7 @@ class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
             text = metadata.pop("text", "")
 
             # 런타임에 Document import
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=text, metadata=metadata)
             search_results.append(
@@ -129,7 +129,7 @@ class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
             text = match.metadata.get("text", "")
             metadata = {k: v for k, v in match.metadata.items() if k != "text"}
 
-            from ...domain.loaders import Document
+            from beanllm.domain.loaders import Document
 
             doc = Document(content=text, metadata=metadata)
             search_results.append(

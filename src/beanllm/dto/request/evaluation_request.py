@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
-    from ...domain.evaluation.base_metric import BaseMetric
+    from beanllm.domain.evaluation.base_metric import BaseMetric
 
 
 class EvaluationRequest:

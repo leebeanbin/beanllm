@@ -590,7 +590,7 @@ class RetryOutputParser(BaseOutputParser):
         Raises:
             OutputParserException: 최대 재시도 초과 시
         """
-        from ...utils.logger import get_logger
+        from beanllm.utils.logger import get_logger
 
         logger = get_logger(__name__)
 

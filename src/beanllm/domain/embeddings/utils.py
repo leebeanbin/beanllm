@@ -13,7 +13,7 @@ except ImportError:
     np = None
 
 try:
-    from ...utils.logger import get_logger
+    from beanllm.utils.logger import get_logger
 except ImportError:
     import logging
 

@@ -16,7 +16,7 @@ from beanllm.utils.logger import get_logger
 from ..chain_service import IChainService
 
 if TYPE_CHECKING:
-    from ...service.chat_service import IChatService
+    from beanllm.service.chat_service import IChatService
 
 logger = get_logger(__name__)
 
@@ -57,8 +57,8 @@ class ChainServiceImpl(IChainService):
         Returns:
             ChainResponse: Chain 응답 DTO
         """
-        from ...domain.memory import BufferMemory, create_memory
-        from ...dto.request.chat_request import ChatRequest
+        from beanllm.domain.memory import BufferMemory, create_memory
+        from beanllm.dto.request.chat_request import ChatRequest
 
         # 메모리 생성 (기존: memory or BufferMemory())
         if request.memory_type:
@@ -99,8 +99,8 @@ class ChainServiceImpl(IChainService):
         Returns:
             ChainResponse: Chain 응답 DTO
         """
-        from ...domain.memory import create_memory
-        from ...dto.request.chat_request import ChatRequest
+        from beanllm.domain.memory import create_memory
+        from beanllm.dto.request.chat_request import ChatRequest
 
         if not request.template:
             raise ValueError("Template is required for PromptChain")

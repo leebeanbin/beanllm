@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 if TYPE_CHECKING:
-    from ...domain.audio import AudioSegment
+    from beanllm.domain.audio import AudioSegment
 
 
 @dataclass
