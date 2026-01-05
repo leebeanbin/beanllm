@@ -328,6 +328,7 @@ def main():
         if show_steps:
             try:
                 import cv2
+
                 from .preprocessing import ImagePreprocessor
 
                 preprocessor = ImagePreprocessor()

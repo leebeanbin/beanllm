@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from beanllm.dto.request.agent_request import AgentRequest
 from beanllm.dto.response.agent_response import AgentResponse
 from beanllm.utils.logger import get_logger
+
 from ..agent_service import IAgentService
 
 if TYPE_CHECKING:

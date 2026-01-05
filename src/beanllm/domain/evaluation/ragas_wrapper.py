@@ -220,9 +220,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import faithfulness
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import faithfulness
 
         # Dataset 생성
         data = {
@@ -281,9 +281,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import answer_relevancy
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import answer_relevancy
 
         # Dataset 생성
         data = {
@@ -344,9 +344,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import context_precision
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import context_precision
 
         # Dataset 생성
         data = {
@@ -408,9 +408,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import context_recall
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import context_recall
 
         # Dataset 생성
         data = {
@@ -467,8 +467,8 @@ class RAGASWrapper(BaseEvaluationFramework):
             )
             return {"context_relevancy": 0.0, "error": "Metric not available"}
 
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
 
         # Dataset 생성
         data = {
@@ -517,9 +517,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import answer_similarity
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import answer_similarity
 
         # Dataset 생성
         data = {
@@ -570,9 +570,9 @@ class RAGASWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        from ragas.metrics import answer_correctness
-        from ragas import evaluate
         from datasets import Dataset
+        from ragas import evaluate
+        from ragas.metrics import answer_correctness
 
         # Dataset 생성
         data = {
@@ -648,12 +648,12 @@ class RAGASWrapper(BaseEvaluationFramework):
 
         from ragas import evaluate
         from ragas.metrics import (
-            faithfulness,
+            answer_correctness,
             answer_relevancy,
+            answer_similarity,
             context_precision,
             context_recall,
-            answer_similarity,
-            answer_correctness,
+            faithfulness,
         )
 
         # 메트릭 매핑

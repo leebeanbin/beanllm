@@ -211,7 +211,7 @@ class LlamaIndexBridge:
             ```
         """
         try:
-            from llama_index.core.llms import CustomLLM, CompletionResponse
+            from llama_index.core.llms import CompletionResponse, CustomLLM
             from llama_index.core.llms.callbacks import llm_completion_callback
         except ImportError:
             raise ImportError(

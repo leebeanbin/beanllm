@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """Qdrant vector store - 클라우드/로컬, 모던"""
 

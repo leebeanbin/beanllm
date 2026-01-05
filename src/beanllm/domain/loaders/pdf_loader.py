@@ -54,7 +54,7 @@ class PDFLoader(BaseDocumentLoader):
         """
         # 경로 검증 (Path Traversal 방지)
         if validate_path:
-            self.file_path = _validate_file_path(file_path)
+            self.file_path = validate_file_path(file_path)
         else:
             self.file_path = Path(file_path)
 

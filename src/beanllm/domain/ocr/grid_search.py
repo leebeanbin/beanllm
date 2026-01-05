@@ -200,7 +200,7 @@ class GridSearchTuner:
         best_config = results[0]["config"] if results else self.ocr.config
 
         if self.verbose:
-            print(f"\n✅ Best configuration found!")
+            print("\n✅ Best configuration found!")
             print(f"   {self._format_params(results[0]['params'])}")
             print(f"   Confidence: {results[0]['confidence']:.2%}")
 

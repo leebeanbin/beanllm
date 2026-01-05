@@ -35,7 +35,7 @@ except ImportError:
 logger = get_logger(__name__)
 
 # Re-export main models from separate files
-from .sam import SAMWrapper
 from .florence import Florence2Wrapper
+from .sam import SAMWrapper
 from .yolo import YOLOWrapper
 

@@ -5,7 +5,7 @@ Replaces 23 duplicate lazy loading implementations across the codebase.
 """
 
 from functools import wraps
-from typing import Any, Callable, Dict, Optional, TypeVar, Generic
+from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
 T = TypeVar('T')
 

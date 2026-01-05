@@ -4,8 +4,8 @@
 Document 리스트에서 테이블 메타데이터를 추출하여 구조화된 형태로 제공합니다.
 """
 
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 
 class TableExtractor:

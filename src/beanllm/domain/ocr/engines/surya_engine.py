@@ -88,11 +88,11 @@ class SuryaEngine(BaseOCREngine):
         if self._model is not None:
             return
 
-        from surya.model.detection import load_model as load_det_model
-        from surya.model.recognition import load_model as load_rec_model
-        from surya.model.detection import load_processor as load_det_processor
-        from surya.model.recognition import load_processor as load_rec_processor
         import torch
+        from surya.model.detection import load_model as load_det_model
+        from surya.model.detection import load_processor as load_det_processor
+        from surya.model.recognition import load_model as load_rec_model
+        from surya.model.recognition import load_processor as load_rec_processor
 
         logger.info("Initializing Surya models (detection + recognition)")
 

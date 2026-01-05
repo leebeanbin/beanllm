@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """Weaviate vector store - 엔터프라이즈급"""
 

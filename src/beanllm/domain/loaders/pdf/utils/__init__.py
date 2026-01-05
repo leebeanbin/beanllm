@@ -9,8 +9,8 @@ PDF 유틸리티 모듈
 - MetadataExtractor: 메타데이터 추출
 """
 
+from .layout_analyzer import Block, LayoutAnalyzer
 from .markdown_converter import MarkdownConverter
-from .layout_analyzer import LayoutAnalyzer, Block
 
 __all__ = ["MarkdownConverter", "LayoutAnalyzer", "Block"]
 

@@ -19,6 +19,7 @@ else:
 from .base import BaseVectorStore, VectorSearchResult
 from .search import AdvancedSearchMixin
 
+
 class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
     """
     LanceDB vector store - 오픈소스, 임베디드, 매우 빠름 (2024-2025)

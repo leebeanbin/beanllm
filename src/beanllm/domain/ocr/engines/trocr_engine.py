@@ -69,8 +69,8 @@ class TrOCREngine(BaseOCREngine):
             ImportError: transformers 또는 torch가 설치되지 않은 경우
         """
         try:
-            import transformers  # noqa: F401
             import torch  # noqa: F401
+            import transformers  # noqa: F401
         except ImportError:
             raise ImportError(
                 "transformers and torch are required for TrOCREngine. "
@@ -87,8 +87,8 @@ class TrOCREngine(BaseOCREngine):
         if self._model is not None:
             return
 
-        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
         import torch
+        from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
         logger.info("Initializing TrOCR model (handwritten)")
 
@@ -134,8 +134,8 @@ class TrOCREngine(BaseOCREngine):
             TrOCR은 이미지 전체를 하나의 텍스트로 인식합니다.
             여러 라인 인식은 이미지를 라인별로 분할한 후 개별 호출이 필요합니다.
         """
-        from PIL import Image
         import torch
+        from PIL import Image
 
         # 모델 초기화 (lazy loading)
         self._init_model(config.use_gpu)

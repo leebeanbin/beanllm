@@ -10,8 +10,8 @@ Features:
 - 헤더/푸터 제거
 """
 
-from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 try:
     from beanllm.utils.logger import get_logger

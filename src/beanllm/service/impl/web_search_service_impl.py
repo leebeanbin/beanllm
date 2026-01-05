@@ -20,6 +20,7 @@ from beanllm.domain.web_search import (
 from beanllm.dto.request.web_search_request import WebSearchRequest
 from beanllm.dto.response.web_search_response import WebSearchResponse
 from beanllm.utils.logger import get_logger
+
 from ..web_search_service import IWebSearchService
 
 if TYPE_CHECKING:

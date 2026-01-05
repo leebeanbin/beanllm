@@ -146,7 +146,7 @@ class SAMWrapper(BaseVisionTaskModel):
                 self._predictor = SAM2ImagePredictor(self._model)
             else:
                 # SAM (원본)
-                from segment_anything import sam_model_registry, SamPredictor
+                from segment_anything import SamPredictor, sam_model_registry
 
                 checkpoint = self._get_sam_checkpoint()
                 self._model = sam_model_registry[self.model_type](checkpoint=checkpoint)
