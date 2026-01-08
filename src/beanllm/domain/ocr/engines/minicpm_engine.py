@@ -152,7 +152,7 @@ class MiniCPMEngine(BaseOCREngine):
                 msgs=msgs,
                 tokenizer=self._tokenizer,
                 sampling=False,  # Deterministic
-                max_new_tokens=1024,
+                max_new_tokens=config.max_new_tokens,
             )
 
         # 결과 변환

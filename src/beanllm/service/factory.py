@@ -18,7 +18,11 @@ from .chain_service import IChainService
 from .chat_service import IChatService
 from .evaluation_service import IEvaluationService
 from .graph_service import IGraphService
+from .knowledge_graph_service import IKnowledgeGraphService
 from .multi_agent_service import IMultiAgentService
+from .optimizer_service import IOptimizerService
+from .orchestrator_service import IOrchestratorService
+from .rag_debug_service import IRAGDebugService
 from .rag_service import IRAGService
 from .state_graph_service import IStateGraphService
 from .vision_rag_service import IVisionRAGService
@@ -340,6 +344,76 @@ class ServiceFactory:
 
         return EvaluationServiceImpl(client=client, embedding_model=embedding_model)
 
+    def create_finetuning_service(self) -> Any:
+        """
+        Fine-tuning 서비스 생성 (의존성 주입)
+
+        Returns:
+            IFineTuningService: Fine-tuning 서비스 인스턴스
+        """
+        # TODO: Implement Fine-tuning service
+        raise NotImplementedError("Fine-tuning service not yet implemented")
+
+    def create_rag_debug_service(self) -> IRAGDebugService:
+        """
+        RAG Debug 서비스 생성 (의존성 주입)
+
+        Returns:
+            IRAGDebugService: RAG Debug 서비스 인스턴스
+
+        책임:
+            - 의존성 주입만
+            - 비즈니스 로직 없음
+        """
+        from .impl.rag_debug_service_impl import RAGDebugServiceImpl
+
+        return RAGDebugServiceImpl()
+
+    def create_orchestrator_service(self) -> IOrchestratorService:
+        """
+        Orchestrator 서비스 생성 (의존성 주입)
+
+        Returns:
+            IOrchestratorService: Orchestrator 서비스 인스턴스
+
+        책임:
+            - 의존성 주입만
+            - 비즈니스 로직 없음
+        """
+        from .impl.orchestrator_service_impl import OrchestratorServiceImpl
+
+        return OrchestratorServiceImpl()
+
+    def create_optimizer_service(self) -> IOptimizerService:
+        """
+        Optimizer 서비스 생성 (의존성 주입)
+
+        Returns:
+            IOptimizerService: Optimizer 서비스 인스턴스
+
+        책임:
+            - 의존성 주입만
+            - 비즈니스 로직 없음
+        """
+        from .impl.optimizer_service_impl import OptimizerServiceImpl
+
+        return OptimizerServiceImpl()
+
+    def create_knowledge_graph_service(self) -> IKnowledgeGraphService:
+        """
+        Knowledge Graph 서비스 생성 (의존성 주입)
+
+        Returns:
+            IKnowledgeGraphService: Knowledge Graph 서비스 인스턴스
+
+        책임:
+            - 의존성 주입만
+            - 비즈니스 로직 없음
+        """
+        from .impl.knowledge_graph_service_impl import KnowledgeGraphServiceImpl
+
+        return KnowledgeGraphServiceImpl()
+
     def create_all_services(self) -> Dict[str, Any]:
         """
         모든 서비스 생성 (의존성 주입)
@@ -362,6 +436,12 @@ class ServiceFactory:
         evaluation_service = self.create_evaluation_service()
         finetuning_service = self.create_finetuning_service()
 
+        # Advanced features (v1.0.0+)
+        rag_debug_service = self.create_rag_debug_service()
+        orchestrator_service = self.create_orchestrator_service()
+        optimizer_service = self.create_optimizer_service()
+        knowledge_graph_service = self.create_knowledge_graph_service()
+
         return {
             "chat": chat_service,
             "rag": rag_service,
@@ -373,4 +453,8 @@ class ServiceFactory:
             "web_search": web_search_service,
             "evaluation": evaluation_service,
             "finetuning": finetuning_service,
+            "rag_debug": rag_debug_service,
+            "orchestrator": orchestrator_service,
+            "optimizer": optimizer_service,
+            "knowledge_graph": knowledge_graph_service,
         }

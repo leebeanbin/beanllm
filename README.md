@@ -33,7 +33,11 @@
 
 ### 🎯 **Core Features**
 - 🔄 **Unified Interface** - Single API for 7 LLM providers (OpenAI, Claude, Gemini, DeepSeek, Perplexity, Ollama)
-- 🎛️ **Intelligent Adaptation** - Automatic parameter conversion between providers
+- 🎛️ **Intelligent Parameter Adaptation** - Automatic parameter conversion between providers
+  - ✅ **Provider-specific mapping**: `max_tokens` → `max_output_tokens` (Google), `num_predict` (Ollama)
+  - ✅ **Model-specific handling**: GPT-5 series uses `max_completion_tokens`
+  - ✅ **Parameter validation**: Model capability checking (temperature, max_tokens support)
+  - ✅ **All providers verified**: OpenAI, Anthropic, Google, DeepSeek, Perplexity, Ollama
 - 📊 **Model Registry** - Auto-detect available models from API keys
 - 🔍 **CLI Tools** - Inspect models and capabilities from command line
 - 💰 **Cost Tracking** - Accurate token counting and cost estimation
@@ -49,13 +53,17 @@
 - 🗄️ **Vector Search** - Chroma, FAISS, Pinecone, Qdrant, Weaviate, Milvus, LanceDB, pgvector
 - 🎯 **RAG Pipeline** - Complete question-answering system in one line
 - 📊 **RAG Evaluation** - TruLens integration, context recall metrics
+- 📝 **OCR Engines** - 10 OCR engines (PaddleOCR, EasyOCR, Qwen2.5-VL, MiniCPM-o, DeepSeek-OCR, etc.)
+  - ✅ **Parameter support**: Language, confidence threshold, preprocessing (denoise, contrast), LLM postprocessing
 
 ### 🧠 **Embeddings**
-- 📝 **Text Embeddings** - OpenAI, Gemini, Voyage, Jina, Mistral, Cohere, HuggingFace, Ollama
+- 📝 **Text Embeddings** - 11 providers (OpenAI, Gemini, Voyage, Jina, Mistral, Cohere, HuggingFace, Ollama, NVEmbed, Qwen3, Code)
 - 🌏 **Multilingual** - Qwen3-Embedding-8B (top multilingual model)
 - 💻 **Code Embeddings** - Specialized embeddings for code search
 - 🖼️ **Vision Embeddings** - CLIP, SigLIP, MobileCLIP for image-text matching
 - 🎨 **Advanced Features** - Matryoshka (dimension reduction), MMR search, hard negative mining
+- ✅ **Parameter support**: Dimensions (OpenAI), task_type (Gemini), normalize, batch_size, use_fp16 (local models)
+- ✅ **Parameter support**: Dimensions (OpenAI), task_type (Gemini), normalize, batch_size, use_fp16 (local models)
 
 ### 👁️ **Vision AI**
 - ✂️ **Segmentation** - SAM 3 (zero-shot segmentation)
@@ -63,12 +71,15 @@
 - 🤖 **Vision-Language** - Qwen3-VL (VQA, OCR, captioning, 128K context)
 - 🖼️ **Image Understanding** - Florence-2 (detection, captioning, VQA)
 - 🔍 **Vision RAG** - Image-based question answering with CLIP embeddings
+- ✅ **Parameter support**: Model size, device, task-specific parameters (conf, iou, points, boxes)
+- ✅ **Parameter support**: Model size, device, task-specific parameters (conf, iou, points, boxes)
 
 ### 🎙️ **Audio Processing**
 - 🎤 **Speech-to-Text** - 8 STT engines with multilingual support
   - ⚡ **SenseVoice-Small**: 15x faster than Whisper-Large, emotion recognition, 한국어 지원
   - 🏢 **Granite Speech 8B**: Open ASR Leaderboard #2 (WER 5.85%), enterprise-grade
   - 🔥 Whisper V3 Turbo, Distil-Whisper, Parakeet TDT, Canary, Moonshine
+  - ✅ **Parameter support**: Language, task (transcribe/translate), timestamp, beam_size, temperature
 - 🔊 **Text-to-Speech** - Multi-provider TTS (OpenAI, Azure, Google)
 - 🎧 **Audio RAG** - Search and QA across audio files
 

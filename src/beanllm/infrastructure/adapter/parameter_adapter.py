@@ -59,6 +59,19 @@ class ParameterAdapter:
             "top_p": "top_p",
             "stream": "stream",
         },
+        # OpenAI 호환 API (동일한 파라미터 사용)
+        "deepseek": {
+            "max_tokens": "max_tokens",
+            "temperature": "temperature",
+            "top_p": "top_p",
+            "stream": "stream",
+        },
+        "perplexity": {
+            "max_tokens": "max_tokens",
+            "temperature": "temperature",
+            "top_p": "top_p",
+            "stream": "stream",
+        },
     }
 
     def __init__(self):
@@ -113,7 +126,8 @@ class ParameterAdapter:
             adapted[mapped_key] = converted_value
 
         # 3. 특수 처리 (GPT-5 시리즈)
-        if provider == "openai" and model_config:
+        normalized_provider = self._normalize_provider_name(provider)
+        if normalized_provider == "openai" and model_config:
             if model_config.get("uses_max_completion_tokens"):
                 # max_tokens → max_completion_tokens
                 if "max_tokens" in adapted:
@@ -141,11 +155,46 @@ class ParameterAdapter:
 
     def _map_parameter_name(self, provider: str, param_name: str) -> Optional[str]:
         """파라미터 이름 매핑"""
-        provider_mapping = self.PARAM_MAPPING.get(provider)
+        # Provider 이름 정규화 (클래스 이름 → 소문자)
+        # 예: "DeepSeekProvider" → "deepseek", "PerplexityProvider" → "perplexity"
+        normalized_provider = self._normalize_provider_name(provider)
+        
+        provider_mapping = self.PARAM_MAPPING.get(normalized_provider)
         if not provider_mapping:
             return param_name  # 알 수 없는 provider
 
         return provider_mapping.get(param_name, param_name)
+    
+    def _normalize_provider_name(self, provider: str) -> str:
+        """
+        Provider 이름 정규화
+        
+        클래스 이름을 소문자 provider 이름으로 변환:
+        - "DeepSeekProvider" → "deepseek"
+        - "PerplexityProvider" → "perplexity"
+        - "OpenAIProvider" → "openai"
+        - "GeminiProvider" → "google"
+        - "ClaudeProvider" → "anthropic"
+        - "OllamaProvider" → "ollama"
+        """
+        provider_lower = provider.lower()
+        
+        # Provider 클래스 이름 매핑
+        if "deepseek" in provider_lower:
+            return "deepseek"
+        elif "perplexity" in provider_lower:
+            return "perplexity"
+        elif "openai" in provider_lower:
+            return "openai"
+        elif "gemini" in provider_lower or "google" in provider_lower:
+            return "google"
+        elif "claude" in provider_lower or "anthropic" in provider_lower:
+            return "anthropic"
+        elif "ollama" in provider_lower:
+            return "ollama"
+        
+        # 이미 정규화된 이름이면 그대로 반환
+        return provider_lower
 
     def _is_parameter_supported(
         self, model_config: Optional[Dict], param_name: str, model: str

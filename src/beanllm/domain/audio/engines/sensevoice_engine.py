@@ -162,11 +162,14 @@ class SenseVoiceEngine(BaseSTTEngine):
 
         # 전사 실행
         # SenseVoice는 자동으로 ASR + LID + SER + AED 수행
+        # batch_size_s는 config.batch_size를 초 단위로 변환 (기본값 60초)
+        batch_size_s = config.batch_size if config.batch_size > 0 else 60
+        
         result = self._model.generate(
             input=audio_path,
             language=language,
             use_itn=True,  # Inverse Text Normalization (숫자, 날짜 등 정규화)
-            batch_size_s=60,  # 배치 크기 (초 단위)
+            batch_size_s=batch_size_s,
         )
 
         processing_time = time.time() - start_time
