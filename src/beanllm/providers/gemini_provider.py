@@ -48,6 +48,7 @@ class GeminiProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> AsyncGenerator[str, None]:
         """
         스트리밍 채팅 (최신 SDK: aio.models.generate_content_stream 사용, 재시도 로직 포함)
@@ -64,10 +65,17 @@ class GeminiProvider(BaseLLMProvider):
                 elif msg["role"] == "assistant":
                     contents.append(f"Assistant: {msg['content']}")
 
+            # ParameterAdapter가 max_tokens를 max_output_tokens로 변환함
+            # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            max_output_tokens = kwargs.get("max_output_tokens", max_tokens)
+            temperature_param = kwargs.get("temperature", temperature)
+
             # 최신 SDK: aio.models.generate_content_stream 사용
             async for chunk in await self.client.aio.models.generate_content_stream(
                 model=model or self.default_model,
                 contents=contents,
+                max_output_tokens=max_output_tokens,
+                temperature=temperature_param,
             ):
                 if hasattr(chunk, "text") and chunk.text:
                     yield chunk.text
@@ -83,6 +91,7 @@ class GeminiProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
         try:
@@ -96,9 +105,16 @@ class GeminiProvider(BaseLLMProvider):
                 elif msg["role"] == "assistant":
                     contents.append(f"Assistant: {msg['content']}")
 
+            # ParameterAdapter가 max_tokens를 max_output_tokens로 변환함
+            # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            max_output_tokens = kwargs.get("max_output_tokens", max_tokens)
+            temperature_param = kwargs.get("temperature", temperature)
+
             response = await self.client.aio.models.generate_content(
                 model=model or self.default_model,
                 contents=contents,
+                max_output_tokens=max_output_tokens,
+                temperature=temperature_param,
             )
 
             return LLMResponse(

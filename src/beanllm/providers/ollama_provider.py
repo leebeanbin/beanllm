@@ -51,19 +51,25 @@ class OllamaProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> AsyncGenerator[str, None]:
         """
         스트리밍 채팅 (최신 SDK: AsyncClient.chat() 사용)
         """
         try:
+            # ParameterAdapter가 max_tokens를 num_predict로 변환함
+            # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            num_predict = kwargs.get("num_predict", max_tokens)
+            temperature_param = kwargs.get("temperature", temperature)
+
             # 최신 SDK: client.chat() 사용
             stream = await self.client.chat(
                 model=model or self.default_model,
                 messages=messages,
                 system=system,
                 options={
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
+                    "temperature": temperature_param,
+                    "num_predict": num_predict,
                 },
                 stream=True,
             )
@@ -86,16 +92,22 @@ class OllamaProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
         try:
+            # ParameterAdapter가 max_tokens를 num_predict로 변환함
+            # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            num_predict = kwargs.get("num_predict", max_tokens)
+            temperature_param = kwargs.get("temperature", temperature)
+
             response = await self.client.chat(
                 model=model or self.default_model,
                 messages=messages,
                 system=system,
                 options={
-                    "temperature": temperature,
-                    "num_predict": max_tokens,
+                    "temperature": temperature_param,
+                    "num_predict": num_predict,
                 },
                 stream=False,
             )

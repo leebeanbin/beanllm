@@ -166,11 +166,11 @@ class GraniteEngine(BaseSTTEngine):
             "language": supported_languages.get(language, "english"),
         }
 
-        # 전사 실행 (timestamp 지원)
+        # 전사 실행 (timestamp는 config에 따라 결정)
         result = self._pipeline(
             audio_path,
             generate_kwargs=generate_kwargs,
-            return_timestamps=True,
+            return_timestamps=config.timestamp,
         )
 
         processing_time = time.time() - start_time

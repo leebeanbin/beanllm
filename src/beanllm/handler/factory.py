@@ -17,7 +17,11 @@ from .audio_handler import AudioHandler
 from .chain_handler import ChainHandler
 from .chat_handler import ChatHandler
 from .graph_handler import GraphHandler
+from .knowledge_graph_handler import KnowledgeGraphHandler
 from .multi_agent_handler import MultiAgentHandler
+from .optimizer_handler import OptimizerHandler
+from .orchestrator_handler import OrchestratorHandler
+from .rag_debug_handler import RAGDebugHandler
 from .rag_handler import RAGHandler
 from .state_graph_handler import StateGraphHandler
 from .vision_rag_handler import VisionRAGHandler
@@ -174,6 +178,46 @@ class HandlerFactory:
         """
         return AudioHandler(audio_service)
 
+    def create_rag_debug_handler(self) -> RAGDebugHandler:
+        """
+        RAG Debug Handler 생성 (의존성 주입)
+
+        Returns:
+            RAGDebugHandler: RAG Debug Handler 인스턴스
+        """
+        rag_debug_service = self._service_factory.create_rag_debug_service()
+        return RAGDebugHandler(rag_debug_service)
+
+    def create_orchestrator_handler(self) -> OrchestratorHandler:
+        """
+        Orchestrator Handler 생성 (의존성 주입)
+
+        Returns:
+            OrchestratorHandler: Orchestrator Handler 인스턴스
+        """
+        orchestrator_service = self._service_factory.create_orchestrator_service()
+        return OrchestratorHandler(orchestrator_service)
+
+    def create_optimizer_handler(self) -> OptimizerHandler:
+        """
+        Optimizer Handler 생성 (의존성 주입)
+
+        Returns:
+            OptimizerHandler: Optimizer Handler 인스턴스
+        """
+        optimizer_service = self._service_factory.create_optimizer_service()
+        return OptimizerHandler(optimizer_service)
+
+    def create_knowledge_graph_handler(self) -> KnowledgeGraphHandler:
+        """
+        Knowledge Graph Handler 생성 (의존성 주입)
+
+        Returns:
+            KnowledgeGraphHandler: Knowledge Graph Handler 인스턴스
+        """
+        knowledge_graph_service = self._service_factory.create_knowledge_graph_service()
+        return KnowledgeGraphHandler(knowledge_graph_service)
+
     def create_all_handlers(self) -> Dict[str, Any]:
         """
         모든 Handler 생성 (의존성 주입)
@@ -192,4 +236,8 @@ class HandlerFactory:
             "web_search": self.create_web_search_handler(),
             "evaluation": self.create_evaluation_handler(),
             "finetuning": self.create_finetuning_handler(),
+            "rag_debug": self.create_rag_debug_handler(),
+            "orchestrator": self.create_orchestrator_handler(),
+            "optimizer": self.create_optimizer_handler(),
+            "knowledge_graph": self.create_knowledge_graph_handler(),
         }

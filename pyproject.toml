@@ -93,6 +93,28 @@ evaluation = [
     "apscheduler>=3.10.0,<4.0.0",
 ]
 
+# Advanced features (v1.0.0+)
+advanced = [
+    "umap-learn>=0.5.0,<1.0.0",  # Embedding visualization
+    "hdbscan>=0.8.0,<1.0.0",  # Clustering
+    "scikit-learn>=1.0.0,<2.0.0",  # ML utilities
+    "networkx>=3.0.0,<4.0.0",  # Knowledge graphs
+    "bayesian-optimization>=1.4.0,<2.0.0",  # Parameter optimization
+    "prompt-toolkit>=3.0.0,<4.0.0",  # REPL shell
+]
+
+# Optional persistence for knowledge graphs
+neo4j = [
+    "neo4j>=5.0.0,<6.0.0",
+]
+
+# Web playground backend
+web = [
+    "fastapi>=0.100.0,<1.0.0",
+    "uvicorn>=0.23.0,<1.0.0",
+    "websockets>=11.0.0,<13.0.0",
+]
+
 # 개발 도구
 dev = [
     "pytest>=9.0.2,<10.0.0",  # 필수 의존성에서 이동됨

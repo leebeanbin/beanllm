@@ -16,6 +16,9 @@ from .chain_facade import (
     create_chain,
 )
 from .client_facade import Client
+from .optimizer_facade import Optimizer
+from .orchestrator_facade import Orchestrator
+from .rag_debug_facade import RAGDebug
 from .rag_facade import RAG, RAGBuilder, RAGChain, create_rag
 
 __all__ = [
@@ -32,4 +35,8 @@ __all__ = [
     "PromptChain",
     "SequentialChain",
     "create_chain",
+    # Advanced features (Phase 2+)
+    "RAGDebug",
+    "Orchestrator",
+    "Optimizer",
 ]
