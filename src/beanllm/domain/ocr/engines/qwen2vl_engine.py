@@ -178,7 +178,7 @@ class Qwen2VLEngine(BaseOCREngine):
         with torch.no_grad():
             generated_ids = self._model.generate(
                 **inputs,
-                max_new_tokens=1024,
+                max_new_tokens=config.max_new_tokens,
                 do_sample=False,
             )
 

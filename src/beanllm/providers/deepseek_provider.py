@@ -71,6 +71,7 @@ class DeepSeekProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> AsyncGenerator[str, None]:
         """스트리밍 채팅 (OpenAI 호환 API)"""
         try:
@@ -78,15 +79,19 @@ class DeepSeekProvider(BaseLLMProvider):
             if system:
                 openai_messages.insert(0, {"role": "system", "content": system})
 
+            # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            temperature_param = kwargs.get("temperature", temperature)
+            max_tokens_param = kwargs.get("max_tokens", max_tokens)
+
             request_params = {
                 "model": model or self.default_model,
                 "messages": openai_messages,
                 "stream": True,
-                "temperature": temperature,
+                "temperature": temperature_param,
             }
 
-            if max_tokens is not None:
-                request_params["max_tokens"] = max_tokens
+            if max_tokens_param is not None:
+                request_params["max_tokens"] = max_tokens_param
 
             response = await self.client.chat.completions.create(**request_params)
 
@@ -109,6 +114,7 @@ class DeepSeekProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
+        **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍)"""
         try:
@@ -116,15 +122,19 @@ class DeepSeekProvider(BaseLLMProvider):
             if system:
                 openai_messages.insert(0, {"role": "system", "content": system})
 
+            # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
+            temperature_param = kwargs.get("temperature", temperature)
+            max_tokens_param = kwargs.get("max_tokens", max_tokens)
+
             request_params = {
                 "model": model or self.default_model,
                 "messages": openai_messages,
                 "stream": False,
-                "temperature": temperature,
+                "temperature": temperature_param,
             }
 
-            if max_tokens is not None:
-                request_params["max_tokens"] = max_tokens
+            if max_tokens_param is not None:
+                request_params["max_tokens"] = max_tokens_param
 
             response = await self.client.chat.completions.create(**request_params)
 

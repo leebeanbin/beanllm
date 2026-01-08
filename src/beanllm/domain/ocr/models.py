@@ -363,6 +363,7 @@ class OCRConfig:
     # 고급 옵션
     batch_size: int = 1
     max_image_size: Optional[int] = None  # 최대 이미지 크기 (픽셀)
+    max_new_tokens: int = 1024  # VLM 엔진용 최대 생성 토큰 수
     output_format: str = "text"  # text, json, markdown
 
     def __post_init__(self):
