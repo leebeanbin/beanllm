@@ -19,9 +19,9 @@ from rich.progress import (
 from rich.table import Table
 from rich.tree import Tree
 
-from beanllm.facade.optimizer_facade import Optimizer
+from beanllm.facade.advanced.optimizer_facade import Optimizer
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

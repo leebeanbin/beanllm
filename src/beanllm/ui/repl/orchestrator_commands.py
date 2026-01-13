@@ -28,10 +28,10 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 
-from beanllm.facade.orchestrator_facade import Orchestrator
+from beanllm.facade.advanced.orchestrator_facade import Orchestrator
 from beanllm.ui.components import Badge, Divider, OutputBlock, StatusIcon
 from beanllm.ui.console import get_console
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

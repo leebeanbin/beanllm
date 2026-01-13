@@ -18,10 +18,10 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 from rich.text import Text
 
-from beanllm.facade.rag_debug_facade import RAGDebug
+from beanllm.facade.advanced.rag_debug_facade import RAGDebug
 from beanllm.ui.components import Badge, Divider, OutputBlock, StatusIcon
 from beanllm.ui.console import get_console
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
