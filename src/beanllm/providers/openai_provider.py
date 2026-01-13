@@ -18,10 +18,11 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logger import get_logger
-from beanllm.utils.retry import retry
+from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.retry import retry
 
 from .base_provider import BaseLLMProvider, LLMResponse
 
@@ -33,6 +34,7 @@ class OpenAIProvider(BaseLLMProvider):
 
     # 모델 파라미터 캐시 (클래스 변수) - O(1) 조회 최적화
     MODEL_PARAMETER_CACHE = {
+        # GPT-4o Series
         "gpt-4o": {
             "supports_temperature": True,
             "supports_max_tokens": True,
@@ -43,6 +45,7 @@ class OpenAIProvider(BaseLLMProvider):
             "supports_max_tokens": True,
             "uses_max_completion_tokens": False,
         },
+        # GPT-4 Series
         "gpt-4-turbo": {
             "supports_temperature": True,
             "supports_max_tokens": True,
@@ -58,20 +61,80 @@ class OpenAIProvider(BaseLLMProvider):
             "supports_max_tokens": True,
             "uses_max_completion_tokens": False,
         },
+        # GPT-3.5 Series
         "gpt-3.5-turbo": {
             "supports_temperature": True,
             "supports_max_tokens": True,
             "uses_max_completion_tokens": False,
         },
-        "gpt-5": {
+        # GPT-4.1 Series (2025)
+        "gpt-4.1": {
             "supports_temperature": True,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "gpt-4.1-mini": {
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "gpt-4.1-nano": {
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        # GPT-4.5 Series (2025)
+        "gpt-4.5": {
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "gpt-4.5-mini": {
+            "supports_temperature": True,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        # GPT-5 Series (2025) - Reasoning models
+        "gpt-5": {
+            "supports_temperature": False,  # Reasoning model
             "supports_max_tokens": False,
             "uses_max_completion_tokens": True,
         },
-        "gpt-4.1": {
-            "supports_temperature": True,
+        "gpt-5.1": {
+            "supports_temperature": False,
             "supports_max_tokens": False,
             "uses_max_completion_tokens": True,
+        },
+        "gpt-5.2": {
+            "supports_temperature": False,
+            "supports_max_tokens": False,
+            "uses_max_completion_tokens": True,
+        },
+        # O Series - Reasoning models
+        "o1": {
+            "supports_temperature": False,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "o1-mini": {
+            "supports_temperature": False,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "o1-preview": {
+            "supports_temperature": False,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "o3-mini": {
+            "supports_temperature": False,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
+        },
+        "o4-mini": {
+            "supports_temperature": False,
+            "supports_max_tokens": True,
+            "uses_max_completion_tokens": False,
         },
     }
 
@@ -110,6 +173,9 @@ class OpenAIProvider(BaseLLMProvider):
         스트리밍 채팅 (최신 SDK: AsyncOpenAI 사용)
         temperature 기본값: 0.0 (사용자 요청)
         """
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"openai:{model or self.default_model}", cost=1.0)
+        
         try:
             openai_messages = messages.copy()
             if system:
@@ -189,7 +255,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         # 3. ModelConfig에서 확인 (선택적 의존성)
         try:
-            from ..models.model_config import ModelConfigManager
+            from ..infrastructure.models.model_config import ModelConfigManager
 
             config = ModelConfigManager.get_model_config(model)
             if config:
@@ -227,7 +293,12 @@ class OpenAIProvider(BaseLLMProvider):
 
         return config
 
-    @retry(max_attempts=3, exceptions=(APITimeoutError, APIError, Exception))
+    @retry(max_retries=3, retry_on=(APITimeoutError, APIError, Exception))
+    @provider_error_handler(
+        operation="chat",
+        api_error_types=(APITimeoutError, APIError),
+        custom_error_message="OpenAI API error",
+    )
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -240,6 +311,9 @@ class OpenAIProvider(BaseLLMProvider):
         일반 채팅 (비스트리밍, 최신 SDK 사용, 재시도 로직 포함)
         temperature 기본값: 0.0 (사용자 요청)
         """
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"openai:{model or self.default_model}", cost=1.0)
+
         try:
             openai_messages = messages.copy()
             if system:

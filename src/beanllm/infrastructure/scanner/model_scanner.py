@@ -8,7 +8,7 @@ from .types import ScannedModel
 
 try:
     from beanllm.utils.config import EnvConfig
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

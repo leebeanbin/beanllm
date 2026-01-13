@@ -6,8 +6,10 @@ beanllm.utils.resilience.retry - Retry Logic
 - 다양한 재시도 전략 (고정, 선형, 지수, 지터)
 - 커스터마이징 가능한 재시도 조건
 - 데코레이터 지원
+- Async/Sync 함수 모두 지원
 """
 
+import asyncio
 import time
 from dataclasses import dataclass
 from enum import Enum
@@ -15,6 +17,9 @@ from functools import wraps
 from typing import Any, Callable, Optional
 
 from ..exceptions import MaxRetriesExceededError
+from ..logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class RetryStrategy(Enum):
@@ -86,9 +91,52 @@ class RetryHandler:
 
         return True
 
+    async def execute_async(self, func: Callable, *args, **kwargs) -> Any:
+        """
+        재시도 로직으로 async 함수 실행
+
+        Args:
+            func: 실행할 async 함수
+            *args, **kwargs: 함수 인자
+
+        Returns:
+            함수 실행 결과
+
+        Raises:
+            MaxRetriesExceededError: 최대 재시도 횟수 초과
+        """
+        last_exception = None
+
+        for attempt in range(1, self.config.max_retries + 1):
+            try:
+                return await func(*args, **kwargs)
+
+            except Exception as e:
+                last_exception = e
+
+                if not self._should_retry(e):
+                    raise
+
+                if attempt >= self.config.max_retries:
+                    logger.error(f"Failed after {self.config.max_retries} attempts: {func.__name__}")
+                    raise MaxRetriesExceededError(
+                        f"Max retries ({self.config.max_retries}) exceeded. Last error: {str(e)}"
+                    ) from e
+
+                # 재시도 전 대기
+                delay = self._calculate_delay(attempt)
+                logger.warning(
+                    f"Attempt {attempt}/{self.config.max_retries} failed for {func.__name__}: {e}. "
+                    f"Retrying in {delay:.2f}s..."
+                )
+                await asyncio.sleep(delay)
+
+        # Should not reach here
+        raise last_exception
+
     def execute(self, func: Callable, *args, **kwargs) -> Any:
         """
-        재시도 로직으로 함수 실행
+        재시도 로직으로 함수 실행 (sync)
 
         Args:
             func: 실행할 함수
@@ -113,12 +161,17 @@ class RetryHandler:
                     raise
 
                 if attempt >= self.config.max_retries:
+                    logger.error(f"Failed after {self.config.max_retries} attempts: {func.__name__}")
                     raise MaxRetriesExceededError(
                         f"Max retries ({self.config.max_retries}) exceeded. Last error: {str(e)}"
                     ) from e
 
                 # 재시도 전 대기
                 delay = self._calculate_delay(attempt)
+                logger.warning(
+                    f"Attempt {attempt}/{self.config.max_retries} failed for {func.__name__}: {e}. "
+                    f"Retrying in {delay:.2f}s..."
+                )
                 time.sleep(delay)
 
         # Should not reach here
@@ -132,26 +185,36 @@ def retry(
     retry_on: tuple = (Exception,),
 ):
     """
-    재시도 데코레이터
+    재시도 데코레이터 (Async/Sync 모두 지원)
 
     Example:
         @retry(max_retries=5, strategy=RetryStrategy.EXPONENTIAL)
         def api_call():
             ...
+
+        @retry(max_retries=5, strategy=RetryStrategy.EXPONENTIAL)
+        async def async_api_call():
+            ...
     """
 
     def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            config = RetryConfig(
-                max_retries=max_retries,
-                initial_delay=initial_delay,
-                strategy=strategy,
-                retry_on_exceptions=retry_on,
-            )
-            handler = RetryHandler(config)
-            return handler.execute(func, *args, **kwargs)
+        config = RetryConfig(
+            max_retries=max_retries,
+            initial_delay=initial_delay,
+            strategy=strategy,
+            retry_on_exceptions=retry_on,
+        )
+        handler = RetryHandler(config)
 
-        return wrapper
+        if asyncio.iscoroutinefunction(func):
+            @wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                return await handler.execute_async(func, *args, **kwargs)
+            return async_wrapper
+        else:
+            @wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                return handler.execute(func, *args, **kwargs)
+            return sync_wrapper
 
     return decorator

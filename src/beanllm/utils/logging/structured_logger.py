@@ -10,6 +10,8 @@ from contextlib import contextmanager
 from enum import Enum
 from typing import Any, Dict, Iterator, Optional
 
+# Use standard logging, not our custom logger to avoid circular import
+
 
 class LogLevel(str, Enum):
     """Log level enumeration"""

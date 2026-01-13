@@ -10,7 +10,7 @@ from .types import HybridModelInfo
 
 try:
     from beanllm.infrastructure.models import MODELS
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 
     from ..inferrer import MetadataInferrer
 except ImportError:
@@ -48,6 +48,8 @@ class HybridModelManager:
             "anthropic": {},
             "google": {},
             "ollama": {},
+            "deepseek": {},
+            "perplexity": {},
         }
         self._loaded = False
 

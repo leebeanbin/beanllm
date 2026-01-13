@@ -8,12 +8,13 @@ SOLID 원칙:
 """
 
 import threading
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
-from ..facade.client_facade import SourceProviderFactoryAdapter
-from ..handler.factory import HandlerFactory
-from ..providers.provider_factory import ProviderFactory as SourceProviderFactory
-from ..service.factory import ServiceFactory
+if TYPE_CHECKING:
+    from ...facade.core.client_facade import SourceProviderFactoryAdapter
+    from ...handler.factory import HandlerFactory
+    from ...providers.provider_factory import ProviderFactory as SourceProviderFactory
+    from ...service.factory import ServiceFactory
 
 
 class DIContainer:
@@ -48,9 +49,9 @@ class DIContainer:
             return
 
         self._provider_factory: Optional[Any] = None
-        self._service_factory: Optional[ServiceFactory] = None
-        self._handler_factory: Optional[HandlerFactory] = None
-        self._service_factories: Dict[str, ServiceFactory] = {}  # 커스텀 ServiceFactory 캐시
+        self._service_factory: Optional[Any] = None
+        self._handler_factory: Optional[Any] = None
+        self._service_factories: Dict[str, Any] = {}  # 커스텀 ServiceFactory 캐시
         self._initialized = True
 
     @property
@@ -62,10 +63,13 @@ class DIContainer:
             SourceProviderFactoryAdapter 인스턴스
         """
         if self._provider_factory is None:
+            from ...facade.core.client_facade import SourceProviderFactoryAdapter
+            from ...providers.provider_factory import ProviderFactory as SourceProviderFactory
+
             self._provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
         return self._provider_factory
 
-    def get_service_factory(self, **kwargs) -> ServiceFactory:
+    def get_service_factory(self, **kwargs) -> "ServiceFactory":
         """
         Service Factory 가져오기 (캐싱 지원)
 
@@ -79,6 +83,8 @@ class DIContainer:
         Returns:
             ServiceFactory 인스턴스
         """
+        from ...service.factory import ServiceFactory
+
         # 캐시 키 생성 (kwargs 기반)
         cache_key = self._get_cache_key(**kwargs)
 
@@ -93,7 +99,7 @@ class DIContainer:
         return self._service_factories[cache_key]
 
     @property
-    def service_factory(self) -> ServiceFactory:
+    def service_factory(self) -> "ServiceFactory":
         """
         기본 Service Factory (싱글톤)
 
@@ -105,7 +111,7 @@ class DIContainer:
         return self._service_factory
 
     @property
-    def handler_factory(self) -> HandlerFactory:
+    def handler_factory(self) -> "HandlerFactory":
         """
         Handler Factory (싱글톤)
 
@@ -113,12 +119,14 @@ class DIContainer:
             HandlerFactory 인스턴스
         """
         if self._handler_factory is None:
+            from ...handler.factory import HandlerFactory
+
             self._handler_factory = HandlerFactory(self.service_factory)
         return self._handler_factory
 
     def get_handler_factory(
-        self, service_factory: Optional[ServiceFactory] = None
-    ) -> HandlerFactory:
+        self, service_factory: Optional["ServiceFactory"] = None
+    ) -> "HandlerFactory":
         """
         Handler Factory 가져오기 (커스텀 ServiceFactory 지원)
 
@@ -132,6 +140,8 @@ class DIContainer:
             return self.handler_factory
 
         # 커스텀 ServiceFactory를 사용하는 경우 새 HandlerFactory 생성
+        from ...handler.factory import HandlerFactory
+
         return HandlerFactory(service_factory)
 
     def _get_cache_key(self, **kwargs) -> str:

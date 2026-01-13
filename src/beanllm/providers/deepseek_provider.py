@@ -23,10 +23,11 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logger import get_logger
-from beanllm.utils.retry import retry
+from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.retry import retry
 
 from .base_provider import BaseLLMProvider, LLMResponse
 
@@ -60,10 +61,23 @@ class DeepSeekProvider(BaseLLMProvider):
 
         # 모델 목록
         self._available_models = [
-            "deepseek-chat",  # 일반 대화
-            "deepseek-reasoner",  # 사고 모드 (복잡한 추론)
+            # Core Models
+            "deepseek-chat",                # 일반 대화
+            "deepseek-reasoner",            # 사고 모드 (복잡한 추론)
+            # V3 Series (2025)
+            "deepseek-v3-0324",             # V3 (2025.03.24)
+            "deepseek-v3-1",                # V3.1
+            "deepseek-v3-2",                # V3.2
+            # R1 Series (2025) - Reasoning models
+            "deepseek-r1",                  # R1 Reasoning
+            "deepseek-r1-0528",             # R1 (2025.05.28)
         ]
 
+    @provider_error_handler(
+        operation="stream_chat",
+        api_error_types=(APIError, APITimeoutError),
+        custom_error_message="DeepSeek API error",
+    )
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
@@ -74,6 +88,9 @@ class DeepSeekProvider(BaseLLMProvider):
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         """스트리밍 채팅 (OpenAI 호환 API)"""
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"deepseek:{model or self.default_model}", cost=1.0)
+
         try:
             openai_messages = messages.copy()
             if system:
@@ -98,15 +115,16 @@ class DeepSeekProvider(BaseLLMProvider):
             async for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
                     yield chunk.choices[0].delta.content
-
-        except (APIError, APITimeoutError) as e:
-            logger.error(f"DeepSeek API error: {str(e)}")
-            raise ProviderError(f"DeepSeek API error: {str(e)}") from e
         except Exception as e:
-            logger.error(f"Unexpected error in DeepSeek stream_chat: {str(e)}")
-            raise ProviderError(f"Unexpected error: {str(e)}") from e
+            logger.error(f"DeepSeek stream_chat failed: {e}")
+            raise
 
-    @retry(max_attempts=3, delay=1.0, backoff=2.0)
+    @retry(max_retries=3, initial_delay=1.0)
+    @provider_error_handler(
+        operation="chat",
+        api_error_types=(APIError, APITimeoutError),
+        custom_error_message="DeepSeek API error",
+    )
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -117,48 +135,43 @@ class DeepSeekProvider(BaseLLMProvider):
         **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍)"""
-        try:
-            openai_messages = messages.copy()
-            if system:
-                openai_messages.insert(0, {"role": "system", "content": system})
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"deepseek:{model or self.default_model}", cost=1.0)
 
-            # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
-            temperature_param = kwargs.get("temperature", temperature)
-            max_tokens_param = kwargs.get("max_tokens", max_tokens)
+        openai_messages = messages.copy()
+        if system:
+            openai_messages.insert(0, {"role": "system", "content": system})
 
-            request_params = {
-                "model": model or self.default_model,
-                "messages": openai_messages,
-                "stream": False,
-                "temperature": temperature_param,
+        # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
+        temperature_param = kwargs.get("temperature", temperature)
+        max_tokens_param = kwargs.get("max_tokens", max_tokens)
+
+        request_params = {
+            "model": model or self.default_model,
+            "messages": openai_messages,
+            "stream": False,
+            "temperature": temperature_param,
+        }
+
+        if max_tokens_param is not None:
+            request_params["max_tokens"] = max_tokens_param
+
+        response = await self.client.chat.completions.create(**request_params)
+
+        # 사용량 정보 추출
+        usage_info = None
+        if hasattr(response, "usage") and response.usage:
+            usage_info = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
             }
 
-            if max_tokens_param is not None:
-                request_params["max_tokens"] = max_tokens_param
-
-            response = await self.client.chat.completions.create(**request_params)
-
-            # 사용량 정보 추출
-            usage_info = None
-            if hasattr(response, "usage") and response.usage:
-                usage_info = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens,
-                }
-
-            return LLMResponse(
-                content=response.choices[0].message.content,
-                model=response.model,
-                usage=usage_info,
-            )
-
-        except (APIError, APITimeoutError) as e:
-            logger.error(f"DeepSeek API error: {str(e)}")
-            raise ProviderError(f"DeepSeek API error: {str(e)}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error in DeepSeek chat: {str(e)}")
-            raise ProviderError(f"Unexpected error: {str(e)}") from e
+        return LLMResponse(
+            content=response.choices[0].message.content,
+            model=response.model,
+            usage=usage_info,
+        )
 
     async def list_models(self) -> List[str]:
         """사용 가능한 모델 목록 조회"""
