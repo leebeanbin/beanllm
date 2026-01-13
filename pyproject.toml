@@ -93,6 +93,13 @@ evaluation = [
     "apscheduler>=3.10.0,<4.0.0",
 ]
 
+# 분산 처리 (Redis + Kafka)
+distributed = [
+    "redis>=5.0.0,<6.0.0",      # Redis 클라이언트
+    "kafka-python>=2.0.0,<3.0.0", # Kafka 클라이언트
+    "hiredis>=2.0.0,<3.0.0",    # Redis 성능 향상 (C 확장, 선택적)
+]
+
 # Advanced features (v1.0.0+)
 advanced = [
     "umap-learn>=0.5.0,<1.0.0",  # Embedding visualization

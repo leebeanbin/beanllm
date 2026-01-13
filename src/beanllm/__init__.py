@@ -201,21 +201,21 @@ from .domain import (
 )
 
 # DTO
-from .dto.response.rag_response import RAGResponse
+from .dto.response.core.rag_response import RAGResponse
 
 # Facade
 from .facade import Agent, Client, RAGChain
-from .facade.agent_facade import AgentResult, AgentStep, create_agent
+from .facade.core.agent_facade import AgentResult, AgentStep, create_agent
 
 # Audio Facade
-from .facade.audio_facade import (
+from .facade.ml.audio_facade import (
     AudioRAG,
     TextToSpeech,
     WhisperSTT,
     text_to_speech,
     transcribe_audio,
 )
-from .facade.chain_facade import (
+from .facade.core.chain_facade import (
     Chain,
     ChainBuilder,
     ChainResult,
@@ -224,51 +224,50 @@ from .facade.chain_facade import (
     SequentialChain,
     create_chain,
 )
-from .facade.client_facade import ChatResponse, create_client
-from .facade.evaluation_facade import (
+from .facade.core.client_facade import ChatResponse, create_client
+from .facade.ml.evaluation_facade import (
     Evaluator,
     create_evaluator,
     evaluate_rag,
     evaluate_text,
 )
-from .facade.finetuning_facade import (
+from .facade.ml.finetuning_facade import (
     FineTuningManagerFacade,
     create_finetuning_provider,
     quick_finetune,
 )
-from .facade.graph_facade import Graph, create_simple_graph
-from .facade.multi_agent_facade import (
+from .facade.advanced.graph_facade import Graph, create_simple_graph
+from .facade.advanced.multi_agent_facade import (
     MultiAgentCoordinator,
     create_coordinator,
     quick_debate,
 )
-from .facade.rag_facade import RAG, RAGBuilder, create_rag
-from .facade.state_graph_facade import StateGraph, create_state_graph
-from .facade.vision_rag_facade import MultimodalRAG, VisionRAG, create_vision_rag
-from .facade.web_search_facade import WebSearch
+from .facade.core.rag_facade import RAG, RAGBuilder, create_rag
+from .facade.advanced.state_graph_facade import StateGraph, create_state_graph
+from .facade.ml.vision_rag_facade import MultimodalRAG, VisionRAG, create_vision_rag
+from .facade.ml.web_search_facade import WebSearch
 
 # search_web는 domain.tools에서 이미 import됨
 from .infrastructure import (
     MODELS,
     AdaptedParameters,
-    # ML Models
-    BaseMLModel,
+    # ML Models (미사용 - 주석 처리)
+    # BaseMLModel,
     HybridModelInfo,
     HybridModelManager,
     MetadataInferrer,
-    MLModelFactory,
+    # MLModelFactory,
     ModelCapabilityInfo,
     ModelRegistry,
     ModelScanner,
     ModelStatus,
     ParameterAdapter,
     ParameterInfo,
-    ProviderFactory,
     ProviderInfo,
-    PyTorchModel,
+    # PyTorchModel,
     ScannedModel,
-    SklearnModel,
-    TensorFlowModel,
+    # SklearnModel,
+    # TensorFlowModel,
     adapt_parameters,
     create_hybrid_manager,
     get_all_models,
@@ -276,9 +275,12 @@ from .infrastructure import (
     get_model_registry,
     get_models_by_provider,
     get_models_by_type,
-    load_ml_model,
+    # load_ml_model,
     validate_parameters,
 )
+
+# Provider Factory (providers 패키지에서)
+from .providers import ProviderFactory
 
 # Utils
 from .utils import (
@@ -398,12 +400,12 @@ __all__ = [
     "MetadataInferrer",
     "ModelScanner",
     "ScannedModel",
-    "BaseMLModel",
-    "TensorFlowModel",
-    "PyTorchModel",
-    "SklearnModel",
-    "MLModelFactory",
-    "load_ml_model",
+    # "BaseMLModel",
+    # "TensorFlowModel",
+    # "PyTorchModel",
+    # "SklearnModel",
+    # "MLModelFactory",
+    # "load_ml_model",
     # Facade
     "Client",
     "create_client",

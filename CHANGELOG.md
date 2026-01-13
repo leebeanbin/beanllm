@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-01-XX
+
+### Added
+
+#### 분산 아키텍처 완전 적용
+- ✅ **데코레이터 패턴**: `@with_distributed_features` 데코레이터로 분산 시스템 기능 자동 적용
+  - 코드 중복 85-90% 감소
+  - 모든 파이프라인에 일관된 패턴 적용
+  - Vision RAG, Multi-Agent, Chain, Graph 서비스에 적용 완료
+- ✅ **동적 설정 변경**: 런타임에 파이프라인별 설정 수정 가능
+  - `update_pipeline_config()`: 파이프라인별 설정 동적 수정
+  - `get_pipeline_config()`: 파이프라인별 설정 조회
+  - `reset_pipeline_config()`: 파이프라인별 설정 초기화
+- ✅ **배치 처리 데코레이터**: `@with_batch_processing` 데코레이터로 배치 처리 자동화
+
+#### 코드 최적화
+- ✅ **중복 코드 제거**: 중복 이벤트 로깅, 캐시 로직, Rate Limiting 로직 제거
+- ✅ **함수 통합**: `run_parallel_chain()`의 중복 함수 정의 통합
+
+### Changed
+
+#### 아키텍처 개선
+- ✅ **데코레이터 기반 분산 시스템**: 수동 코드 → 데코레이터 패턴으로 전환
+- ✅ **설정 관리**: 정적 설정 → 동적 설정 변경 지원
+
+### Performance
+
+- ✅ **코드 감소**: 각 메서드마다 ~30-50줄 → ~3-5줄 (85-90% 감소)
+- ✅ **유지보수성**: 분산 시스템 로직 변경 시 한 곳만 수정
+
+---
+
 ## [0.2.2] - 2026-01-05
 
 ### Dependency Updates
