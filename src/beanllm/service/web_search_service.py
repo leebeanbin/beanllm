@@ -10,8 +10,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from ..dto.request.web_search_request import WebSearchRequest
-from ..dto.response.web_search_response import WebSearchResponse
+from ..dto.request.web.web_search_request import WebSearchRequest
+from ..dto.response.web.web_search_response import WebSearchResponse
 
 
 class IWebSearchService(ABC):

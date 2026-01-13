@@ -10,13 +10,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from ..dto.request.optimizer_request import (
+from ..dto.request.advanced.optimizer_request import (
     ABTestRequest,
     BenchmarkRequest,
     OptimizeRequest,
     ProfileRequest,
 )
-from ..dto.response.optimizer_response import (
+from ..dto.response.advanced.optimizer_response import (
     ABTestResponse,
     BenchmarkResponse,
     OptimizeResponse,

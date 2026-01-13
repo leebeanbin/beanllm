@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.multi_agent_request import MultiAgentRequest
-from ..dto.response.multi_agent_response import MultiAgentResponse
+from ..dto.request.advanced.multi_agent_request import MultiAgentRequest
+from ..dto.response.advanced.multi_agent_response import MultiAgentResponse
 
 
 class IMultiAgentService(ABC):
