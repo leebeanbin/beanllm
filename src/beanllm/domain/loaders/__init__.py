@@ -4,15 +4,15 @@ Loaders Domain - 문서 로더 도메인
 
 from .base import BaseDocumentLoader
 from .factory import DocumentLoader, load_documents
-from .loaders import (
+from .core import (
     CSVLoader,
     DirectoryLoader,
-    DoclingLoader,
     HTMLLoader,
     JupyterLoader,
     PDFLoader,
     TextLoader,
 )
+from .advanced import DoclingLoader
 from .types import Document
 
 # beanPDFLoader (고급 PDF 로더)

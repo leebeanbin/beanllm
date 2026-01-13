@@ -14,13 +14,15 @@ This file re-exports all implementations for backward compatibility.
 """
 
 # Re-export all loaders
-from .csv import CSVLoader
-from .directory import DirectoryLoader
-from .docling_loader import DoclingLoader
-from .html import HTMLLoader
-from .jupyter import JupyterLoader
-from .pdf_loader import PDFLoader
-from .text import TextLoader
+from .core import (
+    CSVLoader,
+    DirectoryLoader,
+    HTMLLoader,
+    JupyterLoader,
+    PDFLoader,
+    TextLoader,
+)
+from .advanced import DoclingLoader
 
 __all__ = [
     "TextLoader",

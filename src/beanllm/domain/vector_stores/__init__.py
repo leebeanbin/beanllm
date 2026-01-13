@@ -4,15 +4,13 @@ Vector Stores Domain - 벡터 스토어 도메인
 
 from .base import BaseVectorStore, VectorSearchResult
 from .factory import VectorStore, VectorStoreBuilder, create_vector_store, from_documents
-from .implementations import (
+from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
+from .local import (
     ChromaVectorStore,
     FAISSVectorStore,
     LanceDBVectorStore,
-    MilvusVectorStore,
     PgvectorVectorStore,
-    PineconeVectorStore,
     QdrantVectorStore,
-    WeaviateVectorStore,
 )
 from .search import AdvancedSearchMixin, SearchAlgorithms
 

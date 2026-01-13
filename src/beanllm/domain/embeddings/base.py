@@ -6,10 +6,10 @@ Template Method Pattern을 사용하여 Provider 간 중복 코드 제거
 
 import os
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 
@@ -245,8 +245,44 @@ class BaseLocalEmbedding(BaseEmbedding):
               - torch.cuda.is_available() 체크
               - 모델 및 토크나이저 로드
               - device 설정
+              - 분산 락 사용 권장 (프로세스 간 중복 로딩 방지)
         """
         pass
+    
+    def _load_model_with_lock(self, model_name: str, loader_func: Callable[[], None]):
+        """
+        분산 락을 사용한 모델 로딩 헬퍼
+        
+        Args:
+            model_name: 모델 이름 (락 키 생성용)
+            loader_func: 실제 모델 로딩 함수
+        """
+        if self._model is not None:
+            return
+        
+        import asyncio
+        from beanllm.infrastructure.distributed import get_lock_manager
+        
+        lock_manager = get_lock_manager()
+        model_key = f"{model_name}:{id(self)}"
+        
+        async def _load_async():
+            async with lock_manager.with_model_lock(model_key, timeout=300.0):
+                # 락 획득 후 다시 확인
+                if self._model is not None:
+                    return
+                # 실제 로딩
+                loader_func()
+        
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
+                loader_func()
+            else:
+                loop.run_until_complete(_load_async())
+        except RuntimeError:
+            asyncio.run(_load_async())
 
     def _get_device(self) -> str:
         """

@@ -112,6 +112,30 @@ class BaseVectorStore(ABC):
             for i, text in enumerate(texts)
         ]
         return self.add_documents(documents, **kwargs)
+    
+    def _publish_add_documents_event(self, document_count: int, operation: str = "add_documents"):
+        """
+        문서 추가 이벤트 발행 (헬퍼 메서드)
+        
+        Args:
+            document_count: 추가된 문서 수
+            operation: 작업 이름
+        """
+        try:
+            import asyncio
+            from beanllm.infrastructure.distributed import get_event_logger
+            
+            event_logger = get_event_logger()
+            asyncio.create_task(event_logger.log_event(
+                f"vector_store.{operation}",
+                {
+                    "document_count": document_count,
+                    "vector_store_type": self.__class__.__name__,
+                }
+            ))
+        except Exception:
+            # 이벤트 발행 실패 시 무시 (fallback)
+            pass
 
     async def asimilarity_search(
         self, query: str, k: int = 4, **kwargs

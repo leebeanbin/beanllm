@@ -7,8 +7,8 @@ Updated to use generic LRUCache with automatic TTL cleanup
 from typing import Any, Dict, List, Optional
 
 try:
-    from beanllm.utils.cache import LRUCache
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.core.cache import LRUCache
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 
@@ -89,20 +89,29 @@ class EmbeddingCache:
     """
 
     def __init__(
-        self, ttl: int = 3600, max_size: int = 10000, cleanup_interval: int = 60
+        self, ttl: int = 3600, max_size: int = 10000, cleanup_interval: int = 60, use_distributed: bool = False
     ):
         """
         Args:
             ttl: 캐시 유지 시간 (초, default: 3600 = 1시간)
             max_size: 최대 캐시 항목 수 (default: 10000)
             cleanup_interval: 자동 정리 주기 (초, default: 60초)
+            use_distributed: 분산 캐시 사용 여부 (환경변수 USE_DISTRIBUTED 또는 명시적 설정)
         """
-        # Use generic LRUCache with automatic cleanup
-        self._cache: LRUCache[str, List[float]] = LRUCache(
-            max_size=max_size,
-            ttl=ttl,
-            cleanup_interval=cleanup_interval,
-        )
+        import os
+        use_distributed = use_distributed or os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
+        
+        if use_distributed:
+            # 분산 캐시 사용 (환경변수에 따라 Redis 또는 인메모리)
+            from beanllm.infrastructure.distributed.cache_wrapper import get_distributed_cache
+            self._cache = get_distributed_cache(max_size=max_size, ttl=ttl)
+        else:
+            # 기존 LRUCache 사용 (인메모리)
+            self._cache: LRUCache[str, List[float]] = LRUCache(
+                max_size=max_size,
+                ttl=ttl,
+                cleanup_interval=cleanup_interval,
+            )
         self.ttl = ttl
         self.max_size = max_size
 

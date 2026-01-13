@@ -16,8 +16,8 @@ else:
     except ImportError:
         Document = Any  # type: ignore
 
-from .base import BaseVectorStore, VectorSearchResult
-from .search import AdvancedSearchMixin
+from ..base import BaseVectorStore, VectorSearchResult
+from ..search import AdvancedSearchMixin
 
 
 class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):

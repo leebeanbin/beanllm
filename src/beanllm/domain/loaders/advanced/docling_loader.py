@@ -11,12 +11,12 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 
-from .base import BaseDocumentLoader
-from .security import validate_file_path
-from .types import Document
+from ..base import BaseDocumentLoader
+from ..advanced.security import validate_file_path
+from ..types import Document
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)
