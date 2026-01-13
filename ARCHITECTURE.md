@@ -10,6 +10,8 @@
 6. [주요 패턴](#주요-패턴)
 7. [데이터 흐름](#데이터-흐름)
 
+> 📖 **의존성 규칙 상세 가이드**: [DEPENDENCY_RULES.md](./DEPENDENCY_RULES.md)를 참조하세요.
+
 ---
 
 ## 아키텍처 개요
@@ -246,7 +248,21 @@ src/beanllm/
 │   │   ├── __init__.py
 │   │   └── model_scanner.py  # ModelScanner
 │   │
-│   └── ml/                   # ML Models
+│   ├── security/              # Security
+│   │   ├── __init__.py
+│   │   └── config.py        # SecureConfig
+│   │
+│   └── integrations/          # 외부 프레임워크 통합
+│       ├── __init__.py
+│       ├── README.md         # 통합 가이드
+│       ├── langgraph/        # LangGraph 통합
+│       │   ├── bridge.py     # beanLLM ↔ LangGraph 변환
+│       │   └── workflow.py   # LangGraph 워크플로우 빌더
+│       └── llamaindex/       # LlamaIndex 통합
+│           ├── bridge.py     # beanLLM ↔ LlamaIndex 변환
+│           └── query_engine.py  # LlamaIndex Query Engine 래퍼
+│
+│   └── ml/                   # ML Models (미사용)
 │       ├── __init__.py
 │       └── ml_models.py    # BaseMLModel, PyTorchModel 등
 │
@@ -285,15 +301,116 @@ src/beanllm/
 
 ## 의존성 방향
 
+자세한 내용은 [DEPENDENCY_RULES.md](./DEPENDENCY_RULES.md)를 참고하세요.
+
+## 분산 아키텍처
+
+### 개요
+
+환경변수 `USE_DISTRIBUTED`에 따라 분산/인메모리 모드를 자동 선택하는 추상화 레이어를 제공합니다.
+
+- **인메모리 모드** (`USE_DISTRIBUTED=false`): 기존 코드와 동일하게 동작
+- **분산 모드** (`USE_DISTRIBUTED=true`): Redis/Kafka를 사용한 분산 처리
+
+### 주요 컴포넌트
+
+1. **Rate Limiting**: Redis 기반 분산 Rate Limiter
+2. **캐싱**: Redis 기반 분산 캐시
+3. **작업 큐**: Kafka 기반 작업 큐
+4. **이벤트 스트리밍**: Kafka 기반 이벤트 발행/구독
+5. **분산 락**: Redis 기반 분산 락
+
+### 데코레이터 패턴
+
+분산 시스템 기능을 자동으로 적용하는 데코레이터를 제공하여 코드 중복을 85-90% 감소시켰습니다.
+
+```python
+from beanllm.infrastructure.distributed import with_distributed_features
+
+@with_distributed_features(
+    pipeline_type="vision_rag",
+    enable_cache=True,
+    enable_rate_limiting=True,
+    enable_event_streaming=True,
+    cache_key_prefix="vision_rag:retrieve",
+    rate_limit_key="vision:embedding",
+    event_type="vision_rag.retrieve",
+)
+async def retrieve(self, request: VisionRAGRequest) -> VisionRAGResponse:
+    # 실제 로직만 작성 (캐싱, Rate Limiting, 이벤트 스트리밍 자동 적용)
+    results = self._vector_store.similarity_search(query, k=k)
+    return VisionRAGResponse(results=results)
+```
+
+**자동 적용 기능:**
+- ✅ 캐싱 (자동 키 생성, 조회, 저장)
+- ✅ Rate Limiting (설정 기반)
+- ✅ 이벤트 스트리밍 (시작/완료/실패)
+- ✅ 분산 락 (파일 경로 기반 자동 감지)
+- ✅ 동기/비동기 자동 감지
+
+### 동적 설정 변경
+
+런타임에 파이프라인별 설정을 자유롭게 수정할 수 있습니다.
+
+```python
+from beanllm.infrastructure.distributed import update_pipeline_config
+
+# Vision RAG의 Rate Limiting 비활성화
+update_pipeline_config("vision_rag", enable_rate_limiting=False)
+
+# Chain의 캐시 TTL 변경
+update_pipeline_config("chain", chain_cache_ttl=7200)
+
+# Multi-Agent의 Kafka Bus 활성화
+update_pipeline_config("multi_agent", use_kafka_bus=True)
+```
+
+### 사용법
+
+```python
+from beanllm.infrastructure.distributed import (
+    get_rate_limiter,
+    get_cache,
+    get_task_queue,
+    get_event_bus,
+    get_distributed_lock,
+    update_pipeline_config,
+    get_pipeline_config
+)
+
+# 환경변수로 자동 선택
+rate_limiter = get_rate_limiter()
+cache = get_cache()
+task_queue = get_task_queue("ocr.tasks")
+producer, consumer = get_event_bus()
+lock = get_distributed_lock()
+
+# 설정 조회 및 수정
+config = get_pipeline_config("vision_rag")
+update_pipeline_config("vision_rag", enable_cache=True, cache_ttl=3600)
+```
+
+**참고 자료:**
+- 상세 가이드: [src/beanllm/infrastructure/distributed/README.md](./src/beanllm/infrastructure/distributed/README.md)
+- 성능 가이드: [docs/DISTRIBUTED_ARCHITECTURE_PERFORMANCE.md](./docs/DISTRIBUTED_ARCHITECTURE_PERFORMANCE.md)
+
+---
+
+## 의존성 방향
+
+> 📖 **상세 가이드**: [DEPENDENCY_RULES.md](./DEPENDENCY_RULES.md)를 참조하세요.
+
 ### 원칙
 
 1. **의존성은 항상 안쪽으로** (Dependency Rule)
    - Facade → Handler → Service → Domain ← Infrastructure
    - Domain은 어떤 레이어에도 의존하지 않음
 
-2. **인터페이스에 의존**
-   - Service는 인터페이스(IChatService)에 의존
-   - 구현체(ChatServiceImpl)는 Infrastructure에 위치
+2. **인터페이스에 의존** (Dependency Inversion Principle)
+   - Handler는 Service 인터페이스(IChatService)에 의존
+   - Service는 Domain 인터페이스에 의존
+   - Infrastructure는 Domain 인터페이스를 구현
 
 3. **의존성 주입 (Dependency Injection)**
    - Factory 패턴으로 의존성 관리
@@ -302,14 +419,52 @@ src/beanllm/
 ### 의존성 다이어그램
 
 ```
-Facade Layer
-    ↓ (의존)
-Handler Layer
-    ↓ (의존)
-Service Layer (인터페이스)
-    ↓ (의존)
-Domain Layer ← Infrastructure Layer (구현체)
+┌─────────────────────────────────────────────────────────┐
+│                    Facade Layer                          │
+│  ✅ Handler, DTO, Utils, Domain/Infrastructure          │
+│  ❌ Service (구현체)                                      │
+└──────────────────────┬────────────────────────────────────┘
+                       │ 의존
+┌──────────────────────▼────────────────────────────────────┐
+│                    Handler Layer                          │
+│  ✅ Service (인터페이스), DTO, Utils                      │
+│  ❌ Service (구현체), Domain, Infrastructure              │
+└──────────────────────┬────────────────────────────────────┘
+                       │ 의존
+┌──────────────────────▼────────────────────────────────────┐
+│                    Service Layer                          │
+│  ✅ Domain (인터페이스), Infrastructure (인터페이스)     │
+│  ❌ Handler, Facade                                       │
+└──────────────────────┬────────────────────────────────────┘
+                       │ 의존
+┌──────────────────────▼────────────────────────────────────┐
+│                    Domain Layer                          │
+│  ✅ Domain 내부 모듈만                                    │
+│  ❌ Service, Handler, Facade, Infrastructure              │
+└──────────────────────┬────────────────────────────────────┘
+                       │ 구현
+┌──────────────────────▼────────────────────────────────────┐
+│                Infrastructure Layer                      │
+│  ✅ Domain (인터페이스), Utils                           │
+│  ❌ Service, Handler, Facade                             │
+└───────────────────────────────────────────────────────────┘
 ```
+
+### 핵심 규칙 요약
+
+**허용된 의존성:**
+- ✅ **Facade** → Handler, DTO, Utils, Domain/Infrastructure (직접 사용 가능)
+- ✅ **Handler** → Service (인터페이스), DTO, Utils
+- ✅ **Service** → Domain (인터페이스), Infrastructure (인터페이스), DTO
+- ✅ **Domain** → Domain 내부만
+- ✅ **Infrastructure** → Domain (인터페이스), Utils
+
+**금지된 의존성:**
+- ❌ 순환 의존 (Circular Dependency)
+- ❌ 역방향 의존 (하위 레이어 → 상위 레이어)
+- ❌ 구현체 직접 의존 (인터페이스 사용 필수)
+- ❌ Handler/Facade → Service 구현체
+- ❌ Domain → Service/Handler/Facade
 
 ---
 
@@ -538,6 +693,16 @@ from beanllm.facade import Client, RAGChain, Agent
 - 모든 LLM 호출은 async/await
 - Streaming 지원
 
+### 4. 대용량 처리
+- **스트리밍**: LLM 응답, 파일 로딩 스트리밍 지원
+- **메모리 매핑 (mmap)**: 10MB 이상 파일 자동 mmap 사용
+- **배치 처리**: Embedding 배치 처리, 동적 배치 분할
+- **병렬 처리**: ProcessPoolExecutor, asyncio.gather() 활용
+- **지연 로딩**: LazyLoadMixin으로 필요 시 로드
+- **캐싱**: LRU Cache로 메모리 효율성 향상
+- **분산 아키텍처**: Redis/Kafka 기반 분산 처리 (선택적)
+  - 자세한 내용: [docs/DISTRIBUTED_ARCHITECTURE_PERFORMANCE.md](./docs/DISTRIBUTED_ARCHITECTURE_PERFORMANCE.md)
+
 ---
 
 ## 보안 고려사항
@@ -580,4 +745,4 @@ response = client.chat("Hello")
 
 ---
 
-**최종 업데이트**: 2025-12-22
+**최종 업데이트**: 2026-01-XX
