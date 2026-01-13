@@ -20,20 +20,23 @@ from .hybrid import (
 # Inferrer
 from .inferrer import MetadataInferrer
 
-# ML Models
-from .ml import (
-    BaseMLModel,
-    MLModelFactory,
-    PyTorchModel,
-    SklearnModel,
-    TensorFlowModel,
-    load_ml_model,
-)
+# ML Models (미사용 - 필요시 주석 해제)
+# from .ml import (
+#     BaseMLModel,
+#     MLModelFactory,
+#     PyTorchModel,
+#     SklearnModel,
+#     TensorFlowModel,
+#     load_ml_model,
+# )
 
 # Models
 from .models import (
+    LLMProvider,
     MODELS,
     ModelCapabilityInfo,
+    ModelConfig,
+    ModelConfigManager,
     ModelStatus,
     ParameterInfo,
     ProviderInfo,
@@ -43,14 +46,41 @@ from .models import (
     get_models_by_type,
 )
 
-# Provider
-from .provider import ProviderFactory
-
 # Registry
 from .registry import ModelRegistry, get_model_registry
 
 # Scanner
 from .scanner import ModelScanner, ScannedModel
+
+# Security (선택적)
+try:
+    from .security import SecureConfig
+    SECURITY_AVAILABLE = True
+except ImportError:
+    SecureConfig = None  # type: ignore
+    SECURITY_AVAILABLE = False
+
+# Integrations (선택적 - 외부 프레임워크 통합)
+try:
+    from .integrations import (
+        LangGraphBridge,
+        LangGraphWorkflow,
+        LlamaIndexBridge,
+        LlamaIndexQueryEngine,
+        WorkflowBuilder,
+        create_llamaindex_query_engine,
+        create_workflow,
+    )
+    INTEGRATIONS_AVAILABLE = True
+except ImportError:
+    LangGraphBridge = None  # type: ignore
+    LangGraphWorkflow = None  # type: ignore
+    LlamaIndexBridge = None  # type: ignore
+    LlamaIndexQueryEngine = None  # type: ignore
+    WorkflowBuilder = None  # type: ignore
+    create_llamaindex_query_engine = None  # type: ignore
+    create_workflow = None  # type: ignore
+    INTEGRATIONS_AVAILABLE = False
 
 __all__ = [
     # Adapter
@@ -61,9 +91,11 @@ __all__ = [
     # Registry
     "ModelRegistry",
     "get_model_registry",
-    # Provider
-    "ProviderFactory",
-    # Models
+    # Models (최신)
+    "ModelConfig",
+    "ModelConfigManager",
+    "LLMProvider",
+    # Models (backward compatibility)
     "MODELS",
     "ModelStatus",
     "ParameterInfo",
@@ -82,11 +114,22 @@ __all__ = [
     # Scanner
     "ScannedModel",
     "ModelScanner",
-    # ML Models
-    "BaseMLModel",
-    "TensorFlowModel",
-    "PyTorchModel",
-    "SklearnModel",
-    "MLModelFactory",
-    "load_ml_model",
+    # Security
+    "SecureConfig",
+    # Integrations (선택적)
+    "LangGraphBridge",
+    "LangGraphWorkflow",
+    "LlamaIndexBridge",
+    "LlamaIndexQueryEngine",
+    "WorkflowBuilder",
+    "create_llamaindex_query_engine",
+    "create_workflow",
+    "INTEGRATIONS_AVAILABLE",
+    # ML Models (미사용 - 필요시 주석 해제)
+    # "BaseMLModel",
+    # "TensorFlowModel",
+    # "PyTorchModel",
+    # "SklearnModel",
+    # "MLModelFactory",
+    # "load_ml_model",
 ]

@@ -268,3 +268,4 @@ def load_from_env(prefix: str = "BEANLLM_") -> SecureConfig:
             config_dict[config_key] = value
 
     return SecureConfig(**config_dict)
+

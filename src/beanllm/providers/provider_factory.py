@@ -6,41 +6,53 @@ Provider Factory
 from typing import List, Optional
 
 from ..utils.config import EnvConfig
-from ..utils.logger import get_logger
+from ..utils.logging import get_logger
 from .base_provider import BaseLLMProvider
+
+# Get logger first for error logging
+logger = get_logger(__name__)
 
 # 선택적 의존성
 try:
     from .claude_provider import ClaudeProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import ClaudeProvider: {e}")
     ClaudeProvider = None  # type: ignore
 
 try:
     from .ollama_provider import OllamaProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import OllamaProvider: {e}")
     OllamaProvider = None  # type: ignore
 
 try:
     from .gemini_provider import GeminiProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import GeminiProvider: {e}")
     GeminiProvider = None  # type: ignore
 
 try:
     from .openai_provider import OpenAIProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import OpenAIProvider: {e}")
     OpenAIProvider = None  # type: ignore
 
 try:
     from .deepseek_provider import DeepSeekProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import DeepSeekProvider: {e}")
     DeepSeekProvider = None  # type: ignore
 
 try:
     from .perplexity_provider import PerplexityProvider
-except ImportError:
+except Exception as e:
+    logger.warning(f"Failed to import PerplexityProvider: {e}")
     PerplexityProvider = None  # type: ignore
 
-logger = get_logger(__name__)
+# Debug: Log which providers are available
+logger.info(f"Provider import status: OpenAI={OpenAIProvider is not None}, Claude={ClaudeProvider is not None}, "
+            f"Gemini={GeminiProvider is not None}, DeepSeek={DeepSeekProvider is not None}, "
+            f"Perplexity={PerplexityProvider is not None}, Ollama={OllamaProvider is not None}")
 
 
 class ProviderFactory:
@@ -129,8 +141,34 @@ class ProviderFactory:
 
         # 제공자 선택
         if provider_name:
-            # 지정된 제공자 사용
-            providers_to_try = [(provider_name, None, None)]
+            # 지정된 제공자 사용 - priority 리스트에서 찾기
+            priority_list = cls._get_provider_priority()
+            matching_providers = [p for p in priority_list if p[0] == provider_name]
+            if matching_providers:
+                providers_to_try = matching_providers
+            else:
+                # Provider가 priority 리스트에 없어도 생성 시도 (API 키 없어도 가능)
+                # Provider 클래스 매핑
+                provider_map = {
+                    "openai": (OpenAIProvider, "OPENAI_API_KEY"),
+                    "claude": (ClaudeProvider, "ANTHROPIC_API_KEY"),
+                    "gemini": (GeminiProvider, "GEMINI_API_KEY"),
+                    "deepseek": (DeepSeekProvider, "DEEPSEEK_API_KEY"),
+                    "perplexity": (PerplexityProvider, "PERPLEXITY_API_KEY"),
+                    "ollama": (OllamaProvider, "OLLAMA_HOST"),
+                }
+                if provider_name in provider_map:
+                    prov_class, env_key = provider_map[provider_name]
+                    if prov_class is not None:
+                        providers_to_try = [(provider_name, prov_class, env_key)]
+                    else:
+                        # Provider class is None (failed to import) - try fallback
+                        if fallback:
+                            providers_to_try = cls._get_provider_priority()
+                        else:
+                            raise ValueError(f"Provider {provider_name} is not installed")
+                else:
+                    raise ValueError(f"Unknown provider: {provider_name}")
         else:
             # 자동 선택 (환경 변수 기반)
             providers_to_try = cls._get_provider_priority()
@@ -187,17 +225,25 @@ class ProviderFactory:
 
             except Exception as e:
                 # Ollama는 선택적이므로 실패해도 조용히 처리 (DEBUG 레벨)
+                # 에러 메시지에서 API 키 마스킹 (Helper 함수 사용)
+                from beanllm.utils.integration.security import sanitize_error_message
+                error_str = sanitize_error_message(e)
+                
                 if name == "ollama":
-                    logger.debug(f"Ollama provider not available: {e}")
+                    logger.debug(f"Ollama provider not available: {error_str}")
                 else:
-                    logger.debug(f"Failed to initialize provider {name}: {e}")
+                    logger.debug(f"Failed to initialize provider {name}: {error_str}")
                 last_error = e
                 if not fallback:
                     break
                 continue
 
         # 사용 가능한 제공자가 없음
-        error_msg = f"No available LLM provider found. Last error: {last_error}"
+        error_msg = f"No available LLM provider found"
+        if last_error:
+            from beanllm.utils.integration.security import sanitize_error_message
+            safe_error = sanitize_error_message(last_error)
+            error_msg = f"{error_msg}. Last error: {safe_error}"
         logger.error(error_msg)
         raise ValueError(error_msg)
 

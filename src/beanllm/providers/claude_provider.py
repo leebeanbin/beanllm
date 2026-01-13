@@ -19,10 +19,11 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logger import get_logger
-from beanllm.utils.retry import retry
+from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.retry import retry
 
 from .base_provider import BaseLLMProvider, LLMResponse
 
@@ -50,7 +51,12 @@ class ClaudeProvider(BaseLLMProvider):
         )
         self.default_model = "claude-3-5-sonnet-20241022"
 
-    @retry(max_attempts=3, exceptions=(Exception,))
+    @retry(max_retries=3, retry_on=(Exception,))
+    @provider_error_handler(
+        operation="stream_chat",
+        api_error_types=(APITimeoutError, APIError),
+        custom_error_message="Claude stream_chat API error",
+    )
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
@@ -62,35 +68,36 @@ class ClaudeProvider(BaseLLMProvider):
         """
         스트리밍 채팅 (최신 SDK: messages.stream() 사용, 재시도 로직 포함)
         """
-        try:
-            # Claude 메시지 형식 변환
-            claude_messages = []
-            for msg in messages:
-                if msg["role"] == "user":
-                    claude_messages.append({"role": "user", "content": msg["content"]})
-                elif msg["role"] == "assistant":
-                    claude_messages.append({"role": "assistant", "content": msg["content"]})
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"claude:{model or self.default_model}", cost=1.0)
+        
+        # Claude 메시지 형식 변환
+        claude_messages = []
+        for msg in messages:
+            if msg["role"] == "user":
+                claude_messages.append({"role": "user", "content": msg["content"]})
+            elif msg["role"] == "assistant":
+                claude_messages.append({"role": "assistant", "content": msg["content"]})
 
-            # 최신 SDK: messages.stream() 사용
-            async with self.client.messages.stream(
-                model=model or self.default_model,
-                max_tokens=max_tokens or 4096,
-                system=system,
-                temperature=temperature,
-                messages=claude_messages,
-            ) as stream:
-                # text_stream을 통해 텍스트만 추출
-                async for text in stream.text_stream:
-                    if text:
-                        yield text
-        except (APITimeoutError, APIError) as e:
-            logger.error(f"Claude stream_chat error: {e}")
-            raise ProviderError(f"Claude API error: {str(e)}") from e
-        except Exception as e:
-            logger.error(f"Claude stream_chat error: {e}")
-            raise ProviderError(f"Claude stream_chat failed: {str(e)}") from e
+        # 최신 SDK: messages.stream() 사용
+        async with self.client.messages.stream(
+            model=model or self.default_model,
+            max_tokens=max_tokens or 4096,
+            system=system,
+            temperature=temperature,
+            messages=claude_messages,
+        ) as stream:
+            # text_stream을 통해 텍스트만 추출
+            async for text in stream.text_stream:
+                if text:
+                    yield text
 
-    @retry(max_attempts=3, exceptions=(Exception,))
+    @retry(max_retries=3, retry_on=(Exception,))
+    @provider_error_handler(
+        operation="chat",
+        api_error_types=(APITimeoutError, APIError),
+        custom_error_message="Claude API error",
+    )
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -100,41 +107,51 @@ class ClaudeProvider(BaseLLMProvider):
         max_tokens: Optional[int] = None,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
-        try:
-            claude_messages = []
-            for msg in messages:
-                if msg["role"] in ["user", "assistant"]:
-                    claude_messages.append({"role": msg["role"], "content": msg["content"]})
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"claude:{model or self.default_model}", cost=1.0)
+        
+        claude_messages = []
+        for msg in messages:
+            if msg["role"] in ["user", "assistant"]:
+                claude_messages.append({"role": msg["role"], "content": msg["content"]})
 
-            response = await self.client.messages.create(
-                model=model or self.default_model,
-                max_tokens=max_tokens or 4096,
-                system=system,
-                temperature=temperature,
-                messages=claude_messages,
-            )
+        response = await self.client.messages.create(
+            model=model or self.default_model,
+            max_tokens=max_tokens or 4096,
+            system=system,
+            temperature=temperature,
+            messages=claude_messages,
+        )
 
-            return LLMResponse(
-                content=response.content[0].text,
-                model=response.model,
-                usage={
-                    "input_tokens": response.usage.input_tokens,
-                    "output_tokens": response.usage.output_tokens,
-                },
-            )
-        except (APITimeoutError, APIError) as e:
-            logger.error(f"Claude chat error: {e}")
-            raise ProviderError(f"Claude API error: {str(e)}") from e
-        except Exception as e:
-            logger.error(f"Claude chat error: {e}")
-            raise ProviderError(f"Claude chat failed: {str(e)}") from e
+        return LLMResponse(
+            content=response.content[0].text,
+            model=response.model,
+            usage={
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+            },
+        )
 
     async def list_models(self) -> List[str]:
         """사용 가능한 모델 목록"""
         return [
-            "claude-3-5-sonnet-20241022",
-            "claude-3-opus-20240229",
-            "claude-3-haiku-20240307",
+            # Claude 3 Series
+            "claude-3-5-sonnet-20241022",  # Latest Sonnet 3.5
+            "claude-3-5-haiku-20241022",   # Latest Haiku 3.5
+            "claude-3-opus-20240229",       # Opus 3
+            "claude-3-sonnet-20240229",     # Sonnet 3.0
+            "claude-3-haiku-20240307",      # Haiku 3.0
+            # Claude 4 Series (2025)
+            "claude-opus-4",                # Opus 4
+            "claude-sonnet-4",              # Sonnet 4
+            "claude-haiku-4",               # Haiku 4
+            # Claude 4.1 Series (2025)
+            "claude-opus-4-1",              # Opus 4.1
+            "claude-sonnet-4-1",            # Sonnet 4.1
+            # Claude 4.5 Series (2025)
+            "claude-opus-4-5",              # Opus 4.5 (with thinking/effort)
+            "claude-sonnet-4-5",            # Sonnet 4.5 (with thinking)
+            "claude-haiku-4-5",             # Haiku 4.5
         ]
 
     def is_available(self) -> bool:

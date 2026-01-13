@@ -7,7 +7,7 @@ import functools
 import inspect
 from typing import Any, Callable, TypeVar
 
-from ..utils.logger import get_logger
+from ..utils.logging import get_logger
 
 T = TypeVar("T")
 

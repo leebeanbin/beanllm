@@ -4,7 +4,7 @@ Streaming Wrapper - 버퍼링된 스트리밍 래퍼
 
 from typing import AsyncIterator
 
-from .streaming import StreamingBuffer
+from .streaming import StreamBuffer
 
 
 class BufferedStreamWrapper:
@@ -46,7 +46,7 @@ class PausableStream:
     def __init__(
         self,
         stream: AsyncIterator[str],
-        buffer: StreamingBuffer,
+        buffer: StreamBuffer,
         stream_id: str = "default",
     ):
         self._wrapper = BufferedStreamWrapper(stream, buffer, stream_id)

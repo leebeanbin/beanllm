@@ -28,7 +28,7 @@ except ImportError:
     Text = None
 
 try:
-    from .logger import get_logger
+    from ..logging.logger import get_logger
 except ImportError:
     import logging
 

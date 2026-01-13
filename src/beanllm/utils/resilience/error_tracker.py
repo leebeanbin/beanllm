@@ -189,7 +189,7 @@ class ProductionErrorSanitizer:
     }
 
     # 마스킹 문자열
-    MASK_STR = "***"
+    MASK_STR = "***MASKED***"
     MASK_PATH = "[PATH]"
     MASK_IP = "[IP]"
     MASK_PORT = "[PORT]"

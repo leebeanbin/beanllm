@@ -25,10 +25,11 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logger import get_logger
-from beanllm.utils.retry import retry
+from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.retry import retry
 
 from .base_provider import BaseLLMProvider, LLMResponse
 
@@ -67,6 +68,11 @@ class PerplexityProvider(BaseLLMProvider):
             "sonar-reasoning-pro",  # 복잡한 분석 작업용 프리미엄
         ]
 
+    @provider_error_handler(
+        operation="stream_chat",
+        api_error_types=(APIError, APITimeoutError),
+        custom_error_message="Perplexity API error",
+    )
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
@@ -77,39 +83,39 @@ class PerplexityProvider(BaseLLMProvider):
         **kwargs,
     ) -> AsyncGenerator[str, None]:
         """스트리밍 채팅 (실시간 웹 검색 포함)"""
-        try:
-            openai_messages = messages.copy()
-            if system:
-                openai_messages.insert(0, {"role": "system", "content": system})
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"perplexity:{model or self.default_model}", cost=1.0)
 
-            # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
-            temperature_param = kwargs.get("temperature", temperature)
-            max_tokens_param = kwargs.get("max_tokens", max_tokens)
+        openai_messages = messages.copy()
+        if system:
+            openai_messages.insert(0, {"role": "system", "content": system})
 
-            request_params = {
-                "model": model or self.default_model,
-                "messages": openai_messages,
-                "stream": True,
-                "temperature": temperature_param,
-            }
+        # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
+        temperature_param = kwargs.get("temperature", temperature)
+        max_tokens_param = kwargs.get("max_tokens", max_tokens)
 
-            if max_tokens_param is not None:
-                request_params["max_tokens"] = max_tokens_param
+        request_params = {
+            "model": model or self.default_model,
+            "messages": openai_messages,
+            "stream": True,
+            "temperature": temperature_param,
+        }
 
-            response = await self.client.chat.completions.create(**request_params)
+        if max_tokens_param is not None:
+            request_params["max_tokens"] = max_tokens_param
 
-            async for chunk in response:
-                if chunk.choices and chunk.choices[0].delta.content:
-                    yield chunk.choices[0].delta.content
+        response = await self.client.chat.completions.create(**request_params)
 
-        except (APIError, APITimeoutError) as e:
-            logger.error(f"Perplexity API error: {str(e)}")
-            raise ProviderError(f"Perplexity API error: {str(e)}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error in Perplexity stream_chat: {str(e)}")
-            raise ProviderError(f"Unexpected error: {str(e)}") from e
+        async for chunk in response:
+            if chunk.choices and chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
 
-    @retry(max_attempts=3, delay=1.0, backoff=2.0)
+    @retry(max_retries=3, initial_delay=1.0)
+    @provider_error_handler(
+        operation="chat",
+        api_error_types=(APIError, APITimeoutError),
+        custom_error_message="Perplexity API error",
+    )
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -120,57 +126,46 @@ class PerplexityProvider(BaseLLMProvider):
         **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 실시간 웹 검색 포함)"""
-        try:
-            openai_messages = messages.copy()
-            if system:
-                openai_messages.insert(0, {"role": "system", "content": system})
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"perplexity:{model or self.default_model}", cost=1.0)
 
-            # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
-            temperature_param = kwargs.get("temperature", temperature)
-            max_tokens_param = kwargs.get("max_tokens", max_tokens)
+        openai_messages = messages.copy()
+        if system:
+            openai_messages.insert(0, {"role": "system", "content": system})
 
-            request_params = {
-                "model": model or self.default_model,
-                "messages": openai_messages,
-                "stream": False,
-                "temperature": temperature_param,
-            }
+        # kwargs에서 파라미터 추출 (우선순위: kwargs > 직접 전달)
+        temperature_param = kwargs.get("temperature", temperature)
+        max_tokens_param = kwargs.get("max_tokens", max_tokens)
 
-            if max_tokens_param is not None:
-                request_params["max_tokens"] = max_tokens_param
+        request_params = {
+            "model": model or self.default_model,
+            "messages": openai_messages,
+            "stream": False,
+            "temperature": temperature_param,
+        }
 
-            response = await self.client.chat.completions.create(**request_params)
+        if max_tokens_param is not None:
+            request_params["max_tokens"] = max_tokens_param
 
-            # 사용량 정보 추출
-            usage_info = None
-            if hasattr(response, "usage") and response.usage:
-                usage_info = {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                    "total_tokens": response.usage.total_tokens,
-                }
+        response = await self.client.chat.completions.create(**request_params)
 
-            # Perplexity는 citations (인용) 제공
-            content = response.choices[0].message.content
+        # 사용량 정보 추출 (헬퍼 메서드 사용)
+        usage_info = self._extract_openai_usage(response)
 
-            # citations가 있으면 메타데이터에 포함
-            if hasattr(response, "citations"):
-                if usage_info is None:
-                    usage_info = {}
-                usage_info["citations"] = response.citations
+        # Perplexity는 citations (인용) 제공
+        content = response.choices[0].message.content
 
-            return LLMResponse(
-                content=content,
-                model=response.model,
-                usage=usage_info,
-            )
+        # citations가 있으면 메타데이터에 포함
+        if hasattr(response, "citations"):
+            if usage_info is None:
+                usage_info = {}
+            usage_info["citations"] = response.citations
 
-        except (APIError, APITimeoutError) as e:
-            logger.error(f"Perplexity API error: {str(e)}")
-            raise ProviderError(f"Perplexity API error: {str(e)}") from e
-        except Exception as e:
-            logger.error(f"Unexpected error in Perplexity chat: {str(e)}")
-            raise ProviderError(f"Unexpected error: {str(e)}") from e
+        return LLMResponse(
+            content=content,
+            model=response.model,
+            usage=usage_info,
+        )
 
     async def list_models(self) -> List[str]:
         """사용 가능한 모델 목록 조회"""
