@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.vision_rag_request import VisionRAGRequest
-from ..dto.response.vision_rag_response import VisionRAGResponse
+from ..dto.request.ml.vision_rag_request import VisionRAGRequest
+from ..dto.response.ml.vision_rag_response import VisionRAGResponse
 
 
 class IVisionRAGService(ABC):

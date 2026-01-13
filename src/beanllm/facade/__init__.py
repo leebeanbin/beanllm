@@ -5,8 +5,9 @@ SOLID 원칙:
 - Facade 패턴: 복잡한 내부 구조를 단순한 인터페이스로
 """
 
-from .agent_facade import Agent
-from .chain_facade import (
+# Backward compatibility: Re-export from subdirectories
+from .core.agent_facade import Agent
+from .core.chain_facade import (
     Chain,
     ChainBuilder,
     ChainResult,
@@ -15,13 +16,27 @@ from .chain_facade import (
     SequentialChain,
     create_chain,
 )
-from .client_facade import Client
-from .optimizer_facade import Optimizer
-from .orchestrator_facade import Orchestrator
-from .rag_debug_facade import RAGDebug
-from .rag_facade import RAG, RAGBuilder, RAGChain, create_rag
+from .core.client_facade import Client
+from .core.rag_facade import RAG, RAGBuilder, RAGChain, create_rag
+
+# Advanced facades
+from .advanced.graph_facade import Graph
+from .advanced.knowledge_graph_facade import KnowledgeGraph
+from .advanced.multi_agent_facade import MultiAgentCoordinator as MultiAgent
+from .advanced.optimizer_facade import Optimizer
+from .advanced.orchestrator_facade import Orchestrator
+from .advanced.rag_debug_facade import RAGDebug
+from .advanced.state_graph_facade import StateGraph
+
+# ML facades
+from .ml.audio_facade import WhisperSTT, TextToSpeech as TTS, AudioRAG
+from .ml.evaluation_facade import EvaluatorFacade
+from .ml.finetuning_facade import FineTuningManagerFacade
+from .ml.vision_rag_facade import VisionRAG, MultimodalRAG, create_vision_rag
+from .ml.web_search_facade import WebSearch
 
 __all__ = [
+    # Core facades (backward compatibility)
     "Client",
     "RAGChain",
     "RAG",
@@ -35,8 +50,22 @@ __all__ = [
     "PromptChain",
     "SequentialChain",
     "create_chain",
-    # Advanced features (Phase 2+)
+    # Advanced facades
+    "Graph",
+    "KnowledgeGraph",
+    "StateGraph",
+    "MultiAgent",
     "RAGDebug",
     "Orchestrator",
     "Optimizer",
+    # ML facades
+    "WhisperSTT",
+    "TTS",
+    "AudioRAG",
+    "VisionRAG",
+    "MultimodalRAG",
+    "create_vision_rag",
+    "EvaluatorFacade",
+    "FineTuningManagerFacade",
+    "WebSearch",
 ]

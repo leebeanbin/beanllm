@@ -83,7 +83,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.chat_service_impl import ChatServiceImpl
+        from .impl.core.chat_service_impl import ChatServiceImpl
 
         return ChatServiceImpl(
             provider_factory=self._provider_factory,
@@ -104,7 +104,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.rag_service_impl import RAGServiceImpl
+        from .impl.core.rag_service_impl import RAGServiceImpl
 
         # 공통 로직: chat_service 자동 생성
         chat_service = self._get_or_create_chat_service(chat_service)
@@ -134,7 +134,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.agent_service_impl import AgentServiceImpl
+        from .impl.core.agent_service_impl import AgentServiceImpl
 
         # 공통 로직: chat_service 자동 생성
         chat_service = self._get_or_create_chat_service(chat_service)
@@ -168,7 +168,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.chain_service_impl import ChainServiceImpl
+        from .impl.core.chain_service_impl import ChainServiceImpl
 
         # 공통 로직: chat_service 자동 생성
         chat_service = self._get_or_create_chat_service(chat_service)
@@ -186,7 +186,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.graph_service_impl import GraphServiceImpl
+        from .impl.advanced.graph_service_impl import GraphServiceImpl
 
         return GraphServiceImpl()
 
@@ -201,7 +201,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.state_graph_service_impl import StateGraphServiceImpl
+        from .impl.advanced.state_graph_service_impl import StateGraphServiceImpl
 
         return StateGraphServiceImpl()
 
@@ -216,7 +216,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.multi_agent_service_impl import MultiAgentServiceImpl
+        from .impl.advanced.multi_agent_service_impl import MultiAgentServiceImpl
 
         return MultiAgentServiceImpl()
 
@@ -231,7 +231,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.web_search_service_impl import WebSearchServiceImpl
+        from .impl.ml.web_search_service_impl import WebSearchServiceImpl
 
         return WebSearchServiceImpl()
 
@@ -260,7 +260,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.vision_rag_service_impl import VisionRAGServiceImpl
+        from .impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
 
         # chat_service 자동 생성
         if not chat_service and not llm:
@@ -307,7 +307,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.audio_service_impl import AudioServiceImpl
+        from .impl.ml.audio_service_impl import AudioServiceImpl
 
         return AudioServiceImpl(
             whisper_model=whisper_model,
@@ -340,7 +340,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.evaluation_service_impl import EvaluationServiceImpl
+        from .impl.ml.evaluation_service_impl import EvaluationServiceImpl
 
         return EvaluationServiceImpl(client=client, embedding_model=embedding_model)
 
@@ -365,7 +365,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.rag_debug_service_impl import RAGDebugServiceImpl
+        from .impl.advanced.rag_debug_service_impl import RAGDebugServiceImpl
 
         return RAGDebugServiceImpl()
 
@@ -380,7 +380,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.orchestrator_service_impl import OrchestratorServiceImpl
+        from .impl.advanced.orchestrator_service_impl import OrchestratorServiceImpl
 
         return OrchestratorServiceImpl()
 
@@ -395,7 +395,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.optimizer_service_impl import OptimizerServiceImpl
+        from .impl.advanced.optimizer_service_impl import OptimizerServiceImpl
 
         return OptimizerServiceImpl()
 
@@ -410,7 +410,7 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.knowledge_graph_service_impl import KnowledgeGraphServiceImpl
+        from .impl.ml.knowledge_graph_service_impl import KnowledgeGraphServiceImpl
 
         return KnowledgeGraphServiceImpl()
 
