@@ -15,14 +15,14 @@ This file re-exports all implementations for backward compatibility.
 """
 
 # Re-export all implementations
-from .chroma import ChromaVectorStore
-from .faiss import FAISSVectorStore
-from .lancedb import LanceDBVectorStore
-from .milvus import MilvusVectorStore
-from .pgvector import PgvectorVectorStore
-from .pinecone import PineconeVectorStore
-from .qdrant import QdrantVectorStore
-from .weaviate import WeaviateVectorStore
+from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
+from .local import (
+    ChromaVectorStore,
+    FAISSVectorStore,
+    LanceDBVectorStore,
+    PgvectorVectorStore,
+    QdrantVectorStore,
+)
 
 __all__ = [
     "ChromaVectorStore",

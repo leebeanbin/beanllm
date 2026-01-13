@@ -16,8 +16,8 @@ else:
     except ImportError:
         Document = Any  # type: ignore
 
-from .base import BaseVectorStore, VectorSearchResult
-from .search import AdvancedSearchMixin
+from ..base import BaseVectorStore, VectorSearchResult
+from ..search import AdvancedSearchMixin
 
 
 class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
@@ -53,7 +53,57 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
         )
 
     def add_documents(self, documents: List[Any], **kwargs) -> List[str]:
-        """문서 추가"""
+        """문서 추가 (분산 락 적용)"""
+        import asyncio
+        from beanllm.infrastructure.distributed import get_lock_manager
+        
+        # 분산 락 획득 (벡터 스토어 업데이트)
+        lock_manager = get_lock_manager()
+        store_id = f"{self.collection_name}:{id(self)}"
+        
+        async def _add_documents_async():
+            async with await lock_manager.with_vector_store_lock(store_id, timeout=60.0):
+                # 이벤트 발행 (시작)
+                self._publish_add_documents_event(len(documents), "add_documents.started")
+                
+                texts = [doc.content for doc in documents]
+                metadatas = [doc.metadata for doc in documents]
+
+                # 임베딩 생성
+                if self.embedding_function:
+                    embeddings = self.embedding_function(texts)
+                else:
+                    embeddings = None
+
+                # ID 생성
+                ids = [str(uuid.uuid4()) for _ in texts]
+
+                # Chroma에 추가
+                if embeddings:
+                    self.collection.add(
+                        documents=texts, metadatas=metadatas, ids=ids, embeddings=embeddings
+                    )
+                else:
+                    self.collection.add(documents=texts, metadatas=metadatas, ids=ids)
+
+                # 이벤트 발행 (완료)
+                self._publish_add_documents_event(len(documents), "add_documents.completed")
+                
+                return ids
+        
+        # 동기 함수이므로 비동기 래퍼 실행
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
+                return self._add_documents_without_lock(documents, **kwargs)
+            else:
+                return loop.run_until_complete(_add_documents_async())
+        except RuntimeError:
+            return asyncio.run(_add_documents_async())
+    
+    def _add_documents_without_lock(self, documents: List[Any], **kwargs) -> List[str]:
+        """락 없이 문서 추가 (fallback)"""
         texts = [doc.content for doc in documents]
         metadatas = [doc.metadata for doc in documents]
 

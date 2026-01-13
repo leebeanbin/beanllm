@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

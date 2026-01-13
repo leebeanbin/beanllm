@@ -4,11 +4,11 @@ Embeddings Advanced - 고급 임베딩 기법들
 
 from typing import List, Optional
 
-from .base import BaseEmbedding
+from ..base import BaseEmbedding
 from .utils import batch_cosine_similarity
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

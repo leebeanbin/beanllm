@@ -6,11 +6,11 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from .base import BaseDocumentLoader
-from .loaders import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
+from .core import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
 from .types import Document
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

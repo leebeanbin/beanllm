@@ -14,10 +14,10 @@ Template Method Pattern을 사용하여 중복 코드 제거
 import os
 from typing import List, Optional
 
-from .base import BaseLocalEmbedding
+from ..base import BaseLocalEmbedding
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 
@@ -112,9 +112,39 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
         self.use_fp16 = use_fp16
 
     def _load_model(self):
-        """모델 로딩 (lazy loading, GPU 최적화)"""
+        """모델 로딩 (lazy loading, GPU 최적화, 분산 락 적용)"""
         if self._model is not None:
             return
+        
+        # 분산 락 획득 (모델 로딩)
+        import asyncio
+        from beanllm.infrastructure.distributed import get_lock_manager
+        
+        lock_manager = get_lock_manager()
+        model_key = f"{self.model}:{id(self)}"
+        
+        async def _load_model_async():
+            async with lock_manager.with_model_lock(model_key, timeout=300.0):  # 5분 타임아웃
+                # 락 획득 후 다시 확인 (다른 프로세스가 이미 로드했을 수 있음)
+                if self._model is not None:
+                    return
+                
+                # 실제 모델 로딩
+                return self._load_model_impl()
+        
+        # 동기 함수이므로 비동기 래퍼 실행
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 이미 실행 중인 락이 있으면 락 없이 실행 (fallback)
+                self._load_model_impl()
+            else:
+                loop.run_until_complete(_load_model_async())
+        except RuntimeError:
+            asyncio.run(_load_model_async())
+    
+    def _load_model_impl(self):
+        """실제 모델 로딩 구현 (락 없이)"""
 
         # Import 검증
         self._validate_import("sentence_transformers", "sentence-transformers")
@@ -422,27 +452,28 @@ class Qwen3Embedding(BaseLocalEmbedding):
         self.batch_size = batch_size
 
     def _load_model(self):
-        """모델 로딩 (lazy loading)"""
-        if self._model is not None:
-            return
+        """모델 로딩 (lazy loading, 분산 락 적용)"""
+        def _load_impl():
+            # Import 검증
+            self._validate_import("sentence_transformers", "sentence-transformers")
 
-        # Import 검증
-        self._validate_import("sentence_transformers", "sentence-transformers")
+            from sentence_transformers import SentenceTransformer
 
-        from sentence_transformers import SentenceTransformer
+            # Device 설정
+            self._device = self._get_device()
 
-        # Device 설정
-        self._device = self._get_device()
+            logger.info(f"Loading Qwen3 model: {self.model} on {self._device}")
 
-        logger.info(f"Loading Qwen3 model: {self.model} on {self._device}")
+            # 모델 로드
+            self._model = SentenceTransformer(self.model, device=self._device)
 
-        # 모델 로드
-        self._model = SentenceTransformer(self.model, device=self._device)
-
-        logger.info(
-            f"Qwen3 model loaded: {self.model} "
-            f"(max_seq_length: {self._model.max_seq_length})"
-        )
+            logger.info(
+                f"Qwen3 model loaded: {self.model} "
+                f"(max_seq_length: {self._model.max_seq_length})"
+            )
+        
+        # 분산 락을 사용한 모델 로딩
+        self._load_model_with_lock(self.model, _load_impl)
 
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트들을 임베딩 (동기)"""
@@ -543,27 +574,28 @@ class CodeEmbedding(BaseLocalEmbedding):
         self._tokenizer = None
 
     def _load_model(self):
-        """모델 로딩 (lazy loading)"""
-        if self._model is not None:
-            return
+        """모델 로딩 (lazy loading, 분산 락 적용)"""
+        def _load_impl():
+            # Import 검증
+            self._validate_import("transformers", "transformers")
 
-        # Import 검증
-        self._validate_import("transformers", "transformers")
+            from transformers import AutoModel, AutoTokenizer
 
-        from transformers import AutoModel, AutoTokenizer
+            # Device 설정
+            self._device = self._get_device()
 
-        # Device 설정
-        self._device = self._get_device()
+            logger.info(f"Loading Code model: {self.model} on {self._device}")
 
-        logger.info(f"Loading Code model: {self.model} on {self._device}")
+            # 모델 및 토크나이저 로드
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model)
+            self._model = AutoModel.from_pretrained(self.model)
+            self._model.to(self._device)
+            self._model.eval()
 
-        # 모델 및 토크나이저 로드
-        self._tokenizer = AutoTokenizer.from_pretrained(self.model)
-        self._model = AutoModel.from_pretrained(self.model)
-        self._model.to(self._device)
-        self._model.eval()
-
-        logger.info(f"Code model loaded: {self.model}")
+            logger.info(f"Code model loaded: {self.model}")
+        
+        # 분산 락을 사용한 모델 로딩
+        self._load_model_with_lock(self.model, _load_impl)
 
     def _mean_pooling(self, model_output, attention_mask):
         """Mean pooling with attention mask"""
