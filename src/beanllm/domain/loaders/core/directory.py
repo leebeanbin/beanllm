@@ -10,12 +10,12 @@ import re
 from pathlib import Path
 from typing import Iterator, List, Optional, Union
 
-from .base import BaseDocumentLoader
-from .security import validate_file_path
-from .types import Document
+from ..base import BaseDocumentLoader
+from ..advanced.security import validate_file_path
+from ..types import Document
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)
@@ -191,30 +191,59 @@ class DirectoryLoader(BaseDocumentLoader):
 
         # 병렬 처리 또는 순차 처리
         if self.use_parallel and len(filtered_files) > 1:
-            # 병렬 처리
+            # 분산 작업 큐 사용 (환경변수 USE_DISTRIBUTED에 따라 자동 선택)
             try:
-                from concurrent.futures import ProcessPoolExecutor, as_completed
+                import os
+                use_distributed = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
+                
+                if use_distributed:
+                    # 분산 작업 큐 사용 (Kafka 또는 인메모리)
+                    import asyncio
+                    from beanllm.infrastructure.distributed import BatchProcessor
+                    
+                    async def load_files_async():
+                        processor = BatchProcessor(task_type="document.loading", max_concurrent=self.max_workers or os.cpu_count() or 4)
+                        results = await processor.process_batch(
+                            items=filtered_files,
+                            handler=DirectoryLoader._load_single_file,
+                        )
+                        # 결과를 평탄화 (각 결과는 List[Document])
+                        return [doc for file_docs in results if file_docs for doc in file_docs]
+                    
+                    try:
+                        documents = asyncio.run(load_files_async())
+                    except RuntimeError:
+                        # Event loop already running, use existing loop
+                        loop = asyncio.get_event_loop()
+                        documents = loop.run_until_complete(load_files_async())
+                    logger.info(
+                        f"Loaded {len(documents)} documents from {self.path} "
+                        f"({len(filtered_files)} files, distributed queue mode)"
+                    )
+                else:
+                    # 기존 ProcessPoolExecutor 사용 (인메모리)
+                    from concurrent.futures import ProcessPoolExecutor, as_completed
 
-                with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
-                    # Submit all file loading tasks
-                    future_to_file = {
-                        executor.submit(DirectoryLoader._load_single_file, file_path): file_path
-                        for file_path in filtered_files
-                    }
+                    with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
+                        # Submit all file loading tasks
+                        future_to_file = {
+                            executor.submit(DirectoryLoader._load_single_file, file_path): file_path
+                            for file_path in filtered_files
+                        }
 
-                    # Collect results as they complete
-                    for future in as_completed(future_to_file):
-                        file_path = future_to_file[future]
-                        try:
-                            file_docs = future.result()
-                            documents.extend(file_docs)
-                        except Exception as e:
-                            logger.error(f"Failed to load {file_path} in parallel: {e}")
+                        # Collect results as they complete
+                        for future in as_completed(future_to_file):
+                            file_path = future_to_file[future]
+                            try:
+                                file_docs = future.result()
+                                documents.extend(file_docs)
+                            except Exception as e:
+                                logger.error(f"Failed to load {file_path} in parallel: {e}")
 
-                logger.info(
-                    f"Loaded {len(documents)} documents from {self.path} "
-                    f"({len(filtered_files)} files, parallel mode)"
-                )
+                    logger.info(
+                        f"Loaded {len(documents)} documents from {self.path} "
+                        f"({len(filtered_files)} files, parallel mode)"
+                    )
 
             except Exception as parallel_error:
                 # Parallel failed - fallback to sequential

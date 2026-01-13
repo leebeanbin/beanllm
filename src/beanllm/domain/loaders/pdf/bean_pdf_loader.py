@@ -16,12 +16,12 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from ..base import BaseDocumentLoader
-from ..security import validate_file_path
+from ..advanced.security import validate_file_path
 from ..types import Document
 from .models import PDFLoadConfig
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

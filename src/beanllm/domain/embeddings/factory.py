@@ -6,7 +6,7 @@ import os
 from typing import List, Optional, Union
 
 from .base import BaseEmbedding
-from .providers import (
+from .api.providers import (
     CohereEmbedding,
     GeminiEmbedding,
     JinaEmbedding,
@@ -17,7 +17,7 @@ from .providers import (
 )
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

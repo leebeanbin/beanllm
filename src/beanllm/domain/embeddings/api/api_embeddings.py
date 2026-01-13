@@ -16,10 +16,10 @@ Template Method Pattern을 사용하여 중복 코드 제거
 import os
 from typing import List, Optional
 
-from .base import BaseAPIEmbedding
+from ..base import BaseAPIEmbedding
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

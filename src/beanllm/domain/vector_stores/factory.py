@@ -6,12 +6,11 @@ import os
 from typing import List, Optional
 
 from .base import BaseVectorStore
-from .implementations import (
+from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
+from .local import (
     ChromaVectorStore,
     FAISSVectorStore,
-    PineconeVectorStore,
     QdrantVectorStore,
-    WeaviateVectorStore,
 )
 
 
@@ -226,6 +225,57 @@ def from_documents(
         # 명시적 선택
         store = from_documents(docs, embed_func, provider="chroma")
     """
-    store = create_vector_store(provider=provider, embedding_function=embedding_function, **kwargs)
-    store.add_documents(documents)
-    return store
+    import asyncio
+    from beanllm.infrastructure.distributed import get_event_logger
+    
+    # 이벤트 로거
+    event_logger = get_event_logger()
+    
+    # 시작 이벤트 발행
+    try:
+        asyncio.run(event_logger.log_event(
+            "rag.indexing.started",
+            {
+                "provider": provider or "auto",
+                "document_count": len(documents),
+                "embedding_function": str(embedding_function)[:100],
+            }
+        ))
+    except RuntimeError:
+        # Event loop already running, skip logging
+        pass
+    
+    try:
+        store = create_vector_store(provider=provider, embedding_function=embedding_function, **kwargs)
+        store.add_documents(documents)
+        
+        # 완료 이벤트 발행
+        try:
+            asyncio.run(event_logger.log_event(
+                "rag.indexing.completed",
+                {
+                    "provider": provider or "auto",
+                    "document_count": len(documents),
+                    "vector_store_id": str(id(store)),
+                }
+            ))
+        except RuntimeError:
+            # Event loop already running, skip logging
+            pass
+        
+        return store
+    except Exception as e:
+        # 오류 이벤트 발행
+        try:
+            asyncio.run(event_logger.log_event(
+                "rag.indexing.error",
+                {
+                    "provider": provider or "auto",
+                    "document_count": len(documents),
+                    "error": str(e)[:500],
+                }
+            ))
+        except RuntimeError:
+            # Event loop already running, skip logging
+            pass
+        raise
