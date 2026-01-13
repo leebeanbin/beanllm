@@ -8,7 +8,7 @@ import inspect
 import time
 from typing import Callable, TypeVar
 
-from ..utils.logger import get_logger
+from ..utils.logging import get_logger
 
 T = TypeVar("T")
 

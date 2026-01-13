@@ -16,10 +16,11 @@ except ImportError:
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logger import get_logger
-from beanllm.utils.retry import retry
+from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.retry import retry
 
 from .base_provider import BaseLLMProvider, LLMResponse
 
@@ -56,17 +57,24 @@ class OllamaProvider(BaseLLMProvider):
         """
         스트리밍 채팅 (최신 SDK: AsyncClient.chat() 사용)
         """
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"ollama:{model or self.default_model}", cost=1.0)
+        
         try:
             # ParameterAdapter가 max_tokens를 num_predict로 변환함
             # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
             num_predict = kwargs.get("num_predict", max_tokens)
             temperature_param = kwargs.get("temperature", temperature)
 
+            # System message를 messages 배열에 추가 (Ollama는 system 파라미터를 직접 지원하지 않음)
+            chat_messages = messages.copy()
+            if system:
+                chat_messages = [{"role": "system", "content": system}] + chat_messages
+
             # 최신 SDK: client.chat() 사용
             stream = await self.client.chat(
                 model=model or self.default_model,
-                messages=messages,
-                system=system,
+                messages=chat_messages,
                 options={
                     "temperature": temperature_param,
                     "num_predict": num_predict,
@@ -81,10 +89,11 @@ class OllamaProvider(BaseLLMProvider):
                     if content:
                         yield content
         except Exception as e:
-            logger.error(f"Ollama stream_chat error: {e}")
-            yield f"[Error: {str(e)}]"
+            logger.error(f"Ollama stream_chat failed: {e}")
+            raise
 
-    @retry(max_attempts=3, exceptions=(Exception,))
+    @retry(max_retries=3, retry_on=(Exception,))
+    @provider_error_handler(operation="chat", custom_error_message="Ollama chat failed")
     async def chat(
         self,
         messages: List[Dict[str, str]],
@@ -95,16 +104,23 @@ class OllamaProvider(BaseLLMProvider):
         **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
+        # Rate Limiting (분산 또는 인메모리)
+        await self._acquire_rate_limit(f"ollama:{model or self.default_model}", cost=1.0)
+
         try:
             # ParameterAdapter가 max_tokens를 num_predict로 변환함
             # kwargs에서 변환된 파라미터 추출 (우선순위: kwargs > 직접 전달)
             num_predict = kwargs.get("num_predict", max_tokens)
             temperature_param = kwargs.get("temperature", temperature)
 
+            # System message를 messages 배열에 추가 (Ollama는 system 파라미터를 직접 지원하지 않음)
+            chat_messages = messages.copy()
+            if system:
+                chat_messages = [{"role": "system", "content": system}] + chat_messages
+
             response = await self.client.chat(
                 model=model or self.default_model,
-                messages=messages,
-                system=system,
+                messages=chat_messages,
                 options={
                     "temperature": temperature_param,
                     "num_predict": num_predict,
@@ -117,8 +133,8 @@ class OllamaProvider(BaseLLMProvider):
                 model=response.get("model", model or self.default_model),
             )
         except Exception as e:
-            logger.error(f"Ollama chat error: {e}")
-            raise ProviderError(f"Ollama chat failed: {str(e)}") from e
+            logger.error(f"Ollama chat failed: {e}")
+            raise
 
     async def list_models(self) -> List[str]:
         """사용 가능한 모델 목록"""

@@ -6,7 +6,7 @@ LLM 제공자 추상화 인터페이스
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import AsyncGenerator, Callable, Dict, List, Optional, TypeVar
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, TypeVar
 
 # 선택적 의존성 - ProviderError 임포트 시도
 try:
@@ -19,7 +19,7 @@ except ImportError:
 
 # logger 임포트 시도
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)
@@ -149,13 +149,103 @@ class BaseLLMProvider(ABC):
             ```
         """
         error_message = fallback_message or f"{self.name} {operation} failed"
-        full_message = f"{error_message}: {str(error)}"
+        
+        # 에러 메시지에서 API 키 마스킹 (Helper 함수 사용)
+        from beanllm.utils.integration.security import sanitize_error_message
+        error_str = sanitize_error_message(error)
+        
+        full_message = f"{error_message}: {error_str}"
 
-        # 로깅
-        self._logger.error(f"{self.name} {operation} error: {error}")
+        # 로깅 (마스킹된 메시지)
+        self._logger.error(f"{self.name} {operation} error: {error_str}")
 
         # ProviderError로 래핑
         return ProviderError(full_message)
+
+    def _extract_params(
+        self,
+        kwargs: Dict[str, Any],
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        파라미터 추출 헬퍼 (kwargs에서 우선순위로 추출)
+
+        모든 Provider에서 반복되는 kwargs.get() 패턴을 통합
+
+        Args:
+            kwargs: 추가 파라미터 딕셔너리
+            temperature: 기본 temperature 값
+            max_tokens: 기본 max_tokens 값
+
+        Returns:
+            추출된 파라미터 딕셔너리
+
+        Example:
+            ```python
+            params = self._extract_params(kwargs, temperature, max_tokens)
+            temperature_param = params["temperature"]
+            max_tokens_param = params["max_tokens"]
+            ```
+        """
+        return {
+            "temperature": kwargs.get("temperature", temperature),
+            "max_tokens": kwargs.get("max_tokens", max_tokens),
+        }
+
+    def _prepare_openai_messages(
+        self,
+        messages: List[Dict[str, str]],
+        system: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        OpenAI 호환 메시지 형식으로 변환
+
+        모든 OpenAI 호환 Provider에서 반복되는 메시지 변환 패턴을 통합
+
+        Args:
+            messages: 원본 메시지 리스트
+            system: 시스템 프롬프트 (선택적)
+
+        Returns:
+            변환된 메시지 리스트
+
+        Example:
+            ```python
+            openai_messages = self._prepare_openai_messages(messages, system)
+            ```
+        """
+        openai_messages = messages.copy()
+        if system:
+            openai_messages.insert(0, {"role": "system", "content": system})
+        return openai_messages
+
+    def _extract_openai_usage(
+        self, response: Any
+    ) -> Optional[Dict[str, int]]:
+        """
+        OpenAI 호환 API 응답에서 Usage 정보 추출
+
+        모든 OpenAI 호환 Provider에서 반복되는 usage 추출 패턴을 통합
+
+        Args:
+            response: API 응답 객체
+
+        Returns:
+            Usage 정보 딕셔너리 또는 None
+
+        Example:
+            ```python
+            usage_info = self._extract_openai_usage(response)
+            ```
+        """
+        if hasattr(response, "usage") and response.usage:
+            return {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens,
+            }
+        return None
 
     async def _safe_health_check(
         self, health_check_fn: Callable[[], bool]
@@ -211,3 +301,39 @@ class BaseLLMProvider(ABC):
             return check_fn()
         except Exception:
             return False
+
+    # ============================================================================
+    # Rate Limiting Utilities (분산 Rate Limiting 지원)
+    # ============================================================================
+
+    async def _acquire_rate_limit(
+        self,
+        key: Optional[str] = None,
+        cost: float = 1.0,
+    ) -> None:
+        """
+        Rate Limit 획득 (분산 또는 인메모리)
+
+        모든 Provider에서 API 호출 전 Rate Limiting 적용
+
+        Args:
+            key: Rate Limit 키 (None이면 provider 이름 사용)
+            cost: 요청 비용 (기본값: 1.0)
+
+        Example:
+            ```python
+            async def chat(self, ...):
+                await self._acquire_rate_limit(f"{self.name}:{model}", cost=1.0)
+                # API 호출
+                response = await self.client.chat(...)
+            ```
+        """
+        try:
+            from beanllm.infrastructure.distributed.factory import get_rate_limiter
+
+            rate_limiter = get_rate_limiter()
+            rate_limit_key = key or f"llm:{self.name.lower()}"
+            await rate_limiter.wait(rate_limit_key, cost=cost)
+        except Exception as e:
+            # Rate Limiting 실패 시 로깅만 하고 계속 진행 (Fallback)
+            self._logger.warning(f"Rate limiting failed for {self.name}: {e}, continuing without rate limit")
