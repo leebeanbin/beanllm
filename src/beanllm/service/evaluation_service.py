@@ -9,14 +9,14 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..domain.evaluation.evaluator import Evaluator
-    from ..dto.request.evaluation_request import (
+    from ..dto.request.ml.evaluation_request import (
         BatchEvaluationRequest,
         CreateEvaluatorRequest,
         EvaluationRequest,
         RAGEvaluationRequest,
         TextEvaluationRequest,
     )
-    from ..dto.response.evaluation_response import (
+    from ..dto.response.ml.evaluation_response import (
         BatchEvaluationResponse,
         EvaluationResponse,
     )

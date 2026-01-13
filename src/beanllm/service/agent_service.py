@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.agent_request import AgentRequest
-from ..dto.response.agent_response import AgentResponse
+from ..dto.request.core.agent_request import AgentRequest
+from ..dto.response.core.agent_response import AgentResponse
 
 
 class IAgentService(ABC):

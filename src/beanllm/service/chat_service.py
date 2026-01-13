@@ -10,8 +10,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import AsyncIterator
 
-from ..dto.request.chat_request import ChatRequest
-from ..dto.response.chat_response import ChatResponse
+from ..dto.request.core.chat_request import ChatRequest
+from ..dto.response.core.chat_response import ChatResponse
 
 
 class IChatService(ABC):

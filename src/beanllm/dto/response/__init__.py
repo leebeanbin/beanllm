@@ -1,48 +1,51 @@
 """Response DTOs - 응답 데이터 전달 객체"""
 
-from .agent_response import AgentResponse
-from .audio_response import AudioResponse
-from .chain_response import ChainResponse
-from .chat_response import ChatResponse
-from .evaluation_response import BatchEvaluationResponse, EvaluationResponse
-
-# FineTuning 관련 클래스들은 개별적으로 import 필요시 사용
-from .finetuning_response import (
+from .core import AgentResponse, ChainResponse, ChatResponse, RAGResponse
+from .advanced import (
+    MultiAgentResponse,
+    StateGraphResponse,
+)
+from .ml import (
+    AudioResponse,
+    BatchEvaluationResponse,
     CancelJobResponse,
     CreateJobResponse,
+    EvaluationResponse,
     GetJobResponse,
     GetMetricsResponse,
     GetTrainingProgressResponse,
     ListJobsResponse,
     PrepareDataResponse,
     StartTrainingResponse,
+    VisionRAGResponse,
 )
-from .graph_response import GraphResponse
-from .multi_agent_response import MultiAgentResponse
-from .rag_response import RAGResponse
-from .state_graph_response import StateGraphResponse
-from .vision_rag_response import VisionRAGResponse
-from .web_search_response import WebSearchResponse
+from .graph import GraphResponse
+from .web import WebSearchResponse
 
 __all__ = [
+    # Core
     "AgentResponse",
-    "AudioResponse",
-    "BatchEvaluationResponse",
-    "CancelJobResponse",
     "ChainResponse",
     "ChatResponse",
-    "CreateJobResponse",
+    "RAGResponse",
+    # Advanced
+    "MultiAgentResponse",
+    "StateGraphResponse",
+    # ML
+    "AudioResponse",
+    "BatchEvaluationResponse",
     "EvaluationResponse",
+    "CancelJobResponse",
+    "CreateJobResponse",
     "GetJobResponse",
     "GetMetricsResponse",
     "GetTrainingProgressResponse",
-    "GraphResponse",
     "ListJobsResponse",
-    "MultiAgentResponse",
     "PrepareDataResponse",
-    "RAGResponse",
     "StartTrainingResponse",
-    "StateGraphResponse",
     "VisionRAGResponse",
+    # Graph
+    "GraphResponse",
+    # Web
     "WebSearchResponse",
 ]

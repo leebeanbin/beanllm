@@ -10,13 +10,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from ..dto.request.rag_debug_request import (
+from ..dto.request.ml.rag_debug_request import (
     AnalyzeEmbeddingsRequest,
     StartDebugSessionRequest,
     TuneParametersRequest,
     ValidateChunksRequest,
 )
-from ..dto.response.rag_debug_response import (
+from ..dto.response.ml.rag_debug_response import (
     AnalyzeEmbeddingsResponse,
     DebugSessionResponse,
     TuneParametersResponse,

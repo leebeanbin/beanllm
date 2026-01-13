@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.chain_request import ChainRequest
-from ..dto.response.chain_response import ChainResponse
+from ..dto.request.core.chain_request import ChainRequest
+from ..dto.response.core.chain_response import ChainResponse
 
 
 class IChainService(ABC):

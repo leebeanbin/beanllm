@@ -11,25 +11,27 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, Type
 
-from ..service.factory import ServiceFactory
-from .agent_handler import AgentHandler
-from .audio_handler import AudioHandler
-from .chain_handler import ChainHandler
-from .chat_handler import ChatHandler
-from .graph_handler import GraphHandler
-from .knowledge_graph_handler import KnowledgeGraphHandler
-from .multi_agent_handler import MultiAgentHandler
-from .optimizer_handler import OptimizerHandler
-from .orchestrator_handler import OrchestratorHandler
-from .rag_debug_handler import RAGDebugHandler
-from .rag_handler import RAGHandler
-from .state_graph_handler import StateGraphHandler
-from .vision_rag_handler import VisionRAGHandler
-from .web_search_handler import WebSearchHandler
+from beanllm.service.factory import ServiceFactory
+from .core.agent_handler import AgentHandler
+from .core.chain_handler import ChainHandler
+from .core.chat_handler import ChatHandler
+from .core.rag_handler import RAGHandler
+from .advanced.graph_handler import GraphHandler
+from .advanced.multi_agent_handler import MultiAgentHandler
+from .advanced.optimizer_handler import OptimizerHandler
+from .advanced.orchestrator_handler import OrchestratorHandler
+from .advanced.rag_debug_handler import RAGDebugHandler
+from .advanced.state_graph_handler import StateGraphHandler
+from .ml.audio_handler import AudioHandler
+from .ml.evaluation_handler import EvaluationHandler
+from .ml.finetuning_handler import FinetuningHandler
+from .ml.knowledge_graph_handler import KnowledgeGraphHandler
+from .ml.vision_rag_handler import VisionRAGHandler
+from .ml.web_search_handler import WebSearchHandler
 
 if TYPE_CHECKING:
-    from ..service.audio_service import IAudioService
-    from ..service.vision_rag_service import IVisionRAGService
+    from beanllm.service.audio_service import IAudioService
+    from beanllm.service.vision_rag_service import IVisionRAGService
 
 
 class HandlerFactory:
