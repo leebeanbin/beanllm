@@ -5,10 +5,13 @@ Updated to use generic LRUCache with TTL and automatic cleanup
 """
 
 import json
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
+
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import CacheProtocol
 
 try:
-    from beanllm.utils.cache import LRUCache
+    from beanllm.utils.core.cache import LRUCache
 except ImportError:
     # Fallback: simple dict-based cache without TTL
     class LRUCache:
@@ -35,7 +38,11 @@ except ImportError:
             pass
 
 
+from beanllm.utils.logging import get_logger
+
 from .base import BasePromptTemplate
+
+logger = get_logger(__name__)
 
 
 class PromptCache:
@@ -72,20 +79,37 @@ class PromptCache:
     """
 
     def __init__(
-        self, max_size: int = 1000, ttl: Optional[int] = None, cleanup_interval: int = 60
+        self,
+        max_size: int = 1000,
+        ttl: Optional[int] = None,
+        cleanup_interval: int = 60,
+        cache: Optional["CacheProtocol"] = None,
     ):
         """
         Args:
             max_size: 최대 캐시 항목 수 (default: 1000)
             ttl: 캐시 유지 시간 초 (default: None = 무제한)
             cleanup_interval: 자동 정리 주기 초 (default: 60초)
+            cache: 캐시 구현체 (옵션). None이면 로컬 LRUCache 사용.
+
+        Example:
+            # 로컬 캐시 (기본)
+            cache = PromptCache()
+
+            # 분산 캐시 (Service layer에서 주입)
+            # distributed_cache는 Service layer에서 생성하여 주입
+            cache = PromptCache(cache=injected_distributed_cache)
         """
-        # Use generic LRUCache with automatic cleanup
-        self._cache: LRUCache[str, str] = LRUCache(
-            max_size=max_size,
-            ttl=ttl,
-            cleanup_interval=cleanup_interval,
-        )
+        if cache is not None:
+            # 외부에서 주입된 캐시 사용 (분산 캐시 등)
+            self._cache = cache
+        else:
+            # 기본 LRUCache 사용 (인메모리)
+            self._cache: LRUCache[str, str] = LRUCache(
+                max_size=max_size,
+                ttl=ttl,
+                cleanup_interval=cleanup_interval,
+            )
         self.max_size = max_size
         self.ttl = ttl
 
@@ -144,8 +168,8 @@ class PromptCache:
         """소멸자 - 자동 리소스 정리"""
         try:
             self.shutdown()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Shutdown in destructor failed (safe to ignore): {e}")
 
 
 # 전역 캐시 인스턴스

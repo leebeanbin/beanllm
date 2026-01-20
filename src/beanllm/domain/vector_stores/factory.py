@@ -3,7 +3,7 @@ Vector Store Factory - 벡터 스토어 팩토리
 """
 
 import os
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 from .base import BaseVectorStore
 from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
@@ -12,6 +12,9 @@ from .local import (
     FAISSVectorStore,
     QdrantVectorStore,
 )
+
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import EventLoggerProtocol
 
 
 class VectorStore:
@@ -207,7 +210,11 @@ def create_vector_store(
 
 
 def from_documents(
-    documents, embedding_function, provider: Optional[str] = None, **kwargs
+    documents,
+    embedding_function,
+    provider: Optional[str] = None,
+    event_logger: Optional["EventLoggerProtocol"] = None,
+    **kwargs
 ) -> BaseVectorStore:
     """
     문서에서 직접 vector store 생성
@@ -216,6 +223,7 @@ def from_documents(
         documents: 문서 리스트
         embedding_function: 임베딩 함수
         provider: Provider 이름 (선택적). None이면 자동 선택.
+        event_logger: 이벤트 로거 (옵션, 분산 기능용)
         **kwargs: 추가 파라미터
 
     Examples:
@@ -224,58 +232,71 @@ def from_documents(
 
         # 명시적 선택
         store = from_documents(docs, embed_func, provider="chroma")
+
+        # 이벤트 로깅 포함 (Service layer에서 주입)
+        # Service layer에서 event_logger를 주입받아 사용
+        store = from_documents(docs, embed_func, event_logger=injected_event_logger)
     """
-    import asyncio
-    from beanllm.infrastructure.distributed import get_event_logger
-    
-    # 이벤트 로거
-    event_logger = get_event_logger()
-    
-    # 시작 이벤트 발행
-    try:
-        asyncio.run(event_logger.log_event(
-            "rag.indexing.started",
-            {
-                "provider": provider or "auto",
-                "document_count": len(documents),
-                "embedding_function": str(embedding_function)[:100],
-            }
-        ))
-    except RuntimeError:
-        # Event loop already running, skip logging
-        pass
-    
-    try:
-        store = create_vector_store(provider=provider, embedding_function=embedding_function, **kwargs)
-        store.add_documents(documents)
-        
-        # 완료 이벤트 발행
+    # 시작 이벤트 발행 (이벤트 로거가 제공된 경우에만)
+    if event_logger is not None:
+        import asyncio
+
         try:
             asyncio.run(event_logger.log_event(
-                "rag.indexing.completed",
+                "rag.indexing.started",
                 {
                     "provider": provider or "auto",
                     "document_count": len(documents),
-                    "vector_store_id": str(id(store)),
+                    "embedding_function": str(embedding_function)[:100],
                 }
             ))
         except RuntimeError:
             # Event loop already running, skip logging
             pass
-        
+    
+    try:
+        # Pass event_logger to the vector store
+        store = create_vector_store(
+            provider=provider,
+            embedding_function=embedding_function,
+            event_logger=event_logger,
+            **kwargs
+        )
+        store.add_documents(documents)
+
+        # 완료 이벤트 발행 (이벤트 로거가 제공된 경우에만)
+        if event_logger is not None:
+            import asyncio
+
+            try:
+                asyncio.run(event_logger.log_event(
+                    "rag.indexing.completed",
+                    {
+                        "provider": provider or "auto",
+                        "document_count": len(documents),
+                        "vector_store_id": str(id(store)),
+                    }
+                ))
+            except RuntimeError:
+                # Event loop already running, skip logging
+                pass
+
         return store
     except Exception as e:
-        # 오류 이벤트 발행
-        try:
-            asyncio.run(event_logger.log_event(
-                "rag.indexing.error",
-                {
-                    "provider": provider or "auto",
-                    "document_count": len(documents),
-                    "error": str(e)[:500],
-                }
-            ))
-        except RuntimeError:
-            # Event loop already running, skip logging
-            pass
+        # 오류 이벤트 발행 (이벤트 로거가 제공된 경우에만)
+        if event_logger is not None:
+            import asyncio
+
+            try:
+                asyncio.run(event_logger.log_event(
+                    "rag.indexing.error",
+                    {
+                        "provider": provider or "auto",
+                        "document_count": len(documents),
+                        "error": str(e)[:500],
+                    }
+                ))
+            except RuntimeError:
+                # Event loop already running, skip logging
+                pass
         raise

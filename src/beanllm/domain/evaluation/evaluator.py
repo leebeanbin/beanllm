@@ -9,6 +9,7 @@ from .base_metric import BaseMetric
 from .results import BatchEvaluationResult, EvaluationResult
 
 if TYPE_CHECKING:
+    from beanllm.domain.protocols import ConcurrencyControllerProtocol, RateLimiterProtocol
     from beanllm.utils.error_handling import AsyncTokenBucket
 
 
@@ -69,7 +70,8 @@ class Evaluator:
         predictions: List[str],
         references: List[str],
         max_concurrent: int = 10,
-        rate_limiter: Optional["AsyncTokenBucket"] = None,
+        rate_limiter: Optional["RateLimiterProtocol"] = None,
+        concurrency_controller: Optional["ConcurrencyControllerProtocol"] = None,
         **kwargs,
     ) -> List[BatchEvaluationResult]:
         """
@@ -79,27 +81,37 @@ class Evaluator:
             predictions: 예측 리스트
             references: 참조 리스트
             max_concurrent: 최대 동시 실행 수
-            rate_limiter: Token Bucket Rate Limiter (None이면 기본값 사용)
+            rate_limiter: Rate Limiter (옵션, Service layer에서 주입)
+            concurrency_controller: 동시성 제어자 (옵션, Service layer에서 주입)
             **kwargs: 추가 파라미터
 
         Returns:
             평가 결과 리스트
+
+        Note:
+            rate_limiter와 concurrency_controller가 None이면 제한 없이 실행됩니다.
+            분산 기능을 사용하려면 Service layer에서 주입해야 합니다.
         """
         if len(predictions) != len(references):
             raise ValueError("Predictions and references must have same length")
 
-        # Token Bucket (기본값)
-        if rate_limiter is None:
-            from beanllm.utils.error_handling import AsyncTokenBucket
-
-            rate_limiter = AsyncTokenBucket(rate=1.0, capacity=20.0)
-
-        semaphore = asyncio.Semaphore(max_concurrent)
-
         async def evaluate_one(pred: str, ref: str):
-            """단일 평가 (Rate Limiting + Semaphore)"""
-            await rate_limiter.wait(cost=1.0)
-            async with semaphore:
+            """단일 평가 (Rate Limiting + 동시성 제어)"""
+            # Rate Limiting (옵션)
+            if rate_limiter is not None:
+                await rate_limiter.wait("evaluation", cost=1.0)
+
+            # 동시성 제어 (옵션)
+            if concurrency_controller is not None:
+                async with concurrency_controller.with_concurrency_control(
+                    "evaluation",
+                    max_concurrent=max_concurrent,
+                    rate_limit_key="evaluation"
+                ):
+                    loop = asyncio.get_event_loop()
+                    return await loop.run_in_executor(None, self.evaluate, pred, ref, **kwargs)
+            else:
+                # 제한 없이 실행
                 loop = asyncio.get_event_loop()
                 return await loop.run_in_executor(None, self.evaluate, pred, ref, **kwargs)
 
