@@ -10,12 +10,15 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 # 순환 참조 방지를 위해 TYPE_CHECKING 사용
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document
+    from beanllm.domain.protocols import EventLoggerProtocol, LockManagerProtocol
 else:
     # 런타임에만 import
     try:
         from beanllm.domain.loaders import Document
     except ImportError:
         Document = Any  # type: ignore
+    EventLoggerProtocol = Any  # type: ignore
+    LockManagerProtocol = Any  # type: ignore
 
 # AdvancedSearchMixin은 순환 참조 방지를 위해 구현체에서만 사용
 # base.py에서는 직접 상속하지 않음
@@ -44,12 +47,22 @@ class BaseVectorStore(ABC):
     (순환 참조 방지를 위해 base.py에서는 직접 상속하지 않음)
     """
 
-    def __init__(self, embedding_function=None, **kwargs):
+    def __init__(
+        self,
+        embedding_function=None,
+        event_logger: Optional["EventLoggerProtocol"] = None,
+        lock_manager: Optional["LockManagerProtocol"] = None,
+        **kwargs
+    ):
         """
         Args:
             embedding_function: 임베딩 함수 (texts -> vectors)
+            event_logger: 이벤트 로거 (옵션, 분산 기능용)
+            lock_manager: 분산 락 관리자 (옵션, 분산 기능용)
         """
         self.embedding_function = embedding_function
+        self._event_logger = event_logger
+        self._lock_manager = lock_manager
 
     @abstractmethod
     def add_documents(self, documents: List[Any], **kwargs) -> List[str]:
@@ -116,17 +129,19 @@ class BaseVectorStore(ABC):
     def _publish_add_documents_event(self, document_count: int, operation: str = "add_documents"):
         """
         문서 추가 이벤트 발행 (헬퍼 메서드)
-        
+
         Args:
             document_count: 추가된 문서 수
             operation: 작업 이름
         """
+        # 이벤트 로거가 주입된 경우에만 이벤트 발행
+        if self._event_logger is None:
+            return
+
         try:
             import asyncio
-            from beanllm.infrastructure.distributed import get_event_logger
-            
-            event_logger = get_event_logger()
-            asyncio.create_task(event_logger.log_event(
+
+            asyncio.create_task(self._event_logger.log_event(
                 f"vector_store.{operation}",
                 {
                     "document_count": document_count,

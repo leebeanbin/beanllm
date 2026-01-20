@@ -3,15 +3,22 @@ Communication System - Agent 간 통신
 """
 
 import asyncio
+import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
-from beanllm.utils.logger import get_logger
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import EventBusProtocol, EventLoggerProtocol
+
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+# 환경변수로 분산 모드 활성화 여부 확인
+USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
 
 
 class MessageType(Enum):
@@ -64,20 +71,51 @@ class CommunicationBus:
     Agent 간 통신 버스
 
     Publish-Subscribe 패턴 구현
+    분산 모드: Kafka를 통한 메시지 스트리밍 지원
     """
 
-    def __init__(self, delivery_guarantee: str = "at-most-once"):
+    def __init__(
+        self,
+        delivery_guarantee: str = "at-most-once",
+        use_kafka: Optional[bool] = None,
+        event_bus: Optional["EventBusProtocol"] = None,
+        event_logger: Optional["EventLoggerProtocol"] = None,
+    ):
         """
         Args:
             delivery_guarantee: 전송 보장 수준
                 - "at-most-once": 최대 1번 (빠름, 손실 가능)
                 - "at-least-once": 최소 1번 (중복 가능)
                 - "exactly-once": 정확히 1번 (느림, 보장)
+            use_kafka: Kafka 사용 여부 (None이면 USE_DISTRIBUTED 환경변수 사용)
+            event_bus: 이벤트 버스 프로토콜 (옵션, Service layer에서 주입)
+            event_logger: 이벤트 로거 프로토콜 (옵션, Service layer에서 주입)
         """
         self.messages: List[AgentMessage] = []
         self.subscribers: Dict[str, List[Callable]] = {}  # agent_id -> [callbacks]
         self.delivery_guarantee = delivery_guarantee
         self.delivered_messages: set = set()  # For exactly-once
+
+        # 분산 모드: Kafka 이벤트 버스
+        self.use_kafka = use_kafka if use_kafka is not None else USE_DISTRIBUTED
+        self.kafka_producer = None
+        self.kafka_consumer = None
+        self.event_logger = event_logger
+
+        # 외부에서 주입된 이벤트 버스 사용
+        if event_bus is not None:
+            self.kafka_producer = event_bus
+            self.kafka_consumer = event_bus
+            self.use_kafka = True
+            logger.info("CommunicationBus: Event bus enabled (injected)")
+        elif self.use_kafka:
+            # 분산 모드가 활성화되어 있지만 주입되지 않은 경우 경고
+            logger.warning(
+                "USE_DISTRIBUTED=true but event_bus not injected. "
+                "Falling back to in-memory mode. "
+                "Please inject event_bus from Service layer for distributed features."
+            )
+            self.use_kafka = False
 
     def subscribe(self, agent_id: str, callback: Callable[[AgentMessage], None]):
         """메시지 구독"""
@@ -99,6 +137,7 @@ class CommunicationBus:
         메시지 발행
 
         Time Complexity: O(n) where n = number of subscribers
+        분산 모드: Kafka를 통한 메시지 스트리밍
         """
         self.messages.append(message)
 
@@ -108,6 +147,39 @@ class CommunicationBus:
                 logger.debug(f"Message {message.id} already delivered, skipping")
                 return
             self.delivered_messages.add(message.id)
+
+        # 분산 모드: Kafka에 메시지 발행
+        if self.use_kafka and self.kafka_producer:
+            try:
+                import json
+                message_data = {
+                    "id": message.id,
+                    "sender": message.sender,
+                    "receiver": message.receiver,
+                    "message_type": message.message_type.value,
+                    "content": str(message.content)[:1000],  # 처음 1000자만
+                    "timestamp": message.timestamp.isoformat(),
+                    "reply_to": message.reply_to,
+                }
+                await self.kafka_producer.publish(
+                    "multi_agent.messages",
+                    json.dumps(message_data)
+                )
+
+                # 이벤트 로깅
+                if self.event_logger:
+                    await self.event_logger.log_event(
+                        "multi_agent.message_published",
+                        {
+                            "message_id": message.id,
+                            "sender": message.sender,
+                            "receiver": message.receiver or "broadcast",
+                            "message_type": message.message_type.value,
+                        },
+                        level="info"
+                    )
+            except Exception as e:
+                logger.warning(f"Failed to publish message to Kafka: {e}")
 
         # 수신자에게 전달
         if message.receiver:
