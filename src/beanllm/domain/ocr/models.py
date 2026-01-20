@@ -365,6 +365,9 @@ class OCRConfig:
     max_image_size: Optional[int] = None  # 최대 이미지 크기 (픽셀)
     max_new_tokens: int = 1024  # VLM 엔진용 최대 생성 토큰 수
     output_format: str = "text"  # text, json, markdown
+    
+    # 분산 시스템 설정 (선택적, None이면 전역 설정 사용)
+    distributed_config: Optional["OCRDistributedConfig"] = None
 
     def __post_init__(self):
         """설정 유효성 검증 및 기본값 초기화"""

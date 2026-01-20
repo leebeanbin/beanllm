@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Union
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
 
     def get_logger(name: str):

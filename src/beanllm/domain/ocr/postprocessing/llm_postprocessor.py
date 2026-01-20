@@ -13,7 +13,7 @@ Features:
 import logging
 from typing import Dict, List, Optional
 
-from ..models import OCRResult, OCRTextLine
+from beanllm.domain.ocr.models import OCRResult, OCRTextLine
 
 logger = logging.getLogger(__name__)
 

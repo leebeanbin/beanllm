@@ -13,8 +13,8 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, List, Optional
 from beanllm.dto.request.core.rag_request import RAGRequest
 from beanllm.dto.response.core.rag_response import RAGResponse
 
-from ...rag_service import IRAGService
-from ..advanced.search_strategy import SearchStrategyFactory
+from beanllm.rag_service import IRAGService
+from beanllm.service.impl.advanced.search_strategy import SearchStrategyFactory
 
 if TYPE_CHECKING:
     from beanllm.service.chat_service import IChatService
@@ -81,7 +81,7 @@ class RAGServiceImpl(IRAGService):
             - if-else/try-catch 없음
         """
         # 0. 캐시 확인 (RAG 검색 결과)
-        from ....infrastructure.distributed.cache_helpers import get_rag_search_cache, set_rag_search_cache
+        from beanllm.infrastructure.distributed.cache_helpers import get_rag_search_cache, set_rag_search_cache
         vector_store_id = str(id(self._vector_store))  # 벡터 스토어 ID (간단한 구현)
         cached_results = await get_rag_search_cache(
             request.query, vector_store_id, request.k,

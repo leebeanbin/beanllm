@@ -10,8 +10,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import AsyncIterator
 
-from ..dto.request.core.chat_request import ChatRequest
-from ..dto.response.core.chat_response import ChatResponse
+from beanllm.dto.request.core.chat_request import ChatRequest
+from beanllm.dto.response.core.chat_response import ChatResponse
 
 
 class IChatService(ABC):

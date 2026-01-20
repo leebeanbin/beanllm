@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

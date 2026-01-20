@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

@@ -16,8 +16,8 @@ else:
     except ImportError:
         Document = Any  # type: ignore
 
-from ..base import BaseVectorStore, VectorSearchResult
-from ..search import AdvancedSearchMixin
+from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
+from beanllm.domain.vector_stores.search import AdvancedSearchMixin
 
 
 class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):

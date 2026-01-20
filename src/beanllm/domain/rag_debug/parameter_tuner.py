@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from beanllm.domain.vector_stores import BaseVectorStore

@@ -8,15 +8,15 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..domain.evaluation.evaluator import Evaluator
-    from ..dto.request.ml.evaluation_request import (
+    from beanllm.domain.evaluation.evaluator import Evaluator
+    from beanllm.dto.request.ml.evaluation_request import (
         BatchEvaluationRequest,
         CreateEvaluatorRequest,
         EvaluationRequest,
         RAGEvaluationRequest,
         TextEvaluationRequest,
     )
-    from ..dto.response.ml.evaluation_response import (
+    from beanllm.dto.response.ml.evaluation_response import (
         BatchEvaluationResponse,
         EvaluationResponse,
     )

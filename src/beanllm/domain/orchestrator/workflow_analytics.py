@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 from .workflow_monitor import MonitorEvent, NodeExecutionState, NodeStatus
 

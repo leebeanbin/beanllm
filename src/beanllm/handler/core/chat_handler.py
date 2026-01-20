@@ -16,8 +16,8 @@ from beanllm.decorators.error_handler import handle_errors
 from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.handler.base_handler import BaseHandler
-from ...dto.request.core.chat_request import ChatRequest
-from ...dto.response.core.chat_response import ChatResponse
+from beanllm.dto.request.core.chat_request import ChatRequest
+from beanllm.dto.response.core.chat_response import ChatResponse
 from beanllm.service.chat_service import IChatService
 
 

@@ -10,13 +10,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from ..dto.request.graph.kg_request import (
+from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
     ExtractEntitiesRequest,
     ExtractRelationsRequest,
     QueryGraphRequest,
 )
-from ..dto.response.graph.kg_response import (
+from beanllm.dto.response.graph.kg_response import (
     BuildGraphResponse,
     EntitiesResponse,
     GraphRAGResponse,

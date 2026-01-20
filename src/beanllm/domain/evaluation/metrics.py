@@ -343,7 +343,7 @@ class LLMJudgeMetric(BaseMetric):
         """클라이언트 lazy loading"""
         if self.client is None:
             try:
-                from beanllm.facade.client_facade import create_client
+                from beanllm.facade.core.client_facade import create_client
 
                 self.client = create_client()
             except Exception:
@@ -525,7 +525,7 @@ class FaithfulnessMetric(BaseMetric):
         """클라이언트 lazy loading"""
         if self.client is None:
             try:
-                from beanllm.facade.client_facade import create_client
+                from beanllm.facade.core.client_facade import create_client
 
                 self.client = create_client()
             except Exception:

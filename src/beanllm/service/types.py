@@ -17,7 +17,7 @@ from typing import (
 )
 
 if TYPE_CHECKING:
-    from ..providers.base_provider import BaseLLMProvider
+    from beanllm.providers.base_provider import BaseLLMProvider
 
 
 # TypeVar 정의

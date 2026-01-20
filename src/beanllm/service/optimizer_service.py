@@ -10,13 +10,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
-from ..dto.request.advanced.optimizer_request import (
+from beanllm.dto.request.advanced.optimizer_request import (
     ABTestRequest,
     BenchmarkRequest,
     OptimizeRequest,
     ProfileRequest,
 )
-from ..dto.response.advanced.optimizer_response import (
+from beanllm.dto.response.advanced.optimizer_response import (
     ABTestResponse,
     BenchmarkResponse,
     OptimizeResponse,

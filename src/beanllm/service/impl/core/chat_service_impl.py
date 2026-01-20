@@ -16,7 +16,7 @@ from beanllm.dto.request.core.chat_request import ChatRequest
 from beanllm.dto.response.core.chat_response import ChatResponse
 from beanllm.infrastructure.adapter import ParameterAdapter
 
-from ...chat_service import IChatService
+from beanllm.chat_service import IChatService
 from .base_service import BaseService
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class ChatServiceImpl(BaseService, IChatService):
             - if-else/try-catch 없음
         """
         # 0. 캐시 확인 (LLM 응답)
-        from ....infrastructure.distributed.cache_helpers import get_llm_response_cache, set_llm_response_cache
+        from beanllm.infrastructure.distributed.cache_helpers import get_llm_response_cache, set_llm_response_cache
         cached_response = await get_llm_response_cache(
             request.messages, request.model,
             temperature=request.temperature, max_tokens=request.max_tokens, **request.extra_params

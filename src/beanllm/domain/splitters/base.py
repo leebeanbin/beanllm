@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 if TYPE_CHECKING:
-    from ..loaders.types import Document
+    from beanllm.domain.loaders.types import Document
 
 
 class BaseTextSplitter(ABC):
@@ -67,7 +67,7 @@ class BaseTextSplitter(ABC):
         Returns:
             문서 리스트
         """
-        from ..loaders.types import Document
+        from beanllm.domain.loaders.types import Document
 
         _metadatas = metadatas or [{}] * len(texts)
         documents = []

@@ -9,7 +9,7 @@ from typing import Optional
 from .base_framework import BaseEvaluationFramework
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
     logger = get_logger(__name__)
 except ImportError:
     import logging
