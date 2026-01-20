@@ -16,7 +16,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
-from ..exceptions import CircuitBreakerError
+from beanllm.utils.exceptions import CircuitBreakerError
 
 
 class CircuitState(Enum):

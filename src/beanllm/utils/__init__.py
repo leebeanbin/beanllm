@@ -80,6 +80,15 @@ from .streaming import (
 
 STREAMING_WRAPPER_AVAILABLE = True
 
+# Async Helpers
+from .async_helpers import (
+    AsyncHelperMixin,
+    get_cached_sync,
+    log_event_sync,
+    run_async_in_sync,
+    set_cache_sync,
+)
+
 # Integration Utilities
 from .integration import (
     BaseCallback,
@@ -283,6 +292,12 @@ __all__ = [
     "set_cost_tracker",
     # CLI
     "main",
+    # Async Helpers
+    "AsyncHelperMixin",
+    "run_async_in_sync",
+    "log_event_sync",
+    "get_cached_sync",
+    "set_cache_sync",
 ]
 
 

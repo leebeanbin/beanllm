@@ -8,10 +8,13 @@ Provides a thread-safe LRU cache with:
 - Thread safety for concurrent access
 """
 
+import logging
 import threading
 import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar
+
+logger = logging.getLogger(__name__)
 
 K = TypeVar("K")  # Key type
 V = TypeVar("V")  # Value type
@@ -148,8 +151,8 @@ class LRUCache(Generic[K, V]):
                 if self.on_evict:
                     try:
                         self.on_evict(key, value)
-                    except Exception:
-                        pass  # Ignore callback errors
+                    except Exception as e:
+                        logger.debug(f"Cache eviction callback error (safe to ignore): {e}")
 
     def get(self, key: K, default: Optional[V] = None) -> Optional[V]:
         """
@@ -318,8 +321,8 @@ class LRUCache(Generic[K, V]):
         """Destructor - ensure cleanup thread is stopped"""
         try:
             self.shutdown()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Shutdown in destructor failed (safe to ignore): {e}")
 
     def __len__(self) -> int:
         """Return number of cache entries"""

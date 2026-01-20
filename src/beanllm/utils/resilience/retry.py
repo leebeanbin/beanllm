@@ -16,8 +16,8 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Optional
 
-from ..exceptions import MaxRetriesExceededError
-from ..logging import get_logger
+from beanllm.utils.exceptions import MaxRetriesExceededError
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
