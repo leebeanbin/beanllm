@@ -11,28 +11,15 @@ import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
 
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
+
 from .client_facade import Client
 
 if TYPE_CHECKING:
-    from ..service.types import VectorStoreProtocol
+    from beanllm.facade.service.types import VectorStoreProtocol
 
 
-def _safe_log_event(event_logger, event_name: str, data: dict, level: str = "info"):
-    """Safely log event whether or not event loop is running"""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Event loop already running, create task
-            loop.create_task(event_logger.log_event(event_name, data, level=level))
-        else:
-            # No running loop, use run_until_complete
-            loop.run_until_complete(event_logger.log_event(event_name, data, level=level))
-    except Exception:
-        # Silently fail if logging doesn't work
-        pass
-
-
-class RAGChain:
+class RAGChain(AsyncHelperMixin):
     """
     완전한 RAG 파이프라인 (Facade 패턴)
 
@@ -120,11 +107,11 @@ Answer:"""
             **kwargs: 추가 파라미터
         """
         # 기존 로직 사용 (점진적 마이그레이션)
-        from ...domain.loaders import DocumentLoader
-        from ...domain.embeddings import Embedding
-        from ...domain.splitters import TextSplitter
-        from ...domain.vector_stores import from_documents
-        from ...infrastructure.distributed import get_event_logger
+        from beanllm.domain.loaders import DocumentLoader
+        from beanllm.domain.embeddings import Embedding
+        from beanllm.domain.splitters import TextSplitter
+        from beanllm.domain.vector_stores import from_documents
+        from beanllm.infrastructure.distributed import get_event_logger
         
         event_logger = get_event_logger()
 
@@ -221,7 +208,7 @@ Answer:"""
         # Handler를 통한 처리
         import asyncio
 
-        from ..dto.request.core.rag_request import RAGRequest
+        from beanllm.facade.dto.request.core.rag_request import RAGRequest
 
         RAGRequest(
             query=query,
@@ -234,7 +221,7 @@ Answer:"""
         )
 
         # Handler를 통한 처리
-        return asyncio.run(
+        return run_async_in_sync(
             self._rag_handler.handle_retrieve(
                 query=query,
                 vector_store=self.vector_store,
@@ -467,7 +454,7 @@ Answer:"""
                 return loop.run_until_complete(_batch_query_async())
         except RuntimeError:
             # 루프가 없으면 새로 생성
-            return asyncio.run(_batch_query_async())
+            return run_async_in_sync(_batch_query_async())
 
     async def aquery(
         self,
@@ -530,7 +517,7 @@ class RAGBuilder:
 
     def load_documents(self, source: Union[str, Path, List[Any]]) -> "RAGBuilder":
         """문서 로딩 (기존 rag_chain.py와 정확히 동일)"""
-        from ...domain.loaders import DocumentLoader
+        from beanllm.domain.loaders import DocumentLoader
 
         if isinstance(source, (str, Path)):
             self.documents = DocumentLoader.load(source)
@@ -573,9 +560,9 @@ class RAGBuilder:
 
     def build(self) -> RAGChain:
         """RAGChain 생성 (기존 rag_chain.py의 build 정확히 마이그레이션)"""
-        from ...domain.embeddings import Embedding
-        from ...domain.splitters import TextSplitter
-        from ...domain.vector_stores import from_documents
+        from beanllm.domain.embeddings import Embedding
+        from beanllm.domain.splitters import TextSplitter
+        from beanllm.domain.vector_stores import from_documents
 
         # 문서 체크 (기존과 동일)
         if self.documents is None:

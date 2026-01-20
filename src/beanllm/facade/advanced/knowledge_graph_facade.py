@@ -83,7 +83,7 @@ class KnowledgeGraph:
         if handler:
             self._handler = handler
         else:
-            from beanllm.service.impl.knowledge_graph_service_impl import (
+            from beanllm.service.impl.advanced.knowledge_graph_service_impl import (
                 KnowledgeGraphServiceImpl,
             )
 
