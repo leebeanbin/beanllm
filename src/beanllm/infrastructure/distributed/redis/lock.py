@@ -10,8 +10,8 @@ import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
-from ..interfaces import DistributedLockInterface
-from ..utils import check_redis_health, sanitize_error_message, LockAcquisitionError
+from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
+from beanllm.utils import check_redis_health, sanitize_error_message, LockAcquisitionError
 from .client import get_redis_client
 
 try:

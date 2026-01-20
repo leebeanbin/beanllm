@@ -40,8 +40,8 @@ class MessageProducer:
             from .redis.client import get_redis_client
 
             self.redis = get_redis_client()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Redis client not available (continuing without Redis): {e}")
 
     async def publish_request(self, request_type: str, request_data: Dict[str, Any]) -> str:
         """
@@ -148,8 +148,8 @@ class ConcurrencyController:
             from .redis.client import get_redis_client
 
             self.redis = get_redis_client()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Redis client not available (continuing without Redis): {e}")
 
     async def acquire_slot(self, resource_type: str, max_concurrent: int = 10) -> bool:
         """
@@ -253,8 +253,8 @@ class DistributedErrorHandler:
             from .redis.client import get_redis_client
 
             self.redis = get_redis_client()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Redis client not available (continuing without Redis): {e}")
 
     async def handle_error(
         self,
@@ -371,12 +371,12 @@ class RequestMonitor:
             from .redis.client import get_redis_client
 
             self.redis = get_redis_client()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Redis client not available (continuing without Redis): {e}")
         try:
             _, self.consumer = get_event_bus()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Redis client not available (continuing without Redis): {e}")
 
     async def get_request_status(self, request_id: str) -> Optional[Dict[str, Any]]:
         """요청 상태 조회 (Redis - 빠른 조회)"""
