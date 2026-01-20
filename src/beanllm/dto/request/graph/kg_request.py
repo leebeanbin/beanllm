@@ -54,9 +54,15 @@ class BuildGraphRequest:
     그래프 구축 요청 DTO
     """
 
-    graph_name: str
-    document_ids: List[str]
+    graph_name: str = ""
+    graph_id: Optional[str] = None
+    documents: Optional[List[str]] = None  # Document texts
+    document_ids: Optional[List[str]] = None  # Document IDs (for existing docs)
+    entity_types: Optional[List[str]] = None
+    relation_types: Optional[List[str]] = None
     backend: str = "networkx"  # "networkx" or "neo4j"
+    persist_to_neo4j: bool = False
+    clear_existing: bool = False
     incremental: bool = True
     deduplicate: bool = True
     config: Optional[Dict[str, Any]] = None
@@ -64,6 +70,9 @@ class BuildGraphRequest:
     def __post_init__(self):
         if self.config is None:
             self.config = {}
+        # Ensure at least one of documents or document_ids is provided
+        if not self.documents and not self.document_ids:
+            self.documents = []
 
 
 @dataclass

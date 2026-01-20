@@ -10,8 +10,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Iterator
 
-from ..dto.request.advanced.state_graph_request import StateGraphRequest
-from ..dto.response.advanced.state_graph_response import StateGraphResponse
+from beanllm.dto.request.advanced.state_graph_request import StateGraphRequest
+from beanllm.dto.response.advanced.state_graph_response import StateGraphResponse
 
 
 class IStateGraphService(ABC):

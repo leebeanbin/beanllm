@@ -14,8 +14,8 @@ from typing import Any, List, Optional
 from beanllm.decorators.error_handler import handle_errors
 from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
-from ...dto.request.core.agent_request import AgentRequest
-from ...dto.response.core.agent_response import AgentResponse
+from beanllm.dto.request.core.agent_request import AgentRequest
+from beanllm.dto.response.core.agent_response import AgentResponse
 from beanllm.service.agent_service import IAgentService
 
 
@@ -104,3 +104,7 @@ class AgentHandler:
         # Service 호출 (에러 처리는 decorator가 담당)
         # tool_registry는 request를 통해 전달됨
         return await self._agent_service.run(request)
+
+    def _create_request(self, request_class, **kwargs):
+        """Helper method to create request DTO"""
+        return request_class(**kwargs)

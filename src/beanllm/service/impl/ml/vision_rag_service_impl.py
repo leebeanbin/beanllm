@@ -16,7 +16,7 @@ from beanllm.infrastructure.distributed import get_event_logger, get_rate_limite
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.utils.logging import get_logger
 
-from ...vision_rag_service import IVisionRAGService
+from beanllm.vision_rag_service import IVisionRAGService
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"

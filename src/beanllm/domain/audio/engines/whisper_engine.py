@@ -22,8 +22,8 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 
-from ..models import STTConfig
-from ..types import TranscriptionSegment
+from beanllm.domain.audio.models import STTConfig
+from beanllm.domain.audio.types import TranscriptionSegment
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)

@@ -4,7 +4,7 @@ Memory Implementations
 
 from typing import Any, List, Optional
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 from .base import BaseMemory, Message
 

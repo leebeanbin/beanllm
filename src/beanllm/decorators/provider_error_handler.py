@@ -15,9 +15,9 @@ import functools
 import inspect
 from typing import Any, Callable, Optional, TypeVar
 
-from ..utils.exceptions import ProviderError
-from ..utils.logging import get_logger
-from ..utils.integration.security import sanitize_error_message
+from beanllm.utils.exceptions import ProviderError
+from beanllm.utils.logging import get_logger
+from beanllm.utils.integration.security import sanitize_error_message
 
 T = TypeVar("T")
 

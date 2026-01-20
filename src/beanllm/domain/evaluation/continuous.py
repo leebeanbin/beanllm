@@ -17,8 +17,12 @@ except ImportError:
     AsyncIOScheduler = None  # type: ignore
     CronTrigger = None  # type: ignore
 
+from beanllm.utils.logging import get_logger
+
 from .evaluator import Evaluator
 from .results import BatchEvaluationResult
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -116,8 +120,8 @@ class ContinuousEvaluator:
         if self._scheduler:
             try:
                 self._scheduler.remove_job(f"eval_{task_id}")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to remove scheduled job eval_{task_id} (safe to ignore): {e}")
 
         return True
 

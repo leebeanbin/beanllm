@@ -16,8 +16,11 @@ else:
     except ImportError:
         Document = Any  # type: ignore
 
-from ..base import BaseVectorStore, VectorSearchResult
-from ..search import AdvancedSearchMixin
+from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
+from beanllm.domain.vector_stores.search import AdvancedSearchMixin
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
@@ -402,5 +405,5 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
         """
         try:
             self.close()
-        except Exception:
-            pass  # 소멸자에서는 예외를 무시
+        except Exception as e:
+            logger.debug(f"Close in destructor failed (safe to ignore): {e}")

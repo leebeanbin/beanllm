@@ -86,6 +86,10 @@ class ImageLoader(BaseDocumentLoader):
         else:
             raise ValueError(f"Invalid source: {source}")
 
+    def lazy_load(self, source: Union[str, Path]):
+        """지연 로딩 (제너레이터)"""
+        yield from self.load(source)
+
     def _load_image(self, image_path: Path) -> ImageDocument:
         """단일 이미지 로드"""
         # 이미지 읽기
@@ -223,6 +227,10 @@ class PDFWithImagesLoader(BaseDocumentLoader):
 
         pdf_document.close()
         return documents
+
+    def lazy_load(self, source: Union[str, Path]):
+        """지연 로딩 (제너레이터)"""
+        yield from self.load(source)
 
 
 # 편의 함수

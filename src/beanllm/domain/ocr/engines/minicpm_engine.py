@@ -19,7 +19,7 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from ..models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)

@@ -15,8 +15,8 @@ from typing import Any, AsyncIterator, List, Optional, Union
 from beanllm.decorators.error_handler import handle_errors
 from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
-from ...dto.request.core.rag_request import RAGRequest
-from ...dto.response.core.rag_response import RAGResponse
+from beanllm.dto.request.core.rag_request import RAGRequest
+from beanllm.dto.response.core.rag_response import RAGResponse
 from beanllm.service.rag_service import IRAGService
 
 
@@ -85,7 +85,7 @@ class RAGHandler:
             - Service 호출
         """
         # Rate Limiting (분산 또는 인메모리)
-        from ...infrastructure.distributed.factory import get_rate_limiter
+        from beanllm.infrastructure.distributed.factory import get_rate_limiter
         rate_limiter = get_rate_limiter()
         await rate_limiter.wait(f"rag:query:{llm_model}", cost=1.0)
         

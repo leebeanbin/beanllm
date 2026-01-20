@@ -16,8 +16,11 @@ else:
     except ImportError:
         Document = Any  # type: ignore
 
-from ..base import BaseVectorStore, VectorSearchResult
-from ..search import AdvancedSearchMixin
+from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
+from beanllm.domain.vector_stores.search import AdvancedSearchMixin
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
@@ -173,8 +176,8 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         """소멸자 - 리소스 자동 정리"""
         try:
             self.close()
-        except Exception:
-            pass  # 소멸자에서는 예외를 무시
+        except Exception as e:
+            logger.debug(f"Close in destructor failed (safe to ignore): {e}")
 
     async def asimilarity_search_by_vector(
         self, query_vec: List[float], k: int = 4, **kwargs

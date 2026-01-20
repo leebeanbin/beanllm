@@ -16,7 +16,7 @@ Template Method Pattern을 사용하여 중복 코드 제거
 import os
 from typing import List, Optional
 
-from ..base import BaseAPIEmbedding
+from beanllm.domain.embeddings.base import BaseAPIEmbedding
 
 try:
     from beanllm.utils.logging import get_logger

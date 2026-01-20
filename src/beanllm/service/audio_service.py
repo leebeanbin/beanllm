@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.ml.audio_request import AudioRequest
-from ..dto.response.ml.audio_response import AudioResponse
+from beanllm.dto.request.ml.audio_request import AudioRequest
+from beanllm.dto.response.ml.audio_response import AudioResponse
 
 
 class IAudioService(ABC):

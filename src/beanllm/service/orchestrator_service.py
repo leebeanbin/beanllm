@@ -10,12 +10,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from ..dto.request.advanced.orchestrator_request import (
+from beanllm.dto.request.advanced.orchestrator_request import (
     CreateWorkflowRequest,
     ExecuteWorkflowRequest,
     MonitorWorkflowRequest,
 )
-from ..dto.response.advanced.orchestrator_response import (
+from beanllm.dto.response.advanced.orchestrator_response import (
     AnalyticsResponse,
     CreateWorkflowResponse,
     ExecuteWorkflowResponse,

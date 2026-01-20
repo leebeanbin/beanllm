@@ -32,7 +32,7 @@ from .api_embeddings import (
 )
 
 # Local-based embeddings (4개)
-from ..local.local_embeddings import (
+from beanllm.domain.embeddings.local.local_embeddings import (
     CodeEmbedding,
     HuggingFaceEmbedding,
     NVEmbedEmbedding,

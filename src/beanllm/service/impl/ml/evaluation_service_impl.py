@@ -29,7 +29,7 @@ from beanllm.dto.response.ml.evaluation_response import (
     EvaluationResponse,
 )
 
-from ...evaluation_service import IEvaluationService
+from beanllm.evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
     from beanllm.domain.embeddings.base import Embedding
