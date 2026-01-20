@@ -274,7 +274,7 @@ def create_coordinator(agent_configs: List[Dict[str, Any]], **kwargs) -> MultiAg
     Returns:
         MultiAgentCoordinator
     """
-    from ..core.agent_facade import Agent
+    from beanllm.facade.core.agent_facade import Agent
 
     agents = {}
 
@@ -300,7 +300,7 @@ async def quick_debate(
     Returns:
         토론 결과
     """
-    from ..core.agent_facade import Agent
+    from beanllm.facade.core.agent_facade import Agent
 
     # Agents 생성
     agents = {f"agent_{i}": Agent(model=model) for i in range(num_agents)}

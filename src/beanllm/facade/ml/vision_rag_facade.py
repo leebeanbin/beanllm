@@ -12,24 +12,25 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
-from ...domain.vision.embeddings import CLIPEmbedding, MultimodalEmbedding
-from ...domain.vision.loaders import load_images
-from ...handler.ml.vision_rag_handler import VisionRAGHandler
-from ...infrastructure.distributed import get_event_logger
+from beanllm.domain.vision.embeddings import CLIPEmbedding, MultimodalEmbedding
+from beanllm.domain.vision.loaders import load_images
+from beanllm.handler.ml.vision_rag_handler import VisionRAGHandler
+from beanllm.infrastructure.distributed import get_event_logger
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
 from beanllm.domain.vector_stores import VectorSearchResult
-from ..core.client_facade import Client
+from beanllm.facade.core.client_facade import Client
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
 
 if TYPE_CHECKING:
-    from ..service.types import VectorStoreProtocol
+    from beanllm.facade.service.types import VectorStoreProtocol
 
 logger = get_logger(__name__)
 
 
-class VisionRAG:
+class VisionRAG(AsyncHelperMixin):
     """
     Vision RAG - 이미지 포함 RAG (Facade 패턴)
 
@@ -81,7 +82,7 @@ Answer:"""
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..service.impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
+        from beanllm.service.impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
         from beanllm.utils.core.di_container import get_container
 
         container = get_container()
@@ -166,7 +167,7 @@ Answer:"""
         # 분산 모드: 대량 이미지 처리에 Task Queue 사용
         if USE_DISTRIBUTED and len(images) > 100:
             try:
-                from ...infrastructure.distributed import BatchProcessor
+                from beanllm.infrastructure.distributed import BatchProcessor
 
                 batch_processor = BatchProcessor(task_type="vision_rag.embedding", max_concurrent=10)
 
@@ -204,7 +205,7 @@ Answer:"""
                     else:
                         embeddings = loop.run_until_complete(process_embeddings_async())
                 except RuntimeError:
-                    embeddings = asyncio.run(process_embeddings_async())
+                    embeddings = run_async_in_sync(process_embeddings_async())
 
                 # 이벤트 발행: 임베딩 완료
                 asyncio.create_task(
@@ -216,7 +217,7 @@ Answer:"""
                 )
 
                 # 3. Vector Store (임베딩 결과 사용)
-                from ..vector_stores import from_documents
+                from beanllm.facade.vector_stores import from_documents
 
                 # 임베딩 함수를 래핑하여 이미 계산된 임베딩 사용
                 def embed_func_with_precomputed(idx):
@@ -231,11 +232,11 @@ Answer:"""
             except Exception as e:
                 logger.warning(f"Distributed embedding failed: {e}, falling back to sequential")
                 # Fallback to sequential
-                from ..vector_stores import from_documents
+                from beanllm.facade.vector_stores import from_documents
                 vector_store = from_documents(images, embed_func)
         else:
             # 3. Vector Store (기존과 동일)
-            from ..vector_stores import from_documents
+            from beanllm.facade.vector_stores import from_documents
             vector_store = from_documents(images, embed_func)
 
         # 이벤트 발행: 벡터 스토어 생성 완료
@@ -275,7 +276,7 @@ Answer:"""
             검색 결과 리스트 (ImageDocument 포함)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(self._vision_rag_handler.handle_retrieve(query=query, k=k, **kwargs))
+        response = run_async_in_sync(self._vision_rag_handler.handle_retrieve(query=query, k=k, **kwargs))
         # DTO에서 값 추출 (기존 API 호환성 유지)
         return response.results or []
 
@@ -310,7 +311,7 @@ Answer:"""
             answer, sources = rag.query("Describe the images", include_sources=True)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._vision_rag_handler.handle_query(
                 question=question,
                 k=k,
@@ -340,7 +341,7 @@ Answer:"""
             답변 리스트
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._vision_rag_handler.handle_batch_query(
                 questions=questions,
                 k=k,
@@ -389,9 +390,9 @@ class MultimodalRAG(VisionRAG):
         Returns:
             MultimodalRAG 인스턴스
         """
-        from ...domain.loaders import DocumentLoader
-        from ...domain.splitters import TextSplitter
-        from ...domain.vision import ImageLoader, PDFWithImagesLoader
+        from beanllm.domain.loaders import DocumentLoader
+        from beanllm.domain.splitters import TextSplitter
+        from beanllm.domain.vision import ImageLoader, PDFWithImagesLoader
 
         all_documents = []
 
@@ -405,16 +406,16 @@ class MultimodalRAG(VisionRAG):
                 try:
                     images = image_loader.load(source_path)
                     all_documents.extend(images)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to load images from {source_path} (continuing): {e}")
 
                 # 텍스트 문서 찾기
                 try:
                     docs = DocumentLoader.load(source_path)
                     chunks = TextSplitter.split(docs)
                     all_documents.extend(chunks)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to load text documents from {source_path} (continuing): {e}")
 
             # 개별 파일 (기존과 동일)
             else:
@@ -429,8 +430,8 @@ class MultimodalRAG(VisionRAG):
                         docs = DocumentLoader.load(source_path)
                         chunks = TextSplitter.split(docs)
                         all_documents.extend(chunks)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to load document from {source_path} (continuing): {e}")
 
         # 임베딩 (기존과 동일)
         multimodal_embed = MultimodalEmbedding()
@@ -439,7 +440,7 @@ class MultimodalRAG(VisionRAG):
             return multimodal_embed.embed_sync(texts)
 
         # Vector Store (기존과 동일)
-        from ..vector_stores import from_documents
+        from beanllm.facade.vector_stores import from_documents
 
         vector_store = from_documents(all_documents, embed_func)
 

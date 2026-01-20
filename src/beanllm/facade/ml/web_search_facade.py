@@ -10,12 +10,13 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from beanllm.domain.web_search import SearchEngine, SearchResponse, WebScraper
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class WebSearch:
+class WebSearch(AsyncHelperMixin):
     """
     통합 웹 검색 인터페이스 (Facade 패턴)
 
@@ -87,7 +88,7 @@ class WebSearch:
         # 기존 web_search.py는 동기였지만, 새로운 구조에서는 비동기 사용
         import asyncio
 
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._web_search_handler.handle_search(
                 query=query,
                 engine=engine.value if engine else self.default_engine.value,
@@ -127,11 +128,14 @@ class WebSearch:
         Returns:
             SearchResponse
         """
+        # Extract max_results from kwargs if provided, otherwise use default
+        max_results = kwargs.pop('max_results', self.max_results)
+
         # Handler를 통한 처리
         response = await self._web_search_handler.handle_search(
             query=query,
             engine=engine.value if engine else self.default_engine.value,
-            max_results=self.max_results,
+            max_results=max_results,
             google_api_key=self.google_api_key,
             google_search_engine_id=self.google_search_engine_id,
             bing_api_key=self.bing_api_key,
@@ -167,7 +171,7 @@ class WebSearch:
         # 동기 메서드이지만 내부적으로는 비동기 사용
         import asyncio
 
-        return asyncio.run(
+        return run_async_in_sync(
             self._web_search_handler.handle_search_and_scrape(
                 query=query,
                 engine=self.default_engine.value,
