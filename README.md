@@ -19,9 +19,6 @@
 
 ## 📚 Documentation
 
-- 📖 **[Quick Start Guide](QUICK_START.md)** - Get started in 5 minutes
-- 📘 **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
-- 🏗️ **[Architecture Guide](ARCHITECTURE.md)** - Design principles and patterns
 - 💡 **[Examples](examples/)** - 15+ working examples
 - 📦 **[PyPI Package](https://pypi.org/project/beanllm/)** - Installation and releases
 
