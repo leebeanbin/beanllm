@@ -12,13 +12,14 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 
 from beanllm.domain.finetuning.providers import BaseFineTuningProvider, OpenAIFineTuningProvider
 from beanllm.domain.finetuning.types import FineTuningJob, TrainingExample
-from ...handler.ml.finetuning_handler import FinetuningHandler
+from beanllm.handler.ml.finetuning_handler import FinetuningHandler
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 
 if TYPE_CHECKING:
     pass
 
 
-class FineTuningManagerFacade:
+class FineTuningManagerFacade(AsyncHelperMixin):
     """
     파인튜닝 통합 매니저 (Facade 패턴)
 
@@ -37,7 +38,7 @@ class FineTuningManagerFacade:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
+        from beanllm.facade.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
 
         # FinetuningService 생성 (커스텀 의존성)
         finetuning_service = FinetuningServiceImpl(provider=self.provider)
@@ -50,7 +51,7 @@ class FineTuningManagerFacade:
     ) -> str:
         """데이터 준비 및 업로드"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._finetuning_handler.handle_prepare_data(
                 examples=examples, output_path=output_path, validate=validate
             )
@@ -62,7 +63,7 @@ class FineTuningManagerFacade:
     ) -> FineTuningJob:
         """훈련 시작"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._finetuning_handler.handle_start_training(
                 model=model,
                 training_file=training_file,
@@ -81,7 +82,7 @@ class FineTuningManagerFacade:
     ) -> FineTuningJob:
         """작업 완료 대기"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._finetuning_handler.handle_wait_for_completion(
                 job_id=job_id,
                 poll_interval=poll_interval,
@@ -94,8 +95,10 @@ class FineTuningManagerFacade:
     def get_training_progress(self, job_id: str) -> dict:
         """훈련 진행상황 조회"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        job_response = asyncio.run(self._finetuning_handler.handle_get_job(job_id=job_id))
-        metrics_response = asyncio.run(self._finetuning_handler.handle_get_metrics(job_id=job_id))
+        job_response = run_async_in_sync(self._finetuning_handler.handle_get_job(job_id=job_id))
+        metrics_response = run_async_in_sync(
+            self._finetuning_handler.handle_get_metrics(job_id=job_id)
+        )
 
         return {
             "job": job_response.job,
@@ -146,13 +149,13 @@ def quick_finetune(
         파인튜닝 작업
     """
     # Handler/Service 초기화
-    from ..service.impl.finetuning_service_impl import FinetuningServiceImpl
+    from beanllm.facade.service.impl.finetuning_service_impl import FinetuningServiceImpl
 
     finetuning_service = FinetuningServiceImpl()
     handler = FinetuningHandler(finetuning_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
-    response = asyncio.run(
+    response = run_async_in_sync(
         handler.handle_quick_finetune(
             training_data=training_data,
             model=model,

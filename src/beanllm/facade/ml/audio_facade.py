@@ -12,17 +12,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from beanllm.domain.audio import AudioSegment, TranscriptionResult, TTSProvider, WhisperModel
-from ...handler.ml.audio_handler import AudioHandler
+from beanllm.handler.ml.audio_handler import AudioHandler
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
-    from ...domain.embeddings import BaseEmbedding
-    from ...service.types import VectorStoreProtocol
+    from beanllm.domain.embeddings import BaseEmbedding
+    from beanllm.service.types import VectorStoreProtocol
 
 logger = get_logger(__name__)
 
 
-class WhisperSTT:
+class WhisperSTT(AsyncHelperMixin):
     """
     Whisper Speech-to-Text (Facade 패턴)
 
@@ -58,7 +59,7 @@ class WhisperSTT:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..service.impl.ml.audio_service_impl import AudioServiceImpl
+        from beanllm.service.impl.ml.audio_service_impl import AudioServiceImpl
         from beanllm.utils.core.di_container import get_container
 
         get_container()
@@ -96,7 +97,7 @@ class WhisperSTT:
             TranscriptionResult
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._audio_handler.handle_transcribe(
                 audio=audio,
                 language=language or self.language,
@@ -187,7 +188,7 @@ class TextToSpeech:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..service.impl.ml.audio_service_impl import AudioServiceImpl
+        from beanllm.service.impl.ml.audio_service_impl import AudioServiceImpl
 
         # AudioService 생성 (커스텀 의존성)
         audio_service = AudioServiceImpl(
@@ -218,7 +219,7 @@ class TextToSpeech:
             AudioSegment
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._audio_handler.handle_synthesize(
                 text=text,
                 provider=self.provider.value,
@@ -302,7 +303,7 @@ class AudioRAG:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ..service.impl.ml.audio_service_impl import AudioServiceImpl
+        from beanllm.service.impl.ml.audio_service_impl import AudioServiceImpl
 
         # stt에서 설정 가져오기
         whisper_model = self.stt.model_name if hasattr(self.stt, "model_name") else "base"
@@ -341,7 +342,7 @@ class AudioRAG:
             TranscriptionResult
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._audio_handler.handle_add_audio(
                 audio=audio,
                 audio_id=audio_id,
@@ -401,7 +402,7 @@ class AudioRAG:
             검색 결과 리스트 (각 결과는 세그먼트 정보 포함)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
+        response = run_async_in_sync(
             self._audio_handler.handle_search_audio(query=query, top_k=top_k, **kwargs)
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
@@ -420,7 +421,7 @@ class AudioRAG:
             TranscriptionResult: 전사 결과 (없으면 None)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(self._audio_handler.handle_get_transcription(audio_id=audio_id))
+        response = run_async_in_sync(self._audio_handler.handle_get_transcription(audio_id=audio_id))
         # DTO에서 값 추출 (기존 API 호환성 유지)
         return response.transcription
 
@@ -434,7 +435,7 @@ class AudioRAG:
             오디오 ID 리스트
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(self._audio_handler.handle_list_audios())
+        response = run_async_in_sync(self._audio_handler.handle_list_audios())
         # DTO에서 값 추출 (기존 API 호환성 유지)
         return response.audio_ids or []
 

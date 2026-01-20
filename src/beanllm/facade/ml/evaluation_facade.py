@@ -10,13 +10,14 @@ from __future__ import annotations
 import asyncio
 from typing import TYPE_CHECKING, List, Optional
 
-from ...domain.evaluation.results import BatchEvaluationResult
+from beanllm.domain.evaluation.results import BatchEvaluationResult
+from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 
 if TYPE_CHECKING:
     from beanllm.domain.evaluation.base_metric import BaseMetric
 
 
-class EvaluatorFacade:
+class EvaluatorFacade(AsyncHelperMixin):
     """
     통합 평가기 (Facade 패턴)
 
@@ -40,8 +41,8 @@ class EvaluatorFacade:
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from ...handler.ml.evaluation_handler import EvaluationHandler
-        from ..service.impl.ml.evaluation_service_impl import EvaluationServiceImpl
+        from beanllm.handler.ml.evaluation_handler import EvaluationHandler
+        from beanllm.service.impl.ml.evaluation_service_impl import EvaluationServiceImpl
 
         # EvaluationService 생성
         evaluation_service = EvaluationServiceImpl()
@@ -57,13 +58,33 @@ class EvaluatorFacade:
     def evaluate(self, prediction: str, reference: str, **kwargs) -> BatchEvaluationResult:
         """모든 메트릭으로 평가"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
-            self._evaluation_handler.handle_evaluate(
-                prediction=prediction,
-                reference=reference,
-                metrics=self.metrics,
-                **kwargs,
-            )
+        try:
+            # 이미 이벤트 루프가 실행 중인지 확인
+            loop = asyncio.get_running_loop()
+            # 이미 루프가 있으면 에러 - async 버전 사용 필요
+            raise RuntimeError("Already in async context. Use evaluate_async() instead.")
+        except RuntimeError as e:
+            if "no running event loop" in str(e).lower():
+                # 루프가 없으면 새로 만들어서 실행
+                response = run_async_in_sync(
+                    self._evaluation_handler.handle_evaluate(
+                        prediction=prediction,
+                        reference=reference,
+                        metrics=self.metrics,
+                        **kwargs,
+                    )
+                )
+                return response.result
+            else:
+                raise
+
+    async def evaluate_async(self, prediction: str, reference: str, **kwargs) -> BatchEvaluationResult:
+        """모든 메트릭으로 평가 (비동기)"""
+        response = await self._evaluation_handler.handle_evaluate(
+            prediction=prediction,
+            reference=reference,
+            metrics=self.metrics,
+            **kwargs,
         )
         return response.result
 
@@ -72,13 +93,35 @@ class EvaluatorFacade:
     ) -> List[BatchEvaluationResult]:
         """배치 평가"""
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = asyncio.run(
-            self._evaluation_handler.handle_batch_evaluate(
-                predictions=predictions,
-                references=references,
-                metrics=self.metrics,
-                **kwargs,
-            )
+        try:
+            # 이미 이벤트 루프가 실행 중인지 확인
+            loop = asyncio.get_running_loop()
+            # 이미 루프가 있으면 에러 - async 버전 사용 필요
+            raise RuntimeError("Already in async context. Use batch_evaluate_async() instead.")
+        except RuntimeError as e:
+            if "no running event loop" in str(e).lower():
+                # 루프가 없으면 새로 만들어서 실행
+                response = run_async_in_sync(
+                    self._evaluation_handler.handle_batch_evaluate(
+                        predictions=predictions,
+                        references=references,
+                        metrics=self.metrics,
+                        **kwargs,
+                    )
+                )
+                return response.results
+            else:
+                raise
+
+    async def batch_evaluate_async(
+        self, predictions: List[str], references: List[str], **kwargs
+    ) -> List[BatchEvaluationResult]:
+        """배치 평가 (비동기)"""
+        response = await self._evaluation_handler.handle_batch_evaluate(
+            predictions=predictions,
+            references=references,
+            metrics=self.metrics,
+            **kwargs,
         )
         return response.results
 
@@ -98,14 +141,14 @@ def evaluate_text(
         metrics: 사용할 메트릭 이름 리스트 (기본: ["bleu", "rouge", "f1"])
     """
     # Handler/Service 초기화 - DI Container 사용
-    from ..handler.evaluation_handler import EvaluationHandler
-    from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
+    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
 
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
-    response = asyncio.run(
+    response = run_async_in_sync(
         handler.handle_evaluate_text(
             prediction=prediction,
             reference=reference,
@@ -133,14 +176,14 @@ def evaluate_rag(
         ground_truth: 정답 (있는 경우)
     """
     # Handler/Service 초기화 - DI Container 사용
-    from ..handler.evaluation_handler import EvaluationHandler
-    from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
+    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
 
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
-    response = asyncio.run(
+    response = run_async_in_sync(
         handler.handle_evaluate_rag(
             question=question,
             answer=answer,
@@ -155,14 +198,14 @@ def evaluate_rag(
 def create_evaluator(metric_names: List[str]) -> Evaluator:
     """간편한 Evaluator 생성"""
     # Handler/Service 초기화 - DI Container 사용
-    from ..handler.evaluation_handler import EvaluationHandler
-    from ..service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
+    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
 
     evaluation_service = EvaluationServiceImpl()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
-    return asyncio.run(handler.handle_create_evaluator(metric_names=metric_names))
+    return run_async_in_sync(handler.handle_create_evaluator(metric_names=metric_names))
 
 
 # 기존 Evaluator 클래스를 EvaluatorFacade로 alias (하위 호환성)
