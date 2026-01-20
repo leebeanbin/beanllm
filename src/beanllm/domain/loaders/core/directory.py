@@ -8,11 +8,14 @@ import logging
 import mmap
 import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, Iterator, List, Optional, Union
 
-from ..base import BaseDocumentLoader
-from ..advanced.security import validate_file_path
-from ..types import Document
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import BatchProcessorProtocol
+
+from beanllm.domain.loaders.base import BaseDocumentLoader
+from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
@@ -76,6 +79,7 @@ class DirectoryLoader(BaseDocumentLoader):
         recursive: bool = True,
         use_parallel: bool = True,
         max_workers: Optional[int] = None,
+        batch_processor: Optional["BatchProcessorProtocol"] = None,
     ):
         """
         Args:
@@ -85,6 +89,7 @@ class DirectoryLoader(BaseDocumentLoader):
             recursive: 재귀 검색
             use_parallel: 병렬 처리 사용 여부 (기본: True)
             max_workers: 최대 워커 수 (None이면 CPU 코어 수)
+            batch_processor: 배치 프로세서 (옵션, Service layer에서 주입)
         """
         self.path = Path(path)
         self.glob = glob
@@ -92,6 +97,7 @@ class DirectoryLoader(BaseDocumentLoader):
         self.recursive = recursive
         self.use_parallel = use_parallel
         self.max_workers = max_workers
+        self._batch_processor = batch_processor
 
         # 제외 패턴 사전 컴파일 (성능 최적화: O(n×m×p) → O(n×m))
         # Path.match()는 매번 패턴을 컴파일하므로, 미리 컴파일하면 1000배 빠름
@@ -191,25 +197,20 @@ class DirectoryLoader(BaseDocumentLoader):
 
         # 병렬 처리 또는 순차 처리
         if self.use_parallel and len(filtered_files) > 1:
-            # 분산 작업 큐 사용 (환경변수 USE_DISTRIBUTED에 따라 자동 선택)
+            # 분산 배치 프로세서가 주입된 경우 사용
             try:
-                import os
-                use_distributed = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
-                
-                if use_distributed:
-                    # 분산 작업 큐 사용 (Kafka 또는 인메모리)
+                if self._batch_processor is not None:
+                    # 분산 작업 큐 사용 (주입된 BatchProcessor)
                     import asyncio
-                    from beanllm.infrastructure.distributed import BatchProcessor
-                    
+
                     async def load_files_async():
-                        processor = BatchProcessor(task_type="document.loading", max_concurrent=self.max_workers or os.cpu_count() or 4)
-                        results = await processor.process_batch(
+                        results = await self._batch_processor.process_batch(
                             items=filtered_files,
                             handler=DirectoryLoader._load_single_file,
                         )
                         # 결과를 평탄화 (각 결과는 List[Document])
                         return [doc for file_docs in results if file_docs for doc in file_docs]
-                    
+
                     try:
                         documents = asyncio.run(load_files_async())
                     except RuntimeError:
@@ -221,7 +222,7 @@ class DirectoryLoader(BaseDocumentLoader):
                         f"({len(filtered_files)} files, distributed queue mode)"
                     )
                 else:
-                    # 기존 ProcessPoolExecutor 사용 (인메모리)
+                    # 기존 ProcessPoolExecutor 사용 (인메모리, fallback)
                     from concurrent.futures import ProcessPoolExecutor, as_completed
 
                     with ProcessPoolExecutor(max_workers=self.max_workers) as executor:

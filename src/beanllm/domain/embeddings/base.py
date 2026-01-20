@@ -6,7 +6,10 @@ Template Method Pattern을 사용하여 Provider 간 중복 코드 제거
 
 import os
 from abc import ABC, abstractmethod
-from typing import Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import LockManagerProtocol
 
 try:
     from beanllm.utils.logging import get_logger
@@ -31,13 +34,20 @@ class BaseEmbedding(ABC):
         - async → sync 위임
     """
 
-    def __init__(self, model: str, **kwargs):
+    def __init__(
+        self,
+        model: str,
+        lock_manager: Optional["LockManagerProtocol"] = None,
+        **kwargs
+    ):
         """
         Args:
             model: 모델 이름
+            lock_manager: 분산 락 관리자 (옵션, 모델 로딩 동기화용)
             **kwargs: provider별 추가 파라미터
         """
         self.model = model
+        self._lock_manager = lock_manager
         self.kwargs = kwargs
 
     # Template Methods - 공통 헬퍼 메서드
@@ -252,28 +262,32 @@ class BaseLocalEmbedding(BaseEmbedding):
     def _load_model_with_lock(self, model_name: str, loader_func: Callable[[], None]):
         """
         분산 락을 사용한 모델 로딩 헬퍼
-        
+
         Args:
             model_name: 모델 이름 (락 키 생성용)
             loader_func: 실제 모델 로딩 함수
         """
         if self._model is not None:
             return
-        
+
+        # 락 관리자가 제공되지 않은 경우 락 없이 로딩
+        if self._lock_manager is None:
+            loader_func()
+            return
+
+        # 분산 락을 사용한 모델 로딩
         import asyncio
-        from beanllm.infrastructure.distributed import get_lock_manager
-        
-        lock_manager = get_lock_manager()
+
         model_key = f"{model_name}:{id(self)}"
-        
+
         async def _load_async():
-            async with lock_manager.with_model_lock(model_key, timeout=300.0):
+            async with self._lock_manager.with_model_lock(model_key, timeout=300.0):
                 # 락 획득 후 다시 확인
                 if self._model is not None:
                     return
                 # 실제 로딩
                 loader_func()
-        
+
         try:
             loop = asyncio.get_event_loop()
             if loop.is_running():

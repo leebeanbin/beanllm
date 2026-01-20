@@ -14,7 +14,7 @@ Template Method Pattern을 사용하여 중복 코드 제거
 import os
 from typing import List, Optional
 
-from ..base import BaseLocalEmbedding
+from beanllm.domain.embeddings.base import BaseLocalEmbedding
 
 try:
     from beanllm.utils.logging import get_logger
@@ -113,36 +113,13 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
 
     def _load_model(self):
         """모델 로딩 (lazy loading, GPU 최적화, 분산 락 적용)"""
-        if self._model is not None:
-            return
-        
-        # 분산 락 획득 (모델 로딩)
-        import asyncio
-        from beanllm.infrastructure.distributed import get_lock_manager
-        
-        lock_manager = get_lock_manager()
-        model_key = f"{self.model}:{id(self)}"
-        
-        async def _load_model_async():
-            async with lock_manager.with_model_lock(model_key, timeout=300.0):  # 5분 타임아웃
-                # 락 획득 후 다시 확인 (다른 프로세스가 이미 로드했을 수 있음)
-                if self._model is not None:
-                    return
-                
-                # 실제 모델 로딩
-                return self._load_model_impl()
-        
-        # 동기 함수이므로 비동기 래퍼 실행
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 이미 실행 중인 락이 있으면 락 없이 실행 (fallback)
-                self._load_model_impl()
-            else:
-                loop.run_until_complete(_load_model_async())
-        except RuntimeError:
-            asyncio.run(_load_model_async())
-    
+        def _load_impl():
+            # 실제 모델 로딩 구현
+            self._load_model_impl()
+
+        # 분산 락을 사용한 모델 로딩 (부모 클래스의 헬퍼 메서드 사용)
+        self._load_model_with_lock(self.model, _load_impl)
+
     def _load_model_impl(self):
         """실제 모델 로딩 구현 (락 없이)"""
 

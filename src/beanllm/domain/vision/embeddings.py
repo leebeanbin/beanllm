@@ -2,10 +2,18 @@
 Vision Embeddings - 이미지 임베딩 및 멀티모달 임베딩
 """
 
+import hashlib
+import os
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
+
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import CacheProtocol, EventLoggerProtocol, RateLimiterProtocol
 
 from beanllm.domain.embeddings import BaseEmbedding
+
+# 환경변수로 분산 모드 활성화 여부 확인
+USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
 
 
 class CLIPEmbedding(BaseEmbedding):
@@ -27,16 +35,29 @@ class CLIPEmbedding(BaseEmbedding):
         similarity = embed.similarity(text_vec[0], image_vec[0])
     """
 
-    def __init__(self, model: str = "openai/clip-vit-base-patch32", device: Optional[str] = None):
+    def __init__(
+        self,
+        model: str = "openai/clip-vit-base-patch32",
+        device: Optional[str] = None,
+        cache: Optional["CacheProtocol"] = None,
+        rate_limiter: Optional["RateLimiterProtocol"] = None,
+        event_logger: Optional["EventLoggerProtocol"] = None,
+    ):
         """
         Args:
             model: CLIP 모델 이름
             device: 디바이스 (cuda, cpu 등)
+            cache: 캐시 프로토콜 (옵션, Service layer에서 주입)
+            rate_limiter: Rate Limiter 프로토콜 (옵션, Service layer에서 주입)
+            event_logger: Event Logger 프로토콜 (옵션, Service layer에서 주입)
         """
         super().__init__(model=model)
         self.device = device or "cpu"
         self._model = None
         self._processor = None
+        self._cache = cache
+        self._rate_limiter = rate_limiter
+        self._event_logger = event_logger
 
     def _load_model(self):
         """모델 로드 (lazy loading)"""
@@ -60,6 +81,24 @@ class CLIPEmbedding(BaseEmbedding):
         Returns:
             임베딩 벡터 리스트
         """
+        import asyncio
+
+        # 비동기 래퍼 사용
+        if USE_DISTRIBUTED:
+            try:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    # 이미 실행 중인 루프가 있으면 동기 실행
+                    return self._embed_sync_internal(texts)
+                else:
+                    return loop.run_until_complete(self._embed_async(texts))
+            except RuntimeError:
+                return asyncio.run(self._embed_async(texts))
+        else:
+            return self._embed_sync_internal(texts)
+
+    def _embed_sync_internal(self, texts: List[str]) -> List[List[float]]:
+        """내부 동기 임베딩 메서드"""
         self._load_model()
 
         import torch
@@ -76,6 +115,38 @@ class CLIPEmbedding(BaseEmbedding):
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
         return text_features.cpu().numpy().tolist()
+
+    async def _embed_async(self, texts: List[str]) -> List[List[float]]:
+        """비동기 임베딩 메서드 (Rate Limiting + Caching)"""
+        # 캐싱: 텍스트 해시 기반 임베딩 캐싱 (옵션)
+        cached_result = None
+        if self._cache is not None:
+            text_hash = hashlib.md5("|".join(texts).encode()).hexdigest()
+            cache_key = f"vision_embedding:clip:text:{text_hash}"
+            cached_result = await self._cache.get(cache_key)
+            if cached_result is not None:
+                return cached_result
+
+        # Rate Limiting: Vision 임베딩 모델 호출 (옵션)
+        if self._rate_limiter is not None:
+            await self._rate_limiter.wait("vision:embedding", cost=1.0)
+
+        # 임베딩 생성
+        result = self._embed_sync_internal(texts)
+
+        # 캐시 저장 (옵션)
+        if self._cache is not None:
+            await self._cache.set(cache_key, result, ttl=7200)
+
+        # 이벤트 발행 (옵션)
+        if self._event_logger is not None:
+            await self._event_logger.log_event(
+                "vision_embedding.clip.text",
+                {"text_count": len(texts), "model": self.model},
+                level="info",
+            )
+
+        return result
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """비동기 텍스트 임베딩"""
@@ -169,7 +240,9 @@ class SigLIPEmbedding(BaseEmbedding):
         similarity = embed.similarity(text_vec[0], image_vec[0])
     """
 
-    def __init__(self, model: str = "google/siglip-so400m-patch14-384", device: Optional[str] = None):
+    def __init__(
+        self, model: str = "google/siglip-so400m-patch14-384", device: Optional[str] = None
+    ):
         """
         Args:
             model: SigLIP 모델 이름 (기본: SigLIP-SO400M)
@@ -550,6 +623,5 @@ def create_vision_embedding(model: str = "clip", **kwargs) -> BaseEmbedding:
         return MultimodalEmbedding(**kwargs)
     else:
         raise ValueError(
-            f"Unknown model: {model}. "
-            f"Supported models: clip, siglip, mobileclip, multimodal"
+            f"Unknown model: {model}. " f"Supported models: clip, siglip, mobileclip, multimodal"
         )

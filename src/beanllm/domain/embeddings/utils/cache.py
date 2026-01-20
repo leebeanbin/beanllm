@@ -4,7 +4,10 @@ Embeddings Cache - 임베딩 캐시
 Updated to use generic LRUCache with automatic TTL cleanup
 """
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from beanllm.domain.protocols import CacheProtocol
 
 try:
     from beanllm.utils.core.cache import LRUCache
@@ -89,24 +92,32 @@ class EmbeddingCache:
     """
 
     def __init__(
-        self, ttl: int = 3600, max_size: int = 10000, cleanup_interval: int = 60, use_distributed: bool = False
+        self,
+        ttl: int = 3600,
+        max_size: int = 10000,
+        cleanup_interval: int = 60,
+        cache: Optional["CacheProtocol"] = None,
     ):
         """
         Args:
             ttl: 캐시 유지 시간 (초, default: 3600 = 1시간)
             max_size: 최대 캐시 항목 수 (default: 10000)
             cleanup_interval: 자동 정리 주기 (초, default: 60초)
-            use_distributed: 분산 캐시 사용 여부 (환경변수 USE_DISTRIBUTED 또는 명시적 설정)
+            cache: 캐시 구현체 (옵션). None이면 로컬 LRUCache 사용.
+
+        Example:
+            # 로컬 캐시 (기본)
+            cache = EmbeddingCache()
+
+            # 분산 캐시 (Service layer에서 주입)
+            # distributed_cache는 Service layer에서 생성하여 주입
+            cache = EmbeddingCache(cache=injected_distributed_cache)
         """
-        import os
-        use_distributed = use_distributed or os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
-        
-        if use_distributed:
-            # 분산 캐시 사용 (환경변수에 따라 Redis 또는 인메모리)
-            from beanllm.infrastructure.distributed.cache_wrapper import get_distributed_cache
-            self._cache = get_distributed_cache(max_size=max_size, ttl=ttl)
+        if cache is not None:
+            # 외부에서 주입된 캐시 사용 (분산 캐시 등)
+            self._cache = cache
         else:
-            # 기존 LRUCache 사용 (인메모리)
+            # 기본 LRUCache 사용 (인메모리)
             self._cache: LRUCache[str, List[float]] = LRUCache(
                 max_size=max_size,
                 ttl=ttl,
@@ -170,5 +181,5 @@ class EmbeddingCache:
         """소멸자 - 자동 리소스 정리"""
         try:
             self.shutdown()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Shutdown in destructor failed (safe to ignore): {e}")
