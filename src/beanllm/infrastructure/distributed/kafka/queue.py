@@ -11,8 +11,8 @@ import time
 import uuid
 from typing import Dict, Any, Optional
 
-from ..interfaces import TaskQueueInterface
-from ..utils import check_kafka_health, sanitize_error_message
+from beanllm.infrastructure.distributed.interfaces import TaskQueueInterface
+from beanllm.utils import check_kafka_health, sanitize_error_message
 from .client import get_kafka_client
 
 try:

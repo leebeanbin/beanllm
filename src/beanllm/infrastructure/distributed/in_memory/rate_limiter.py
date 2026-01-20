@@ -5,7 +5,7 @@
 import asyncio
 from typing import Dict, Any
 
-from ..interfaces import RateLimiterInterface
+from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
 
 try:
     from beanllm.utils.resilience.rate_limiter import AsyncTokenBucket

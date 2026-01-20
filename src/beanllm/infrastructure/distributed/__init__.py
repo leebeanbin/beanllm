@@ -94,7 +94,7 @@ from .pipeline_decorators import (
 
 # Streaming (선택적)
 try:
-    from ..streaming import (
+    from beanllm.infrastructure.streaming import (
         WebSocketServer,
         StreamingSession,
         ProgressTracker,

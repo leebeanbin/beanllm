@@ -209,8 +209,8 @@ class BatchProcessor:
             from .messaging import ConcurrencyController
 
             self.concurrency_controller = ConcurrencyController()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"ConcurrencyController not available (continuing without it): {e}")
 
     async def process_batch(
         self,
