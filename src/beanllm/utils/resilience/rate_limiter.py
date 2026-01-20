@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
-from ..exceptions import RateLimitError
+from beanllm.utils.exceptions import RateLimitError
 
 
 @dataclass

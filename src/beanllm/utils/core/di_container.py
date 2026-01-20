@@ -11,10 +11,10 @@ import threading
 from typing import Any, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ...facade.core.client_facade import SourceProviderFactoryAdapter
-    from ...handler.factory import HandlerFactory
-    from ...providers.provider_factory import ProviderFactory as SourceProviderFactory
-    from ...service.factory import ServiceFactory
+    from beanllm.facade.core.client_facade import SourceProviderFactoryAdapter
+    from beanllm.handler.factory import HandlerFactory
+    from beanllm.providers.provider_factory import ProviderFactory as SourceProviderFactory
+    from beanllm.service.factory import ServiceFactory
 
 
 class DIContainer:
@@ -63,8 +63,8 @@ class DIContainer:
             SourceProviderFactoryAdapter 인스턴스
         """
         if self._provider_factory is None:
-            from ...facade.core.client_facade import SourceProviderFactoryAdapter
-            from ...providers.provider_factory import ProviderFactory as SourceProviderFactory
+            from beanllm.facade.core.client_facade import SourceProviderFactoryAdapter
+            from beanllm.providers.provider_factory import ProviderFactory as SourceProviderFactory
 
             self._provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
         return self._provider_factory
@@ -83,7 +83,7 @@ class DIContainer:
         Returns:
             ServiceFactory 인스턴스
         """
-        from ...service.factory import ServiceFactory
+        from beanllm.service.factory import ServiceFactory
 
         # 캐시 키 생성 (kwargs 기반)
         cache_key = self._get_cache_key(**kwargs)
@@ -119,7 +119,7 @@ class DIContainer:
             HandlerFactory 인스턴스
         """
         if self._handler_factory is None:
-            from ...handler.factory import HandlerFactory
+            from beanllm.handler.factory import HandlerFactory
 
             self._handler_factory = HandlerFactory(self.service_factory)
         return self._handler_factory
@@ -140,7 +140,7 @@ class DIContainer:
             return self.handler_factory
 
         # 커스텀 ServiceFactory를 사용하는 경우 새 HandlerFactory 생성
-        from ...handler.factory import HandlerFactory
+        from beanllm.handler.factory import HandlerFactory
 
         return HandlerFactory(service_factory)
 
