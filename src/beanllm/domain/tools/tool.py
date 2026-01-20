@@ -6,7 +6,7 @@ import inspect
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

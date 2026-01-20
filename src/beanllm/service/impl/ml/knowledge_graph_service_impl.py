@@ -23,7 +23,7 @@ from beanllm.dto.response.graph.kg_response import (
     RelationsResponse,
 )
 
-from ...knowledge_graph_service import IKnowledgeGraphService
+from beanllm.knowledge_graph_service import IKnowledgeGraphService
 
 
 class KnowledgeGraphServiceImpl(IKnowledgeGraphService):

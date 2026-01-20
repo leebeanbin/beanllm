@@ -16,7 +16,7 @@ from beanllm.dto.request.core.agent_request import AgentRequest
 from beanllm.dto.response.core.agent_response import AgentResponse
 from beanllm.utils.logging import get_logger
 
-from ...agent_service import IAgentService
+from beanllm.agent_service import IAgentService
 
 if TYPE_CHECKING:
     from beanllm.service.chat_service import IChatService

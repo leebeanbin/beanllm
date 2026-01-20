@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..dto.request.ml.finetuning_request import (
+    from beanllm.dto.request.ml.finetuning_request import (
         CancelJobRequest,
         CreateJobRequest,
         GetJobRequest,
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
         StartTrainingRequest,
         WaitForCompletionRequest,
     )
-    from ..dto.response.ml.finetuning_response import (
+    from beanllm.dto.response.ml.finetuning_response import (
         CancelJobResponse,
         CreateJobResponse,
         GetJobResponse,

@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from ..models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ class CloudOCREngine(BaseOCREngine):
 
     def recognize(self, image: np.ndarray, config: OCRConfig) -> Dict:
         """
-        Cloud OCR로 텍스트 인식
+        Cloud OCR로 텍스트 인식 (Rate Limiting 지원)
 
         Args:
             image: 입력 이미지 (numpy array, RGB)
@@ -147,6 +147,10 @@ class CloudOCREngine(BaseOCREngine):
                 - confidence (float): 평균 신뢰도
                 - language (str): 인식된 언어
                 - metadata (dict): 추가 메타데이터
+
+        Note:
+            Rate Limiting은 beanOCR에서 관리되므로 여기서는 적용하지 않음.
+            직접 호출 시에는 beanOCR을 통해 사용하는 것을 권장합니다.
 
         Example:
             ```python

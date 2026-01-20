@@ -30,7 +30,7 @@ from typing import Dict, Union
 
 import numpy as np
 
-from ..models import STTConfig
+from beanllm.domain.audio.models import STTConfig
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)

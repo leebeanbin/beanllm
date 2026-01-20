@@ -7,18 +7,18 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 from .base import BaseTextSplitter
 
 if TYPE_CHECKING:
-    from ..loaders.types import Document
+    from beanllm.domain.loaders.types import Document
 else:
     # 런타임에만 import
     try:
-        from ..loaders.types import Document
+        from beanllm.domain.loaders.types import Document
     except ImportError:
         from typing import Any
 
         Document = Any  # type: ignore
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
 

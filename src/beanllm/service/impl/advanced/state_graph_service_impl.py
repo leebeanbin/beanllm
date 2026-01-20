@@ -29,7 +29,7 @@ from beanllm.dto.request.advanced.state_graph_request import StateGraphRequest
 from beanllm.dto.response.advanced.state_graph_response import StateGraphResponse
 from beanllm.utils.logging import get_logger
 
-from ...state_graph_service import IStateGraphService
+from beanllm.state_graph_service import IStateGraphService
 
 if TYPE_CHECKING:
     pass

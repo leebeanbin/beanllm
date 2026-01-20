@@ -7,7 +7,7 @@ Base OCR Engine
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from ..models import OCRConfig
+from beanllm.domain.ocr.models import OCRConfig
 
 
 class BaseOCREngine(ABC):

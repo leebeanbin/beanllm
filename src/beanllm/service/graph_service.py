@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from ..dto.request.graph.graph_request import GraphRequest
-from ..dto.response.graph.graph_response import GraphResponse
+from beanllm.dto.request.graph.graph_request import GraphRequest
+from beanllm.dto.response.graph.graph_response import GraphResponse
 
 
 class IGraphService(ABC):

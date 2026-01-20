@@ -11,9 +11,9 @@ import re
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
 
-from ..base import BaseDocumentLoader
-from ..advanced.security import validate_file_path
-from ..types import Document
+from beanllm.domain.loaders.base import BaseDocumentLoader
+from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
@@ -249,7 +249,7 @@ class DoclingLoader(BaseDocumentLoader):
 
         # 청킹
         try:
-            from ..splitters import RecursiveCharacterTextSplitter
+            from beanllm.domain.loaders.splitters import RecursiveCharacterTextSplitter
         except ImportError:
             logger.warning(
                 "RecursiveCharacterTextSplitter not available, "

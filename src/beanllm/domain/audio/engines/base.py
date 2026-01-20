@@ -10,8 +10,8 @@ from typing import Dict, Union
 
 import numpy as np
 
-from ..models import STTConfig
-from ..types import TranscriptionResult
+from beanllm.domain.audio.models import STTConfig
+from beanllm.domain.audio.types import TranscriptionResult
 
 
 class BaseSTTEngine(ABC):

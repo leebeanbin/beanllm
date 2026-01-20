@@ -28,7 +28,7 @@ from typing import Callable, Dict, List, Optional, Tuple
 from .types import SearchResult
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
 
     def get_logger(name: str):

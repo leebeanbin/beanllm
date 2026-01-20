@@ -25,7 +25,7 @@ from .providers import BaseFineTuningProvider
 from .types import FineTuningConfig, FineTuningJob, FineTuningMetrics, TrainingExample
 
 try:
-    from beanllm.utils.logger import get_logger
+    from beanllm.utils.logging import get_logger
 except ImportError:
     def get_logger(name: str):
         return logging.getLogger(name)

@@ -10,8 +10,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterator, List
 
-from ..dto.request.core.rag_request import RAGRequest
-from ..dto.response.core.rag_response import RAGResponse
+from beanllm.dto.request.core.rag_request import RAGRequest
+from beanllm.dto.response.core.rag_response import RAGResponse
 
 
 class IRAGService(ABC):

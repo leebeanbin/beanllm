@@ -6,7 +6,7 @@ import asyncio
 import re
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from beanllm.utils.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 from .base_node import BaseNode
 from .graph_state import GraphState

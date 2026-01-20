@@ -104,8 +104,8 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             client: LLM Client (optional)
         """
         # Domain 객체
-        self._entity_extractor = EntityExtractor(client=client)
-        self._relation_extractor = RelationExtractor(client=client)
+        self._entity_extractor = EntityExtractor()
+        self._relation_extractor = RelationExtractor()
         self._graph_builder = GraphBuilder(directed=True)
 
         # 상태 저장
@@ -480,12 +480,21 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                 f"Graph built: {graph_id} ({stats['num_nodes']} nodes, {stats['num_edges']} edges)"
             )
 
+            # Use appropriate connected components metric for directed/undirected graphs
+            if "num_connected_components" not in stats:
+                # For directed graphs, use weakly connected components as default
+                stats["num_connected_components"] = stats.get("num_weakly_connected_components", 0)
+
             return BuildGraphResponse(
                 graph_id=graph_id,
+                graph_name=request.graph_name or graph_id,
                 num_nodes=stats["num_nodes"],
                 num_edges=stats["num_edges"],
-                density=stats["density"],
-                num_connected_components=stats["num_connected_components"],
+                backend=request.backend,
+                document_ids=[],  # Will be populated if using document_ids
+                created_at=graph_id,  # Using graph_id as timestamp placeholder
+                statistics=stats,  # Pass all stats in statistics dict
+                metadata=request.config,
             )
 
         except Exception as e:

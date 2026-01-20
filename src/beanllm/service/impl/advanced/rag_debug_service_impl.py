@@ -31,7 +31,7 @@ from beanllm.dto.response.ml.rag_debug_response import (
 )
 from beanllm.utils.logging import get_logger
 
-from ...rag_debug_service import IRAGDebugService
+from beanllm.rag_debug_service import IRAGDebugService
 
 logger = get_logger(__name__)
 

@@ -15,9 +15,9 @@ beanPDFLoader - 고급 PDF 로더
 from pathlib import Path
 from typing import List, Optional, Union
 
-from ..base import BaseDocumentLoader
-from ..advanced.security import validate_file_path
-from ..types import Document
+from beanllm.domain.loaders.base import BaseDocumentLoader
+from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.types import Document
 from .models import PDFLoadConfig
 
 try:
@@ -405,8 +405,8 @@ class beanPDFLoader(BaseDocumentLoader):
             if page_count > 100:
                 if "fast" in self._engines:
                     return "fast"
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to determine optimal engine (using default): {e}")
 
         # 기본값: accurate (정확도 우선)
         if "accurate" in self._engines:

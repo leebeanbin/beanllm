@@ -8,7 +8,7 @@ import inspect
 import time
 from typing import Callable, TypeVar
 
-from ..utils.logging import get_logger
+from beanllm.utils.logging import get_logger
 
 T = TypeVar("T")
 
