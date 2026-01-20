@@ -6,7 +6,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager, Dict
 
-from ..interfaces import DistributedLockInterface
+from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
 
 
 class InMemoryLock(DistributedLockInterface):

@@ -377,8 +377,8 @@ class SklearnModel(BaseMLModel):
             self.model = joblib.load(str(model_path))
             self.model_path = model_path
             return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to load model with joblib (trying pickle): {e}")
 
         # pickle 시도
         try:

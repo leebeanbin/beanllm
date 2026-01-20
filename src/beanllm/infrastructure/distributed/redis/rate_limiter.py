@@ -10,8 +10,8 @@ import json
 import time
 from typing import Dict, Any
 
-from ..interfaces import RateLimiterInterface
-from ..utils import check_redis_health, sanitize_error_message, DistributedError
+from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
+from beanllm.utils import check_redis_health, sanitize_error_message, DistributedError
 from .client import get_redis_client
 
 try:

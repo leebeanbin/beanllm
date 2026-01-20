@@ -139,11 +139,80 @@ class OllamaProvider(BaseLLMProvider):
     async def list_models(self) -> List[str]:
         """사용 가능한 모델 목록"""
         try:
+            logger.debug(f"[OllamaProvider] Calling client.list() with host: {self.client.host if hasattr(self.client, 'host') else 'default'}")
+            
             # 최신 SDK: list() 메서드 사용
-            models = await self.client.list()
-            return [m["name"] for m in models.get("models", [])]
+            models_response = await self.client.list()
+            
+            logger.debug(f"[OllamaProvider] client.list() returned: {models_response} (type: {type(models_response)})")
+            
+            # models_response 처리: dict, list, ListResponse 객체 모두 처리
+            models_list = []
+            
+            # 1. ListResponse 객체인 경우 (ollama._types.ListResponse)
+            if hasattr(models_response, 'models'):
+                models_list = models_response.models
+                logger.debug(f"[OllamaProvider] Extracted models_list from ListResponse.models: {len(models_list)} models")
+            # 2. dict인 경우
+            elif isinstance(models_response, dict):
+                models_list = models_response.get("models", [])
+                logger.debug(f"[OllamaProvider] Extracted models_list from dict: {models_list} (count: {len(models_list)})")
+            # 3. list인 경우
+            elif isinstance(models_response, list):
+                models_list = models_response
+                logger.debug(f"[OllamaProvider] models_response is list: {models_list} (count: {len(models_list)})")
+            else:
+                logger.warning(f"[OllamaProvider] Unexpected response type: {type(models_response)}, value: {models_response}")
+                models_list = []
+            
+            # 안전하게 모델 이름 추출
+            model_names = []
+            for i, m in enumerate(models_list):
+                if m is None:
+                    logger.debug(f"[OllamaProvider] Model item {i} is None, skipping")
+                    continue
+                
+                # Model 객체인 경우 (ollama._types.Model)
+                if hasattr(m, 'model'):
+                    # Model 객체의 model 속성 사용 (예: Model.model = 'phi3.5:latest')
+                    name = m.model
+                    if name:
+                        model_names.append(str(name))
+                        logger.debug(f"[OllamaProvider] Extracted model name from Model object: {name}")
+                # dict인 경우
+                elif isinstance(m, dict):
+                    # "name" 키가 있으면 사용, 없으면 다른 키 시도
+                    name = m.get("name") or m.get("model") or m.get("id")
+                    if name:
+                        model_names.append(str(name))
+                        logger.debug(f"[OllamaProvider] Extracted model name from dict: {name}")
+                    else:
+                        logger.debug(f"[OllamaProvider] Model dict {i} has no name/model/id keys: {m}")
+                # str인 경우
+                elif isinstance(m, str):
+                    model_names.append(m)
+                    logger.debug(f"[OllamaProvider] Model item {i} is string: {m}")
+                else:
+                    # 다른 타입이면 문자열로 변환 시도
+                    try:
+                        # 객체에 model 속성이 있는지 확인
+                        if hasattr(m, 'model'):
+                            name = m.model
+                            model_names.append(str(name))
+                            logger.debug(f"[OllamaProvider] Extracted model name from object.model attribute: {name}")
+                        else:
+                            model_names.append(str(m))
+                            logger.debug(f"[OllamaProvider] Converted model item {i} to string: {str(m)}")
+                    except Exception as conv_error:
+                        logger.debug(f"[OllamaProvider] Failed to convert model item {i} to string: {conv_error}")
+                        pass
+            
+            logger.info(f"[OllamaProvider] list_models() returning {len(model_names)} models: {model_names}")
+            return model_names
         except Exception as e:
-            logger.error(f"Ollama list_models error: {e}")
+            logger.error(f"Ollama list_models error: {e}", exc_info=True)
+            import traceback
+            logger.debug(f"Ollama list_models traceback: {traceback.format_exc()}")
             return []
 
     def is_available(self) -> bool:

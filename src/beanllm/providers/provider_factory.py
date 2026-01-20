@@ -5,8 +5,8 @@ Provider Factory
 
 from typing import List, Optional
 
-from ..utils.config import EnvConfig
-from ..utils.logging import get_logger
+from beanllm.utils.config import EnvConfig
+from beanllm.utils.logging import get_logger
 from .base_provider import BaseLLMProvider
 
 # Get logger first for error logging
@@ -262,7 +262,7 @@ class ProviderFactory:
 
                 try:
                     asyncio.run(provider.close())
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Provider close failed in cleanup (safe to ignore): {e}")
 
         cls._instances.clear()

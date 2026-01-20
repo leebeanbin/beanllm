@@ -4,7 +4,7 @@
 
 from typing import Generic, Optional, TypeVar
 
-from ..interfaces import CacheInterface
+from beanllm.infrastructure.distributed.interfaces import CacheInterface
 
 try:
     from beanllm.utils.core.cache import LRUCache

@@ -8,7 +8,7 @@ import time
 import uuid
 from typing import Dict, Any, Optional
 
-from ..interfaces import TaskQueueInterface
+from beanllm.infrastructure.distributed.interfaces import TaskQueueInterface
 
 
 class InMemoryTaskQueue(TaskQueueInterface):

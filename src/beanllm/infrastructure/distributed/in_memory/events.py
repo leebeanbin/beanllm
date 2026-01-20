@@ -5,7 +5,7 @@
 import asyncio
 from typing import Any, AsyncIterator, Callable, Dict
 
-from ..interfaces import EventProducerInterface, EventConsumerInterface
+from beanllm.infrastructure.distributed.interfaces import EventProducerInterface, EventConsumerInterface
 
 
 class InMemoryEventBus(EventProducerInterface, EventConsumerInterface):

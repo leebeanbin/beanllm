@@ -8,8 +8,8 @@ import asyncio
 import json
 from typing import Generic, Optional, TypeVar
 
-from ..interfaces import CacheInterface
-from ..utils import check_redis_health, sanitize_error_message
+from beanllm.infrastructure.distributed.interfaces import CacheInterface
+from beanllm.utils import check_redis_health, sanitize_error_message
 from .client import get_redis_client
 
 try:

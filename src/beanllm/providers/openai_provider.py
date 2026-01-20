@@ -255,7 +255,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         # 3. ModelConfig에서 확인 (선택적 의존성)
         try:
-            from ..infrastructure.models.model_config import ModelConfigManager
+            from beanllm.infrastructure.models.model_config import ModelConfigManager
 
             config = ModelConfigManager.get_model_config(model)
             if config:
@@ -278,8 +278,8 @@ class OpenAIProvider(BaseLLMProvider):
                     }
         except ImportError:
             logger.debug("ModelConfigManager not available, using Strategy pattern")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to get model config (using Strategy pattern): {e}")
 
         # 4. Strategy Pattern 기반 추론 (동적으로 발견된 모델용)
         logger.debug(f"Using Strategy pattern for {model}")
