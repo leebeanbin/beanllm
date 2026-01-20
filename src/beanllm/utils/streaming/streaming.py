@@ -28,7 +28,7 @@ except ImportError:
     Text = None
 
 try:
-    from ..logging.logger import get_logger
+    from beanllm.utils.logging.logger import get_logger
 except ImportError:
     import logging
 

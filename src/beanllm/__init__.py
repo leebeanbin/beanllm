@@ -820,5 +820,7 @@ def _print_welcome_banner():
 try:
     _check_optional_dependencies()
     _print_welcome_banner()
-except Exception:
-    pass  # 에러 발생해도 import는 성공
+except Exception as e:
+    # 에러 발생해도 import는 성공
+    import logging
+    logging.getLogger(__name__).debug(f"Initialization check failed (safe to ignore): {e}")

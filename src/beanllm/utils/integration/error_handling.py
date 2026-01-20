@@ -19,7 +19,7 @@ from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
 # ===== Re-export Exceptions =====
-from ..exceptions import (
+from beanllm.utils.exceptions import (
     CircuitBreakerError,
     LLMKitError,
     MaxRetriesExceededError,
@@ -28,13 +28,13 @@ from ..exceptions import (
     TimeoutError,
     ValidationError,
 )
-from ..resilience.circuit_breaker import (
+from beanllm.utils.resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitState,
     circuit_breaker,
 )
-from ..resilience.error_tracker import (
+from beanllm.utils.resilience.error_tracker import (
     ErrorRecord,
     ErrorTracker,
     FallbackHandler,
@@ -43,7 +43,7 @@ from ..resilience.error_tracker import (
     get_error_tracker,
     sanitize_error_message,
 )
-from ..resilience.rate_limiter import (
+from beanllm.utils.resilience.rate_limiter import (
     AsyncTokenBucket,
     RateLimitConfig,
     RateLimiter,
@@ -51,7 +51,7 @@ from ..resilience.rate_limiter import (
 )
 
 # ===== Re-export Resilience Components =====
-from ..resilience.retry import (
+from beanllm.utils.resilience.retry import (
     RetryConfig,
     RetryHandler,
     RetryStrategy,
