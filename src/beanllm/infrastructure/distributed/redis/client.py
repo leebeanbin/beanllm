@@ -6,7 +6,7 @@ Redis 클라이언트 관리
 """
 
 import os
-from typing import Optional
+from typing import Optional, Any
 
 try:
     import redis.asyncio as redis
