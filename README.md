@@ -98,11 +98,9 @@
 - 🔄 **LangGraph Integration** - Convert beanLLM State Graph to LangGraph workflows
   - State Machine 기반 워크플로우
   - Conditional Edges, Human-in-the-loop 지원
-  - 자세한 내용: `infrastructure/integrations/README.md`
 - 📚 **LlamaIndex Integration** - Use beanLLM documents/embeddings with LlamaIndex
   - Advanced RAG (Multi-step retrieval, Query transformation)
   - Query Engine을 beanLLM 스타일로 제공
-  - 자세한 내용: `infrastructure/integrations/README.md`
 
 ### 🏭 **Production Features**
 - 📈 **Evaluation** - BLEU, ROUGE, LLM-as-Judge, RAG metrics, context recall
@@ -121,7 +119,6 @@
   - ✅ **자동 선택**: 환경변수 `USE_DISTRIBUTED`로 분산/인메모리 모드 선택
   - ✅ **데코레이터 패턴**: `@with_distributed_features`로 자동 적용 (코드 85-90% 감소)
   - ✅ **동적 설정**: 런타임에 파이프라인별 설정 수정 가능
-  - 자세한 내용: `infrastructure/distributed/README.md`
 
 ### 🎨 **Code Quality & Architecture** (v0.2.2+)
 
