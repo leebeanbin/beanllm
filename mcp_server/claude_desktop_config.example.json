@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "beanllm": {
+      "command": "python",
+      "args": [
+        "/absolute/path/to/llmkit/mcp_server/run.py"
+      ],
+      "env": {
+        "OLLAMA_HOST": "http://localhost:11434",
+        "DEFAULT_CHAT_MODEL": "qwen2.5:0.5b",
+        "DEFAULT_EMBEDDING_MODEL": "nomic-embed-text:latest"
+      }
+    }
+  }
+}

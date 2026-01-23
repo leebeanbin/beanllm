@@ -1,0 +1,139 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(pytest|python -m pytest|make test)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '⚠️  Running tests - this may take a few minutes...'"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == \"Bash\" && tool_input.command matches \"(black|ruff|mypy)\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '🔍 Running code quality checks...'"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "tool == \"Edit\" && tool_input.file_path matches \"\\\\.py$\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho '🎨 Auto-formatting Python file: ${tool_input.file_path}'\nblack '${tool_input.file_path}' 2>&1 | grep -v 'reformatted\\|unchanged' || true\nruff check --fix '${tool_input.file_path}' 2>&1 | grep -v 'Fixed\\|No fixes' || true"
+          }
+        ]
+      },
+      {
+        "matcher": "tool == \"Write\" && tool_input.file_path matches \"\\\\.py$\"",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho '🎨 Auto-formatting Python file: ${tool_input.file_path}'\nblack '${tool_input.file_path}' 2>&1 | grep -v 'reformatted\\|unchanged' || true\nruff check --fix '${tool_input.file_path}' 2>&1 | grep -v 'Fixed\\|No fixes' || true"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "true",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho ''\necho '🔍 Checking for debug code...'\nfound=false\n# Check for print() statements\nif find src/beanllm -name '*.py' -type f -exec grep -l 'print(' {} \\; 2>/dev/null | grep -v '__pycache__' | head -5; then\n    echo '⚠️  Warning: print() statements found (should use logger)'\n    found=true\nfi\n# Check for console.log in playground\nif [ -d playground/frontend ] && find playground/frontend/src -name '*.ts' -o -name '*.tsx' -type f -exec grep -l 'console\\.log' {} \\; 2>/dev/null | head -5; then\n    echo '⚠️  Warning: console.log() found in frontend'\n    found=true\nfi\nif [ \"$found\" = false ]; then\n    echo '✅ No debug code found'\nfi"
+          },
+          {
+            "type": "command",
+            "command": "#!/bin/bash\necho ''\necho '🏗️  Verifying Clean Architecture...'\nviolations=0\n# Check Handler → Service implementation\nif grep -r 'from.*service\\.impl' src/beanllm/handler/ 2>/dev/null | grep -v '__pycache__'; then\n    echo '❌ Handler → Service implementation violation found'\n    violations=$((violations + 1))\nfi\n# Check Domain → Service\nif grep -r 'from.*service\\.' src/beanllm/domain/ 2>/dev/null | grep -v '__pycache__'; then\n    echo '❌ Domain → Service violation found'\n    violations=$((violations + 1))\nfi\n# Check relative imports\nif grep -r 'from \\.\\.' src/beanllm/ 2>/dev/null | grep -v '__pycache__' | grep -v '.pyc' | head -3; then\n    echo '❌ Relative imports found (use absolute paths)'\n    violations=$((violations + 1))\nfi\nif [ $violations -eq 0 ]; then\n    echo '✅ Clean Architecture verified'\nelse\n    echo \"⚠️  $violations architecture violations found\"\n    echo '💡 Run /arch-check for details'\nfi"
+          }
+        ]
+      }
+    ]
+  },
+  "skills": {
+    "_comment": "Anthropic Agent Skills 마켓플레이스 스킬 통합",
+    "webapp-testing": {
+      "enabled": true,
+      "autoActivate": true,
+      "triggers": [
+        "E2E 테스트",
+        "integration test",
+        "Playwright",
+        "frontend test",
+        "playground/frontend"
+      ],
+      "config": {
+        "defaultBrowser": "chromium",
+        "headless": true,
+        "screenshotOnError": true
+      },
+      "_usage": "playground/backend + playground/frontend 통합 테스트 시 자동 활성화"
+    },
+    "frontend-design": {
+      "enabled": true,
+      "autoActivate": true,
+      "triggers": [
+        "UI 디자인",
+        "컴포넌트 생성",
+        "React component",
+        "Tailwind",
+        "frontend design",
+        "playground/frontend"
+      ],
+      "config": {
+        "avoidGenericPatterns": true,
+        "preferBoldDesign": true,
+        "defaultFonts": ["custom", "distinctive"],
+        "avoidFonts": ["Inter", "Roboto", "Arial"]
+      },
+      "_usage": "playground/frontend 컴포넌트 디자인 시 자동 활성화"
+    },
+    "web-artifacts-builder": {
+      "enabled": false,
+      "_comment": "필요시 활성화: 프로토타입 제작용",
+      "autoActivate": false,
+      "triggers": ["prototype", "artifact", "demo"],
+      "config": {
+        "defaultStack": "react-typescript-tailwind-shadcn"
+      }
+    },
+    "mcp-builder": {
+      "enabled": false,
+      "_comment": "필요시 활성화: beanllm을 MCP 서버로 확장할 때",
+      "autoActivate": false,
+      "triggers": ["MCP server", "Model Context Protocol"]
+    }
+  },
+  "mcpServers": {
+    "_comment": "MCP 서버 설정은 필요에 따라 활성화하세요",
+    "github": {
+      "_enabled": false,
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      }
+    },
+    "filesystem": {
+      "_enabled": false,
+      "_comment": "보안상 프로젝트 디렉토리만 허용",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/leejungbin/Downloads/llmkit"]
+    },
+    "postgres": {
+      "_enabled": false,
+      "_comment": "pgvector 벡터 스토어 사용 시 활성화",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": ""
+      }
+    }
+  }
+}
