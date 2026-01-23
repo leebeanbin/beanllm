@@ -17,9 +17,8 @@ from beanllm.infrastructure.distributed.pipeline_decorators import (
     with_batch_processing,
     with_distributed_features,
 )
+from beanllm.service.chain_service import IChainService
 from beanllm.utils.logging import get_logger
-
-from beanllm.chain_service import IChainService
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"

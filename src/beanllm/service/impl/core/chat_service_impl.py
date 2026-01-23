@@ -15,8 +15,8 @@ from beanllm.decorators.logger import log_service_call
 from beanllm.dto.request.core.chat_request import ChatRequest
 from beanllm.dto.response.core.chat_response import ChatResponse
 from beanllm.infrastructure.adapter import ParameterAdapter
+from beanllm.service.chat_service import IChatService
 
-from beanllm.chat_service import IChatService
 from .base_service import BaseService
 
 if TYPE_CHECKING:

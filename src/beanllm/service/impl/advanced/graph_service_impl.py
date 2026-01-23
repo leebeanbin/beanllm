@@ -15,7 +15,7 @@ from beanllm.dto.response.graph.graph_response import GraphResponse
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.utils.logging import get_logger
 
-from beanllm.graph_service import IGraphService
+from beanllm.service.graph_service import IGraphService
 
 if TYPE_CHECKING:
     from beanllm.domain.graph import BaseNode

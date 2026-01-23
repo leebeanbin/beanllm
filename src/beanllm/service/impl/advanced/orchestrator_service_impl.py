@@ -32,7 +32,7 @@ from beanllm.dto.response.advanced.orchestrator_response import (
 )
 from beanllm.utils.logging import get_logger
 
-from beanllm.orchestrator_service import IOrchestratorService
+from beanllm.service.orchestrator_service import IOrchestratorService
 
 logger = get_logger(__name__)
 

@@ -48,7 +48,7 @@ from beanllm.dto.response.advanced.optimizer_response import (
 )
 from beanllm.utils.logging import get_logger
 
-from beanllm.optimizer_service import IOptimizerService
+from beanllm.service.optimizer_service import IOptimizerService
 
 logger = get_logger(__name__)
 

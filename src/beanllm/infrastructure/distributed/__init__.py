@@ -91,6 +91,13 @@ from .pipeline_decorators import (
     with_distributed_features,
     with_batch_processing,
 )
+from .google_events import (
+    log_google_export,
+    log_abnormal_activity,
+    log_admin_action,
+    get_google_export_stats,
+    get_security_events,
+)
 
 # Streaming (선택적)
 try:

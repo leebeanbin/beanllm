@@ -21,7 +21,7 @@ from beanllm.dto.request.web.web_search_request import WebSearchRequest
 from beanllm.dto.response.web.web_search_response import WebSearchResponse
 from beanllm.utils.logging import get_logger
 
-from beanllm.web_search_service import IWebSearchService
+from beanllm.service.web_search_service import IWebSearchService
 
 if TYPE_CHECKING:
     pass

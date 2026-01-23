@@ -12,9 +12,8 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, List, Optional
 
 from beanllm.dto.request.core.rag_request import RAGRequest
 from beanllm.dto.response.core.rag_response import RAGResponse
-
-from beanllm.rag_service import IRAGService
 from beanllm.service.impl.advanced.search_strategy import SearchStrategyFactory
+from beanllm.service.rag_service import IRAGService
 
 if TYPE_CHECKING:
     from beanllm.service.chat_service import IChatService
