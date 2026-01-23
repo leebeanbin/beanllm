@@ -8,15 +8,73 @@ import asyncio
 import sys
 import os
 import logging
+import time
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, UploadFile, File
+from fastapi import (
+    FastAPI,
+    WebSocket,
+    WebSocketDisconnect,
+    HTTPException,
+    UploadFile,
+    File,
+    Request,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
 
+# .env 파일 로드
+try:
+    from dotenv import load_dotenv
+
+    # backend 디렉토리의 .env 파일 로드
+    env_path = Path(__file__).parent / ".env"
+    if env_path.exists():
+        load_dotenv(env_path)
+        logging.info(f"✅ Loaded .env file from {env_path}")
+    else:
+        logging.info(f"ℹ️  .env file not found at {env_path}, using environment variables")
+except ImportError:
+    logging.warning("⚠️  python-dotenv not installed, .env file will not be loaded")
+
+
+# 로깅 설정 (구조화된 로깅)
+class RequestIDFilter(logging.Filter):
+    """Request ID를 로그에 추가하는 필터"""
+
+    def filter(self, record):
+        # request_id가 extra에 있으면 사용, 없으면 "N/A"
+        if not hasattr(record, "request_id"):
+            record.request_id = getattr(record, "request_id", "N/A")
+        return True
+
+
+# 커스텀 포맷터로 request_id가 없을 때 안전하게 처리
+class SafeFormatter(logging.Formatter):
+    """request_id가 없어도 안전하게 처리하는 포맷터"""
+
+    def format(self, record):
+        if not hasattr(record, "request_id"):
+            record.request_id = "N/A"
+        return super().format(record)
+
+
+# 로깅 설정
+handler = logging.StreamHandler()
+handler.setFormatter(
+    SafeFormatter("%(asctime)s - %(name)s - %(levelname)s - [%(request_id)s] - %(message)s")
+)
+handler.addFilter(RequestIDFilter())
+
+logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)  # 기존 설정 덮어쓰기
+
 logger = logging.getLogger(__name__)
+
+# 모니터링 미들웨어 import
+from monitoring import MonitoringMiddleware, ChatMonitoringMixin
 
 # Add parent directory to path to import beanllm
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -29,21 +87,22 @@ _downloaded_models: Dict[str, str] = {}
 # Model Name Mapping (공통 함수)
 # ============================================================================
 
+
 def get_ollama_model_name_for_chat(model_name: str) -> str:
     """
     Chat 시 사용할 Ollama 실제 모델 이름으로 매핑
-    
+
     참고: Pull 시에는 원래 이름을 사용하고, Chat 시에만 이 매핑을 사용합니다.
     (예: pull은 "phi3.5"를 사용하지만, chat은 "phi3"를 사용)
-    
+
     매핑 규칙:
     1. 특정 매핑이 있으면 사용
     2. 콜론(:)이 있으면 그대로 사용 (예: qwen2.5:0.5b)
     3. 버전 번호가 있으면 제거하거나 변환 (예: phi3.5 -> phi3)
-    
+
     Args:
         model_name: 로컬 모델 이름 (예: "phi3.5", "qwen2.5:0.5b")
-    
+
     Returns:
         Ollama 실제 모델 이름 (예: "phi3", "qwen2.5:0.5b")
     """
@@ -56,24 +115,23 @@ def get_ollama_model_name_for_chat(model_name: str) -> str:
         "phi-3.5": "phi3",
         "phi3": "phi3",  # 이미 올바른 이름
         "phi4": "phi4:14b",  # phi4는 14b 태그 필요 (웹 검색 결과 기반)
-        
         # Qwen 시리즈 (Alibaba) - 대부분 매핑 불필요, 콜론 포함 모델은 그대로 사용
         "qwen3": "qwen3",  # 확인 필요
-        
         # 기타 모델들은 콜론 포함 모델이거나 그대로 사용
     }
-    
+
     # 매핑이 있으면 사용
     if model_name in model_name_mapping:
         return model_name_mapping[model_name]
-    
+
     # 콜론이 있으면 그대로 사용 (예: qwen2.5:0.5b, llama3.3:70b)
     # Ollama는 태그 포함 모델 이름을 그대로 사용함
     if ":" in model_name:
         return model_name
-    
+
     # 그 외는 그대로 반환
     return model_name
+
 
 from beanllm import Client
 from beanllm.facade.advanced.knowledge_graph_facade import KnowledgeGraph
@@ -115,6 +173,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 모니터링 미들웨어 추가 (상세 로깅 및 이벤트 스트리밍)
+USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
+USE_REDIS_MONITORING = (
+    os.getenv("USE_REDIS_MONITORING", "true").lower() == "true"
+)  # 기본적으로 Redis 모니터링 활성화
+app.add_middleware(
+    MonitoringMiddleware,
+    enable_kafka=USE_DISTRIBUTED,
+    enable_redis=USE_REDIS_MONITORING,  # Redis 모니터링은 기본 활성화
+)
+
+# ============================================================================
+# MongoDB Connection & Chat History Router
+# ============================================================================
+
+from database import get_mongodb_client, close_mongodb_connection, ping_mongodb
+from chat_history import router as chat_history_router
+
+# Include chat history router
+app.include_router(chat_history_router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize MongoDB connection on startup"""
+    logger.info("🚀 Starting beanllm Playground Backend...")
+
+    # Test MongoDB connection
+    if await ping_mongodb():
+        logger.info("✅ MongoDB connected successfully")
+    else:
+        logger.warning("⚠️  MongoDB not available - chat history will not be saved")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close MongoDB connection on shutdown"""
+    logger.info("🛑 Shutting down beanllm Playground Backend...")
+    await close_mongodb_connection()
+    logger.info("✅ Shutdown complete")
+
 
 # ============================================================================
 # Global State
@@ -455,15 +555,114 @@ async def health():
 
 
 # ============================================================================
+# Config API - ✅ beanllm의 EnvConfig 활용
+# ============================================================================
+
+
+@app.get("/api/config/providers")
+async def get_active_providers():
+    """
+    활성화된 Provider 목록 반환 (✅ EnvConfig 활용)
+
+    Returns:
+        {
+            "providers": ["openai", "anthropic", "ollama"],
+            "config": {
+                "openai_api_key": "***MASKED***",
+                "anthropic_api_key": None,
+                ...
+            }
+        }
+    """
+    try:
+        from beanllm.utils.config import EnvConfig
+
+        return {
+            "providers": EnvConfig.get_active_providers(),
+            "config": EnvConfig.get_safe_config_dict(),
+        }
+    except Exception as e:
+        logger.error(f"Failed to get active providers: {e}")
+        # Fallback: Ollama는 항상 가능
+        return {
+            "providers": ["ollama"],
+            "config": {},
+        }
+
+
+@app.get("/api/config/models")
+async def get_available_models():
+    """
+    활성화된 Provider별 사용 가능한 모델 목록
+
+    Returns:
+        {
+            "openai": ["gpt-4o", "gpt-4o-mini", ...],
+            "anthropic": ["claude-sonnet-4", ...],
+            "ollama": ["qwen2.5:0.5b", ...]
+        }
+    """
+    try:
+        from beanllm.utils.config import EnvConfig
+
+        available_models = {}
+
+        # OpenAI 모델
+        if EnvConfig.is_provider_available("openai"):
+            available_models["openai"] = [
+                "gpt-4o",
+                "gpt-4o-mini",
+                "gpt-4-turbo",
+                "gpt-3.5-turbo",
+            ]
+
+        # Anthropic 모델
+        if EnvConfig.is_provider_available("anthropic"):
+            available_models["anthropic"] = [
+                "claude-sonnet-4-20250514",
+                "claude-opus-4-20250514",
+                "claude-haiku-4-20250514",
+            ]
+
+        # Google 모델
+        if EnvConfig.is_provider_available("google"):
+            available_models["google"] = [
+                "gemini-2.5-pro",
+                "gemini-2.5-flash",
+                "gemini-1.5-pro",
+            ]
+
+        # Ollama 모델 (항상 가능, list_models로 실제 목록 가져오기)
+        try:
+            from beanllm.providers.ollama import OllamaProvider
+            ollama = OllamaProvider()
+            ollama_models = ollama.list_models()
+            available_models["ollama"] = [m["name"] for m in ollama_models]
+        except Exception as e:
+            logger.warning(f"Failed to list Ollama models: {e}")
+            available_models["ollama"] = ["qwen2.5:0.5b"]  # Fallback
+
+        return available_models
+
+    except Exception as e:
+        logger.error(f"Failed to get available models: {e}")
+        return {"ollama": ["qwen2.5:0.5b"]}
+
+
+# ============================================================================
 # Chat API
 # ============================================================================
 
 
 @app.post("/api/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, http_request: Request = None):
     """
     Main chat endpoint - routes to different assistants
     """
+    # Request ID 가져오기 (미들웨어에서 설정됨)
+    request_id = http_request.headers.get("X-Request-ID") if http_request else str(uuid.uuid4())
+    chat_start_time = time.time()
+
     try:
         # Convert messages to beanllm format
         # Handle images/files for multimodal messages
@@ -473,19 +672,19 @@ async def chat(request: ChatRequest):
             is_last_user = i == len(request.messages) - 1 and msg.role == "user"
             has_images = is_last_user and request.images and len(request.images) > 0
             has_files = is_last_user and request.files and len(request.files) > 0
-            
+
             if has_images or has_files:
                 # Create multimodal message for vision models
                 content = []
-                
+
                 # Add text content
                 if msg.content:
                     content.append({"type": "text", "text": msg.content})
-                
+
                 # Add images (OpenAI-style multimodal format)
                 if has_images:
                     import base64
-                    
+
                     for img_base64 in request.images:
                         try:
                             # Use base64 directly in OpenAI format
@@ -496,24 +695,26 @@ async def chat(request: ChatRequest):
                             else:
                                 # Assume it's base64 without prefix, add default prefix
                                 image_url = f"data:image/png;base64,{img_base64}"
-                            
+
                             # Add image in OpenAI format
-                            content.append({
-                                "type": "image_url",
-                                "image_url": {"url": image_url}
-                            })
+                            content.append({"type": "image_url", "image_url": {"url": image_url}})
                         except Exception as e:
                             logger.warning(f"Failed to process image: {e}")
                             continue
-                
+
                 # Add file information as text (files are not directly supported by vision models)
                 if has_files:
-                    file_info = "\n\nAttached files:\n" + "\n".join([f"- {f.get('name', 'Unknown')} ({f.get('type', 'Unknown type')})" for f in request.files])
+                    file_info = "\n\nAttached files:\n" + "\n".join(
+                        [
+                            f"- {f.get('name', 'Unknown')} ({f.get('type', 'Unknown type')})"
+                            for f in request.files
+                        ]
+                    )
                     if content and content[0].get("type") == "text":
                         content[0]["text"] += file_info
                     else:
                         content.insert(0, {"type": "text", "text": file_info})
-                
+
                 messages.append({"role": msg.role, "content": content})
             else:
                 # Regular text message
@@ -524,75 +725,100 @@ async def chat(request: ChatRequest):
         if request.model:
             # Registry에서 모델 정보 확인
             from beanllm.infrastructure.registry import get_model_registry
+
             registry = get_model_registry()
             model_info = None
             try:
                 model_info = registry.get_model_info(request.model)
             except:
                 pass
-            
+
             model_name_lower = request.model.lower()
-            
+
             # Ollama에 설치된 모델 확인 (오픈소스 모델은 Ollama에 설치되어 있을 수 있음)
             use_ollama = False
             ollama_model_name = None
-            
+
             # 1. Registry에 등록된 Ollama 모델인 경우
             if model_info and model_info.provider == "ollama":
                 # Ollama 모델은 실제 설치 여부 확인
                 try:
                     from beanllm.providers.ollama_provider import OllamaProvider
+
                     ollama_provider = OllamaProvider()
-                    
+
                     # Ollama 연결 상태 확인
                     try:
                         health = await ollama_provider.health_check()
                         logger.info(f"[DEBUG] Ollama health check: {health}")
                     except Exception as health_error:
-                        logger.warning(f"[DEBUG] Ollama health check failed: {health_error}", exc_info=True)
-                    
+                        logger.warning(
+                            f"[DEBUG] Ollama health check failed: {health_error}", exc_info=True
+                        )
+
                     # list_models() 호출 전후로 상세 로깅
                     try:
                         logger.info(f"[DEBUG] Calling ollama_provider.list_models()...")
                         installed_models = await ollama_provider.list_models()
-                        logger.info(f"[DEBUG] list_models() returned: {installed_models} (type: {type(installed_models)}, count: {len(installed_models)})")
+                        logger.info(
+                            f"[DEBUG] list_models() returned: {installed_models} (type: {type(installed_models)}, count: {len(installed_models)})"
+                        )
                     except Exception as list_error:
-                        logger.error(f"[DEBUG] list_models() raised exception: {list_error}", exc_info=True)
+                        logger.error(
+                            f"[DEBUG] list_models() raised exception: {list_error}", exc_info=True
+                        )
                         # 직접 client.list() 호출 시도
                         try:
                             logger.info(f"[DEBUG] Trying direct client.list() call...")
                             raw_response = await ollama_provider.client.list()
-                            logger.info(f"[DEBUG] Direct client.list() returned: {raw_response} (type: {type(raw_response)})")
+                            logger.info(
+                                f"[DEBUG] Direct client.list() returned: {raw_response} (type: {type(raw_response)})"
+                            )
                             # 수동으로 파싱
                             if isinstance(raw_response, dict):
-                                installed_models = [m.get("name") or m.get("model") or m.get("id") for m in raw_response.get("models", [])]
+                                installed_models = [
+                                    m.get("name") or m.get("model") or m.get("id")
+                                    for m in raw_response.get("models", [])
+                                ]
                             elif isinstance(raw_response, list):
-                                installed_models = [m.get("name") if isinstance(m, dict) else str(m) for m in raw_response]
+                                installed_models = [
+                                    m.get("name") if isinstance(m, dict) else str(m)
+                                    for m in raw_response
+                                ]
                             else:
                                 installed_models = []
                             logger.info(f"[DEBUG] Parsed models: {installed_models}")
                         except Exception as direct_error:
-                            logger.error(f"[DEBUG] Direct client.list() also failed: {direct_error}", exc_info=True)
+                            logger.error(
+                                f"[DEBUG] Direct client.list() also failed: {direct_error}",
+                                exc_info=True,
+                            )
                             installed_models = []
-                    
+
                     installed_models_lower = [m.lower() for m in installed_models if m]
-                    
-                    logger.info(f"[DEBUG] Checking Ollama models for '{request.model}'. Installed models: {installed_models} (count: {len(installed_models)})")
-                    
+
+                    logger.info(
+                        f"[DEBUG] Checking Ollama models for '{request.model}'. Installed models: {installed_models} (count: {len(installed_models)})"
+                    )
+
                     # 모델이 비어있으면 경고
                     if not installed_models:
-                        logger.warning(f"[DEBUG] WARNING: Ollama list_models() returned empty list. This might indicate:")
+                        logger.warning(
+                            f"[DEBUG] WARNING: Ollama list_models() returned empty list. This might indicate:"
+                        )
                         logger.warning(f"[DEBUG]   1. Ollama daemon is not running")
                         logger.warning(f"[DEBUG]   2. No models are installed")
                         logger.warning(f"[DEBUG]   3. Connection issue with Ollama")
-                    
+
                     # 모델 이름 매핑 적용 (Chat 시에만 매핑 사용)
                     # Pull 시에는 원래 이름을 사용하지만, Chat 시에는 설치된 이름을 사용
                     mapped_model_name = get_ollama_model_name_for_chat(request.model)
                     mapped_model_name_lower = mapped_model_name.lower()
-                    
-                    logger.info(f"[DEBUG] Model mapping: '{request.model}' -> '{mapped_model_name}' (lower: '{mapped_model_name_lower}')")
-                    
+
+                    logger.info(
+                        f"[DEBUG] Model mapping: '{request.model}' -> '{mapped_model_name}' (lower: '{mapped_model_name_lower}')"
+                    )
+
                     # 매핑된 이름으로 먼저 확인 (예: phi3.5 -> phi3)
                     if mapped_model_name_lower in installed_models_lower:
                         use_ollama = True
@@ -603,7 +829,9 @@ async def chat(request: ChatRequest):
                                 break
                         else:
                             ollama_model_name = mapped_model_name
-                        logger.info(f"Using Ollama provider for {request.model} -> {ollama_model_name} (mapped and found in Ollama)")
+                        logger.info(
+                            f"Using Ollama provider for {request.model} -> {ollama_model_name} (mapped and found in Ollama)"
+                        )
                     elif model_name_lower in installed_models_lower:
                         use_ollama = True
                         # 실제 설치된 모델 이름 찾기
@@ -613,35 +841,57 @@ async def chat(request: ChatRequest):
                                 break
                         else:
                             ollama_model_name = request.model
-                        logger.info(f"Using Ollama provider for {request.model} -> {ollama_model_name} (found in Ollama)")
+                        logger.info(
+                            f"Using Ollama provider for {request.model} -> {ollama_model_name} (found in Ollama)"
+                        )
                     else:
                         logger.info(f"[DEBUG] Exact match not found. Checking similar names...")
                         # 비슷한 이름의 모델 확인 (예: phi3.5 vs phi3)
                         for installed_model in installed_models:
-                            if model_name_lower in installed_model.lower() or installed_model.lower() in model_name_lower:
+                            if (
+                                model_name_lower in installed_model.lower()
+                                or installed_model.lower() in model_name_lower
+                            ):
                                 use_ollama = True
                                 ollama_model_name = installed_model
-                                logger.info(f"Using Ollama provider for {request.model} -> {installed_model} (found similar)")
+                                logger.info(
+                                    f"Using Ollama provider for {request.model} -> {installed_model} (found similar)"
+                                )
                                 break
                         # 매핑된 이름으로도 비슷한 이름 찾기
                         if not use_ollama:
-                            logger.info(f"[DEBUG] Checking mapped name '{mapped_model_name_lower}' for similar matches...")
+                            logger.info(
+                                f"[DEBUG] Checking mapped name '{mapped_model_name_lower}' for similar matches..."
+                            )
                             for installed_model in installed_models:
-                                if mapped_model_name_lower in installed_model.lower() or installed_model.lower() in mapped_model_name_lower:
+                                if (
+                                    mapped_model_name_lower in installed_model.lower()
+                                    or installed_model.lower() in mapped_model_name_lower
+                                ):
                                     use_ollama = True
                                     ollama_model_name = installed_model
-                                    logger.info(f"Using Ollama provider for {request.model} -> {installed_model} (mapped and found similar)")
+                                    logger.info(
+                                        f"Using Ollama provider for {request.model} -> {installed_model} (mapped and found similar)"
+                                    )
                                     break
-                        
+
                         if not use_ollama:
-                            logger.warning(f"[DEBUG] Model '{request.model}' (mapped: '{mapped_model_name}') not found in Ollama. Installed: {installed_models}")
+                            logger.warning(
+                                f"[DEBUG] Model '{request.model}' (mapped: '{mapped_model_name}') not found in Ollama. Installed: {installed_models}"
+                            )
                             # list_models()가 빈 리스트를 반환하더라도, 실제로 모델이 설치되어 있을 수 있음
                             # (Ollama 연결 문제일 수 있음)
                             # Registry에 Ollama 모델로 등록되어 있으면 시도해볼 수 있도록 함
                             if model_info and model_info.provider == "ollama":
-                                logger.info(f"[DEBUG] list_models() returned empty list, but model '{request.model}' is registered as Ollama.")
-                                logger.info(f"[DEBUG] This might be a connection issue. Will try to use mapped name: {mapped_model_name}")
-                                logger.info(f"[DEBUG] Chat will attempt to use the model directly - if it works, the model is installed.")
+                                logger.info(
+                                    f"[DEBUG] list_models() returned empty list, but model '{request.model}' is registered as Ollama."
+                                )
+                                logger.info(
+                                    f"[DEBUG] This might be a connection issue. Will try to use mapped name: {mapped_model_name}"
+                                )
+                                logger.info(
+                                    f"[DEBUG] Chat will attempt to use the model directly - if it works, the model is installed."
+                                )
                                 use_ollama = True
                                 ollama_model_name = mapped_model_name
                 except Exception as e:
@@ -649,76 +899,98 @@ async def chat(request: ChatRequest):
                     # 예외가 발생해도 Registry에 Ollama 모델로 등록되어 있으면 시도
                     if model_info and model_info.provider == "ollama":
                         mapped_model_name = get_ollama_model_name_for_chat(request.model)
-                        logger.info(f"[DEBUG] Ollama check exception but model is registered as Ollama. Will try to use mapped name: {mapped_model_name}")
+                        logger.info(
+                            f"[DEBUG] Ollama check exception but model is registered as Ollama. Will try to use mapped name: {mapped_model_name}"
+                        )
                         use_ollama = True
                         ollama_model_name = mapped_model_name
-            
+
             # 2. Registry에 등록된 다른 provider 모델이지만 Ollama에 설치되어 있을 수 있는 경우
             # (예: deepseek-chat이 Registry에 DEEPSEEK로 등록되어 있지만 Ollama에도 설치되어 있을 수 있음)
             elif model_info and model_info.provider != "ollama":
                 # 오픈소스 모델 패턴 (Ollama에 설치 가능)
                 opensource_patterns = ["deepseek", "mistral", "mixtral", "gemma", "codellama"]
                 is_opensource = any(pattern in model_name_lower for pattern in opensource_patterns)
-                
+
                 if is_opensource:
                     try:
                         from beanllm.providers.ollama_provider import OllamaProvider
+
                         ollama_provider = OllamaProvider()
                         installed_models = await ollama_provider.list_models()
                         installed_models_lower = [m.lower() for m in installed_models]
-                        
+
                         # Ollama에 설치되어 있는지 확인
                         if model_name_lower in installed_models_lower:
                             use_ollama = True
                             ollama_model_name = request.model
-                            logger.info(f"Using Ollama provider for {request.model} (found in Ollama, overriding Registry provider)")
+                            logger.info(
+                                f"Using Ollama provider for {request.model} (found in Ollama, overriding Registry provider)"
+                            )
                         else:
                             # 비슷한 이름의 모델 확인
                             for installed_model in installed_models:
-                                if model_name_lower in installed_model.lower() or installed_model.lower() in model_name_lower:
+                                if (
+                                    model_name_lower in installed_model.lower()
+                                    or installed_model.lower() in model_name_lower
+                                ):
                                     use_ollama = True
                                     ollama_model_name = installed_model
-                                    logger.info(f"Using Ollama provider for {request.model} (found similar in Ollama: {installed_model})")
+                                    logger.info(
+                                        f"Using Ollama provider for {request.model} (found similar in Ollama: {installed_model})"
+                                    )
                                     break
                     except Exception as e:
                         logger.debug(f"Ollama check failed for {request.model}: {e}")
-            
+
             # 3. Registry에 없는 모델인 경우 (예: qwen2.5:0.5b)
             # 콜론이 있으면 Ollama 모델로 간주
             elif ":" in request.model:
                 try:
                     from beanllm.providers.ollama_provider import OllamaProvider
+
                     ollama_provider = OllamaProvider()
                     installed_models = await ollama_provider.list_models()
                     installed_models_lower = [m.lower() for m in installed_models]
-                    
+
                     if model_name_lower in installed_models_lower:
                         use_ollama = True
                         ollama_model_name = request.model
-                        logger.info(f"Using Ollama provider for {request.model} (not in Registry, but found in Ollama)")
+                        logger.info(
+                            f"Using Ollama provider for {request.model} (not in Registry, but found in Ollama)"
+                        )
                     else:
                         # 비슷한 이름의 모델 확인
                         for installed_model in installed_models:
-                            if model_name_lower in installed_model.lower() or installed_model.lower() in model_name_lower:
+                            if (
+                                model_name_lower in installed_model.lower()
+                                or installed_model.lower() in model_name_lower
+                            ):
                                 use_ollama = True
                                 ollama_model_name = installed_model
-                                logger.info(f"Using Ollama provider for {request.model} (found similar: {installed_model})")
+                                logger.info(
+                                    f"Using Ollama provider for {request.model} (found similar: {installed_model})"
+                                )
                                 break
                 except Exception as e:
                     logger.debug(f"Ollama check failed for {request.model}: {e}")
-            
+
             # Client 생성
             if use_ollama:
                 # Ollama에 설치되어 있으면 Ollama provider 명시적으로 사용
                 # ollama_model_name이 있으면 그것을 사용 (비슷한 이름의 모델 매칭)
                 final_model_name = ollama_model_name or request.model
-                logger.info(f"[DEBUG] Creating Client with model='{final_model_name}', provider='ollama' (requested: '{request.model}', use_ollama={use_ollama}, ollama_model_name={ollama_model_name})")
+                logger.info(
+                    f"[DEBUG] Creating Client with model='{final_model_name}', provider='ollama' (requested: '{request.model}', use_ollama={use_ollama}, ollama_model_name={ollama_model_name})"
+                )
                 client = Client(model=final_model_name, provider="ollama")
             else:
                 # Client._detect_provider가 Registry를 먼저 확인하므로 올바른 provider 자동 감지
                 # 예: deepseek-chat → Registry에서 DEEPSEEK provider 찾음 (Ollama에 없으면)
                 # 예: gpt-4o-mini → Registry에서 OPENAI provider 찾음
-                logger.info(f"[DEBUG] Creating Client with model='{request.model}', provider=auto-detect (use_ollama={use_ollama})")
+                logger.info(
+                    f"[DEBUG] Creating Client with model='{request.model}', provider=auto-detect (use_ollama={use_ollama})"
+                )
                 client = Client(model=request.model)
             chat_kwargs = {}
             if request.temperature is not None:
@@ -731,7 +1003,7 @@ async def chat(request: ChatRequest):
                 chat_kwargs["frequency_penalty"] = request.frequency_penalty
             if request.presence_penalty is not None:
                 chat_kwargs["presence_penalty"] = request.presence_penalty
-            
+
             # Enable thinking mode if requested
             if request.enable_thinking:
                 # For Claude models, add thinking parameter
@@ -742,29 +1014,36 @@ async def chat(request: ChatRequest):
                 elif not request.model.startswith(("o1", "o3", "gpt-5")):
                     # Add thinking prompt for non-reasoning models
                     if messages and messages[0].get("role") != "system":
-                        messages.insert(0, {
-                            "role": "system",
-                            "content": "Think step by step. Show your reasoning process using <think>...</think> tags before your final answer."
-                        })
-            
+                        messages.insert(
+                            0,
+                            {
+                                "role": "system",
+                                "content": "Think step by step. Show your reasoning process using <think>...</think> tags before your final answer.",
+                            },
+                        )
+
             try:
                 response = await client.chat(messages=messages, **chat_kwargs)
             except Exception as chat_error:
                 error_msg = str(chat_error)
-                
+
                 # Provider를 찾을 수 없을 때 (API 키가 없거나 provider를 사용할 수 없을 때)
-                if "no available llm provider" in error_msg.lower() or "no available provider" in error_msg.lower():
+                if (
+                    "no available llm provider" in error_msg.lower()
+                    or "no available provider" in error_msg.lower()
+                ):
                     # 모델 이름으로 provider 추론
                     model_name = request.model.lower()
-                    
+
                     # DeepSeek 같은 오픈소스 모델은 Ollama에 설치되어 있을 수 있음
                     # 먼저 Ollama에서 확인
                     if model_name.startswith("deepseek"):
                         try:
                             from beanllm.providers.ollama_provider import OllamaProvider
+
                             ollama_provider = OllamaProvider()
                             installed_models = await ollama_provider.list_models()
-                            
+
                             # Ollama에 해당 모델이 설치되어 있는지 확인
                             if model_name in [m.lower() for m in installed_models]:
                                 # Ollama에 설치되어 있으면 Ollama provider로 재시도 안내
@@ -773,15 +1052,15 @@ async def chat(request: ChatRequest):
                                     f"모델 '{request.model}'이 Ollama에 설치되어 있습니다. "
                                     f"Ollama provider를 사용하려면 provider를 'ollama'로 명시하거나 "
                                     f"모델 이름을 '{request.model}' 그대로 사용하세요. "
-                                    f"(현재는 DeepSeek API provider를 시도했습니다)"
+                                    f"(현재는 DeepSeek API provider를 시도했습니다)",
                                 )
                         except Exception as ollama_check_error:
                             # Ollama 확인 실패는 무시하고 계속 진행
                             logger.debug(f"Ollama check failed: {ollama_check_error}")
-                    
+
                     provider_name = None
                     api_key_env = None
-                    
+
                     if model_name.startswith("deepseek"):
                         provider_name = "DeepSeek"
                         api_key_env = "DEEPSEEK_API_KEY"
@@ -791,16 +1070,45 @@ async def chat(request: ChatRequest):
                             f"DeepSeek 모델을 사용하려면 API 키가 필요합니다. "
                             f"환경 변수 'DEEPSEEK_API_KEY'를 설정하거나, "
                             f"Ollama에 모델을 설치하여 로컬에서 사용할 수 있습니다. "
-                            f"(예: `ollama pull {request.model}`)"
+                            f"(예: `ollama pull {request.model}`)",
                         )
-                    elif any(pattern in model_name for pattern in ["mistral", "mixtral", "gemma", "codellama", "neural", "starling", "orca", "vicuna", "wizard", "falcon"]):
+                    elif any(
+                        pattern in model_name
+                        for pattern in [
+                            "mistral",
+                            "mixtral",
+                            "gemma",
+                            "codellama",
+                            "neural",
+                            "starling",
+                            "orca",
+                            "vicuna",
+                            "wizard",
+                            "falcon",
+                        ]
+                    ):
                         # 다른 오픈소스 모델들도 Ollama 사용 가능
-                        model_type = next(pattern for pattern in ["mistral", "mixtral", "gemma", "codellama", "neural", "starling", "orca", "vicuna", "wizard", "falcon"] if pattern in model_name)
+                        model_type = next(
+                            pattern
+                            for pattern in [
+                                "mistral",
+                                "mixtral",
+                                "gemma",
+                                "codellama",
+                                "neural",
+                                "starling",
+                                "orca",
+                                "vicuna",
+                                "wizard",
+                                "falcon",
+                            ]
+                            if pattern in model_name
+                        )
                         raise HTTPException(
                             401,
                             f"{model_type.capitalize()} 모델을 사용하려면 API 키가 필요하거나, "
                             f"Ollama에 모델을 설치하여 로컬에서 사용할 수 있습니다. "
-                            f"(예: `ollama pull {request.model}`)"
+                            f"(예: `ollama pull {request.model}`)",
                         )
                     elif model_name.startswith("claude"):
                         provider_name = "Claude"
@@ -808,7 +1116,12 @@ async def chat(request: ChatRequest):
                     elif model_name.startswith("gemini"):
                         provider_name = "Gemini"
                         api_key_env = "GEMINI_API_KEY"
-                    elif model_name.startswith("gpt") or model_name.startswith("o1") or model_name.startswith("o3") or model_name.startswith("o4"):
+                    elif (
+                        model_name.startswith("gpt")
+                        or model_name.startswith("o1")
+                        or model_name.startswith("o3")
+                        or model_name.startswith("o4")
+                    ):
                         provider_name = "OpenAI"
                         api_key_env = "OPENAI_API_KEY"
                     elif "perplexity" in model_name or "sonar" in model_name:
@@ -819,39 +1132,42 @@ async def chat(request: ChatRequest):
                         raise HTTPException(
                             404,
                             f"모델 '{request.model}'을(를) 찾을 수 없습니다. 모델을 다운로드해주세요. "
-                            f"API: POST /api/models/{request.model}/pull"
+                            f"API: POST /api/models/{request.model}/pull",
                         )
-                    
+
                     if provider_name and api_key_env:
                         raise HTTPException(
                             401,
                             f"{provider_name} 모델을 사용하려면 API 키가 필요합니다. "
-                            f"환경 변수 '{api_key_env}'를 설정해주세요."
+                            f"환경 변수 '{api_key_env}'를 설정해주세요.",
                         )
                     else:
                         raise HTTPException(
                             500,
                             f"모델 '{request.model}'을(를) 사용할 수 없습니다. "
-                            f"API 키가 설정되어 있는지 확인하거나 다른 모델을 선택해주세요."
+                            f"API 키가 설정되어 있는지 확인하거나 다른 모델을 선택해주세요.",
                         )
-                
+
                 # Ollama 모델이 없을 때 처리
-                elif "not found" in error_msg.lower() and ("ollama" in error_msg.lower() or ":" in request.model):
+                elif "not found" in error_msg.lower() and (
+                    "ollama" in error_msg.lower() or ":" in request.model
+                ):
                     # Registry에서 모델 정보 확인
                     from beanllm.infrastructure.registry import get_model_registry
+
                     registry = get_model_registry()
                     model_info = None
                     try:
                         model_info = registry.get_model_info(request.model)
                     except:
                         pass
-                    
+
                     # Registry에 등록된 모델이지만 Ollama에 없으면 다운로드 안내
                     if model_info and model_info.provider == "ollama":
                         raise HTTPException(
                             404,
                             f"모델 '{request.model}'을(를) 찾을 수 없습니다. 모델을 다운로드해주세요. "
-                            f"API: POST /api/models/{request.model}/pull"
+                            f"API: POST /api/models/{request.model}/pull",
                         )
                     else:
                         # Registry에 등록된 다른 provider 모델인데 Ollama로 시도한 경우
@@ -860,25 +1176,26 @@ async def chat(request: ChatRequest):
                             raise HTTPException(
                                 404,
                                 f"모델 '{request.model}'을(를) 사용할 수 없습니다. "
-                                f"Provider: {model_info.provider}, 에러: {error_msg}"
+                                f"Provider: {model_info.provider}, 에러: {error_msg}",
                             )
                         else:
                             raise HTTPException(
                                 404,
                                 f"모델 '{request.model}'을(를) 찾을 수 없습니다. "
-                                f"모델 이름을 확인하거나 다른 모델을 선택해주세요."
+                                f"모델 이름을 확인하거나 다른 모델을 선택해주세요.",
                             )
                 # 다른 모델 관련 에러
-                elif "model" in error_msg.lower() and ("not found" in error_msg.lower() or "not available" in error_msg.lower()):
+                elif "model" in error_msg.lower() and (
+                    "not found" in error_msg.lower() or "not available" in error_msg.lower()
+                ):
                     raise HTTPException(
                         404,
-                        f"모델 '{request.model}'을(를) 사용할 수 없습니다. 모델 이름을 확인하거나 다른 모델을 선택해주세요."
+                        f"모델 '{request.model}'을(를) 사용할 수 없습니다. 모델 이름을 확인하거나 다른 모델을 선택해주세요.",
                     )
                 # API 키 관련 에러
                 elif "api key" in error_msg.lower() or "authentication" in error_msg.lower():
                     raise HTTPException(
-                        401,
-                        f"API 키가 필요합니다. 환경 변수에 API 키를 설정해주세요."
+                        401, f"API 키가 필요합니다. 환경 변수에 API 키를 설정해주세요."
                     )
                 # 그 외 에러는 그대로 전달
                 raise HTTPException(500, f"Chat error: {error_msg}")
@@ -896,7 +1213,7 @@ async def chat(request: ChatRequest):
                 chat_kwargs["frequency_penalty"] = request.frequency_penalty
             if request.presence_penalty is not None:
                 chat_kwargs["presence_penalty"] = request.presence_penalty
-            
+
             # Enable thinking mode if requested
             if request.enable_thinking:
                 # For Claude models, add thinking parameter
@@ -908,21 +1225,47 @@ async def chat(request: ChatRequest):
                 elif not model_name.startswith(("o1", "o3", "gpt-5")):
                     # Add thinking prompt for non-reasoning models
                     if messages and messages[0].get("role") != "system":
-                        messages.insert(0, {
-                            "role": "system",
-                            "content": "Think step by step. Show your reasoning process using <think>...</think> tags before your final answer."
-                        })
-            
+                        messages.insert(
+                            0,
+                            {
+                                "role": "system",
+                                "content": "Think step by step. Show your reasoning process using <think>...</think> tags before your final answer.",
+                            },
+                        )
+
+            # Chat 요청 로깅 (fallback)
+            await ChatMonitoringMixin.log_chat_request(
+                request_id=request_id,
+                model=request.model or "gpt-4o-mini",
+                messages=messages,
+                temperature=request.temperature,
+                max_tokens=request.max_tokens,
+            )
+
             try:
+                chat_response_start = time.time()
                 response = await client.chat(messages=messages, **chat_kwargs)
+                chat_duration_ms = (time.time() - chat_response_start) * 1000
             except Exception as chat_error:
                 error_msg = str(chat_error)
                 if "api key" in error_msg.lower() or "authentication" in error_msg.lower():
                     raise HTTPException(
-                        401,
-                        f"API 키가 필요합니다. OPENAI_API_KEY 환경 변수를 설정해주세요."
+                        401, f"API 키가 필요합니다. OPENAI_API_KEY 환경 변수를 설정해주세요."
                     )
                 raise HTTPException(500, f"Chat error: {error_msg}")
+
+        # Chat 응답 로깅
+        usage = response.usage if hasattr(response, "usage") else None
+        await ChatMonitoringMixin.log_chat_response(
+            request_id=request_id,
+            model=response.model if hasattr(response, "model") else request.model or "default",
+            response_content=response.content if hasattr(response, "content") else str(response),
+            input_tokens=usage.input_tokens if usage and hasattr(usage, "input_tokens") else None,
+            output_tokens=(
+                usage.output_tokens if usage and hasattr(usage, "output_tokens") else None
+            ),
+            duration_ms=chat_duration_ms if "chat_duration_ms" in locals() else None,
+        )
 
         return {
             "role": "assistant",
@@ -938,6 +1281,38 @@ async def chat(request: ChatRequest):
         error_msg = str(e)
         logger.error(f"Chat endpoint error: {error_msg}", exc_info=True)
         raise HTTPException(500, f"Chat error: {error_msg}")
+
+
+# ============================================================================
+# MCP Streaming API - Tool Call with SSE
+# ============================================================================
+
+from mcp_streaming import stream_mcp_chat, MCPChatRequest
+
+
+@app.post("/api/chat/stream")
+async def chat_stream(request: MCPChatRequest):
+    """
+    MCP Chat with Server-Sent Events streaming
+
+    Tool Call 진행 상황을 실시간으로 스트리밍합니다.
+
+    Event types:
+    - tool_call: Tool 실행 시작
+    - tool_progress: Tool 진행 상황
+    - tool_result: Tool 실행 결과
+    - text: 일반 텍스트 응답
+    - done: 스트리밍 완료
+    """
+    return StreamingResponse(
+        stream_mcp_chat(request),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",  # Disable nginx buffering
+        },
+    )
 
 
 # ============================================================================
@@ -964,39 +1339,58 @@ async def kg_build(request: BuildGraphRequest):
         # Get entities and relations for visualization
         entities_list = []
         relations_list = []
-        
+
         try:
             # Query all entities
             entities_response = await kg.query_graph(
                 graph_id=response.graph_id,
                 query_type="all_entities",
             )
-            
+
             # Format entities for visualization
             for entity in entities_response.results[:50]:  # Limit to 50 for performance
                 if isinstance(entity, dict):
-                    entities_list.append({
-                        "id": entity.get("id") or entity.get("entity_id") or f"entity-{len(entities_list)}",
-                        "name": entity.get("name") or entity.get("text") or str(entity),
-                        "type": entity.get("type") or entity.get("entity_type") or "UNKNOWN",
-                        "metadata": {k: v for k, v in entity.items() if k not in ["id", "name", "type", "text", "entity_id", "entity_type"]},
-                    })
-            
+                    entities_list.append(
+                        {
+                            "id": entity.get("id")
+                            or entity.get("entity_id")
+                            or f"entity-{len(entities_list)}",
+                            "name": entity.get("name") or entity.get("text") or str(entity),
+                            "type": entity.get("type") or entity.get("entity_type") or "UNKNOWN",
+                            "metadata": {
+                                k: v
+                                for k, v in entity.items()
+                                if k
+                                not in ["id", "name", "type", "text", "entity_id", "entity_type"]
+                            },
+                        }
+                    )
+
             # Query all relations
             relations_response = await kg.query_graph(
                 graph_id=response.graph_id,
                 query_type="all_relations",
             )
-            
+
             # Format relations for visualization
             for relation in relations_response.results[:50]:  # Limit to 50 for performance
                 if isinstance(relation, dict):
-                    relations_list.append({
-                        "source": relation.get("source") or relation.get("source_id") or f"source-{len(relations_list)}",
-                        "target": relation.get("target") or relation.get("target_id") or f"target-{len(relations_list)}",
-                        "type": relation.get("type") or relation.get("relation_type") or "RELATED_TO",
-                        "label": relation.get("label") or relation.get("description") or relation.get("type"),
-                    })
+                    relations_list.append(
+                        {
+                            "source": relation.get("source")
+                            or relation.get("source_id")
+                            or f"source-{len(relations_list)}",
+                            "target": relation.get("target")
+                            or relation.get("target_id")
+                            or f"target-{len(relations_list)}",
+                            "type": relation.get("type")
+                            or relation.get("relation_type")
+                            or "RELATED_TO",
+                            "label": relation.get("label")
+                            or relation.get("description")
+                            or relation.get("type"),
+                        }
+                    )
         except Exception as e:
             # If query fails, return empty lists
             logger.warning(f"Failed to get entities/relations for visualization: {e}")
@@ -1161,7 +1555,7 @@ async def rag_build_from_files(
                 # Validate file type
                 ext = Path(file.filename).suffix.lower() if file.filename else ""
                 supported_exts = [".txt", ".md", ".json", ".pdf", ".docx", ".doc", ".csv"]
-                
+
                 if ext not in supported_exts:
                     logger.warning(f"Unsupported file type: {ext}, skipping {file.filename}")
                     continue
@@ -1293,13 +1687,15 @@ async def rag_list_collections():
                 except Exception:
                     # If we can't get document count, just use 0
                     pass
-            
-            collections.append({
-                "name": name,
-                "document_count": doc_count,
-                "created_at": None,  # Could be enhanced with metadata
-            })
-        
+
+            collections.append(
+                {
+                    "name": name,
+                    "document_count": doc_count,
+                    "created_at": None,  # Could be enhanced with metadata
+                }
+            )
+
         return {
             "collections": collections,
             "total": len(collections),
@@ -1314,14 +1710,14 @@ async def rag_delete_collection(collection_name: str):
     try:
         if collection_name not in _rag_chains:
             raise HTTPException(404, f"Collection '{collection_name}' not found")
-        
+
         # Delete from memory
         del _rag_chains[collection_name]
-        
+
         # Optionally delete from vector store if it has a delete method
         # This would require accessing the vector_store from the deleted chain
         # For now, we just remove from memory
-        
+
         return {
             "collection_name": collection_name,
             "status": "deleted",
@@ -1402,13 +1798,15 @@ async def web_search(request: WebSearchRequest):
         if request.summarize and request.model:
             try:
                 from beanllm import Client
-                
+
                 # 검색 결과를 컨텍스트로 구성
-                context = "\n\n".join([
-                    f"{i+1}. {r['title']}\n   {r['snippet']}\n   URL: {r['url']}"
-                    for i, r in enumerate(results[:5])  # 상위 5개만 요약
-                ])
-                
+                context = "\n\n".join(
+                    [
+                        f"{i+1}. {r['title']}\n   {r['snippet']}\n   URL: {r['url']}"
+                        for i, r in enumerate(results[:5])  # 상위 5개만 요약
+                    ]
+                )
+
                 # 요약 프롬프트
                 summary_prompt = f"""다음은 '{request.query}'에 대한 웹 검색 결과입니다.
 
@@ -1435,10 +1833,9 @@ async def web_search(request: WebSearchRequest):
                     chat_kwargs["frequency_penalty"] = request.frequency_penalty
                 if request.presence_penalty is not None:
                     chat_kwargs["presence_penalty"] = request.presence_penalty
-                
+
                 summary_response = await client.chat(
-                    messages=[{"role": "user", "content": summary_prompt}],
-                    **chat_kwargs
+                    messages=[{"role": "user", "content": summary_prompt}], **chat_kwargs
                 )
                 summary = summary_response.content
             except Exception as summary_error:
@@ -1471,14 +1868,14 @@ async def rag_debug_analyze(request: RAGDebugRequest):
         else:
             # Create temporary vector_store from documents using RAGBuilder (beanllm 패키지 기반)
             from beanllm.domain.loaders import Document
-            
+
             # Convert documents to Document objects
             docs = [Document(content=doc, metadata={}) for doc in request.documents]
-            
+
             # Create temporary RAG chain using RAGBuilder to get vector_store
             model = request.model or "gpt-4o-mini"
             client = Client(model=model)
-            
+
             temp_rag = (
                 RAGBuilder()
                 .load_documents(docs)
@@ -1626,7 +2023,8 @@ async def multi_agent_run(request: MultiAgentRequest):
                         "agent_id": agent_id,
                         "output": (
                             intermediate_results[i].get("result", "")
-                            if i < len(intermediate_results) and isinstance(intermediate_results[i], dict)
+                            if i < len(intermediate_results)
+                            and isinstance(intermediate_results[i], dict)
                             else f"Step {i+1} completed"
                         ),
                     }
@@ -1900,22 +2298,27 @@ async def vision_rag_build(request: VisionRAGBuildRequest):
                     try:
                         from beanllm.domain.web_search.security import validate_url
                         import httpx  # httpx is used by beanllm's WebScraper, so it's acceptable
-                        
+
                         # Validate URL (SSRF protection) - beanllm 패키지 기능 사용
                         validated_url = validate_url(img_data)
-                        
+
                         # Download image using httpx (beanllm 패키지에서도 httpx 사용)
                         response = httpx.get(validated_url, timeout=30, follow_redirects=True)
                         response.raise_for_status()
-                        
+
                         # Check if it's an image
                         content_type = response.headers.get("Content-Type", "")
                         if not content_type.startswith("image/"):
-                            logger.warning(f"URL {validated_url} is not an image (Content-Type: {content_type})")
+                            logger.warning(
+                                f"URL {validated_url} is not an image (Content-Type: {content_type})"
+                            )
                             continue
-                        
+
                         # Save image
-                        img_path = Path(temp_dir) / f"image_{i}.{content_type.split('/')[1] if '/' in content_type else 'png'}"
+                        img_path = (
+                            Path(temp_dir)
+                            / f"image_{i}.{content_type.split('/')[1] if '/' in content_type else 'png'}"
+                        )
                         with open(img_path, "wb") as f:
                             f.write(response.content)
                         image_paths.append(str(img_path))
@@ -2295,31 +2698,38 @@ async def get_models():
             ollama_provider = OllamaProvider()
             logger.info(f"[DEBUG] /api/models: Calling ollama_provider.list_models()...")
             installed_models = await ollama_provider.list_models()
-            logger.info(f"[DEBUG] /api/models: list_models() returned: {installed_models} (count: {len(installed_models)})")
-            
+            logger.info(
+                f"[DEBUG] /api/models: list_models() returned: {installed_models} (count: {len(installed_models)})"
+            )
+
             # 다운로드 완료된 모델도 추가 (list_models()가 실패해도 UI에 표시하기 위해)
             for downloaded_model_name, ollama_model_name in _downloaded_models.items():
                 if downloaded_model_name not in [m.get("name") for m in grouped.get("ollama", [])]:
                     # 이미 목록에 있으면 스킵
                     continue
                 # 다운로드 완료된 모델이 installed_models에 없으면 추가
-                if downloaded_model_name not in installed_models and ollama_model_name not in installed_models:
-                    logger.info(f"[DEBUG] /api/models: Adding downloaded model to installed list: {downloaded_model_name} -> {ollama_model_name}")
+                if (
+                    downloaded_model_name not in installed_models
+                    and ollama_model_name not in installed_models
+                ):
+                    logger.info(
+                        f"[DEBUG] /api/models: Adding downloaded model to installed list: {downloaded_model_name} -> {ollama_model_name}"
+                    )
                     installed_models.append(ollama_model_name)
-            
+
             # 설치된 모델 목록을 set으로 변환 (빠른 조회를 위해)
             installed_set = set(installed_models)
-            
+
             # 기존 Ollama 모델들의 installed 상태 업데이트
             for model in grouped.get("ollama", []):
                 model_name = model.get("name")
                 model_name_lower = model_name.lower()
-                
+
                 # 모델 이름 매핑 적용 (Chat 시에만 매핑 사용)
                 # Pull 시에는 원래 이름을 사용하지만, 설치 확인 시에는 매핑된 이름 사용
                 mapped_model_name = get_ollama_model_name_for_chat(model_name)
                 mapped_model_name_lower = mapped_model_name.lower()
-                
+
                 # 1. 원본 이름으로 정확히 일치하는지 확인
                 if model_name in installed_set:
                     model["installed"] = True
@@ -2332,26 +2742,32 @@ async def get_models():
                     for installed_model in installed_models:
                         installed_model_lower = installed_model.lower()
                         # 원본 이름과 비슷한지 확인
-                        if (model_name_lower in installed_model_lower or 
-                            installed_model_lower in model_name_lower):
+                        if (
+                            model_name_lower in installed_model_lower
+                            or installed_model_lower in model_name_lower
+                        ):
                             model["installed"] = True
                             found = True
                             break
                         # 매핑된 이름과 비슷한지 확인
-                        elif (mapped_model_name_lower in installed_model_lower or 
-                              installed_model_lower in mapped_model_name_lower):
+                        elif (
+                            mapped_model_name_lower in installed_model_lower
+                            or installed_model_lower in mapped_model_name_lower
+                        ):
                             model["installed"] = True
                             found = True
                             break
-                    
+
                     if not found:
                         # list_models()가 실패했지만 다운로드 완료된 모델로 기록되어 있으면 설치된 것으로 표시
                         if model_name in _downloaded_models:
                             model["installed"] = True
-                            logger.info(f"[DEBUG] Model '{model_name}' marked as installed from download cache (list_models() may have failed)")
+                            logger.info(
+                                f"[DEBUG] Model '{model_name}' marked as installed from download cache (list_models() may have failed)"
+                            )
                         else:
                             model["installed"] = False
-            
+
             # 설치된 모델 중 로컬 목록에 없는 것들 추가
             existing_names = {m["name"] for m in grouped.get("ollama", [])}
             for installed_model in installed_models:
@@ -2359,16 +2775,18 @@ async def get_models():
                     # 기본 정보로 추가 (로컬 메타데이터가 없어도 실제 설치된 모델은 표시)
                     if "ollama" not in grouped:
                         grouped["ollama"] = []
-                    grouped["ollama"].append({
-                        "name": installed_model,
-                        "display_name": installed_model,
-                        "description": f"Installed Ollama model: {installed_model}",
-                        "use_case": "chat",
-                        "max_tokens": 4096,  # 기본값
-                        "type": "llm",
-                        "installed": True,
-                        "provider": "ollama",
-                    })
+                    grouped["ollama"].append(
+                        {
+                            "name": installed_model,
+                            "display_name": installed_model,
+                            "description": f"Installed Ollama model: {installed_model}",
+                            "use_case": "chat",
+                            "max_tokens": 4096,  # 기본값
+                            "type": "llm",
+                            "installed": True,
+                            "provider": "ollama",
+                        }
+                    )
         except Exception as e:
             logger.debug(f"Failed to scan Ollama models: {e}")
             # Ollama 스캔 실패해도 계속 진행 (로컬 목록만 반환)
@@ -2416,20 +2834,26 @@ async def get_model_parameters(model_name: str):
     try:
         from urllib.parse import unquote
         from beanllm import get_registry
-        
+
         # URL 디코딩 (콜론 등 특수문자 처리)
         model_name = unquote(model_name)
-        
+
         registry = get_registry()
         model_info = registry.get_model_info(model_name)
-        
+
         # Registry에 없으면 provider 추론 및 기본값 반환
         if not model_info:
             # Provider 추론 (모델 이름 패턴 기반)
             provider = "unknown"
-            if ":" in model_name or model_name.startswith(("qwen", "phi", "llama", "mistral", "gemma")):
+            if ":" in model_name or model_name.startswith(
+                ("qwen", "phi", "llama", "mistral", "gemma")
+            ):
                 provider = "ollama"
-            elif model_name.startswith("gpt") or model_name.startswith("o1") or model_name.startswith("o3"):
+            elif (
+                model_name.startswith("gpt")
+                or model_name.startswith("o1")
+                or model_name.startswith("o3")
+            ):
                 provider = "openai"
             elif model_name.startswith("claude"):
                 provider = "anthropic"
@@ -2439,7 +2863,7 @@ async def get_model_parameters(model_name: str):
                 provider = "deepseek"
             elif model_name.startswith("sonar"):
                 provider = "perplexity"
-            
+
             # Provider별 기본 파라미터 지원 정보
             provider_defaults = {
                 "ollama": {
@@ -2509,9 +2933,9 @@ async def get_model_parameters(model_name: str):
                     "default_temperature": 0.7,
                 },
             }
-            
+
             defaults = provider_defaults.get(provider, provider_defaults["ollama"])
-            
+
             return {
                 "model": model_name,
                 "provider": provider,
@@ -2520,10 +2944,10 @@ async def get_model_parameters(model_name: str):
                 "default_temperature": defaults["default_temperature"],
                 "uses_max_completion_tokens": False,
             }
-        
+
         # Registry에서 찾은 경우
         provider = model_info.provider.lower()
-        
+
         # 기본 파라미터 지원 정보
         supports = {
             "temperature": model_info.supports_temperature,
@@ -2532,7 +2956,7 @@ async def get_model_parameters(model_name: str):
             "frequency_penalty": provider in ["openai", "deepseek", "perplexity"],
             "presence_penalty": provider in ["openai", "deepseek", "perplexity"],
         }
-        
+
         return {
             "model": model_name,
             "provider": model_info.provider,
@@ -2555,15 +2979,11 @@ async def scan_models():
     """
     try:
         from beanllm.infrastructure.hybrid import create_hybrid_manager
-        
+
         manager = create_hybrid_manager()
         results = await manager.scan_all_providers()
-        
-        return {
-            "status": "success",
-            "results": results,
-            "message": "Model scan completed"
-        }
+
+        return {"status": "success", "results": results, "message": "Model scan completed"}
     except Exception as e:
         raise HTTPException(500, f"Failed to scan models: {str(e)}")
 
@@ -2576,79 +2996,88 @@ async def pull_model(model_name: str):
     try:
         from urllib.parse import unquote
         from beanllm.providers.ollama_provider import OllamaProvider
-        
+
         # URL 디코딩
         model_name = unquote(model_name)
-        
+
         # Pull 시에는 원래 이름을 그대로 사용
         # (예: phi3.5는 pull 시 "phi3.5"를 사용, 설치 후 "phi3"로 저장됨)
         # Chat 시에만 매핑된 이름을 사용
         ollama_model_name = model_name
-        
+
         # Ollama provider 생성
         ollama_provider = OllamaProvider()
-        
+
         logger.info(f"Pulling Ollama model: {ollama_model_name} (requested: {model_name})")
-        
+
         # 모델 다운로드 (streaming으로 진행 상황 반환)
         async def generate():
             try:
                 import json
+
                 # Ollama SDK의 pull은 client.chat()과 유사하게 await 후 async generator 반환
                 # stream=True일 때 await를 먼저 해야 함
                 logger.info(f"Starting pull for {ollama_model_name}")
-                pull_stream = await ollama_provider.client.pull(model=ollama_model_name, stream=True)
+                pull_stream = await ollama_provider.client.pull(
+                    model=ollama_model_name, stream=True
+                )
                 logger.info(f"Pull stream obtained: {type(pull_stream)}")
-                
+
                 # await 후 async generator를 반환
                 chunk_count = 0
                 async for chunk in pull_stream:
                     chunk_count += 1
                     logger.debug(f"Received chunk {chunk_count}: {type(chunk)} = {chunk}")
-                    
+
                     # Ollama SDK는 ProgressResponse 객체를 반환함
                     # dict가 아닌 경우도 처리 (ProgressResponse 객체)
                     status = None
                     completed = None
                     total = None
-                    
+
                     if isinstance(chunk, dict):
-                        status = chunk.get('status', '')
-                        completed = chunk.get('completed', 0)
-                        total = chunk.get('total', 0)
+                        status = chunk.get("status", "")
+                        completed = chunk.get("completed", 0)
+                        total = chunk.get("total", 0)
                     else:
                         # ProgressResponse 객체인 경우
                         # hasattr로 속성 확인
-                        if hasattr(chunk, 'status'):
+                        if hasattr(chunk, "status"):
                             status = chunk.status
-                        if hasattr(chunk, 'completed'):
+                        if hasattr(chunk, "completed"):
                             completed = chunk.completed
-                        if hasattr(chunk, 'total'):
+                        if hasattr(chunk, "total"):
                             total = chunk.total
-                    
+
                     # status가 없으면 스킵
                     if status is None:
                         logger.debug(f"Chunk without status: {type(chunk)}")
                         continue
-                    
-                    logger.debug(f"Chunk data: status={status}, completed={completed}, total={total}")
-                    
+
+                    logger.debug(
+                        f"Chunk data: status={status}, completed={completed}, total={total}"
+                    )
+
                     # 진행률 계산 (completed와 total이 모두 있을 때만)
                     progress = 0
                     if completed is not None and total is not None and total > 0:
-                        progress = (completed / total * 100)
+                        progress = completed / total * 100
                     elif status == "success":
                         progress = 100
-                    elif status in ["pulling manifest", "verifying sha256 digest", "writing manifest"]:
+                    elif status in [
+                        "pulling manifest",
+                        "verifying sha256 digest",
+                        "writing manifest",
+                    ]:
                         # 진행 중이지만 정확한 진행률을 모를 때는 작은 값으로 표시
                         progress = 1
                     elif status.startswith("pulling "):
                         # 개별 레이어 다운로드 중
                         if completed is not None and total is not None and total > 0:
-                            progress = (completed / total * 100)
+                            progress = completed / total * 100
                         else:
                             progress = 1
-                    
+
                     progress_data = {
                         "status": status,
                         "completed": completed if completed is not None else 0,
@@ -2657,118 +3086,145 @@ async def pull_model(model_name: str):
                     }
                     logger.debug(f"Yielding progress: {progress_data}")
                     yield f"data: {json.dumps(progress_data)}\n\n"
-                    
+
                     # 완료 시 (status가 'success')
                     if status == "success":
                         logger.info(f"Pull completed: {model_name} -> {ollama_model_name}")
                         # 다운로드 완료 후 실제 설치된 모델 이름 확인
                         # 약간의 지연을 두어 Ollama가 모델 목록을 업데이트할 시간을 줌
                         import asyncio
+
                         await asyncio.sleep(2)  # 2초 대기 (Ollama가 모델 목록을 업데이트할 시간)
-                        
+
                         try:
                             # 여러 번 시도 (Ollama가 모델 목록을 업데이트하는 데 시간이 걸릴 수 있음)
                             actual_model_name = None
                             for attempt in range(3):  # 최대 3번 시도
                                 if attempt > 0:
                                     await asyncio.sleep(1)  # 재시도 전 대기
-                                
+
                                 installed_models = await ollama_provider.list_models()
                                 installed_models_lower = [m.lower() for m in installed_models if m]
-                                
-                                logger.info(f"[DEBUG] After pull (attempt {attempt + 1}), installed models: {installed_models} (count: {len(installed_models)})")
-                                
+
+                                logger.info(
+                                    f"[DEBUG] After pull (attempt {attempt + 1}), installed models: {installed_models} (count: {len(installed_models)})"
+                                )
+
                                 if not installed_models:
-                                    logger.warning(f"[DEBUG] Attempt {attempt + 1}: list_models() returned empty list")
+                                    logger.warning(
+                                        f"[DEBUG] Attempt {attempt + 1}: list_models() returned empty list"
+                                    )
                                     continue
-                                
+
                                 # 1. 원래 다운로드한 이름으로 확인 (예: phi3.5)
                                 if ollama_model_name.lower() in installed_models_lower:
                                     for installed_model in installed_models:
                                         if installed_model.lower() == ollama_model_name.lower():
                                             actual_model_name = installed_model
-                                            logger.info(f"Found model with original name: {actual_model_name}")
+                                            logger.info(
+                                                f"Found model with original name: {actual_model_name}"
+                                            )
                                             break
                                     if actual_model_name:
                                         break
-                                
+
                                 # 2. 매핑된 이름으로 확인 (예: phi3.5 -> phi3)
                                 mapped_name = get_ollama_model_name_for_chat(model_name)
                                 if mapped_name.lower() in installed_models_lower:
                                     for installed_model in installed_models:
                                         if installed_model.lower() == mapped_name.lower():
                                             actual_model_name = installed_model
-                                            logger.info(f"Found model with mapped name: {actual_model_name} (mapped from {model_name} -> {mapped_name})")
+                                            logger.info(
+                                                f"Found model with mapped name: {actual_model_name} (mapped from {model_name} -> {mapped_name})"
+                                            )
                                             break
                                     if actual_model_name:
                                         break
-                                
+
                                 # 3. 비슷한 이름 찾기
                                 for installed_model in installed_models:
                                     # 원래 이름과 비슷한지 확인
-                                    if (ollama_model_name.lower() in installed_model.lower() or 
-                                        installed_model.lower() in ollama_model_name.lower()):
+                                    if (
+                                        ollama_model_name.lower() in installed_model.lower()
+                                        or installed_model.lower() in ollama_model_name.lower()
+                                    ):
                                         actual_model_name = installed_model
-                                        logger.info(f"Found similar model name: {actual_model_name} (original: {ollama_model_name})")
+                                        logger.info(
+                                            f"Found similar model name: {actual_model_name} (original: {ollama_model_name})"
+                                        )
                                         break
                                     # 매핑된 이름과 비슷한지 확인
-                                    if (mapped_name.lower() in installed_model.lower() or 
-                                        installed_model.lower() in mapped_name.lower()):
+                                    if (
+                                        mapped_name.lower() in installed_model.lower()
+                                        or installed_model.lower() in mapped_name.lower()
+                                    ):
                                         actual_model_name = installed_model
-                                        logger.info(f"Found similar model name: {actual_model_name} (mapped: {mapped_name})")
+                                        logger.info(
+                                            f"Found similar model name: {actual_model_name} (mapped: {mapped_name})"
+                                        )
                                         break
-                                
+
                                 if actual_model_name:
                                     break
-                            
+
                             # 최종 결과
                             if actual_model_name:
-                                logger.info(f"Successfully verified installed model: {actual_model_name} (requested: {model_name}, pulled: {ollama_model_name})")
+                                logger.info(
+                                    f"Successfully verified installed model: {actual_model_name} (requested: {model_name}, pulled: {ollama_model_name})"
+                                )
                                 # 다운로드 완료된 모델로 기록 (UI 업데이트를 위해)
                                 _downloaded_models[model_name] = actual_model_name
                                 yield f"data: {json.dumps({'status': 'completed', 'model': model_name, 'ollama_model': actual_model_name, 'original_request': model_name})}\n\n"
                             else:
-                                logger.warning(f"[DEBUG] Could not verify installed model after 3 attempts. Requested: {model_name}, Pulled: {ollama_model_name}")
+                                logger.warning(
+                                    f"[DEBUG] Could not verify installed model after 3 attempts. Requested: {model_name}, Pulled: {ollama_model_name}"
+                                )
                                 # 매핑된 이름을 기본값으로 사용
                                 mapped_name = get_ollama_model_name_for_chat(model_name)
                                 # list_models()가 실패해도 다운로드는 성공했으므로 기록 (UX를 위해)
                                 _downloaded_models[model_name] = mapped_name
-                                logger.info(f"[DEBUG] Marking model as downloaded despite verification failure: {model_name} -> {mapped_name}")
+                                logger.info(
+                                    f"[DEBUG] Marking model as downloaded despite verification failure: {model_name} -> {mapped_name}"
+                                )
                                 yield f"data: {json.dumps({'status': 'completed', 'model': model_name, 'ollama_model': mapped_name, 'original_request': model_name, 'message': 'Verification failed, but download completed'})}\n\n"
-                                
+
                         except Exception as e:
                             logger.error(f"Failed to verify installed model: {e}", exc_info=True)
                             # 매핑된 이름을 기본값으로 사용
                             mapped_name = get_ollama_model_name_for_chat(model_name)
                             # 예외가 발생해도 다운로드는 성공했으므로 기록 (UX를 위해)
                             _downloaded_models[model_name] = mapped_name
-                            logger.info(f"[DEBUG] Marking model as downloaded despite exception: {model_name} -> {mapped_name}")
+                            logger.info(
+                                f"[DEBUG] Marking model as downloaded despite exception: {model_name} -> {mapped_name}"
+                            )
                             yield f"data: {json.dumps({'status': 'completed', 'model': model_name, 'ollama_model': mapped_name, 'original_request': model_name})}\n\n"
                         break
-                
+
                 if chunk_count == 0:
                     logger.warning(f"No chunks received for {ollama_model_name}")
                     # 모델이 이미 설치되어 있으면 chunk가 없을 수 있음
                     yield f"data: {json.dumps({'status': 'completed', 'model': model_name, 'ollama_model': ollama_model_name, 'message': 'Model may already be installed'})}\n\n"
             except Exception as e:
-                logger.error(f"Failed to pull model {ollama_model_name} (requested: {model_name}): {e}", exc_info=True)
+                logger.error(
+                    f"Failed to pull model {ollama_model_name} (requested: {model_name}): {e}",
+                    exc_info=True,
+                )
                 yield f"data: {json.dumps({'status': 'error', 'error': str(e)})}\n\n"
-        
+
         from fastapi.responses import StreamingResponse
+
         return StreamingResponse(
             generate(),
             media_type="text/event-stream",
             headers={
                 "Cache-Control": "no-cache",
                 "Connection": "keep-alive",
-            }
+            },
         )
-        
+
     except Exception as e:
         logger.error(f"Pull model error: {e}")
         raise HTTPException(500, f"Failed to pull model: {str(e)}")
-
-
 
 
 @app.post("/api/models/{model_name}/analyze")
@@ -2779,13 +3235,13 @@ async def analyze_model(model_name: str):
     try:
         from beanllm import get_registry
         from beanllm.infrastructure.registry.model_registry import ModelRegistry
-        
+
         registry = get_registry()
         model_info = registry.get_model_info(model_name)
-        
+
         if not model_info:
             raise HTTPException(404, f"Model {model_name} not found")
-        
+
         # 모델 분석 정보 수집
         analysis = {
             "model": model_name,
@@ -2810,7 +3266,7 @@ async def analyze_model(model_name: str):
             "max_tokens": model_info.max_tokens,
             "default_temperature": model_info.default_temperature,
         }
-        
+
         return {
             "status": "success",
             "analysis": analysis,
@@ -2876,6 +3332,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 # OCR API
 # ============================================================================
 
+
 @app.post("/api/ocr/recognize")
 async def ocr_recognize(
     file: UploadFile = File(...),
@@ -2898,7 +3355,7 @@ async def ocr_recognize(
 ):
     """
     OCR 이미지 인식
-    
+
     Args:
         file: 업로드된 이미지 파일
         engine: OCR 엔진 (paddleocr, easyocr, trocr, nougat, surya, tesseract, qwen2vl-2b, minicpm, deepseek-ocr)
@@ -2917,7 +3374,7 @@ async def ocr_recognize(
         grammar_check: 문법 검사
         max_image_size: 최대 이미지 크기 (픽셀)
         output_format: 출력 형식 (text, json, markdown)
-    
+
     Returns:
         OCR 결과 (텍스트, 신뢰도, 처리 시간 등)
     """
@@ -2925,11 +3382,13 @@ async def ocr_recognize(
         # 파일 저장
         import tempfile
         import shutil
-        
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file.filename.split('.')[-1] if file.filename else 'jpg'}") as tmp_file:
+
+        with tempfile.NamedTemporaryFile(
+            delete=False, suffix=f".{file.filename.split('.')[-1] if file.filename else 'jpg'}"
+        ) as tmp_file:
             shutil.copyfileobj(file.file, tmp_file)
             tmp_path = tmp_file.name
-        
+
         try:
             # OCR 설정 생성
             ocr_config = OCRConfig(
@@ -2950,11 +3409,11 @@ async def ocr_recognize(
                 max_image_size=max_image_size,
                 output_format=output_format,
             )
-            
+
             # OCR 실행
             ocr = beanOCR(config=ocr_config)
             result = ocr.recognize(tmp_path)
-            
+
             # 결과 반환
             return {
                 "text": result.text,
@@ -2967,12 +3426,16 @@ async def ocr_recognize(
                     {
                         "text": line.text,
                         "confidence": line.confidence,
-                        "bbox": {
-                            "x": line.bbox.x,
-                            "y": line.bbox.y,
-                            "width": line.bbox.width,
-                            "height": line.bbox.height,
-                        } if line.bbox else None,
+                        "bbox": (
+                            {
+                                "x": line.bbox.x,
+                                "y": line.bbox.y,
+                                "width": line.bbox.width,
+                                "height": line.bbox.height,
+                            }
+                            if line.bbox
+                            else None
+                        ),
                     }
                     for line in (result.lines or [])
                 ],
@@ -2981,9 +3444,292 @@ async def ocr_recognize(
             # 임시 파일 삭제
             if os.path.exists(tmp_path):
                 os.unlink(tmp_path)
-    
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
+
+
+# ============================================================================
+# Google Workspace Integration (User Features)
+# ============================================================================
+
+# Google API 클라이언트 임포트 (선택적)
+try:
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+    from google_auth_oauthlib.flow import Flow
+
+    GOOGLE_API_AVAILABLE = True
+except ImportError:
+    GOOGLE_API_AVAILABLE = False
+    logger.warning("google-api-python-client not installed. Google Workspace features disabled.")
+
+# Google 이벤트 로깅 임포트
+try:
+    from beanllm.infrastructure.distributed.google_events import log_google_export
+
+    GOOGLE_EVENTS_AVAILABLE = True
+except ImportError:
+    GOOGLE_EVENTS_AVAILABLE = False
+    logger.warning("Google event logging not available")
+
+
+class GoogleExportRequest(BaseModel):
+    """Google 서비스 내보내기 요청"""
+
+    session_id: str
+    user_id: Optional[str] = "anonymous"
+    title: Optional[str] = None
+    access_token: str  # 프론트엔드에서 OAuth 후 받은 토큰
+
+
+@app.post("/api/chat/export/docs")
+async def export_chat_to_docs(request: GoogleExportRequest):
+    """
+    Ollama 채팅 내역을 Google Docs로 내보내기
+
+    프론트엔드에서 Google OAuth 2.0으로 access_token을 받아서 전달
+    """
+    if not GOOGLE_API_AVAILABLE:
+        raise HTTPException(
+            501,
+            "Google API client not installed. Run: pip install google-api-python-client google-auth-oauthlib",
+        )
+
+    try:
+        # 1. 세션 메시지 가져오기 (임시 구현 - 나중에 HybridSessionManager로 대체)
+        # TODO: Redis/MongoDB 세션 관리자 통합
+        messages = []  # 임시: 실제로는 session_id로 메시지 조회
+
+        if not messages:
+            raise HTTPException(404, f"Session {request.session_id} not found")
+
+        # 2. Google Docs API 호출
+        credentials = Credentials(token=request.access_token)
+        docs_service = build("docs", "v1", credentials=credentials)
+        drive_service = build("drive", "v3", credentials=credentials)
+
+        # 문서 생성
+        title = request.title or f"beanllm Chat - {request.session_id[:8]}"
+        doc = docs_service.documents().create(body={"title": title}).execute()
+        doc_id = doc.get("documentId")
+
+        # 메시지 내용 작성
+        content = f"# {title}\n\n"
+        for msg in messages:
+            role = msg.get("role", "unknown")
+            content += f"**{role.capitalize()}**: {msg.get('content', '')}\n\n"
+
+        # 문서에 텍스트 삽입
+        requests_body = [{"insertText": {"location": {"index": 1}, "text": content}}]
+        docs_service.documents().batchUpdate(
+            documentId=doc_id, body={"requests": requests_body}
+        ).execute()
+
+        # 3. 이벤트 로깅 (관리자 모니터링용)
+        if GOOGLE_EVENTS_AVAILABLE:
+            try:
+                await log_google_export(
+                    user_id=request.user_id,
+                    export_type="docs",
+                    metadata={
+                        "doc_id": doc_id,
+                        "session_id": request.session_id,
+                        "message_count": len(messages),
+                        "title": title,
+                    },
+                )
+            except Exception as log_error:
+                logger.warning(f"Failed to log Google export event: {log_error}")
+
+        # 4. 문서 링크 반환
+        doc_url = f"https://docs.google.com/document/d/{doc_id}/edit"
+
+        return {
+            "success": True,
+            "doc_id": doc_id,
+            "doc_url": doc_url,
+            "title": title,
+            "message_count": len(messages),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to export to Google Docs: {e}", exc_info=True)
+        raise HTTPException(500, f"Google Docs export failed: {str(e)}")
+
+
+@app.post("/api/chat/save/drive")
+async def save_chat_to_drive(request: GoogleExportRequest):
+    """
+    Ollama 채팅 내역을 Google Drive에 텍스트 파일로 저장
+    """
+    if not GOOGLE_API_AVAILABLE:
+        raise HTTPException(
+            501,
+            "Google API client not installed. Run: pip install google-api-python-client google-auth-oauthlib",
+        )
+
+    try:
+        # 1. 세션 메시지 가져오기
+        messages = []  # TODO: Redis/MongoDB 세션 관리자 통합
+
+        if not messages:
+            raise HTTPException(404, f"Session {request.session_id} not found")
+
+        # 2. Google Drive API 호출
+        credentials = Credentials(token=request.access_token)
+        drive_service = build("drive", "v3", credentials=credentials)
+
+        # 파일 내용 생성
+        title = request.title or f"beanllm_chat_{request.session_id[:8]}.txt"
+        content = f"beanllm Chat History\n"
+        content += f"Session ID: {request.session_id}\n"
+        content += f"Date: {time.strftime('%Y-%m-%d %H:%M:%S')}\n"
+        content += "=" * 60 + "\n\n"
+
+        for msg in messages:
+            role = msg.get("role", "unknown")
+            content += f"{role.upper()}:\n{msg.get('content', '')}\n\n"
+
+        # 파일 업로드
+        from googleapiclient.http import MediaInMemoryUpload
+
+        file_metadata = {"name": title, "mimeType": "text/plain"}
+        media = MediaInMemoryUpload(content.encode("utf-8"), mimetype="text/plain", resumable=True)
+
+        file = (
+            drive_service.files()
+            .create(body=file_metadata, media_body=media, fields="id, webViewLink")
+            .execute()
+        )
+
+        # 3. 이벤트 로깅
+        if GOOGLE_EVENTS_AVAILABLE:
+            try:
+                await log_google_export(
+                    user_id=request.user_id,
+                    export_type="drive",
+                    metadata={
+                        "file_id": file.get("id"),
+                        "session_id": request.session_id,
+                        "message_count": len(messages),
+                        "file_name": title,
+                    },
+                )
+            except Exception as log_error:
+                logger.warning(f"Failed to log Google export event: {log_error}")
+
+        return {
+            "success": True,
+            "file_id": file.get("id"),
+            "file_url": file.get("webViewLink"),
+            "file_name": title,
+            "message_count": len(messages),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to save to Google Drive: {e}", exc_info=True)
+        raise HTTPException(500, f"Google Drive save failed: {str(e)}")
+
+
+class GoogleShareRequest(BaseModel):
+    """Gmail 공유 요청"""
+
+    session_id: str
+    user_id: Optional[str] = "anonymous"
+    to_email: str
+    subject: Optional[str] = None
+    message: Optional[str] = None
+    access_token: str
+
+
+@app.post("/api/chat/share/email")
+async def share_chat_via_email(request: GoogleShareRequest):
+    """
+    Ollama 채팅 내역을 Gmail로 공유
+    """
+    if not GOOGLE_API_AVAILABLE:
+        raise HTTPException(
+            501,
+            "Google API client not installed. Run: pip install google-api-python-client google-auth-oauthlib",
+        )
+
+    try:
+        # 1. 세션 메시지 가져오기
+        messages = []  # TODO: Redis/MongoDB 세션 관리자 통합
+
+        if not messages:
+            raise HTTPException(404, f"Session {request.session_id} not found")
+
+        # 2. Gmail API 호출
+        credentials = Credentials(token=request.access_token)
+        gmail_service = build("gmail", "v1", credentials=credentials)
+
+        # 이메일 내용 생성
+        subject = request.subject or f"beanllm Chat - {request.session_id[:8]}"
+        body = request.message or "Here is my beanllm chat history:\n\n"
+        body += "=" * 60 + "\n\n"
+
+        for msg in messages:
+            role = msg.get("role", "unknown")
+            body += f"{role.upper()}:\n{msg.get('content', '')}\n\n"
+
+        # MIME 이메일 생성
+        import base64
+        from email.mime.text import MIMEText
+
+        message = MIMEText(body)
+        message["to"] = request.to_email
+        message["subject"] = subject
+
+        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+
+        # 이메일 전송
+        sent_message = (
+            gmail_service.users().messages().send(userId="me", body={"raw": raw_message}).execute()
+        )
+
+        # 3. 이벤트 로깅
+        if GOOGLE_EVENTS_AVAILABLE:
+            try:
+                await log_google_export(
+                    user_id=request.user_id,
+                    export_type="gmail",
+                    metadata={
+                        "message_id": sent_message.get("id"),
+                        "session_id": request.session_id,
+                        "to_email": request.to_email,
+                        "message_count": len(messages),
+                    },
+                )
+            except Exception as log_error:
+                logger.warning(f"Failed to log Google export event: {log_error}")
+
+        return {
+            "success": True,
+            "message_id": sent_message.get("id"),
+            "to_email": request.to_email,
+            "subject": subject,
+            "message_count": len(messages),
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to share via Gmail: {e}", exc_info=True)
+        raise HTTPException(500, f"Gmail share failed: {str(e)}")
+
+
+# ============================================================================
+# Include Routers (Modular API)
+# ============================================================================
+
+# Import routers
+from routers.config_router import router as config_router
+
+# Include routers
+app.include_router(config_router)
+
+logger.info("✅ Modular routers included: config")
 
 
 # ============================================================================
