@@ -11,7 +11,8 @@ import time
 from typing import Dict, Any
 
 from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
-from beanllm.utils import check_redis_health, sanitize_error_message, DistributedError
+from beanllm.infrastructure.distributed.utils import check_redis_health, DistributedError
+from beanllm.utils import sanitize_error_message
 from .client import get_redis_client
 
 try:

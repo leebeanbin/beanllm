@@ -11,7 +11,8 @@ from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
 from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
-from beanllm.utils import check_redis_health, sanitize_error_message, LockAcquisitionError
+from beanllm.infrastructure.distributed.utils import check_redis_health, LockAcquisitionError
+from beanllm.utils import sanitize_error_message
 from .client import get_redis_client
 
 try:

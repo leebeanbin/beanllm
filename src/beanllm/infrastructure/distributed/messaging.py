@@ -371,12 +371,18 @@ class RequestMonitor:
             from .redis.client import get_redis_client
 
             self.redis = get_redis_client()
+            if self.redis:
+                logger.info("RequestMonitor: Redis client successfully obtained.")
+            else:
+                logger.warning("RequestMonitor: Redis client is None after get_redis_client().")
+        except ImportError as e:
+            logger.warning(f"RequestMonitor: Failed to import Redis client: {e}")
         except Exception as e:
-            logger.debug(f"Redis client not available (continuing without Redis): {e}")
+            logger.warning(f"RequestMonitor: Failed to get Redis client: {e}", exc_info=True)
         try:
             _, self.consumer = get_event_bus()
         except Exception as e:
-            logger.debug(f"Redis client not available (continuing without Redis): {e}")
+            logger.debug(f"RequestMonitor: Kafka consumer not available (continuing without Kafka): {e}")
 
     async def get_request_status(self, request_id: str) -> Optional[Dict[str, Any]]:
         """요청 상태 조회 (Redis - 빠른 조회)"""
