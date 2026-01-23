@@ -82,6 +82,13 @@ cli = [
     "typer[all]>=0.9.0,<1.0.0", # 'all' includes shell completion dependencies
 ]
 
+# Model Context Protocol (MCP) 서버
+mcp = [
+    "fastmcp>=2.0.0,<3.0.0",  # MCP server framework
+    "uvicorn>=0.23.0,<1.0.0",  # ASGI server for MCP
+    "sse-starlette>=1.6.0,<2.0.0",  # Server-Sent Events support
+]
+
 # 모든 Provider 사용
 all = [
     "openai>=1.0.0,<3.0.0",
@@ -92,6 +99,7 @@ all = [
     "marker-pdf>=0.2.0,<2.0.0",
     "torch>=2.0.0,<3.0.0",
     "beanllm[cli]", # Include CLI for 'all' installation
+    "beanllm[mcp]", # Include MCP server for 'all' installation
 ]
 
 # Continuous Evaluation (선택적)

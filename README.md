@@ -122,7 +122,6 @@
   - ✅ **데코레이터 패턴**: `@with_distributed_features`로 자동 적용 (코드 85-90% 감소)
   - ✅ **동적 설정**: 런타임에 파이프라인별 설정 수정 가능
   - 자세한 내용: `infrastructure/distributed/README.md`
-  - 성능 가이드: `docs/DISTRIBUTED_ARCHITECTURE_PERFORMANCE.md`
 
 ### 🎨 **Code Quality & Architecture** (v0.2.2+)
 
@@ -456,7 +455,7 @@ print(f"💾 Cache created: {response.usage.cache_creation_input_tokens}")
 print(f"⚡ Cache read: {response.usage.cache_read_input_tokens}")
 ```
 
-자세한 내용은 [API Reference](docs/API_REFERENCE.md)를 참고하세요.
+자세한 내용은 예제 코드와 소스 코드를 참고하세요.
 
 ---
 
@@ -526,7 +525,7 @@ beanllm follows **Clean Architecture** with **SOLID principles**.
 └─────────────────────────────────────────────────────┘
 ```
 
-자세한 아키텍처 설명은 **[ARCHITECTURE.md](ARCHITECTURE.md)**를 참고하세요.
+아키텍처는 Clean Architecture와 SOLID 원칙을 따르며, Facade → Handler → Service → Domain → Infrastructure 레이어 구조를 사용합니다.
 
 ---
 
