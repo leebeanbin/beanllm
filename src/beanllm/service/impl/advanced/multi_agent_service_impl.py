@@ -21,7 +21,7 @@ from beanllm.dto.response.advanced.multi_agent_response import MultiAgentRespons
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.utils.logging import get_logger
 
-from beanllm.multi_agent_service import IMultiAgentService
+from beanllm.service.multi_agent_service import IMultiAgentService
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"

@@ -23,7 +23,7 @@ from beanllm.dto.request.ml.audio_request import AudioRequest
 from beanllm.dto.response.ml.audio_response import AudioResponse
 from beanllm.utils.logging import get_logger
 
-from beanllm.audio_service import IAudioService
+from beanllm.service.audio_service import IAudioService
 
 if TYPE_CHECKING:
     from beanllm.domain.embeddings import BaseEmbedding

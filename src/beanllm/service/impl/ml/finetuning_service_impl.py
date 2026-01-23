@@ -30,7 +30,7 @@ from beanllm.dto.response.ml.finetuning_response import (
     StartTrainingResponse,
 )
 
-from beanllm.finetuning_service import IFinetuningService
+from beanllm.service.finetuning_service import IFinetuningService
 
 if TYPE_CHECKING:
     pass

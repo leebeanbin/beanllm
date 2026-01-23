@@ -66,6 +66,12 @@ def main():
 
     command = sys.argv[1]
 
+    # Admin 명령어 (Google Workspace Monitoring)
+    if command == "admin":
+        from beanllm.utils.cli.admin_commands import main_admin
+        asyncio.run(main_admin())
+        return
+
     # Async 명령어
     if command in ["scan", "analyze"]:
         asyncio.run(async_main(command))
@@ -115,7 +121,7 @@ def print_help():
     print_logo(style="ascii", color="magenta", show_motto=True, show_commands=True)
 
     if not RICH_AVAILABLE:
-        print("Commands: list, show, providers, export, summary, scan, analyze")
+        print("Commands: list, show, providers, export, summary, scan, analyze, admin")
         return
 
     help_panel = Panel(
@@ -132,11 +138,21 @@ def print_help():
   [green]scan[/green]              Scan APIs for new models 🔍
   [green]analyze[/green] <model>   Analyze model with pattern inference 🧠
 
+[yellow]Admin:[/yellow]
+  [green]admin[/green] <command>   Admin commands for Google Workspace monitoring 👑
+    [dim]analyze[/dim]         Analyze usage patterns with Gemini
+    [dim]stats[/dim]           Show Google service statistics
+    [dim]optimize[/dim]        Get cost optimization recommendations
+    [dim]security[/dim]        Check security events
+    [dim]dashboard[/dim]       Launch Streamlit dashboard
+
 [dim]Examples:[/dim]
   beanllm list
   beanllm show gpt-4o-mini
   beanllm scan
   beanllm analyze gpt-5-nano
+  beanllm admin analyze --hours=24
+  beanllm admin dashboard
 """,
         title="[bold magenta]beanllm[/bold magenta] - Unified LLM Model Manager",
         border_style="cyan",
