@@ -120,7 +120,7 @@ advanced = [
     "hdbscan>=0.8.0,<1.0.0",  # Clustering
     "scikit-learn>=1.0.0,<2.0.0",  # ML utilities
     "networkx>=3.0.0,<4.0.0",  # Knowledge graphs
-    "bayesian-optimization>=1.4.0,<2.0.0",  # Parameter optimization
+    "bayesian-optimization>=1.4.0,<4.0.0",  # Parameter optimization
     "prompt-toolkit>=3.0.0,<4.0.0",  # REPL shell
 ]
 
