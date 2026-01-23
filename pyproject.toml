@@ -109,7 +109,7 @@ evaluation = [
 
 # 분산 처리 (Redis + Kafka)
 distributed = [
-    "redis>=5.0.0,<6.0.0",      # Redis 클라이언트
+    "redis>=5.0.0,<8.0.0",      # Redis 클라이언트
     "kafka-python>=2.0.0,<3.0.0", # Kafka 클라이언트
     "hiredis>=2.0.0,<3.0.0",    # Redis 성능 향상 (C 확장, 선택적)
 ]
