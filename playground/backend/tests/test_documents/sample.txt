@@ -1,0 +1,15 @@
+Sample Text Document for Testing
+
+This is a sample text document to test the TextLoader functionality.
+
+Chapter 1: Introduction
+The TextLoader is designed to load plain text files efficiently.
+It can handle various encodings and file sizes.
+
+Chapter 2: Features
+- UTF-8 encoding support
+- Automatic newline handling
+- Memory efficient processing
+
+Chapter 3: Conclusion
+This document demonstrates basic text loading capabilities.

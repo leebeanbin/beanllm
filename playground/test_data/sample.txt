@@ -1,0 +1,16 @@
+beanllm은 통합 LLM 관리 도구입니다.
+
+주요 기능:
+1. 다중 프로바이더 지원: OpenAI, Anthropic, Google, DeepSeek, Ollama 등
+2. RAG (Retrieval Augmented Generation): 문서 기반 질의응답
+3. Agent: 도구를 사용하는 에이전트
+4. Knowledge Graph: 지식 그래프 구축 및 쿼리
+5. Multi-Agent: 여러 에이전트의 협업
+
+설치 방법:
+pip install beanllm
+
+사용 예시:
+from beanllm import Client
+client = Client(model="gpt-4o-mini")
+response = await client.chat(messages=[{"role": "user", "content": "Hello"}])
