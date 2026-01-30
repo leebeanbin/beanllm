@@ -21,6 +21,9 @@
 
 - 💡 **[Examples](examples/)** - 15+ working examples
 - 📦 **[PyPI Package](https://pypi.org/project/beanllm/)** - Installation and releases
+- 🌐 **[Playground](playground/backend/README.md)** - 통합 Chat UI + FastAPI 백엔드
+  - **Backend**: FastAPI, Agentic Chat(의도 분류/도구 라우팅), Google OAuth, API 키 동적 설정, 모니터링 API
+  - **Frontend**: Next.js 15 + React 19, Settings(API 키/Google 연결), Monitoring 대시보드, 반응형 Chat UI
 
 ---
 
