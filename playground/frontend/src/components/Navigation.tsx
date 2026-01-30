@@ -1,115 +1,178 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Home } from "lucide-react";
+import { MessageSquare, Home, Settings, Menu, X, Activity } from "lucide-react";
 import { BeanIcon } from "./icons/BeanIcon";
 
 interface NavItem {
   name: string;
   href: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string }>;
   description?: string;
 }
 
 const navigationItems: NavItem[] = [
-  { name: "Home", href: "/", icon: Home, description: "홈" },
+  { name: "Home", href: "/", icon: Home, description: "Home" },
   {
-    name: "Unified Chat",
+    name: "Chat",
     href: "/chat",
     icon: MessageSquare,
-    description: "Chat, RAG, Multi-Agent, KG, Audio, OCR, Google, Web Search",
+    description: "Unified LLM Interface",
+  },
+  {
+    name: "Monitoring",
+    href: "/monitoring",
+    icon: Activity,
+    description: "Real-time Metrics",
+  },
+  {
+    name: "Settings",
+    href: "/settings",
+    icon: Settings,
+    description: "API keys & Google",
   },
 ];
 
 export function Navigation() {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <nav
-      className="w-64 border-r bg-sidebar/50 backdrop-blur-sm h-screen overflow-y-auto"
-      aria-label="사이드 네비게이션"
-      role="navigation"
-    >
-      <div className="p-4 pb-6 border-b border-sidebar-border/50">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 group"
-          aria-label="홈으로 이동"
-        >
-          <div className="w-8 h-8 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
-            <BeanIcon className="w-full h-full" aria-hidden="true" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-sidebar-foreground">
-              BeanLLM
-            </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">Playground</p>
-          </div>
+    <>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 h-14 bg-background/95 backdrop-blur-sm border-b flex items-center justify-between px-4">
+        <Link href="/" className="flex items-center gap-2">
+          <BeanIcon className="w-6 h-6 text-primary" />
+          <span className="font-semibold text-foreground">BeanLLM</span>
         </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="h-9 w-9 p-0"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </Button>
       </div>
 
-      <div className="p-2 space-y-1" role="list">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              role="listitem"
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start h-auto py-3 px-3 text-sm font-normal transition-all flex-col items-start gap-1",
-                  "hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-                  isActive
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-foreground/70"
-                )}
+      {/* Mobile Menu */}
+      <div
+        className={cn(
+          "lg:hidden fixed top-14 left-0 right-0 z-40 bg-background border-b transition-all duration-200",
+          isMobileMenuOpen
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 -translate-y-2 pointer-events-none"
+        )}
+      >
+        <nav className="p-2 space-y-1">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setIsMobileMenuOpen(false)}
               >
-                <div className="flex items-center gap-2.5 w-full">
+                <div
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/70 hover:bg-muted"
+                  )}
+                >
+                  <Icon className="h-5 w-5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{item.name}</p>
+                    {item.description && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Desktop Sidebar */}
+      <nav
+        className="hidden lg:flex w-60 border-r bg-sidebar/50 backdrop-blur-sm h-screen flex-col"
+        aria-label="Side navigation"
+      >
+        {/* Logo */}
+        <div className="p-4 border-b border-sidebar-border/50">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-8 h-8 flex items-center justify-center text-primary transition-transform group-hover:scale-110">
+              <BeanIcon className="w-full h-full" />
+            </div>
+            <div>
+              <h1 className="text-lg font-semibold text-sidebar-foreground">
+                BeanLLM
+              </h1>
+              <p className="text-[10px] text-muted-foreground">Playground</p>
+            </div>
+          </Link>
+        </div>
+
+        {/* Nav Items */}
+        <div className="flex-1 p-2 space-y-1 overflow-y-auto">
+          {navigationItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.href;
+
+            return (
+              <Link key={item.href} href={item.href}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start h-auto py-2.5 px-3 text-sm font-normal transition-all",
+                    "hover:bg-sidebar-accent/70",
+                    isActive
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                      : "text-sidebar-foreground/70"
+                  )}
+                >
                   <Icon
                     className={cn(
-                      "h-4 w-4 transition-colors flex-shrink-0",
+                      "h-4 w-4 mr-2.5 flex-shrink-0",
                       isActive ? "text-sidebar-primary" : "text-muted-foreground"
                     )}
-                    aria-hidden="true"
                   />
-                  <span className="truncate font-medium">{item.name}</span>
-                </div>
-                {item.description && (
-                  <span className="text-xs text-muted-foreground pl-6 text-left">
-                    {item.description}
-                  </span>
-                )}
-              </Button>
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="p-4 border-t border-sidebar-border/50 mt-auto">
-        <div className="text-xs text-muted-foreground space-y-1">
-          <p className="font-medium">Features (Unified Chat):</p>
-          <ul className="list-disc list-inside space-y-0.5 ml-1">
-            <li>Chat - 일반 대화</li>
-            <li>RAG - 문서 검색</li>
-            <li>Multi-Agent - 협업</li>
-            <li>Knowledge Graph - 지식 그래프</li>
-            <li>Audio - 음성 인식</li>
-            <li>OCR - 텍스트 인식</li>
-            <li>Google - Workspace 연동</li>
-            <li>Web Search - 웹 검색</li>
-          </ul>
+                  <span className="truncate">{item.name}</span>
+                </Button>
+              </Link>
+            );
+          })}
         </div>
-      </div>
-    </nav>
+
+        {/* Footer */}
+        <div className="p-3 border-t border-sidebar-border/50">
+          <p className="text-[10px] text-muted-foreground text-center">
+            v0.1.0 - Production Ready
+          </p>
+        </div>
+      </nav>
+    </>
   );
 }

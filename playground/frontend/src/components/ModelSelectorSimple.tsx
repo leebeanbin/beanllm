@@ -36,19 +36,15 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
   useEffect(() => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
-    // Default fallback models
+    // Default fallback models (빈 배열로 시작 - API에서 가져온 모델만 표시)
     const defaultModels: ModelsGrouped = {
-      Ollama: [
-        { name: "qwen2.5:0.5b", display_name: "Qwen 2.5 0.5B", description: "Lightweight model" },
-        { name: "llama3.2:1b", display_name: "Llama 3.2 1B", description: "Fast inference" },
-      ],
       OpenAI: [
         { name: "gpt-4o-mini", display_name: "GPT-4o Mini", description: "Cost-effective" },
         { name: "gpt-4o", display_name: "GPT-4o", description: "High performance" },
       ],
     };
 
-    // Set default models immediately for better UX
+    // Set default models immediately for better UX (Ollama는 API에서 가져온 것만)
     setModels(defaultModels);
     setLoading(false);
 
@@ -124,7 +120,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
         console.error("Failed to update download state:", error);
       }
       
-      toast.info(`${modelName} 모델 다운로드가 취소되었습니다`);
+      toast.info(`${modelName} model download cancelled`);
     }
   };
 
@@ -133,7 +129,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
     
     // 이미 다운로드 중이면 중복 시작 방지
     if (downloading.has(modelName)) {
-      toast.info(`${modelName} 모델이 이미 다운로드 중입니다`);
+      toast.info(`${modelName} is already downloading`);
       return;
     }
     
@@ -151,14 +147,14 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
       });
 
       if (!response.ok) {
-        throw new Error(`다운로드 실패: ${response.statusText}`);
+        throw new Error(`Download failed: ${response.statusText}`);
       }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
 
       if (!reader) {
-        throw new Error("스트림을 읽을 수 없습니다");
+        throw new Error("Cannot read stream");
       }
 
       let buffer = "";
@@ -226,22 +222,22 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                 
                 // 브라우저 알림 (페이지가 백그라운드에 있어도)
                 if ("Notification" in window && Notification.permission === "granted") {
-                  new Notification("모델 다운로드 완료", {
-                    body: `${modelName} 모델이 다운로드되었습니다`,
+                  new Notification("Model download complete", {
+                    body: `${modelName} has been downloaded`,
                     icon: "/favicon.ico",
                   });
                 } else if ("Notification" in window && Notification.permission !== "denied") {
                   Notification.requestPermission().then((permission) => {
                     if (permission === "granted") {
-                      new Notification("모델 다운로드 완료", {
-                        body: `${modelName} 모델이 다운로드되었습니다`,
+                      new Notification("Model download complete", {
+                        body: `${modelName} has been downloaded`,
                         icon: "/favicon.ico",
                       });
                     }
                   });
                 }
                 
-                toast.success(`${modelName} 모델 다운로드 완료`);
+                toast.success(`${modelName} download complete`);
                 // 모델 목록 새로고침 (다운로드 완료 후 설치 상태 업데이트)
                 // 약간의 지연을 두어 Ollama가 모델 목록을 업데이트할 시간을 줌
                 setTimeout(async () => {
@@ -257,7 +253,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                 }, 1000); // 1초 후 새로고침
                 return; // 성공적으로 완료
               } else if (data.status === "error") {
-                throw new Error(data.error || "다운로드 실패");
+                throw new Error(data.error || "Download failed");
               } else if (data.progress !== undefined) {
                 console.debug(`Progress update: ${data.progress}%`);
                 setDownloadProgress((prev) => ({ ...prev, [modelName]: Math.min(100, Math.max(0, data.progress)) }));
@@ -299,7 +295,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
               const data = JSON.parse(jsonStr);
               if (data.status === "completed") {
                 setDownloadProgress((prev) => ({ ...prev, [modelName]: 100 }));
-                toast.success(`${modelName} 모델 다운로드 완료`);
+                toast.success(`${modelName} download complete`);
                 const res = await fetch(`${apiUrl}/api/models`);
                 if (res.ok) {
                   const updatedModels = await res.json();
@@ -315,7 +311,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
       }
     } catch (error) {
       console.error("Download error:", error);
-      toast.error(`모델 다운로드 실패: ${error instanceof Error ? error.message : "알 수 없는 오류"}`);
+      toast.error(`Model download failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setDownloading((prev) => {
         const next = new Set(prev);
@@ -351,17 +347,17 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
       <Button
         variant="outline"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full justify-between"
+        className="w-full justify-between gap-2 h-9 rounded-lg border-border/40 text-[12px] font-medium tracking-tight"
         aria-expanded={isOpen}
         aria-controls={dropdownId}
         aria-haspopup="listbox"
-        aria-label={`모델 선택: ${currentModel?.display_name || value || "선택되지 않음"}`}
+        aria-label={`Select model: ${currentModel?.display_name || value || "Not selected"}`}
       >
-        <span className="text-sm">
+        <span className="text-sm truncate flex-1 min-w-0 text-left">
           {currentModel?.display_name || value || "Select model"}
         </span>
         <ChevronDown 
-          className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} 
+          className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")} 
           aria-hidden="true"
         />
       </Button>
@@ -376,8 +372,8 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
           <div 
             id={dropdownId}
             role="listbox"
-            className="absolute top-full mt-2 left-0 right-0 z-50 max-h-64 overflow-y-auto rounded-lg border bg-background elevation-dropdown"
-            aria-label="모델 목록"
+            className="absolute top-full mt-2 left-0 right-0 z-50 max-h-64 overflow-y-auto rounded-lg border border-border/40 bg-background shadow-sm"
+            aria-label="Model list"
           >
             {Object.entries(models).map(([provider, providerModels]) => (
               <div key={provider} className="border-b last:border-b-0" role="group" aria-label={provider}>
@@ -428,7 +424,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                                 />
                               </div>
                               <div className="text-xs text-muted-foreground mt-1">
-                                다운로드 중... {Math.round(progress)}%
+                                Downloading... {Math.round(progress)}%
                               </div>
                             </div>
                           )}
@@ -442,7 +438,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                               e.stopPropagation();
                               await handleDownloadModel(model.name);
                             }}
-                            aria-label={`${model.display_name} 모델 다운로드`}
+                            aria-label={`Download ${model.display_name} model`}
                           >
                             <Download className="h-4 w-4" aria-hidden="true" />
                           </Button>
@@ -456,7 +452,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                               e.stopPropagation();
                               handleCancelDownload(model.name);
                             }}
-                            aria-label={`${model.display_name} 모델 다운로드 취소`}
+                            aria-label={`Cancel ${model.display_name} download`}
                           >
                             <X className="h-4 w-4 text-destructive" aria-hidden="true" />
                           </Button>

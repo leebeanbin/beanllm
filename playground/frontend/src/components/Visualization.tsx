@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Network, BarChart3, TrendingUp, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/** 카드 없음. border + spacing + 타이포 위계만. */
 
 interface GraphNode {
   id: string;
@@ -26,14 +27,12 @@ interface GraphVisualizationProps {
   interactive?: boolean;
 }
 
-export function GraphVisualization({ 
-  nodes = [], 
-  edges = [], 
+export function GraphVisualization({
+  nodes = [],
+  edges = [],
   title = "Graph",
-  interactive = false 
+  interactive = false
 }: GraphVisualizationProps) {
-  if (nodes.length === 0) return null;
-
   // 노드 타입별 색상 매핑
   const getNodeColor = (type?: string) => {
     const colors: Record<string, string> = {
@@ -50,7 +49,7 @@ export function GraphVisualization({
   // 간단한 그래프 레이아웃 계산 (force-directed simulation 대신 간단한 그리드)
   const layoutNodes = useMemo(() => {
     if (nodes.length === 0) return [];
-    
+
     const cols = Math.ceil(Math.sqrt(nodes.length));
     return nodes.map((node, idx) => {
       const row = Math.floor(idx / cols);
@@ -63,23 +62,18 @@ export function GraphVisualization({
     });
   }, [nodes]);
 
+  if (nodes.length === 0) return null;
+
   return (
-    <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Network className="h-5 w-5 text-primary" />
-            <CardTitle>{title}</CardTitle>
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {nodes.length} nodes • {edges.length} edges
-          </div>
+    <div className="border border-border/40 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between py-3 px-3 border-b border-border/40">
+        <div className="flex items-center gap-2">
+          <Network className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{title}</span>
         </div>
-        <CardDescription>
-          Interactive graph visualization
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+        <span className="text-xs text-muted-foreground">{nodes.length} nodes · {edges.length} edges</span>
+      </div>
+      <div className="p-3">
         {interactive && nodes.length > 0 ? (
           <div className="relative w-full h-[500px] border border-border/50 rounded-lg bg-muted/20 overflow-hidden">
             <svg className="w-full h-full" viewBox="0 0 1000 600">
@@ -165,7 +159,7 @@ export function GraphVisualization({
               <div
                 key={node.id}
                 className={cn(
-                  "p-3 rounded-lg border shadow-sm transition-all hover:shadow-md",
+                  "p-3 rounded-lg border border-border/40 bg-muted/20",
                   getNodeColor(node.type)
                 )}
               >
@@ -222,8 +216,8 @@ export function GraphVisualization({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -238,15 +232,12 @@ export function MetricsVisualization({ metrics, title = "Metrics" }: MetricsVisu
   if (entries.length === 0) return null;
 
   return (
-    <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          <CardTitle>{title}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+    <div className="border border-border/40 rounded-lg overflow-hidden">
+      <div className="flex items-center gap-2 py-3 px-3 border-b border-border/40">
+        <BarChart3 className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <span className="text-sm font-medium text-foreground">{title}</span>
+      </div>
+      <div className="p-3 space-y-4">
           {entries.map(([key, value]) => (
             <div key={key} className="space-y-1.5">
               <div className="flex justify-between items-center text-sm">
@@ -271,8 +262,8 @@ export function MetricsVisualization({ metrics, title = "Metrics" }: MetricsVisu
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -285,22 +276,21 @@ export function StepsVisualization({ steps, title = "Execution Steps" }: StepsVi
   if (steps.length === 0) return null;
 
   return (
-    <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-      <CardHeader>
+    <div className="border border-border/40 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between py-3 px-3 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-primary" />
-          <CardTitle>{title}</CardTitle>
+          <TrendingUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{title}</span>
         </div>
-        <CardDescription>{steps.length} steps executed</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+        <span className="text-xs text-muted-foreground">{steps.length} steps</span>
+      </div>
+      <div className="p-3 space-y-2">
           {steps.map((step, idx) => (
             <div
               key={idx}
-              className="flex items-center gap-3 p-3 rounded-lg border border-border/50 bg-muted/30 shadow-sm hover:shadow-md transition-all"
+              className="flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-muted/20"
             >
-              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
+              <div className="flex-shrink-0 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium text-muted-foreground">
                 {step.step || idx + 1}
               </div>
               <div className="flex-1 min-w-0">
@@ -319,8 +309,8 @@ export function StepsVisualization({ steps, title = "Execution Steps" }: StepsVi
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -333,26 +323,26 @@ export function PipelineVisualization({ steps, title = "Pipeline" }: PipelineVis
   if (steps.length === 0) return null;
 
   return (
-    <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
-      <CardHeader>
+    <div className="border border-border/40 rounded-lg overflow-hidden">
+      <div className="flex items-center justify-between py-3 px-3 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <GitBranch className="h-5 w-5 text-primary" />
-          <CardTitle>{title}</CardTitle>
+          <GitBranch className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <span className="text-sm font-medium text-foreground">{title}</span>
         </div>
-        <CardDescription>{steps.length} pipeline steps</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+        <span className="text-xs text-muted-foreground">{steps.length} steps</span>
+      </div>
+      <div className="p-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2">
           {steps.map((step, idx) => (
             <div key={idx} className="flex items-center flex-shrink-0">
               <div className="flex flex-col items-center">
                 <div className={cn(
-                  "px-4 py-2 rounded-lg border shadow-sm text-sm font-medium",
+                  "px-3 py-2 rounded-lg border text-sm font-medium",
                   step.status === "completed" 
-                    ? "bg-primary/10 border-primary/30 text-primary"
+                    ? "bg-muted/40 border-border/40 text-foreground"
                     : step.status === "running"
-                    ? "bg-accent/20 border-accent/40 text-accent-foreground"
-                    : "bg-muted/50 border-border/50 text-muted-foreground"
+                    ? "bg-muted/40 border-border/60 text-foreground"
+                    : "bg-muted/20 border-border/40 text-muted-foreground"
                 )}>
                   {step.name}
                 </div>
@@ -370,7 +360,7 @@ export function PipelineVisualization({ steps, title = "Pipeline" }: PipelineVis
             </div>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
