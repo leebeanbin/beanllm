@@ -43,8 +43,8 @@
   /* ============================================
      Primitive Token - Typography (KRDS 가이드라인)
      ============================================ */
-  /* Font Family */
-  --font-family-base: 'Pretendard GOV', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* Font Family — Lexend (가독성·세련된 UI) */
+  --font-family-base: 'Lexend', ui-sans-serif, system-ui, -apple-system, sans-serif;
   
   /* Font Size */
   --font-size-xs: 0.75rem;    /* 12px */
@@ -154,18 +154,18 @@
   --color-gray-90: oklch(0.30 0.003 0);
   --color-gray-100: oklch(0.25 0.003 0);
   
-  /* Blue Scale (Primary) */
+  /* Blue Scale (Primary) - Enhanced contrast for WCAG 4.5:1 */
   --color-blue-0: oklch(0.98 0.005 240);
   --color-blue-10: oklch(0.95 0.01 240);
   --color-blue-20: oklch(0.90 0.02 240);
   --color-blue-30: oklch(0.85 0.03 240);
   --color-blue-40: oklch(0.80 0.05 240);
-  --color-blue-50: oklch(0.65 0.08 240);  /* 주요 색상 */
-  --color-blue-60: oklch(0.60 0.09 240);
-  --color-blue-70: oklch(0.55 0.10 240);
-  --color-blue-80: oklch(0.45 0.08 240);
-  --color-blue-90: oklch(0.35 0.06 240);
-  --color-blue-100: oklch(0.25 0.04 240);
+  --color-blue-50: oklch(0.55 0.12 240);  /* Enhanced contrast */
+  --color-blue-60: oklch(0.50 0.13 240);
+  --color-blue-70: oklch(0.45 0.14 240);
+  --color-blue-80: oklch(0.40 0.12 240);
+  --color-blue-90: oklch(0.30 0.10 240);
+  --color-blue-100: oklch(0.25 0.08 240);
   
   /* Red Scale (Destructive) */
   --color-red-0: oklch(0.98 0.005 25);
@@ -208,8 +208,8 @@
   --color-text-on-destructive: var(--color-gray-0);
   --color-action-accent: var(--color-purple-50);
   --color-text-on-accent: var(--color-gray-80);
-  --color-border-default: var(--color-gray-40);
-  --color-border-input: var(--color-gray-30);
+  --color-border-default: var(--color-gray-50);
+  --color-border-input: var(--color-gray-40);
   --color-ring-focus: var(--color-blue-50);
   
   /* ============================================
@@ -234,6 +234,23 @@
   --border: var(--color-border-default);
   --input: var(--color-border-input);
   --ring: var(--color-ring-focus);
+
+  /*
+   * ChatGPT-style semantic map (기존값만 사용, hex 비발명)
+   * Minimal·System-first: core UI는 중립, 브랜드/accent는 강조에만.
+   * - bg.canvas   → --background (페이지)
+   * - bg.surface  → --card (카드/패널/메시지 컨테이너)
+   * - bg.elevated → --muted (hover/active 레이어)
+   * - text.primary / secondary / tertiary → --foreground / --muted-foreground
+   * - border.default / subtle → --border, border 시 opacity로 조절
+   * - accent.primary → --primary (CTA·선택·강조만, 배경에는 사용 안 함)
+   * - state.danger / success → --destructive, (성공은 primary 또는 기존 파레트)
+   * 정확한 수치(hex/px/radius)는 자료(스크린샷·DevTools) 확인 후 보강.
+   */
+  --bg-canvas: var(--background);
+  --bg-surface: var(--card);
+  --bg-elevated: var(--muted);
+
   /* 파스텔 차트 색상 */
   --chart-1: oklch(0.70 0.10 180);
   --chart-2: oklch(0.75 0.08 240);
@@ -306,7 +323,7 @@
   --color-purple-50: oklch(0.28 0.02 280);
   --color-purple-60: oklch(0.35 0.03 280);
   
-  /* Semantic Token 업데이트 */
+  /* Semantic Token 업데이트 - Enhanced contrast */
   --color-background-base: var(--color-gray-0);
   --color-foreground-base: var(--color-gray-100);
   --color-card-base: var(--color-gray-10);
@@ -319,8 +336,8 @@
   --color-text-on-destructive: var(--color-gray-100);
   --color-action-accent: var(--color-purple-50);
   --color-text-on-accent: var(--color-gray-100);
-  --color-border-default: var(--color-gray-40);
-  --color-border-input: var(--color-gray-30);
+  --color-border-default: var(--color-gray-50);
+  --color-border-input: var(--color-gray-40);
   --color-ring-focus: var(--color-blue-50);
   
   /* 기존 호환성 유지 */
@@ -579,4 +596,22 @@
   .shadow-inner-left {
     box-shadow: inset 9px 0 6px -1px rgb(0 0 0 / 0.02);
   }
+}
+
+/* Typing indicator: 점 3개 순차 bounce (전역) */
+@keyframes typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* Streaming cursor: Thinking Indicator (writing metaphor) */
+@keyframes cursor-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }

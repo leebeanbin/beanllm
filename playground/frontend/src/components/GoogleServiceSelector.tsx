@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { GoogleService } from "@/types/chat";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 import {
   FileText,
   FolderOpen,
@@ -65,37 +64,29 @@ export function GoogleServiceSelector({
   };
 
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="text-sm">Select Google Services</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3">
-          {GOOGLE_SERVICES.map((service) => {
-            const Icon = service.icon;
-            const isChecked = selectedServices.includes(service.value);
-            return (
-              <div
-                key={service.value}
-                className="flex items-center space-x-2"
-              >
-                <Checkbox
-                  id={`google-${service.value}`}
-                  checked={isChecked}
-                  onCheckedChange={() => toggleService(service.value)}
-                />
-                <Label
-                  htmlFor={`google-${service.value}`}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{service.label}</span>
-                </Label>
-              </div>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+    <div className={cn("border border-border/40 rounded-lg overflow-hidden", className)}>
+      <div className="py-3 px-3 border-b border-border/40">
+        <span className="text-sm font-medium text-foreground">Select Google Services</span>
+      </div>
+      <div className="p-3 grid grid-cols-2 gap-3">
+        {GOOGLE_SERVICES.map((service) => {
+          const Icon = service.icon;
+          const isChecked = selectedServices.includes(service.value);
+          return (
+            <div key={service.value} className="flex items-center space-x-2">
+              <Checkbox
+                id={`google-${service.value}`}
+                checked={isChecked}
+                onCheckedChange={() => toggleService(service.value)}
+              />
+              <Label htmlFor={`google-${service.value}`} className="flex items-center gap-2 cursor-pointer">
+                <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm">{service.label}</span>
+              </Label>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }

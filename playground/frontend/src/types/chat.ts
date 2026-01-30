@@ -3,6 +3,7 @@
  */
 
 export type FeatureMode =
+  | "agentic"
   | "chat"
   | "rag"
   | "multi-agent"

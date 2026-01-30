@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import React from "react";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "@/components/ui/sonner";
 
 export const metadata: Metadata = {
@@ -19,16 +18,13 @@ export default function RootLayout({
       <head>
         <link
           rel="stylesheet"
-          as="style"
+          href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap"
           crossOrigin="anonymous"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
         />
       </head>
-      <body className="font-pretendard" suppressHydrationWarning>
-        <NuqsAdapter>
-          {children}
-          <Toaster />
-        </NuqsAdapter>
+      <body className="antialiased" suppressHydrationWarning>
+        {children}
+        <Toaster />
       </body>
     </html>
   );
