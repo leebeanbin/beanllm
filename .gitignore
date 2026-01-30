@@ -33,8 +33,12 @@ venv.bak/
 # VSCode
 .vscode/
 
+# Cursor
+.cursor/
+
 # Jupyter Notebook
 .ipynb_checkpoints
+playground/backend/notebooks/
 
 # pytest
 .pytest_cache/

@@ -2,7 +2,7 @@
 
 # 기본 변수
 PYTHON := python
-PACKAGE := src/llmkit
+PACKAGE := src/beanllm
 TESTS := tests
 
 # 색상 출력
