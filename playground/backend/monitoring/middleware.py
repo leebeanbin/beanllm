@@ -2,11 +2,13 @@
 분산 모니터링 시스템
 
 Kafka + Redis + 실시간 대시보드를 활용한 상세 로깅 및 모니터링
+§0 메시징 처리 적극 활용: RECORD_METRICS_FOR_ALL_API=true 시 전체 /api/* 메트릭 기록
 """
 
 import asyncio
 import json
 import logging
+import os
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -34,6 +36,32 @@ except ImportError:
 
 
 logger = get_logger(__name__)
+
+
+def _is_chat_api_path(path: str) -> bool:
+    """채팅 API 경로 여부. 대시보드 집계는 채팅 전용."""
+    return path == "/api/chat" or path.startswith("/api/chat/")
+
+
+# 메트릭에 절대 넣지 않을 경로(대시보드 리프레시·헬스·설정 조회 등)
+_METRICS_EXCLUDED_PREFIXES = ("/api/monitoring", "/health", "/api/config", "/api/models", "/")
+
+def _should_record_metrics(path: str) -> bool:
+    """
+    이 요청에 대해 Redis 메트릭(requests/errors/response_time/endpoint)을 기록할지 여부.
+    - 대시보드/모니터링·헬스·설정 조회는 항상 제외(리프레시가 total requests에 잡히지 않도록).
+    - 채팅 API(/api/chat, /api/chat/*)만 기록. RECORD_METRICS_FOR_ALL_API=true여도 제외 경로는 안 넣음.
+    """
+    if not path or path == "/":
+        return False
+    for prefix in _METRICS_EXCLUDED_PREFIXES:
+        if path == prefix or (len(prefix) > 1 and path.startswith(prefix)):
+            return False
+    if _is_chat_api_path(path):
+        return True
+    if os.getenv("RECORD_METRICS_FOR_ALL_API", "false").lower() == "true":
+        return path.startswith("/api/")
+    return False
 
 
 class MonitoringMiddleware(BaseHTTPMiddleware):
@@ -188,6 +216,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
         error_occurred = False
         error_message = None
         status_code = 200
+        response = None
 
         try:
             response = await call_next(request)
@@ -267,40 +296,47 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                         f"request:status:{request_id}", 3600, json.dumps(status_data)
                     )
 
-                    # 실시간 메트릭 저장 (Redis Sorted Set 사용)
-                    # 1. 응답 시간 메트릭
-                    await self.request_monitor.redis.zadd(
-                        "metrics:response_time", {request_id: duration_ms}
-                    )
-                    await self.request_monitor.redis.expire("metrics:response_time", 3600)
-
-                    # 2. 요청 수 카운터 (시간대별)
-                    minute_key = f"metrics:requests:{int(time.time() // 60)}"
-                    await self.request_monitor.redis.incr(minute_key)
-                    await self.request_monitor.redis.expire(minute_key, 3600)
-
-                    # 3. 에러 카운터
-                    if error_occurred or status_code >= 500:
-                        error_key = f"metrics:errors:{int(time.time() // 60)}"
-                        await self.request_monitor.redis.incr(error_key)
-                        await self.request_monitor.redis.expire(error_key, 3600)
-
-                    # 4. 엔드포인트별 통계
-                    endpoint_key = f"metrics:endpoint:{request.method}:{request.url.path}"
-                    await self.request_monitor.redis.hincrby(endpoint_key, "count", 1)
-                    await self.request_monitor.redis.hincrby(
-                        endpoint_key, "total_time_ms", int(duration_ms)
-                    )
-                    if error_occurred or status_code >= 500:
-                        await self.request_monitor.redis.hincrby(endpoint_key, "errors", 1)
-                    await self.request_monitor.redis.expire(endpoint_key, 3600)
+                    # 추적 메트릭 기준: docs/CACHE_AND_METRICS_POLICY.md §2 — requests/errors/response_time/endpoint만 수집
+                    # 대상 경로: 채팅 또는 RECORD_METRICS_FOR_ALL_API 시 /api/*
+                    path = str(request.url.path)
+                    if _should_record_metrics(path):
+                        # 1. 응답 시간 메트릭
+                        await self.request_monitor.redis.zadd(
+                            "metrics:response_time", {request_id: duration_ms}
+                        )
+                        await self.request_monitor.redis.expire(
+                            "metrics:response_time", 3600
+                        )
+                        # 2. 요청 수 카운터 (시간대별)
+                        minute_key = f"metrics:requests:{int(time.time() // 60)}"
+                        await self.request_monitor.redis.incr(minute_key)
+                        await self.request_monitor.redis.expire(minute_key, 3600)
+                        # 3. 에러 카운터
+                        if error_occurred or status_code >= 500:
+                            error_key = f"metrics:errors:{int(time.time() // 60)}"
+                            await self.request_monitor.redis.incr(error_key)
+                            await self.request_monitor.redis.expire(error_key, 3600)
+                        # 4. 엔드포인트별 통계
+                        endpoint_key = f"metrics:endpoint:{request.method}:{path}"
+                        await self.request_monitor.redis.hincrby(
+                            endpoint_key, "count", 1
+                        )
+                        await self.request_monitor.redis.hincrby(
+                            endpoint_key, "total_time_ms", int(duration_ms)
+                        )
+                        if error_occurred or status_code >= 500:
+                            await self.request_monitor.redis.hincrby(
+                                endpoint_key, "errors", 1
+                            )
+                        await self.request_monitor.redis.expire(endpoint_key, 3600)
 
                 except Exception as e:
                     logger.warning(f"Failed to update metrics in Redis: {e}", exc_info=True)
 
-            # Response 헤더에 Request ID 추가
-            response.headers["X-Request-ID"] = request_id
-            response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
+            # Response 헤더에 Request ID 추가 (예외 시 response가 없으므로 생략)
+            if response is not None:
+                response.headers["X-Request-ID"] = request_id
+                response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
 
         return response
 
@@ -311,6 +347,24 @@ class ChatMonitoringMixin:
 
     LLM 호출에 대한 상세 로깅
     """
+
+    @staticmethod
+    def _chat_request_preview(messages: list, max_len: int = 100) -> str:
+        """마지막 user 메시지 일부만 추출. CHAT_HISTORY_MASK_PREVIEW=true면 고정문."""
+        if os.getenv("CHAT_HISTORY_MASK_PREVIEW", "false").lower() == "true":
+            return "(마스킹)"
+        if not messages:
+            return ""
+        for m in reversed(messages):
+            if m.get("role") == "user":
+                c = m.get("content", "")
+                if isinstance(c, list):
+                    for part in c:
+                        if isinstance(part, dict) and part.get("type") == "text":
+                            return (part.get("text") or "")[:max_len]
+                    return ""
+                return (c or "")[:max_len]
+        return ""
 
     @staticmethod
     async def log_chat_request(
@@ -344,6 +398,29 @@ class ChatMonitoringMixin:
                 )
             except Exception as e:
                 logger.debug(f"Failed to log chat request: {e}")
+
+        # 챗 상세 이력: 상시 수집 (env 없음, CHAT_HISTORY_METRICS.md)
+        try:
+            monitor = RequestMonitor()
+            if not (monitor and monitor.redis):
+                return
+            now = time.time()
+            at_minute = int(now // 60)
+            preview = ChatMonitoringMixin._chat_request_preview(messages)
+            await monitor.redis.hset(
+                f"chat:record:{request_id}",
+                mapping={
+                    "model": model,
+                    "at_ts": str(int(now)),
+                    "at_minute": str(at_minute),
+                    "request_preview": preview[:500],
+                },
+            )
+            await monitor.redis.expire(f"chat:record:{request_id}", 86400)
+            await monitor.redis.zadd("chat:history", {request_id: now})
+            await monitor.redis.expire("chat:history", 86400)
+        except Exception as e:
+            logger.debug(f"Failed to write chat history (request): {e}")
 
     @staticmethod
     async def log_chat_response(
@@ -399,3 +476,32 @@ class ChatMonitoringMixin:
                     await request_monitor.redis.expire(token_key, 86400)  # 24시간
             except Exception as e:
                 logger.debug(f"Failed to save token metrics: {e}")
+
+        # 챗 상세 이력: chat:record 갱신, 상시 수집 (CHAT_HISTORY_METRICS.md)
+        if request_monitor and request_monitor.redis:
+            try:
+                now = time.time()
+                at_minute = int(now // 60)
+                total = (input_tokens or 0) + (output_tokens or 0)
+                resp_preview = (
+                    "(마스킹)"
+                    if os.getenv("CHAT_HISTORY_MASK_PREVIEW", "false").lower() == "true"
+                    else (response_content or "")[:200]
+                )
+                await request_monitor.redis.hset(
+                    f"chat:record:{request_id}",
+                    mapping={
+                        "response_preview": resp_preview[:500],
+                        "input_tokens": str(input_tokens or 0),
+                        "output_tokens": str(output_tokens or 0),
+                        "total_tokens": str(total),
+                        "duration_ms": str(int(duration_ms or 0)),
+                        "at_ts": str(int(now)),
+                        "at_minute": str(at_minute),
+                    },
+                )
+                await request_monitor.redis.expire(f"chat:record:{request_id}", 86400)
+                await request_monitor.redis.zadd("chat:history", {request_id: now})
+                await request_monitor.redis.expire("chat:history", 86400)
+            except Exception as e:
+                logger.debug(f"Failed to write chat history (response): {e}")

@@ -119,7 +119,7 @@ def get_metrics_from_redis(redis_client, time_window_minutes: int = 60) -> Dict:
                     if float(score) > 0  # 응답 시간은 항상 양수
                 ]
         except Exception as e:
-            logger.debug(f"Failed to get response times: {e}")
+            # logger가 없으면 pass
             pass
 
         # 2. 요청 수 (시간대별)

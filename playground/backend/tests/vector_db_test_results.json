@@ -1,0 +1,119 @@
+{
+  "storage_performance": {
+    "vector_db": {
+      "total_time": 3.504753112792969e-05,
+      "avg_time_ms": 0.0003504753112792969,
+      "success": 100,
+      "failed": 0,
+      "throughput": 2853268.0272108843
+    },
+    "mongodb": {
+      "total_time": 0,
+      "avg_time_ms": 0,
+      "success": 0,
+      "failed": 0,
+      "throughput": 0
+    },
+    "comparison": {
+      "vector_db_faster": true,
+      "speedup": 0
+    }
+  },
+  "search_performance": {
+    "vector_db": {
+      "total_time": 2.86102294921875e-06,
+      "avg_time_ms": 0.00057220458984375,
+      "queries": {
+        "인공지능과 머신러닝": {
+          "time": 9.5367431640625e-07,
+          "count": 0,
+          "results": []
+        },
+        "데이터베이스 설계 방법": {
+          "time": 9.5367431640625e-07,
+          "count": 0,
+          "results": []
+        },
+        "웹 개발 프레임워크 비교": {
+          "time": 0.0,
+          "count": 0,
+          "results": []
+        },
+        "클라우드 서비스": {
+          "time": 9.5367431640625e-07,
+          "count": 0,
+          "results": []
+        },
+        "보안 취약점": {
+          "time": 0.0,
+          "count": 0,
+          "results": []
+        }
+      }
+    },
+    "mongodb": {
+      "total_time": 0,
+      "avg_time_ms": 0,
+      "queries": {
+        "인공지능과 머신러닝": {
+          "time": 0,
+          "count": 0,
+          "error": "MongoDB not available"
+        },
+        "데이터베이스 설계 방법": {
+          "time": 0,
+          "count": 0,
+          "error": "MongoDB not available"
+        },
+        "웹 개발 프레임워크 비교": {
+          "time": 0,
+          "count": 0,
+          "error": "MongoDB not available"
+        },
+        "클라우드 서비스": {
+          "time": 0,
+          "count": 0,
+          "error": "MongoDB not available"
+        },
+        "보안 취약점": {
+          "time": 0,
+          "count": 0,
+          "error": "MongoDB not available"
+        }
+      }
+    },
+    "comparison": {
+      "vector_db_faster": false,
+      "speedup": 0.0
+    }
+  },
+  "accuracy": {
+    "vector_db": {
+      "individual": [
+        0,
+        0,
+        0
+      ],
+      "average": 0.0
+    },
+    "mongodb": {
+      "individual": [
+        0,
+        0,
+        0
+      ],
+      "average": 0.0
+    },
+    "comparison": {
+      "vector_db_better": false,
+      "accuracy_diff": 0.0
+    }
+  },
+  "scalability": {
+    "total_messages": 10000,
+    "storage_time": 0.0030851364135742188,
+    "storage_throughput": 3241347.7588871717,
+    "search_time_ms": 0.0019073486328125,
+    "search_results": 0
+  }
+}

@@ -3,7 +3,8 @@
 # Quick Test - Just run the test without MongoDB setup
 # Use this if you already have MongoDB configured
 
-cd "$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
 
 echo "Starting backend..."
 python main.py > /dev/null 2>&1 &
