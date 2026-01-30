@@ -6,7 +6,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."
 
 # Colors
 GREEN='\033[0;32m'
@@ -137,12 +137,12 @@ except Exception as e:
     errors.append(f'database.py: {e}')
 
 try:
-    from models import ChatSession, ChatMessage
+    from schemas.database import ChatSession, ChatMessage
 except Exception as e:
     errors.append(f'models.py: {e}')
 
 try:
-    from chat_history import router
+    from routers.history_router import router
 except Exception as e:
     errors.append(f'chat_history.py: {e}')
 

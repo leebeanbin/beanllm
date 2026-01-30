@@ -6,7 +6,7 @@
 set -e  # Exit on error
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+cd "$SCRIPT_DIR/.."
 
 echo "============================================================"
 echo "beanllm Playground - Auto Setup & Test"
@@ -75,8 +75,8 @@ sys.path.insert(0, '.')
 
 try:
     from database import get_mongodb_client
-    from models import ChatSession
-    from chat_history import router
+    from schemas.database import ChatSession
+    from routers.history_router import router
     from common import get_client
     print('${GREEN}✅ All imports successful${NC}')
 except Exception as e:
