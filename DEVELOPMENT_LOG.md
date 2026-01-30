@@ -1160,28 +1160,24 @@ playground/backend/
 
 ---
 
-## 커밋 그룹 기록 (Commit Plan, 2026-01-30)
+## 커밋 그룹 기록 (2026-01-30, 완료)
 
-지금까지의 작업을 그룹별로 나눠 커밋하기 위한 계획을 정리했습니다.  
-**상세 파일 목록 및 커밋 메시지**: [COMMIT_PLAN.md](COMMIT_PLAN.md)
+그룹별 커밋 1–7 모두 완료됨.
 
 ### 그룹 요약
 
 | 순서 | 그룹 | 커밋 타입 | 요약 |
 |------|------|-----------|------|
-| 1 | docs | docs | CHAT_IMPROVEMENT_PLANS, DEVELOPMENT_LOG, COMMITTABLE_EXCLUDE_MD, .claude 삭제 |
+| 1 | docs | docs | CHAT_IMPROVEMENT_PLANS, DEVELOPMENT_LOG, .claude 삭제 |
 | 2 | chore | chore | docker-compose, scripts (check-env, mongo-init), .gitignore, Makefile |
-| 3 | playground/backend | refactor(playground) | schemas, scripts, docs, monitoring, 라우터/삭제/수정, history/monitoring 등 신규 라우터 |
-| 4 | playground/backend services | feat(playground) | config/agentic/Google OAuth/monitoring 서비스 (그룹 3과 한 번에 커밋 가능) |
-| 5 | playground/frontend | refactor(playground) | Clean Chat UI, thread/ 제거, Settings/Monitoring 페이지, 새 컴포넌트 |
-| 6 | beanllm core + MCP | fix(beanllm) | RAG handler, Neo4j adapter, Ollama provider, mcp_server/tools, pyproject/poetry |
-| 7 | README | docs | 루트 README 최신화 (Playground 통합 Chat UI, Agentic, Google OAuth, Monitoring 언급) |
+| 3+4 | playground/backend | refactor(playground) | schemas, scripts, docs, monitoring, 라우터/서비스 |
+| 5 | playground/frontend | refactor(playground) | Clean Chat UI, Settings/Monitoring, 새 컴포넌트 |
+| 6 | beanllm core + MCP | fix(beanllm) | RAG handler, Neo4j, Ollama, mcp_server, pyproject/poetry |
+| 7 | README | docs | 루트 README 최신화 |
 
-### 이미 수행한 작업과의 대응
+### 참고
 
 - **CHAT_IMPROVEMENT_PLANS/00_INDEX.md**: Phase 10 (MCP), 10.5 (코드 정리), 10.6 (스키마 분리), Phase 0 완료
 - **DEVELOPMENT_LOG.md**: Phase 1–8 (인프라, Dynamic Config, Agentic, Google OAuth, Frontend, Backend 정리/구조, UI/파일 정리)
-
-위 Phase별 완료 내역이 그룹 1–7 커밋에 반영되어 있으며, 실제 커밋 시에는 `COMMIT_PLAN.md`의 스테이징 대상과 메시지를 따르면 됩니다.
 
 ---
