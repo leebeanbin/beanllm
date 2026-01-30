@@ -210,11 +210,15 @@ class Neo4jAdapter:
         Cypher 쿼리 실행
 
         Args:
-            cypher_query: Cypher 쿼리
-            parameters: 쿼리 파라미터
+            cypher_query: Cypher 쿼리 (파라미터화 시 $name 형태로 작성)
+            parameters: 쿼리 파라미터. 사용자 입력은 반드시 여기로 넘겨 Cypher 인젝션 방지.
 
         Returns:
             List[Dict]: 쿼리 결과
+
+        Security:
+            cypher_query에 사용자 입력을 직접 넣지 말 것. 파라미터화 예:
+            session.run("MATCH (n {name: $name}) RETURN n", {"name": user_input})
         """
         if not self._driver:
             self.connect()

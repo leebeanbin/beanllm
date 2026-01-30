@@ -84,11 +84,6 @@ class RAGHandler:
             - DTO 변환
             - Service 호출
         """
-        # Rate Limiting (분산 또는 인메모리)
-        from beanllm.infrastructure.distributed.factory import get_rate_limiter
-        rate_limiter = get_rate_limiter()
-        await rate_limiter.wait(f"rag:query:{llm_model}", cost=1.0)
-        
         # 추가 검증: source 또는 vector_store 중 하나는 필수
         if not source and not vector_store:
             raise ValueError("Either source or vector_store must be provided")

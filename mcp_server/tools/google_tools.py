@@ -21,21 +21,21 @@ mcp = FastMCP("Google Workspace Tools")
 
 @mcp.tool()
 async def export_to_google_docs(
-    content: str,
     title: str,
     user_id: str,
     access_token: str,
     session_id: Optional[str] = None,
+    content: Optional[str] = None,  # content가 없으면 session_id에서 가져옴
 ) -> dict:
     """
-    채팅 내역을 Google Docs로 내보내기 (기존 코드 재사용)
+    채팅 내역을 Google Docs로 내보내기 (세션 메시지 자동 가져오기)
 
     Args:
-        content: 문서 내용 (마크다운 또는 텍스트)
         title: 문서 제목
         user_id: 사용자 ID
         access_token: Google OAuth 2.0 액세스 토큰
-        session_id: 세션 ID (선택)
+        session_id: 세션 ID (content가 없으면 이 세션의 메시지를 사용)
+        content: 문서 내용 (선택, session_id가 있으면 무시됨)
 
     Returns:
         dict: 생성된 문서 ID, URL
@@ -43,13 +43,41 @@ async def export_to_google_docs(
     Example:
         User: "이 채팅 내역을 Google Docs로 저장해줘"
         → export_to_google_docs(
-            content="# Chat History\n...",
             title="My Chat History",
             user_id="user123",
-            access_token="ya29.a0..."
+            access_token="ya29.a0...",
+            session_id="session_abc123"  # 세션 메시지 자동 가져오기
         )
     """
     try:
+        # ✅ session_id가 있으면 MongoDB에서 메시지 가져오기
+        if session_id and not content:
+            from mcp_server.services.session_manager import get_session_manager
+            session_manager = get_session_manager()
+            messages = await session_manager.get_session_messages(session_id)
+            
+            if not messages:
+                return {
+                    "success": False,
+                    "error": f"Session {session_id} not found or has no messages",
+                }
+            
+            # 메시지를 마크다운으로 변환
+            content = f"# {title}\n\n"
+            for msg in messages:
+                role = msg.get("role", "unknown")
+                msg_content = msg.get("content", "")
+                timestamp = msg.get("timestamp", "")
+                content += f"## {role.capitalize()}\n"
+                if timestamp:
+                    content += f"*{timestamp}*\n\n"
+                content += f"{msg_content}\n\n"
+        elif not content:
+            return {
+                "success": False,
+                "error": "Either content or session_id must be provided",
+            }
+        
         # 🎯 기존 Google Docs API 사용!
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
@@ -83,6 +111,7 @@ async def export_to_google_docs(
                 "doc_id": doc_id,
                 "title": title,
                 "content_length": len(content),
+                "message_count": len(messages) if session_id else None,
             },
             session_id=session_id,
         )
@@ -94,6 +123,7 @@ async def export_to_google_docs(
             "doc_id": doc_id,
             "doc_url": doc_url,
             "title": title,
+            "message_count": len(messages) if session_id else None,
         }
 
     except Exception as e:
@@ -105,37 +135,68 @@ async def export_to_google_docs(
 
 @mcp.tool()
 async def save_to_google_drive(
-    content: str,
     filename: str,
     user_id: str,
     access_token: str,
     folder_id: Optional[str] = None,
     session_id: Optional[str] = None,
+    content: Optional[str] = None,  # content가 없으면 session_id에서 가져옴
 ) -> dict:
     """
-    채팅 내역을 Google Drive에 텍스트 파일로 저장 (기존 코드 재사용)
+    채팅 내역을 Google Drive에 텍스트 파일로 저장 (세션 메시지 자동 가져오기)
 
     Args:
-        content: 파일 내용
         filename: 파일명
         user_id: 사용자 ID
         access_token: Google OAuth 2.0 액세스 토큰
         folder_id: 저장할 폴더 ID (None이면 루트)
-        session_id: 세션 ID (선택)
+        session_id: 세션 ID (content가 없으면 이 세션의 메시지를 사용)
+        content: 파일 내용 (선택, session_id가 있으면 무시됨)
 
     Returns:
         dict: 생성된 파일 ID, URL
 
     Example:
-        User: "이 내용을 Drive에 저장해줘"
+        User: "이 채팅을 Drive에 저장해줘"
         → save_to_google_drive(
-            content="Chat history...",
             filename="chat_history.txt",
             user_id="user123",
-            access_token="ya29.a0..."
+            access_token="ya29.a0...",
+            session_id="session_abc123"  # 세션 메시지 자동 가져오기
         )
     """
     try:
+        # ✅ session_id가 있으면 MongoDB에서 메시지 가져오기
+        if session_id and not content:
+            from mcp_server.services.session_manager import get_session_manager
+            session_manager = get_session_manager()
+            messages = await session_manager.get_session_messages(session_id)
+            
+            if not messages:
+                return {
+                    "success": False,
+                    "error": f"Session {session_id} not found or has no messages",
+                }
+            
+            # 메시지를 텍스트로 변환
+            content = f"beanllm Chat History\n"
+            content += f"Session ID: {session_id}\n"
+            content += "=" * 60 + "\n\n"
+            
+            for msg in messages:
+                role = msg.get("role", "unknown")
+                msg_content = msg.get("content", "")
+                timestamp = msg.get("timestamp", "")
+                content += f"{role.upper()}:\n"
+                if timestamp:
+                    content += f"[{timestamp}]\n"
+                content += f"{msg_content}\n\n"
+        elif not content:
+            return {
+                "success": False,
+                "error": "Either content or session_id must be provided",
+            }
+        
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaInMemoryUpload
@@ -169,6 +230,7 @@ async def save_to_google_drive(
                 "filename": filename,
                 "content_length": len(content),
                 "folder_id": folder_id,
+                "message_count": len(messages) if session_id else None,
             },
             session_id=session_id,
         )
@@ -178,6 +240,7 @@ async def save_to_google_drive(
             "file_id": file_id,
             "file_url": file_url,
             "filename": filename,
+            "message_count": len(messages) if session_id else None,
         }
 
     except Exception as e:
@@ -189,38 +252,70 @@ async def save_to_google_drive(
 
 @mcp.tool()
 async def share_via_gmail(
-    content: str,
     recipient_email: str,
     subject: str,
     user_id: str,
     access_token: str,
     session_id: Optional[str] = None,
+    content: Optional[str] = None,  # content가 없으면 session_id에서 가져옴
+    message: Optional[str] = None,  # 추가 메시지 (선택)
 ) -> dict:
     """
-    채팅 내역을 Gmail로 공유 (기존 코드 재사용)
+    채팅 내역을 Gmail로 공유 (세션 메시지 자동 가져오기)
 
     Args:
-        content: 이메일 본문
         recipient_email: 수신자 이메일
         subject: 이메일 제목
         user_id: 사용자 ID
         access_token: Google OAuth 2.0 액세스 토큰
-        session_id: 세션 ID (선택)
+        session_id: 세션 ID (content가 없으면 이 세션의 메시지를 사용)
+        content: 이메일 본문 (선택, session_id가 있으면 무시됨)
+        message: 추가 메시지 (선택, 세션 메시지 앞에 추가)
 
     Returns:
         dict: 전송된 메시지 ID
 
     Example:
-        User: "이 채팅 내역을 friend@example.com에게 보내줘"
+        User: "이 채팅을 friend@example.com에게 보내줘"
         → share_via_gmail(
-            content="Chat history...",
             recipient_email="friend@example.com",
             subject="My Chat History",
             user_id="user123",
-            access_token="ya29.a0..."
+            access_token="ya29.a0...",
+            session_id="session_abc123"  # 세션 메시지 자동 가져오기
         )
     """
     try:
+        # ✅ session_id가 있으면 MongoDB에서 메시지 가져오기
+        if session_id and not content:
+            from mcp_server.services.session_manager import get_session_manager
+            session_manager = get_session_manager()
+            messages = await session_manager.get_session_messages(session_id)
+            
+            if not messages:
+                return {
+                    "success": False,
+                    "error": f"Session {session_id} not found or has no messages",
+                }
+            
+            # 메시지를 이메일 본문으로 변환
+            content = message or "Here is my beanllm chat history:\n\n"
+            content += "=" * 60 + "\n\n"
+            
+            for msg in messages:
+                role = msg.get("role", "unknown")
+                msg_content = msg.get("content", "")
+                timestamp = msg.get("timestamp", "")
+                content += f"{role.upper()}:\n"
+                if timestamp:
+                    content += f"[{timestamp}]\n"
+                content += f"{msg_content}\n\n"
+        elif not content:
+            return {
+                "success": False,
+                "error": "Either content or session_id must be provided",
+            }
+        
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
         from email.mime.text import MIMEText
@@ -230,12 +325,12 @@ async def share_via_gmail(
         gmail_service = build("gmail", "v1", credentials=credentials)
 
         # 1. 이메일 메시지 생성
-        message = MIMEText(content)
-        message["to"] = recipient_email
-        message["subject"] = subject
+        email_message = MIMEText(content)
+        email_message["to"] = recipient_email
+        email_message["subject"] = subject
 
         # 2. Base64 인코딩
-        raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode("utf-8")
+        raw_message = base64.urlsafe_b64encode(email_message.as_bytes()).decode("utf-8")
 
         # 3. 전송
         result = (
@@ -256,6 +351,7 @@ async def share_via_gmail(
                 "recipient": recipient_email,
                 "subject": subject,
                 "content_length": len(content),
+                "message_count": len(messages) if session_id else None,
             },
             session_id=session_id,
         )
@@ -265,6 +361,7 @@ async def share_via_gmail(
             "message_id": message_id,
             "recipient": recipient_email,
             "subject": subject,
+            "message_count": len(messages) if session_id else None,
         }
 
     except Exception as e:

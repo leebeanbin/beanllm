@@ -18,7 +18,11 @@ from mcp_server.config import MCPServerConfig
 # FastMCP 인스턴스 생성
 mcp = FastMCP("RAG Tools")
 
-# 전역 RAG 인스턴스 캐시 (세션 관리)
+# ✅ 세션 기반 인스턴스 관리
+from mcp_server.services.session_manager import get_session_manager
+session_manager = get_session_manager()
+
+# 하위 호환성을 위한 전역 캐시 (deprecated, session_manager 사용 권장)
 _rag_instances: Dict[str, RAGChain] = {}
 
 
@@ -30,6 +34,7 @@ async def build_rag_system(
     chunk_overlap: int = MCPServerConfig.DEFAULT_CHUNK_OVERLAP,
     embedding_model: str = MCPServerConfig.DEFAULT_EMBEDDING_MODEL,
     vector_store_type: str = "chroma",
+    session_id: Optional[str] = None,  # 세션 ID (세션별 인스턴스 관리)
 ) -> dict:
     """
     RAG 시스템 구축 (기존 코드 재사용)
@@ -80,8 +85,12 @@ async def build_rag_system(
             vector_store_type=vector_store_type,
         )
 
-        # 3. 캐시에 저장 (세션 관리)
-        _rag_instances[collection_name] = rag
+        # 3. ✅ 세션별로 인스턴스 저장 (세션이 있으면)
+        if session_id:
+            session_manager.set_rag_instance(session_id, collection_name, rag)
+        else:
+            # 하위 호환성: 전역 캐시에도 저장
+            _rag_instances[collection_name] = rag
 
         # 4. 청크 수 계산
         total_chunks = len(rag._vector_store._collection.get()["ids"])
@@ -109,6 +118,7 @@ async def query_rag_system(
     top_k: int = MCPServerConfig.DEFAULT_TOP_K,
     model: str = MCPServerConfig.DEFAULT_CHAT_MODEL,
     temperature: float = 0.7,
+    session_id: Optional[str] = None,  # 세션 ID
 ) -> dict:
     """
     RAG 시스템에 질의 (기존 코드 재사용)
@@ -128,14 +138,20 @@ async def query_rag_system(
         → query_rag_system(query="beanllm이 뭐야?", collection_name="default")
     """
     try:
-        # 1. 캐시에서 RAG 인스턴스 가져오기
-        if collection_name not in _rag_instances:
+        # 1. ✅ 세션별 또는 전역 캐시에서 RAG 인스턴스 가져오기
+        rag = None
+        if session_id:
+            rag = session_manager.get_rag_instance(session_id, collection_name)
+        
+        if rag is None:
+            # 하위 호환성: 전역 캐시 확인
+            rag = _rag_instances.get(collection_name)
+        
+        if rag is None:
             return {
                 "success": False,
                 "error": f"RAG system '{collection_name}' not found. Please build it first using build_rag_system.",
             }
-
-        rag = _rag_instances[collection_name]
 
         # 2. 🎯 기존 RAGChain.query() 메서드 사용!
         result = await asyncio.to_thread(
