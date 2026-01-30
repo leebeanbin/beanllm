@@ -7,7 +7,7 @@ name = "beanllm"
 version = "0.2.2"
 description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = "MIT"
 authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
@@ -23,6 +23,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -38,6 +39,7 @@ dependencies = [
     "requests>=2.31.0,<3.0.0",  # HTTP requests
     "numpy>=1.24.0,<3.0.0",  # Numerical operations
     "tiktoken>=0.5.0,<1.0.0",  # Token counting
+    "ollama>=0.1.0,<1.0.0",  # Ollama provider (기본 설치)
     # beanPDFLoader 의존성
     "PyMuPDF>=1.23.0,<2.0.0",  # Fast PDF 파싱 (fitz)
     "pdfplumber>=0.10.0,<1.0.0",  # 정확한 테이블 추출
@@ -98,8 +100,12 @@ all = [
     "openai-whisper>=20231117,<20250626",
     "marker-pdf>=0.2.0,<2.0.0",
     "torch>=2.0.0,<3.0.0",
-    "beanllm[cli]", # Include CLI for 'all' installation
-    "beanllm[mcp]", # Include MCP server for 'all' installation
+    # CLI dependencies (directly included to avoid circular reference)
+    "typer[all]>=0.9.0,<1.0.0",
+    # MCP dependencies (directly included to avoid circular reference)
+    "fastmcp>=2.0.0,<3.0.0",
+    "uvicorn>=0.23.0,<1.0.0",
+    "sse-starlette>=1.6.0,<2.0.0",
 ]
 
 # Continuous Evaluation (선택적)
@@ -109,9 +115,17 @@ evaluation = [
 
 # 분산 처리 (Redis + Kafka)
 distributed = [
-    "redis>=5.0.0,<6.0.0",      # Redis 클라이언트
+    "redis>=7.1.0,<8.0.0",      # Redis 클라이언트 (web 그룹과 동일한 버전)
     "kafka-python>=2.0.0,<3.0.0", # Kafka 클라이언트
     "hiredis>=2.0.0,<3.0.0",    # Redis 성능 향상 (C 확장, 선택적)
+]
+
+# 모니터링 (대시보드 및 메트릭)
+monitoring = [
+    "kafka-python>=2.0.0,<3.0.0",  # Kafka 클라이언트
+    "streamlit>=1.29.0,<2.0.0",     # 실시간 대시보드
+    "plotly>=5.18.0,<6.0.0",       # 인터랙티브 차트
+    "pandas>=2.0.0,<3.0.0",         # 데이터 처리
 ]
 
 # Advanced features (v1.0.0+)
@@ -133,7 +147,20 @@ neo4j = [
 web = [
     "fastapi>=0.100.0,<1.0.0",
     "uvicorn>=0.23.0,<1.0.0",
-    "websockets>=11.0.0,<13.0.0",
+    "websockets>=14.0,<16.0.0",  # Updated for fastmcp compatibility
+    "python-multipart>=0.0.22,<0.0.23",  # File uploads
+    "motor>=3.3.0,<4.0.0",  # Async MongoDB driver
+    "pymongo>=4.0.0,<5.0.0",  # MongoDB driver (motor dependency)
+    "cryptography>=41.0.0,<44.0.0",  # API key encryption
+    "redis>=7.1.0,<8.0.0",  # Redis client for caching and monitoring
+    "ollama>=0.1.0,<1.0.0",  # Ollama provider for local models
+    "google-generativeai>=0.3.0,<1.0.0",  # Google Gemini provider
+    "networkx>=3.0.0,<4.0.0",  # Knowledge graphs (필수 - Client 초기화 시 필요)
+    "google-api-python-client>=2.100.0,<3.0.0",  # Google Workspace API
+    "google-auth-oauthlib>=1.1.0,<2.0.0",  # Google OAuth
+    "google-auth-httplib2>=0.1.1,<1.0.0",  # Google Auth HTTP
+    "streamlit>=1.29.0,<2.0.0",  # Admin Dashboard
+    "plotly>=5.18.0,<6.0.0",  # Dashboard charts
 ]
 
 # 개발 도구
@@ -144,7 +171,9 @@ dev = [
     "black>=23.0.0,<26.0.0",
     "ruff>=0.1.0,<1.0.0",
     "mypy>=1.0.0,<2.0.0",
-    "beanllm[cli]", # Add CLI development tools
+    "faker>=20.0.0,<25.0.0",  # 테스트 데이터 생성
+    # CLI dependencies (directly included to avoid circular reference)
+    "typer[all]>=0.9.0,<1.0.0",
 ]
 
 
@@ -174,7 +203,7 @@ beanllm = ["data/*.json"]
 # Ruff 설정 (linter/formatter)
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
@@ -192,11 +221,11 @@ ignore = [
 # Black 설정 (formatter)
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312"]
+target-version = ["py310", "py311", "py312"]
 
 # MyPy 설정 (type checker)
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
@@ -209,3 +238,88 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=beanllm --cov-report=html --cov-report=term"
 asyncio_mode = "auto"
+
+# Poetry 설정 (Poetry shell 및 의존성 관리를 위해)
+# Poetry는 PEP 621 형식의 [project] 섹션을 읽습니다.
+# 여기서는 Poetry 전용 설정만 정의합니다.
+[tool.poetry]
+packages = [{include = "beanllm", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+httpx = ">=0.24.0,<1.0.0"
+python-dotenv = ">=1.0.0,<2.0.0"
+rich = ">=13.0.0,<15.0.0"
+beautifulsoup4 = ">=4.12.0,<5.0.0"
+requests = ">=2.31.0,<3.0.0"
+numpy = ">=1.24.0,<3.0.0"
+tiktoken = ">=0.5.0,<1.0.0"
+ollama = ">=0.1.0,<1.0.0"  # Ollama provider (기본 설치)
+PyMuPDF = ">=1.23.0,<2.0.0"
+pdfplumber = ">=0.10.0,<1.0.0"
+pandas = ">=2.0.0,<3.0.0"
+
+[tool.poetry.group.openai]
+optional = true
+[tool.poetry.group.openai.dependencies]
+openai = ">=1.0.0,<3.0.0"
+
+[tool.poetry.group.anthropic]
+optional = true
+[tool.poetry.group.anthropic.dependencies]
+anthropic = ">=0.18.0,<1.0.0"
+
+[tool.poetry.group.gemini]
+optional = true
+[tool.poetry.group.gemini.dependencies]
+google-generativeai = ">=0.3.0,<1.0.0"
+
+[tool.poetry.group.ollama]
+optional = true
+[tool.poetry.group.ollama.dependencies]
+ollama = ">=0.1.0,<1.0.0"
+
+[tool.poetry.group.cli]
+optional = true
+[tool.poetry.group.cli.dependencies]
+typer = {extras = ["all"], version = ">=0.9.0,<1.0.0"}
+
+[tool.poetry.group.mcp]
+optional = true
+[tool.poetry.group.mcp.dependencies]
+fastmcp = ">=2.0.0,<3.0.0"
+uvicorn = ">=0.23.0,<1.0.0"
+sse-starlette = ">=1.6.0,<2.0.0"
+
+[tool.poetry.group.web]
+optional = true
+[tool.poetry.group.web.dependencies]
+fastapi = ">=0.100.0,<1.0.0"
+uvicorn = ">=0.23.0,<1.0.0"
+websockets = ">=14.0,<16.0.0"  # Updated for fastmcp compatibility
+python-multipart = ">=0.0.22,<0.0.23"  # File uploads
+motor = ">=3.3.0,<4.0.0"
+pymongo = ">=4.0.0,<5.0.0"
+cryptography = ">=41.0.0,<44.0.0"  # API key encryption
+redis = ">=7.1.0,<8.0.0"  # Redis client for caching and monitoring
+ollama = ">=0.1.0,<1.0.0"  # Ollama provider for local models
+google-generativeai = ">=0.3.0,<1.0.0"  # Google Gemini provider
+networkx = ">=3.0.0,<4.0.0"  # Knowledge graphs (필수 - Client 초기화 시 필요)
+google-api-python-client = ">=2.100.0,<3.0.0"
+google-auth-oauthlib = ">=1.1.0,<2.0.0"
+google-auth-httplib2 = ">=0.1.1,<1.0.0"
+streamlit = ">=1.29.0,<2.0.0"
+plotly = ">=5.18.0,<6.0.0"
+
+[tool.poetry.group.dev]
+optional = true
+[tool.poetry.group.dev.dependencies]
+pytest = ">=9.0.2,<10.0.0"
+pytest-asyncio = ">=0.21.0,<2.0.0"
+pytest-cov = ">=4.0.0,<5.0.0"
+black = ">=23.0.0,<26.0.0"
+ruff = ">=0.1.0,<1.0.0"
+mypy = ">=1.0.0,<2.0.0"
+faker = ">=20.0.0,<25.0.0"
+
+# Scripts는 [project.scripts]에 정의되어 있으므로 여기서는 제거

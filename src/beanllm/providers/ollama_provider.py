@@ -209,8 +209,12 @@ class OllamaProvider(BaseLLMProvider):
             
             logger.info(f"[OllamaProvider] list_models() returning {len(model_names)} models: {model_names}")
             return model_names
+        except ConnectionError as e:
+            # Ollama 서버가 실행되지 않은 경우 - 에러 로그를 줄이고 빈 리스트 반환
+            logger.debug(f"Ollama not running or not accessible: {e}")
+            return []
         except Exception as e:
-            logger.error(f"Ollama list_models error: {e}", exc_info=True)
+            logger.warning(f"Ollama list_models error: {e}")
             import traceback
             logger.debug(f"Ollama list_models traceback: {traceback.format_exc()}")
             return []

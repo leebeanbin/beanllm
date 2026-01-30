@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, AsyncIterator, List, Optional
 
 from beanllm.dto.request.core.rag_request import RAGRequest
 from beanllm.dto.response.core.rag_response import RAGResponse
+from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.service.impl.advanced.search_strategy import SearchStrategyFactory
 from beanllm.service.rag_service import IRAGService
 
@@ -63,6 +64,15 @@ class RAGServiceImpl(IRAGService):
         self._document_loader = document_loader
         self._text_splitter = text_splitter
 
+    @with_distributed_features(
+        pipeline_type="rag",
+        enable_rate_limiting=True,
+        rate_limit_key=lambda self, args, kwargs: (
+            f"rag:query:{args[0].llm_model}" 
+            if args and hasattr(args[0], 'llm_model') and args[0].llm_model 
+            else "rag:query:default"
+        ),
+    )
     async def query(self, request: RAGRequest) -> RAGResponse:
         """
         RAG 질의 처리 (비즈니스 로직만)
