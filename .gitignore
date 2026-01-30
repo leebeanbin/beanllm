@@ -33,8 +33,9 @@ venv.bak/
 # VSCode
 .vscode/
 
-# Cursor
+# Cursor / Claude (IDE 및 에이전트 설정, 원격 제외)
 .cursor/
+.claude/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -65,7 +66,6 @@ dmypy.json
 
 # Ruff
 .ruff_cache/
-.claude/settings.local.json
 
 # Node.js / Frontend
 node_modules/
