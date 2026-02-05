@@ -1,0 +1,36 @@
+# pre-commit: AI 생성 코드 품질 자동 검사
+# 워크플로: AI 코드 생성 → git commit → pre-commit 자동 실행 → 실패 시 오류 메시지를 AI에게 전달해 수정 요청
+# 사용: pip install pre-commit && pre-commit install
+
+default_language_version:
+  python: python3
+
+repos:
+  # 1. 코드 포매팅 + 린팅 + 임포트 정렬 (Ruff: Black·isort·Flake8 역할)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+
+  # 2. 타입 체크 (mypy) - 임시 비활성화 (1068개 기존 에러 수정 중)
+  # TODO: 모든 타입 에러 수정 후 다시 활성화
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       entry: poetry run mypy --ignore-missing-imports
+  #       language: system
+  #       types: [python]
+  #       pass_filenames: true
+
+  # 3. 보안 검사 (Bandit)
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.10
+    hooks:
+      - id: bandit
+        args: ["-r", "src/beanllm"]
+        exclude: ^tests/
+
+# pytest는 시간 소요로 pre-commit 제외. 커밋 전 make test 또는 CI에서 실행.

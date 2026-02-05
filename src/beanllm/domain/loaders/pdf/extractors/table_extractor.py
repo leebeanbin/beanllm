@@ -5,7 +5,7 @@ Document 리스트에서 테이블 메타데이터를 추출하여 구조화된 
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class TableExtractor:
@@ -47,7 +47,7 @@ class TableExtractor:
             documents: beanPDFLoader.load() 결과 (Document 리스트)
         """
         self.documents = documents
-        self._tables_cache = None
+        self._tables_cache: Optional[List[Dict[str, Any]]] = None
 
     def get_all_tables(self) -> List[dict]:
         """
@@ -133,7 +133,7 @@ class TableExtractor:
         min_rows: Optional[int] = None,
         max_rows: Optional[int] = None,
         min_cols: Optional[int] = None,
-        max_cols: Optional[int] = None
+        max_cols: Optional[int] = None,
     ) -> List[dict]:
         """
         크기 기준으로 테이블 필터링
@@ -188,7 +188,7 @@ class TableExtractor:
         avg_confidence = sum(t["confidence"] for t in all_tables) / len(all_tables)
         high_quality = len([t for t in all_tables if t["confidence"] >= 0.8])
 
-        tables_by_page = {}
+        tables_by_page: Dict[int, int] = {}
         for t in all_tables:
             page = t["page"]
             tables_by_page[page] = tables_by_page.get(page, 0) + 1

@@ -5,7 +5,7 @@ Knowledge Graph Request DTOs - Knowledge Graph 요청 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 
@@ -20,6 +20,7 @@ class ExtractEntitiesRequest:
     """
 
     document_id: str
+    text: Optional[str] = None  # Raw text to extract entities from
     entity_types: Optional[List[str]] = None  # ["PERSON", "ORG", "LOCATION", ...]
     use_coreference: bool = True
     llm_model: str = "gpt-4o-mini"
@@ -36,6 +37,8 @@ class ExtractRelationsRequest:
     """
 
     document_id: str
+    text: Optional[str] = None  # Raw text to extract relations from
+    entities: Optional[List[Dict[str, Any]]] = None  # Pre-extracted entities
     entity_pairs: Optional[List[tuple]] = None  # [(entity1, entity2), ...]
     relation_types: Optional[List[str]] = None
     bidirectional: bool = True
@@ -46,6 +49,8 @@ class ExtractRelationsRequest:
             self.entity_pairs = []
         if self.relation_types is None:
             self.relation_types = []
+        if self.entities is None:
+            self.entities = []
 
 
 @dataclass
@@ -85,3 +90,8 @@ class QueryGraphRequest:
     query: str  # Cypher-like query or natural language
     query_type: str = "cypher"  # "cypher" or "natural"
     limit: int = 10
+    params: Optional[Dict[str, Any]] = None  # Query parameters
+
+    def __post_init__(self):
+        if self.params is None:
+            self.params = {}

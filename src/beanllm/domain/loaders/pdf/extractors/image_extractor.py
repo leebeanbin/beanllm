@@ -5,7 +5,7 @@ Document 리스트에서 이미지 메타데이터를 추출하여 구조화된 
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class ImageExtractor:
@@ -45,7 +45,7 @@ class ImageExtractor:
             documents: beanPDFLoader.load() 결과 (Document 리스트)
         """
         self.documents = documents
-        self._images_cache = None
+        self._images_cache: Optional[List[Dict[str, Any]]] = None
 
     def get_all_images(self) -> List[dict]:
         """
@@ -169,7 +169,8 @@ class ImageExtractor:
         """
         all_images = self.get_all_images()
         return [
-            img for img in all_images
+            img
+            for img in all_images
             if img["width"] >= min_dimension or img["height"] >= min_dimension
         ]
 
@@ -202,12 +203,12 @@ class ImageExtractor:
 
         pages_with_images = set(img["page"] for img in all_images)
 
-        images_by_page = {}
+        images_by_page: Dict[int, int] = {}
         for img in all_images:
             page = img["page"]
             images_by_page[page] = images_by_page.get(page, 0) + 1
 
-        formats = {}
+        formats: Dict[str, int] = {}
         for img in all_images:
             fmt = img["format"]
             formats[fmt] = formats.get(fmt, 0) + 1
@@ -253,9 +254,7 @@ class ImageExtractor:
 
         md_lines.append("## Images by Page\n")
         for img in all_images:
-            md_lines.append(
-                f"### Page {img['page'] + 1}, Image {img['image_index'] + 1}"
-            )
+            md_lines.append(f"### Page {img['page'] + 1}, Image {img['image_index'] + 1}")
             md_lines.append(f"- Format: {img['format']}")
             md_lines.append(f"- Size: {img['width']}x{img['height']}px")
             md_lines.append(f"- File Size: {img['size']:,} bytes")

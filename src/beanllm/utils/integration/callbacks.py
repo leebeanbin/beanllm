@@ -253,7 +253,7 @@ class TimingCallback(BaseCallback):
         self.start_times[call_id] = time.time()
         kwargs["_call_id"] = call_id
 
-    def on_llm_end(self, model: str, response: str, **kwargs):
+    def on_llm_end(self, model: str, response: str, tokens_used: Optional[int] = None, **kwargs):
         """종료 시간 및 duration 계산"""
         call_id = kwargs.get("_call_id")
         if call_id and call_id in self.start_times:
@@ -332,7 +332,7 @@ class StreamingCallback(BaseCallback):
             self.on_token_func(text)
             self.buffer.clear()
 
-    def on_llm_end(self, model: str, response: str, **kwargs):
+    def on_llm_end(self, model: str, response: str, tokens_used: Optional[int] = None, **kwargs):
         """종료 시 남은 버퍼 비우기"""
         self._flush_buffer()
 
@@ -378,9 +378,9 @@ class FunctionCallback(BaseCallback):
         if self.handlers.get("start"):
             self.handlers["start"](model=model, messages=messages, **kwargs)
 
-    def on_llm_end(self, model: str, response: str, **kwargs):
+    def on_llm_end(self, model: str, response: str, tokens_used: Optional[int] = None, **kwargs):
         if self.handlers.get("end"):
-            self.handlers["end"](model=model, response=response, **kwargs)
+            self.handlers["end"](model=model, response=response, tokens_used=tokens_used, **kwargs)
 
     def on_llm_error(self, model: str, error: Exception, **kwargs):
         if self.handlers.get("error"):

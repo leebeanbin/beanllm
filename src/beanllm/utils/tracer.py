@@ -204,6 +204,7 @@ class Tracer:
             logger.warning("No active trace, starting a new one")
             self.start_trace()
 
+        assert self.current_trace_id is not None
         trace = self.traces[self.current_trace_id]
 
         span_id = str(uuid.uuid4())
@@ -239,6 +240,9 @@ class Tracer:
             return
 
         span_id = self.span_stack.pop()
+        if self.current_trace_id is None:
+            logger.warning("No active trace")
+            return
         trace = self.traces[self.current_trace_id]
 
         # 스팬 찾기

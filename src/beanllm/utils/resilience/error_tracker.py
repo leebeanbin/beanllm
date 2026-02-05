@@ -15,7 +15,7 @@ import time
 import traceback as tb_module
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Pattern
+from typing import Any, Callable, Dict, List, Optional, Pattern
 
 
 @dataclass
@@ -38,7 +38,7 @@ class ErrorTracker:
 
     def __init__(self, max_records: int = 1000):
         self.max_records = max_records
-        self.errors = deque(maxlen=max_records)
+        self.errors: deque[ErrorRecord] = deque(maxlen=max_records)
         self._lock = threading.Lock()
 
     def record(self, exception: Exception, metadata: Optional[Dict[str, Any]] = None):
@@ -67,7 +67,7 @@ class ErrorTracker:
                 return {"total_errors": 0, "error_types": {}, "error_rate": 0.0}
 
             # 에러 타입별 카운트
-            type_counts = {}
+            type_counts: Dict[str, int] = {}
             for error in self.errors:
                 error_type = error.error_type
                 type_counts[error_type] = type_counts.get(error_type, 0) + 1
@@ -109,7 +109,7 @@ class FallbackHandler:
 
     def __init__(
         self,
-        fallback_func: Optional[callable] = None,
+        fallback_func: Optional[Callable[..., Any]] = None,
         fallback_value: Optional[Any] = None,
         raise_on_fallback: bool = False,
     ):
@@ -117,7 +117,7 @@ class FallbackHandler:
         self.fallback_value = fallback_value
         self.raise_on_fallback = raise_on_fallback
 
-    def call(self, func: callable, *args, **kwargs) -> Any:
+    def call(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """
         Fallback이 적용된 함수 호출
 
@@ -185,7 +185,9 @@ class ProductionErrorSanitizer:
             re.IGNORECASE,
         ),
         # SQL 테이블/컬럼명
-        "sql_schema": re.compile(r"\b(table|column|schema)\s+['\"]?([a-zA-Z0-9_]+)['\"]?", re.IGNORECASE),
+        "sql_schema": re.compile(
+            r"\b(table|column|schema)\s+['\"]?([a-zA-Z0-9_]+)['\"]?", re.IGNORECASE
+        ),
     }
 
     # 마스킹 문자열
@@ -243,7 +245,9 @@ class ProductionErrorSanitizer:
         return sanitized
 
     @classmethod
-    def sanitize_traceback(cls, traceback_str: str, production: bool = True, max_frames: int = 3) -> str:
+    def sanitize_traceback(
+        cls, traceback_str: str, production: bool = True, max_frames: int = 3
+    ) -> str:
         """
         스택 트레이스 정제
 
