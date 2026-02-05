@@ -31,6 +31,7 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
+
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)
@@ -127,9 +128,7 @@ class GraniteEngine(BaseSTTEngine):
 
         logger.info("Granite Speech 8B model loaded successfully")
 
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], config: STTConfig
-    ) -> Dict:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], config: STTConfig) -> Dict:
         """
         Granite Speech로 텍스트 전사 및 번역
 
@@ -142,6 +141,7 @@ class GraniteEngine(BaseSTTEngine):
         """
         # 모델 초기화
         self._init_model()
+        assert self._pipeline is not None
 
         start_time = time.time()
 

@@ -38,6 +38,7 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
+
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)
@@ -125,9 +126,7 @@ class SenseVoiceEngine(BaseSTTEngine):
 
         logger.info(f"SenseVoice {self.model_size} model loaded successfully")
 
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], config: STTConfig
-    ) -> Dict:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], config: STTConfig) -> Dict:
         """
         SenseVoice로 텍스트 전사 및 다중 기능 추론
 
@@ -140,6 +139,7 @@ class SenseVoiceEngine(BaseSTTEngine):
         """
         # 모델 초기화
         self._init_model()
+        assert self._model is not None
 
         start_time = time.time()
 
@@ -164,7 +164,7 @@ class SenseVoiceEngine(BaseSTTEngine):
         # SenseVoice는 자동으로 ASR + LID + SER + AED 수행
         # batch_size_s는 config.batch_size를 초 단위로 변환 (기본값 60초)
         batch_size_s = config.batch_size if config.batch_size > 0 else 60
-        
+
         result = self._model.generate(
             input=audio_path,
             language=language,

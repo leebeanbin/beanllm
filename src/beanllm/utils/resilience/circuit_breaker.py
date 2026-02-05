@@ -50,8 +50,8 @@ class CircuitBreaker:
         self.state = CircuitState.CLOSED
         self.failure_count = 0
         self.success_count = 0
-        self.last_failure_time = None
-        self.recent_calls = deque(maxlen=self.config.window_size)
+        self.last_failure_time: Optional[float] = None
+        self.recent_calls: deque[bool] = deque(maxlen=self.config.window_size)
         self._lock = threading.Lock()
 
     def _should_attempt_reset(self) -> bool:

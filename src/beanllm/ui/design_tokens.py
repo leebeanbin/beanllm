@@ -3,7 +3,8 @@ Design Tokens for Terminal UI
 터미널 친화적인 디자인 토큰 정의
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -95,17 +96,9 @@ class SpacingTokens:
 class DesignTokens:
     """통합 디자인 토큰"""
 
-    color: ColorTokens = None
-    typography: TypographyTokens = None
-    spacing: SpacingTokens = None
-
-    def __post_init__(self):
-        if self.color is None:
-            self.color = ColorTokens()
-        if self.typography is None:
-            self.typography = TypographyTokens()
-        if self.spacing is None:
-            self.spacing = SpacingTokens()
+    color: ColorTokens = field(default_factory=ColorTokens)
+    typography: TypographyTokens = field(default_factory=TypographyTokens)
+    spacing: SpacingTokens = field(default_factory=SpacingTokens)
 
     @classmethod
     def default(cls):

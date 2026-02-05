@@ -94,8 +94,8 @@ class BaseTextSplitter(ABC):
             병합된 청크들
         """
         separator_len = self.length_function(separator)
-        docs = []
-        current_doc = []
+        docs: List[str] = []
+        current_doc: List[str] = []
         total = 0
 
         for split in splits:

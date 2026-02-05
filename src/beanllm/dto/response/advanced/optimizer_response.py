@@ -5,7 +5,7 @@ Optimizer Response DTOs - 최적화 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 
@@ -20,18 +20,40 @@ class BenchmarkResponse:
     """
 
     benchmark_id: str
-    system_id: str
-    system_type: str
     num_queries: int
-    baseline_metrics: Dict[str, float]  # {"latency": 1.5, "quality": 0.85, "cost": 0.001}
-    detailed_results: List[Dict[str, Any]]
-    bottlenecks: List[str]
-    timestamp: str
+    # Optional fields for backward compatibility
+    system_id: Optional[str] = None
+    system_type: Optional[str] = None
+    queries: Optional[List[str]] = None
+    baseline_metrics: Optional[Dict[str, float]] = None
+    detailed_results: Optional[List[Dict[str, Any]]] = None
+    bottlenecks: Optional[List[str]] = None
+    timestamp: Optional[str] = None
+    # Latency metrics
+    avg_latency: float = 0.0
+    p50_latency: float = 0.0
+    p95_latency: float = 0.0
+    p99_latency: float = 0.0
+    # Score metrics
+    avg_score: float = 0.0
+    min_score: float = 0.0
+    max_score: float = 0.0
+    # Throughput metrics
+    throughput: float = 0.0
+    total_duration: float = 0.0
     metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:
             self.metadata = {}
+        if self.baseline_metrics is None:
+            self.baseline_metrics = {}
+        if self.detailed_results is None:
+            self.detailed_results = []
+        if self.bottlenecks is None:
+            self.bottlenecks = []
+        if self.queries is None:
+            self.queries = []
 
 
 @dataclass
@@ -114,7 +136,9 @@ class RecommendationResponse:
     """
 
     profile_id: str
-    recommendations: List[Dict[str, Any]]  # [{"type": "reduce_chunk_size", "priority": "high", ...}]
+    recommendations: List[
+        Dict[str, Any]
+    ]  # [{"type": "reduce_chunk_size", "priority": "high", ...}]
     estimated_improvements: Dict[str, float]
     implementation_difficulty: Dict[str, str]  # {"reduce_chunk_size": "easy"}
     priority_order: List[str]

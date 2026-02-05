@@ -5,9 +5,9 @@ Replaces 23 duplicate lazy loading implementations across the codebase.
 """
 
 from functools import wraps
-from typing import Any, Callable, Dict, Generic, Optional, TypeVar
+from typing import Any, Callable, Dict, Generic, Optional, TypeVar, cast
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class LazyLoadMixin:
@@ -56,7 +56,7 @@ class LazyLoadMixin:
         """
         if attr_name not in self._lazy_attrs:
             self._lazy_attrs[attr_name] = loader_func()
-        return self._lazy_attrs[attr_name]
+        return cast(T, self._lazy_attrs[attr_name])
 
     def clear_lazy_cache(self, attr_name: Optional[str] = None):
         """
@@ -120,7 +120,7 @@ def lazy_property(loader_func: Callable[[Any], T]) -> property:
     def getter(self: Any) -> T:
         if not hasattr(self, attr_name):
             setattr(self, attr_name, loader_func(self))
-        return getattr(self, attr_name)
+        return cast(T, getattr(self, attr_name))
 
     return property(getter)
 

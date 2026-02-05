@@ -5,7 +5,7 @@ Knowledge Graph Response DTOs - Knowledge Graph 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 
@@ -98,6 +98,8 @@ class GraphRAGResponse:
     entities_used: List[str]
     reasoning_paths: List[List[str]]  # [[entity1, relation, entity2, ...]]
     graph_context: str
+    graph_id: Optional[str] = None
+    num_results: int = 0
     traditional_rag_context: Optional[str] = None
     hybrid_score: Optional[float] = None
     sources: Optional[List[Any]] = None

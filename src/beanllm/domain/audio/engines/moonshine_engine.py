@@ -29,6 +29,7 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
+
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)
@@ -126,9 +127,7 @@ class MoonshineEngine(BaseSTTEngine):
 
         logger.info(f"Moonshine {self.model_size} model loaded successfully")
 
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], config: STTConfig
-    ) -> Dict:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], config: STTConfig) -> Dict:
         """
         Moonshine로 텍스트 전사
 
@@ -141,6 +140,7 @@ class MoonshineEngine(BaseSTTEngine):
         """
         # 모델 초기화
         self._init_model(config)
+        assert self._pipeline is not None
 
         start_time = time.time()
 
