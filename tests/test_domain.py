@@ -6,21 +6,21 @@ import pytest
 
 try:
     from beanllm.domain import (
-        Document,
-        Embedding,
-        TextSplitter,
         BaseEmbedding,
         BaseTextSplitter,
         BaseVectorStore,
+        Document,
+        Embedding,
+        TextSplitter,
     )
 except ImportError:
     from src.beanllm.domain import (
-        Document,
-        Embedding,
-        TextSplitter,
         BaseEmbedding,
         BaseTextSplitter,
         BaseVectorStore,
+        Document,
+        Embedding,
+        TextSplitter,
     )
 
 
@@ -155,4 +155,3 @@ class TestDomainIntegration:
         if first_doc_chunks:
             assert all(chunk.metadata.get("author") == "Test Author" for chunk in first_doc_chunks)
             assert all(chunk.metadata.get("date") == "2024-01-01" for chunk in first_doc_chunks)
-

@@ -4,29 +4,26 @@ beanllm Playground Backend - FastAPI
 Complete working backend for all 9 beanllm features
 """
 
-import asyncio
-import sys
-import os
 import logging
+import os
+import sys
 import time
 import uuid
 from pathlib import Path
-from typing import List, Dict, Any, Optional
+from typing import Dict
+
 from fastapi import (
     FastAPI,
+    HTTPException,
+    Request,
     WebSocket,
     WebSocketDisconnect,
-    HTTPException,
-    UploadFile,
-    File,
-    Request,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-import json
 
 try:
     from dotenv import load_dotenv
+
     env_path = Path(__file__).parent / ".env"
     if env_path.exists():
         load_dotenv(env_path)
@@ -65,17 +62,13 @@ logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
 
 logger = logging.getLogger(__name__)
 
-from monitoring.middleware import MonitoringMiddleware, ChatMonitoringMixin
+from monitoring.middleware import ChatMonitoringMixin, MonitoringMiddleware
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from common import (
     get_ollama_model_name_for_chat,
-    track_downloaded_model,
-    get_downloaded_models,
-    _downloaded_models,
 )
-
 
 from beanllm import Client
 from beanllm.facade.core.chain_facade import Chain
@@ -100,16 +93,14 @@ app.add_middleware(
 )
 
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
-USE_REDIS_MONITORING = (
-    os.getenv("USE_REDIS_MONITORING", "true").lower() == "true"
-    )
+USE_REDIS_MONITORING = os.getenv("USE_REDIS_MONITORING", "true").lower() == "true"
 app.add_middleware(
     MonitoringMiddleware,
     enable_kafka=USE_DISTRIBUTED,
     enable_redis=USE_REDIS_MONITORING,
 )
 
-from database import get_mongodb_client, close_mongodb_connection, ping_mongodb
+from database import close_mongodb_connection, ping_mongodb
 from routers.history_router import router as chat_history_router
 
 app.include_router(chat_history_router)
@@ -121,10 +112,13 @@ async def startup_event():
     if await ping_mongodb():
         logger.info("✅ MongoDB connected successfully")
         from database import create_session_indexes
+
         await create_session_indexes()
     else:
         if not os.getenv("MONGODB_URI"):
-            logger.info("ℹ️  MongoDB not configured (MONGODB_URI unset) - chat history will not be saved")
+            logger.info(
+                "ℹ️  MongoDB not configured (MONGODB_URI unset) - chat history will not be saved"
+            )
         else:
             logger.warning("⚠️  MongoDB not available - chat history will not be saved")
 
@@ -138,19 +132,6 @@ async def shutdown_event():
 
 from common import (
     get_client,
-    get_kg,
-    get_web_search,
-    get_rag_debugger,
-    get_optimizer,
-    get_multi_agent,
-    get_orchestrator,
-    get_vision_rag,
-    get_audio_rag,
-    get_evaluator,
-    get_finetuning,
-    get_rag_chain,
-    set_rag_chain,
-    _rag_chains,
 )
 
 _chains: Dict[str, Chain] = {}
@@ -158,28 +139,7 @@ active_connections: Dict[str, WebSocket] = {}
 
 # Import schemas from centralized location
 from schemas import (
-    Message,
     ChatRequest,
-    BuildGraphRequest,
-    QueryGraphRequest,
-    GraphRAGRequest,
-    RAGBuildRequest,
-    RAGQueryRequest,
-    RAGDebugRequest,
-    AgentRequest,
-    WebSearchRequest,
-    OptimizeRequest,
-    MultiAgentRequest,
-    WorkflowRequest,
-    ChainRequest,
-    VisionRAGBuildRequest,
-    VisionRAGQueryRequest,
-    AudioTranscribeRequest,
-    AudioSynthesizeRequest,
-    AudioRAGRequest,
-    EvaluationRequest,
-    FineTuningCreateRequest,
-    FineTuningStatusRequest,
 )
 
 
@@ -208,27 +168,26 @@ async def root():
 async def health():
     """Detailed health check"""
     try:
-        client = get_client()
         return {
             "status": "healthy",
-            "client_initialized": _client is not None,
-            "facades": {
-                "kg": _kg is not None,
-                "rag_chains": len(_rag_chains),
-                "web_search": _web_search is not None,
-                "rag_debugger": _rag_debugger is not None,
-                "optimizer": _optimizer is not None,
-                "multi_agent": _multi_agent is not None,
-                "orchestrator": _orchestrator is not None,
-            },
+            "version": "0.2.2",
+            "features": [
+                "chat",
+                "rag",
+                "agent",
+                "multi_agent",
+                "kg",
+                "web_search",
+                "rag_debug",
+                "optimizer",
+                "orchestrator",
+            ],
         }
     except Exception as e:
         return {
             "status": "unhealthy",
             "error": str(e),
         }
-
-
 
 
 @app.get("/api/config/providers")
@@ -305,11 +264,14 @@ async def get_available_models():
 
         try:
             from beanllm.providers.ollama_provider import OllamaProvider
+
             ollama = OllamaProvider()
             ollama_models = await ollama.list_models()
             # 실제 설치된 모델만 반환
             if ollama_models:
-                available_models["ollama"] = [m["name"] if isinstance(m, dict) else str(m) for m in ollama_models]
+                available_models["ollama"] = [
+                    m["name"] if isinstance(m, dict) else str(m) for m in ollama_models
+                ]
             else:
                 available_models["ollama"] = []
                 logger.info("No Ollama models installed.")
@@ -322,8 +284,6 @@ async def get_available_models():
     except Exception as e:
         logger.error(f"Failed to get available models: {e}")
         return {"ollama": []}
-
-
 
 
 @app.post("/api/chat")
@@ -346,8 +306,6 @@ async def chat(request: ChatRequest, http_request: Request = None):
                 if msg.content:
                     content.append({"type": "text", "text": msg.content})
                 if has_images:
-                    import base64
-
                     for img_base64 in request.images:
                         try:
                             if img_base64.startswith("data:image"):
@@ -402,7 +360,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                             f"[DEBUG] Ollama health check failed: {health_error}", exc_info=True
                         )
                     try:
-                        logger.info(f"[DEBUG] Calling ollama_provider.list_models()...")
+                        logger.info("[DEBUG] Calling ollama_provider.list_models()...")
                         installed_models = await ollama_provider.list_models()
                         logger.info(
                             f"[DEBUG] list_models() returned: {installed_models} (type: {type(installed_models)}, count: {len(installed_models)})"
@@ -412,7 +370,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                             f"[DEBUG] list_models() raised exception: {list_error}", exc_info=True
                         )
                         try:
-                            logger.info(f"[DEBUG] Trying direct client.list() call...")
+                            logger.info("[DEBUG] Trying direct client.list() call...")
                             raw_response = await ollama_provider.client.list()
                             logger.info(
                                 f"[DEBUG] Direct client.list() returned: {raw_response} (type: {type(raw_response)})"
@@ -443,11 +401,11 @@ async def chat(request: ChatRequest, http_request: Request = None):
                     )
                     if not installed_models:
                         logger.warning(
-                            f"[DEBUG] WARNING: Ollama list_models() returned empty list. This might indicate:"
+                            "[DEBUG] WARNING: Ollama list_models() returned empty list. This might indicate:"
                         )
-                        logger.warning(f"[DEBUG]   1. Ollama daemon is not running")
-                        logger.warning(f"[DEBUG]   2. No models are installed")
-                        logger.warning(f"[DEBUG]   3. Connection issue with Ollama")
+                        logger.warning("[DEBUG]   1. Ollama daemon is not running")
+                        logger.warning("[DEBUG]   2. No models are installed")
+                        logger.warning("[DEBUG]   3. Connection issue with Ollama")
 
                     mapped_model_name = get_ollama_model_name_for_chat(request.model)
                     mapped_model_name_lower = mapped_model_name.lower()
@@ -478,7 +436,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                             f"Using Ollama provider for {request.model} -> {ollama_model_name} (found in Ollama)"
                         )
                     else:
-                        logger.info(f"[DEBUG] Exact match not found. Checking similar names...")
+                        logger.info("[DEBUG] Exact match not found. Checking similar names...")
                         for installed_model in installed_models:
                             if (
                                 model_name_lower in installed_model.lower()
@@ -518,7 +476,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                                     f"[DEBUG] This might be a connection issue. Will try to use mapped name: {mapped_model_name}"
                                 )
                                 logger.info(
-                                    f"[DEBUG] Chat will attempt to use the model directly - if it works, the model is installed."
+                                    "[DEBUG] Chat will attempt to use the model directly - if it works, the model is installed."
                                 )
                                 use_ollama = True
                                 ollama_model_name = mapped_model_name
@@ -547,7 +505,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                             use_ollama = True
                             ollama_model_name = request.model
                             logger.info(
-                                    f"Using Ollama provider for {request.model} (found in Ollama, overriding Registry provider)"
+                                f"Using Ollama provider for {request.model} (found in Ollama, overriding Registry provider)"
                             )
                         else:
                             for installed_model in installed_models:
@@ -789,7 +747,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                 # API 키 관련 에러
                 elif "api key" in error_msg.lower() or "authentication" in error_msg.lower():
                     raise HTTPException(
-                        401, f"API 키가 필요합니다. 환경 변수에 API 키를 설정해주세요."
+                        401, "API 키가 필요합니다. 환경 변수에 API 키를 설정해주세요."
                     )
                 # 그 외 에러는 그대로 전달
                 raise HTTPException(500, f"Chat error: {error_msg}")
@@ -842,7 +800,7 @@ async def chat(request: ChatRequest, http_request: Request = None):
                 error_msg = str(chat_error)
                 if "api key" in error_msg.lower() or "authentication" in error_msg.lower():
                     raise HTTPException(
-                        401, f"API 키가 필요합니다. OPENAI_API_KEY 환경 변수를 설정해주세요."
+                        401, "API 키가 필요합니다. OPENAI_API_KEY 환경 변수를 설정해주세요."
                     )
                 raise HTTPException(500, f"Chat error: {error_msg}")
 
@@ -881,11 +839,13 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
     print(f"WebSocket connected: {session_id}")
 
     try:
-        await websocket.send_json({
-            "type": "connected",
-            "session_id": session_id,
-            "message": "Connected to beanllm playground",
-        })
+        await websocket.send_json(
+            {
+                "type": "connected",
+                "session_id": session_id,
+                "message": "Connected to beanllm playground",
+            }
+        )
 
         while True:
             try:
@@ -905,24 +865,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
         print(f"WebSocket disconnected: {session_id}")
 
 
-
-
-from routers.config_router import router as config_router
-from routers.chat_router import router as chat_router
-from routers.google_auth_router import router as google_auth_router
-from routers.monitoring_router import router as monitoring_router
-from routers.models_router import router as models_router
-from routers.kg_router import router as kg_router
-from routers.rag_router import router as rag_router
 from routers.agent_router import router as agent_router
-from routers.chain_router import router as chain_router
-from routers.vision_router import router as vision_router
 from routers.audio_router import router as audio_router
+from routers.chain_router import router as chain_router
+from routers.chat_router import router as chat_router
+from routers.config_router import router as config_router
 from routers.evaluation_router import router as evaluation_router
 from routers.finetuning_router import router as finetuning_router
+from routers.google_auth_router import router as google_auth_router
+from routers.kg_router import router as kg_router
+from routers.models_router import router as models_router
+from routers.monitoring_router import router as monitoring_router
 from routers.ocr_router import router as ocr_router
-from routers.web_router import router as web_router
 from routers.optimizer_router import router as optimizer_router
+from routers.rag_router import router as rag_router
+from routers.vision_router import router as vision_router
+from routers.web_router import router as web_router
 
 app.include_router(config_router)
 app.include_router(chat_router)
@@ -941,7 +899,9 @@ app.include_router(ocr_router)
 app.include_router(web_router)
 app.include_router(optimizer_router)
 
-logger.info("✅ Modular routers included: config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer")
+logger.info(
+    "✅ Modular routers included: config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer"
+)
 
 if __name__ == "__main__":
     import uvicorn

@@ -13,7 +13,6 @@ Features:
 """
 
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -168,7 +167,9 @@ class ImagePreprocessor:
             interpolation = interp_map.get(config.interpolation, cv2.INTER_AREA)
 
             image = cv2.resize(image, (new_w, new_h), interpolation=interpolation)
-            logger.debug(f"Resized image from {w}x{h} to {new_w}x{new_h} (interpolation={config.interpolation})")
+            logger.debug(
+                f"Resized image from {w}x{h} to {new_w}x{new_h} (interpolation={config.interpolation})"
+            )
 
         return image
 

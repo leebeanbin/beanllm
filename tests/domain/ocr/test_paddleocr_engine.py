@@ -18,9 +18,7 @@ try:
 except ImportError:
     HAS_PADDLEOCR = False
 
-skip_without_paddleocr = pytest.mark.skipif(
-    not HAS_PADDLEOCR, reason="PaddleOCR not installed"
-)
+skip_without_paddleocr = pytest.mark.skipif(not HAS_PADDLEOCR, reason="PaddleOCR not installed")
 
 
 class TestPaddleOCREngineImport:

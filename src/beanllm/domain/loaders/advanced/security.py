@@ -113,8 +113,7 @@ def validate_file_path(
 
         # 허용된 디렉토리 확인
         allowed = any(
-            str(path).startswith(str(allowed_dir.resolve()))
-            for allowed_dir in ALLOWED_DIRECTORIES
+            str(path).startswith(str(allowed_dir.resolve())) for allowed_dir in ALLOWED_DIRECTORIES
         )
 
         if not allowed:

@@ -2,13 +2,14 @@
 EvaluationHandler 테스트 - Evaluation Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.evaluation_request import (
     EvaluationRequest,
-    TextEvaluationRequest,
     RAGEvaluationRequest,
+    TextEvaluationRequest,
 )
 from beanllm.dto.response.evaluation_response import EvaluationResponse
 from beanllm.handler.evaluation_handler import EvaluationHandler
@@ -21,15 +22,9 @@ class TestEvaluationHandler:
     def mock_evaluation_service(self):
         """Mock EvaluationService"""
         service = Mock()
-        service.evaluate = AsyncMock(
-            return_value=EvaluationResponse(result=Mock())
-        )
-        service.evaluate_text = AsyncMock(
-            return_value=EvaluationResponse(result=Mock())
-        )
-        service.evaluate_rag = AsyncMock(
-            return_value=EvaluationResponse(result=Mock())
-        )
+        service.evaluate = AsyncMock(return_value=EvaluationResponse(result=Mock()))
+        service.evaluate_text = AsyncMock(return_value=EvaluationResponse(result=Mock()))
+        service.evaluate_rag = AsyncMock(return_value=EvaluationResponse(result=Mock()))
         return service
 
     @pytest.fixture
@@ -97,5 +92,3 @@ class TestEvaluationHandler:
         except (ValueError, TypeError):
             # 검증 에러가 발생하면 통과
             pass
-
-

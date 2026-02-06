@@ -16,12 +16,12 @@ Requirements:
 """
 
 import logging
-import time
-from typing import Any, Dict, Optional
+from typing import Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -184,8 +184,7 @@ class Qwen2VLEngine(BaseOCREngine):
 
         # 디코딩
         generated_ids_trimmed = [
-            out_ids[len(in_ids) :]
-            for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
+            out_ids[len(in_ids) :] for in_ids, out_ids in zip(inputs.input_ids, generated_ids)
         ]
         output_text = self._processor.batch_decode(
             generated_ids_trimmed,
@@ -196,9 +195,7 @@ class Qwen2VLEngine(BaseOCREngine):
         # 결과 변환
         return self._convert_result(output_text, image, config)
 
-    def _convert_result(
-        self, text: str, image: np.ndarray, config: OCRConfig
-    ) -> Dict:
+    def _convert_result(self, text: str, image: np.ndarray, config: OCRConfig) -> Dict:
         """
         Qwen2.5-VL 결과를 표준 형식으로 변환
 

@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
@@ -22,7 +22,6 @@ from beanllm.dto.response.graph.kg_response import (
     QueryGraphResponse,
     RelationsResponse,
 )
-
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
 
 
@@ -38,15 +37,11 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         """Phase 5에서 의존성 추가 예정"""
         pass
 
-    async def extract_entities(
-        self, request: ExtractEntitiesRequest
-    ) -> EntitiesResponse:
+    async def extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
         """Phase 5에서 구현"""
         raise NotImplementedError("Phase 5에서 구현 예정")
 
-    async def extract_relations(
-        self, request: ExtractRelationsRequest
-    ) -> RelationsResponse:
+    async def extract_relations(self, request: ExtractRelationsRequest) -> RelationsResponse:
         """Phase 5에서 구현"""
         raise NotImplementedError("Phase 5에서 구현 예정")
 
@@ -67,5 +62,9 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         raise NotImplementedError("Phase 5에서 구현 예정")
 
     async def get_graph_stats(self, graph_id: str) -> Dict[str, Any]:
+        """Phase 5에서 구현"""
+        raise NotImplementedError("Phase 5에서 구현 예정")
+
+    async def list_graphs(self) -> List[Dict[str, Any]]:
         """Phase 5에서 구현"""
         raise NotImplementedError("Phase 5에서 구현 예정")

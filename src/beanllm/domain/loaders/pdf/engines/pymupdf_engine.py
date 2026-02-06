@@ -9,9 +9,12 @@ PyMuPDF (fitz)를 사용한 빠른 PDF 파싱 엔진
 
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from .base import BasePDFEngine
+
+if TYPE_CHECKING:
+    import fitz
 
 try:
     from beanllm.utils.logging import get_logger
@@ -58,8 +61,7 @@ class PyMuPDFEngine(BasePDFEngine):
             import fitz  # PyMuPDF
         except ImportError:
             raise ImportError(
-                "PyMuPDF is required for PyMuPDFEngine. "
-                "Install it with: pip install PyMuPDF"
+                "PyMuPDF is required for PyMuPDFEngine. " "Install it with: pip install PyMuPDF"
             )
 
     def extract(
@@ -125,11 +127,11 @@ class PyMuPDFEngine(BasePDFEngine):
                 # 텍스트 추출 모드 선택
                 text_mode = config.get("pymupdf_text_mode", "text")
                 layout_analysis = config.get("layout_analysis", False)
-                
+
                 # layout_analysis=True이면 자동으로 "dict" 모드 사용
                 if layout_analysis and text_mode == "text":
                     text_mode = "dict"
-                
+
                 # 텍스트 추출
                 try:
                     if text_mode == "dict":
@@ -276,14 +278,8 @@ class PyMuPDFEngine(BasePDFEngine):
                     image_bbox = page.get_image_bbox(img)
                     bbox = (image_bbox.x0, image_bbox.y0, image_bbox.x1, image_bbox.y1)
                 except Exception:
-                    try:
-                        # 방법 2: get_image_rects() 사용
-                        if img_index < len(image_blocks):
-                            rect = image_blocks[img_index]
-                            bbox = (rect.x0, rect.y0, rect.x1, rect.y1)
-                    except Exception:
-                        # 방법 3: 대체 방법 (이미지 크기로 추정)
-                        bbox = (0.0, 0.0, float(base_image["width"]), float(base_image["height"]))
+                    # 대체 방법: 이미지 크기로 추정
+                    bbox = (0.0, 0.0, float(base_image["width"]), float(base_image["height"]))
 
                 # 이미지 메타데이터
                 image_info = {
@@ -555,4 +551,3 @@ class PyMuPDFEngine(BasePDFEngine):
                         text_parts.append("\n")
 
         return "".join(text_parts).strip()
-

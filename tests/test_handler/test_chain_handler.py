@@ -2,8 +2,9 @@
 ChainHandler 테스트 - Chain Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.chain_request import ChainRequest
 from beanllm.dto.response.chain_response import ChainResponse
@@ -160,5 +161,3 @@ class TestChainHandler:
         # extra_params가 DTO에 포함되었는지 확인
         call_args = chain_handler._chain_service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params
-
-

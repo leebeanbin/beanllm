@@ -9,19 +9,18 @@ Chat endpoints for LLM conversation including:
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+from common import get_client
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-
-from common import get_client
 from services import (
-    intent_classifier,
-    tool_registry,
-    orchestrator,
     IntentType,
     OrchestratorContext,
+    intent_classifier,
+    orchestrator,
+    tool_registry,
 )
 from services.intent_classifier import IntentResult
 from services.orchestrator import EventType as AgenticEventType
@@ -35,14 +34,17 @@ router = APIRouter(prefix="/api/chat", tags=["Chat"])
 # Request/Response Models
 # ===========================================
 
+
 class ChatMessage(BaseModel):
     """Chat message"""
+
     role: str = Field(..., description="Message role: user, assistant, system")
     content: str = Field(..., description="Message content")
 
 
 class ChatRequest(BaseModel):
     """Basic chat request"""
+
     messages: List[ChatMessage] = Field(..., description="Chat messages")
     model: str = Field(default="qwen2.5:0.5b", description="Model to use")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
@@ -52,6 +54,7 @@ class ChatRequest(BaseModel):
 
 class AgenticChatRequest(BaseModel):
     """Agentic chat request with auto-routing"""
+
     messages: List[ChatMessage] = Field(..., description="Chat messages")
     model: str = Field(default="qwen2.5:0.5b", description="Model to use")
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
@@ -59,43 +62,44 @@ class AgenticChatRequest(BaseModel):
     session_id: Optional[str] = Field(None, description="Session ID for message history")
     user_id: Optional[str] = Field(None, description="User ID for logging")
     # Intent overrides
-    force_intent: Optional[str] = Field(None, description="Force specific intent (skip classification)")
+    force_intent: Optional[str] = Field(
+        None, description="Force specific intent (skip classification)"
+    )
     # Tool options
     tool_options: Optional[Dict[str, Any]] = Field(
-        default_factory=dict,
-        description="Tool-specific options (e.g., collection_name for RAG)"
+        default_factory=dict, description="Tool-specific options (e.g., collection_name for RAG)"
     )
     # Parallel execution
     parallel: bool = Field(
-        default=False,
-        description="Execute multiple tools in parallel (병렬 처리)"
+        default=False, description="Execute multiple tools in parallel (병렬 처리)"
     )
     # 제안 단계: 유저가 챗으로 승인/수정/직접 스펙 보낸 값 (챗 전용)
     proposal_action: Optional[str] = Field(
-        None,
-        description="approved | modified | custom_spec (from user reply to proposal)"
+        None, description="approved | modified | custom_spec (from user reply to proposal)"
     )
     proposal_pipeline: Optional[List[str]] = Field(
-        None,
-        description="For custom_spec: ordered tool names e.g. ['rag','kg','chat']"
+        None, description="For custom_spec: ordered tool names e.g. ['rag','kg','chat']"
     )
     # Human-in-the-loop: 승인 대기 시 True, 재개 요청 시 run_id + approval_response
-    require_approval: bool = Field(default=False, description="Pause before each tool for user approval")
+    require_approval: bool = Field(
+        default=False, description="Pause before each tool for user approval"
+    )
     run_id: Optional[str] = Field(None, description="Resume: run_id from stream_paused event")
     approval_response: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Resume: { run_id, action: 'run'|'cancel'|'change_tool' }"
+        None, description="Resume: { run_id, action: 'run'|'cancel'|'change_tool' }"
     )
 
 
 class IntentClassifyRequest(BaseModel):
     """Intent classification request"""
+
     query: str = Field(..., description="Query to classify")
     available_intents: Optional[List[str]] = Field(None, description="Limit to these intents")
 
 
 class IntentClassifyResponse(BaseModel):
     """Intent classification response"""
+
     primary_intent: str
     confidence: float
     secondary_intents: List[str]
@@ -105,6 +109,7 @@ class IntentClassifyResponse(BaseModel):
 
 class ToolStatusResponse(BaseModel):
     """Tool status response"""
+
     name: str
     description: str
     description_ko: str
@@ -118,6 +123,7 @@ class ToolStatusResponse(BaseModel):
 # ===========================================
 # Basic Chat Endpoints
 # ===========================================
+
 
 @router.post("")
 async def chat(request: ChatRequest):
@@ -154,6 +160,7 @@ async def chat_stream(request: ChatRequest):
 
     Returns SSE stream of chat chunks.
     """
+
     async def generate():
         try:
             client = get_client(request.model)
@@ -180,13 +187,14 @@ async def chat_stream(request: ChatRequest):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-        }
+        },
     )
 
 
 # ===========================================
 # Agentic Chat Endpoints
 # ===========================================
+
 
 @router.post("/agentic")
 async def agentic_chat(request: AgenticChatRequest, http_request: Request):
@@ -222,11 +230,17 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
     async def generate():
         try:
             # Human-in-the-loop 재개: approval_response에 run_id + action=="run" 이면 Redis에서 복원 후 execute 재개
-            if request.approval_response and request.approval_response.get("action") == "run" and request.approval_response.get("run_id"):
+            if (
+                request.approval_response
+                and request.approval_response.get("action") == "run"
+                and request.approval_response.get("run_id")
+            ):
                 run_id = request.approval_response["run_id"]
                 try:
-                    from beanllm.infrastructure.distributed.redis.client import get_redis_client
                     import json
+
+                    from beanllm.infrastructure.distributed.redis.client import get_redis_client
+
                     redis = get_redis_client()
                     if redis:
                         raw = await redis.get(f"run:approval:{run_id}")
@@ -254,17 +268,26 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
                                     max_tokens=state.get("max_tokens", request.max_tokens),
                                     session_id=state.get("session_id") or request.session_id,
                                     user_id=state.get("user_id") or request.user_id,
-                                    extra_params=state.get("extra_params") or request.tool_options or {},
+                                    extra_params=state.get("extra_params")
+                                    or request.tool_options
+                                    or {},
                                     run_id=run_id,
                                     require_approval=False,  # 재개 후에는 대기 없이 남은 도구 실행
                                 )
                                 start_from = int(state.get("tool_index", 0))
-                                logger.info(f"Resuming from run_id={run_id}, tool_index={start_from}")
-                                async for event in orchestrator.execute(context, start_from_tool_index=start_from):
+                                logger.info(
+                                    f"Resuming from run_id={run_id}, tool_index={start_from}"
+                                )
+                                async for event in orchestrator.execute(
+                                    context, start_from_tool_index=start_from
+                                ):
                                     yield event.to_sse()
-                                    if event.type == AgenticEventType.DONE and event.data.get("usage"):
+                                    if event.type == AgenticEventType.DONE and event.data.get(
+                                        "usage"
+                                    ):
                                         try:
                                             from monitoring.middleware import ChatMonitoringMixin
+
                                             u = event.data["usage"]
                                             await ChatMonitoringMixin.log_chat_response(
                                                 request_id=request_id,
@@ -274,18 +297,22 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
                                                 output_tokens=u.get("output_tokens"),
                                             )
                                         except Exception as e:
-                                            logger.debug(f"Failed to log agentic token metrics: {e}")
+                                            logger.debug(
+                                                f"Failed to log agentic token metrics: {e}"
+                                            )
                                 return
                 except Exception as e:
                     logger.warning(f"Resume from approval failed: {e}")
-                yield f"data: {{\"type\": \"error\", \"data\": {{\"message\": \"Resume failed or run expired\"}}}}\n\n"
+                yield 'data: {"type": "error", "data": {"message": "Resume failed or run expired"}}\n\n'
                 return
 
-            logger.info(f"Agentic chat request received: model={request.model}, messages={len(request.messages)}, force_intent={request.force_intent}")
+            logger.info(
+                f"Agentic chat request received: model={request.model}, messages={len(request.messages)}, force_intent={request.force_intent}"
+            )
             user_messages = [m for m in request.messages if m.role == "user"]
             if not user_messages:
                 logger.warning("No user message in request")
-                yield f"data: {{\"type\": \"error\", \"data\": {{\"message\": \"No user message\"}}}}\n\n"
+                yield 'data: {"type": "error", "data": {"message": "No user message"}}\n\n'
                 return
 
             query = user_messages[-1].content
@@ -297,27 +324,31 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
                     logger.info(f"Forcing intent: {request.force_intent}")
                     primary_intent = IntentType(request.force_intent)
                     intent_result = await intent_classifier.classify(
-                        query,
-                        available_intents=[primary_intent]
+                        query, available_intents=[primary_intent]
                     )
-                    logger.info(f"Intent forced: {intent_result.primary_intent.value}, confidence: {intent_result.confidence}")
+                    logger.info(
+                        f"Intent forced: {intent_result.primary_intent.value}, confidence: {intent_result.confidence}"
+                    )
                 except ValueError as e:
                     logger.error(f"Invalid intent: {request.force_intent}, error: {e}")
                     logger.info("Falling back to automatic classification")
                     # 유효하지 않은 intent면 자동 분류로 폴백
                     intent_result = await intent_classifier.classify(query)
-                    logger.info(f"Intent classified (fallback): {intent_result.primary_intent.value}, confidence: {intent_result.confidence}")
+                    logger.info(
+                        f"Intent classified (fallback): {intent_result.primary_intent.value}, confidence: {intent_result.confidence}"
+                    )
             else:
                 logger.info("Classifying intent automatically...")
                 intent_result = await intent_classifier.classify(query)
-                logger.info(f"Intent classified: {intent_result.primary_intent.value}, confidence: {intent_result.confidence}")
+                logger.info(
+                    f"Intent classified: {intent_result.primary_intent.value}, confidence: {intent_result.confidence}"
+                )
 
             # 2. 도구 선택
             logger.info("Selecting tools...")
             selected_tools = []
             best_tool = tool_registry.get_best_tool_for_intent(
-                intent_result.primary_intent,
-                only_available=True
+                intent_result.primary_intent, only_available=True
             )
             if best_tool:
                 selected_tools.append(best_tool)
@@ -326,10 +357,11 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
             # Secondary intents에서도 도구 추가 (선택적)
             for secondary_intent in intent_result.secondary_intents[:1]:  # 최대 1개
                 secondary_tool = tool_registry.get_best_tool_for_intent(
-                    secondary_intent,
-                    only_available=True
+                    secondary_intent, only_available=True
                 )
-                if secondary_tool and secondary_tool.tool.name not in [t.tool.name for t in selected_tools]:
+                if secondary_tool and secondary_tool.tool.name not in [
+                    t.tool.name for t in selected_tools
+                ]:
                     selected_tools.append(secondary_tool)
                     logger.info(f"Added secondary tool: {secondary_tool.tool.name}")
 
@@ -374,6 +406,7 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
                     if event.type == AgenticEventType.DONE and event.data.get("usage"):
                         try:
                             from monitoring.middleware import ChatMonitoringMixin
+
                             u = event.data["usage"]
                             await ChatMonitoringMixin.log_chat_response(
                                 request_id=request_id,
@@ -384,12 +417,13 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
                             )
                         except Exception as e:
                             logger.debug(f"Failed to log agentic token metrics: {e}")
-            
+
             logger.info(f"Execution completed. Total events: {event_count}")
 
         except Exception as e:
             logger.error(f"Agentic chat error: {e}", exc_info=True)
             import traceback
+
             error_traceback = traceback.format_exc()
             logger.error(f"Traceback: {error_traceback}")
             yield f"data: {{\"type\": \"error\", \"data\": {{\"message\": \"{str(e)}\", \"traceback\": \"{error_traceback.replace(chr(10), ' ').replace(chr(13), ' ')}\"}}}}\n\n"
@@ -401,7 +435,7 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",
-        }
+        },
     )
 
 
@@ -417,10 +451,7 @@ async def classify_intent(request: IntentClassifyRequest) -> IntentClassifyRespo
         if request.available_intents:
             available = [IntentType(i) for i in request.available_intents]
 
-        result = await intent_classifier.classify(
-            request.query,
-            available_intents=available
-        )
+        result = await intent_classifier.classify(request.query, available_intents=available)
 
         return IntentClassifyResponse(
             primary_intent=result.primary_intent.value,
@@ -438,6 +469,7 @@ async def classify_intent(request: IntentClassifyRequest) -> IntentClassifyRespo
 # ===========================================
 # Tool Status Endpoints
 # ===========================================
+
 
 @router.get("/tools")
 async def list_tools() -> List[ToolStatusResponse]:

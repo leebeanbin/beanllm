@@ -2,12 +2,14 @@
 Retry Handler 테스트 - 에러 처리 유틸리티 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import asyncio
+from unittest.mock import Mock, patch
+
+import pytest
 
 try:
     from beanllm.utils.error_handling import RetryHandler
+
     RETRY_HANDLER_AVAILABLE = True
 except ImportError:
     RETRY_HANDLER_AVAILABLE = False
@@ -21,7 +23,7 @@ class TestRetryHandler:
     def retry_handler(self):
         """RetryHandler 인스턴스"""
         from beanllm.utils.error_handling import RetryConfig, RetryStrategy
-        
+
         config = RetryConfig(
             max_retries=3,
             initial_delay=1.0,
@@ -68,6 +70,7 @@ class TestRetryHandler:
             raise Exception("Always fail")
 
         from beanllm.utils.error_handling import MaxRetriesExceededError
+
         with pytest.raises(MaxRetriesExceededError):
             retry_handler.execute(test_func)
 
@@ -87,5 +90,3 @@ class TestRetryHandler:
         result = retry_handler.execute(async_func)
         assert result == "async success"
         assert call_count == 2
-
-

@@ -2,12 +2,13 @@
 RAG Facade 테스트 - RAG 인터페이스 테스트
 """
 
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
 
 try:
-    from beanllm.facade.rag_facade import RAGChain
     from beanllm.domain.vector_stores.base import BaseVectorStore
+    from beanllm.facade.rag_facade import RAGChain
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -74,5 +75,3 @@ class TestRAGFacade:
         assert len(result) == 2
         assert isinstance(result[0], str)
         assert isinstance(result[1], list)
-
-

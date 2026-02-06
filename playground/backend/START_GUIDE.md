@@ -28,10 +28,18 @@ brew services start redis
 cp .env.example .env
 
 # 3. 백엔드 시작 (로컬 서비스 사용)
+#    - Ollama가 없으면 자동으로 백그라운드에서 시작·추적 (PID: 프로젝트 루트 .ollama-serve.pid)
 ./start_backend.sh --local
 ```
 
 **자세한 로컬 모드 설정은 [LOCAL_SETUP.md](./LOCAL_SETUP.md) 참고**
+
+### Docker 모드에서 Ollama
+
+```bash
+# docker-compose up -d 시 인프라(MongoDB, Redis, Kafka) + Ollama가 함께 실행·추적됨
+# 백엔드: OLLAMA_HOST=http://localhost:11434 로 접근
+```
 
 ### 방법 3: 수동 실행
 
@@ -44,9 +52,9 @@ cp .env.example .env
 # 2. 의존성 설치
 poetry install --with web
 
-# 3. 인프라 서비스 시작 (Docker Compose)
+# 3. 인프라 서비스 시작 (Docker Compose, Ollama 포함)
 cd ../..
-docker-compose up -d mongodb redis
+docker-compose up -d
 
 # 4. 백엔드 서버 실행
 cd playground/backend

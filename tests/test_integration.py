@@ -29,13 +29,13 @@ class TestHandlerToService:
     def test_chat_handler_to_service(self):
         """ChatHandler가 Service를 사용하는지 확인"""
         try:
+            from beanllm._source_providers.provider_factory import ProviderFactory
             from beanllm.handler.chat_handler import ChatHandler
             from beanllm.service.factory import ServiceFactory
-            from beanllm._source_providers.provider_factory import ProviderFactory
         except ImportError:
+            from src.beanllm._source_providers.provider_factory import ProviderFactory
             from src.beanllm.handler.chat_handler import ChatHandler
             from src.beanllm.service.factory import ServiceFactory
-            from src.beanllm._source_providers.provider_factory import ProviderFactory
 
         try:
             provider_factory = ProviderFactory()
@@ -54,11 +54,11 @@ class TestServiceToDomain:
     def test_rag_service_uses_domain(self):
         """RAGService가 Domain을 사용하는지 확인"""
         try:
-            from beanllm.service.rag_service import IRAGService
             from beanllm.domain import Document, Embedding, VectorStore
+            from beanllm.service.rag_service import IRAGService
         except ImportError:
-            from src.beanllm.service.rag_service import IRAGService
             from src.beanllm.domain import Document, Embedding, VectorStore
+            from src.beanllm.service.rag_service import IRAGService
 
         # 인터페이스 확인
         assert IRAGService is not None
@@ -73,7 +73,7 @@ class TestEndToEnd:
     def test_import_chain(self):
         """전체 import 체인 테스트"""
         # Facade → Handler → Service → Domain → Infrastructure
-        from beanllm import Client, Embedding, Document
+        from beanllm import Client, Document, Embedding
         from beanllm.infrastructure import get_model_registry
         from beanllm.utils import Config
 
@@ -119,4 +119,3 @@ class TestEndToEnd:
 
         except Exception as e:
             pytest.skip(f"RAG workflow test skipped: {e}")
-

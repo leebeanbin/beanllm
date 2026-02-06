@@ -15,10 +15,7 @@ logger = get_logger(__name__)
 
 
 async def log_google_export(
-    user_id: str,
-    export_type: str,
-    metadata: Dict[str, Any],
-    session_id: Optional[str] = None
+    user_id: str, export_type: str, metadata: Dict[str, Any], session_id: Optional[str] = None
 ) -> None:
     """
     Google 서비스 내보내기 이벤트 로깅
@@ -43,22 +40,18 @@ async def log_google_export(
         "export_type": export_type,
         "session_id": session_id,
         "timestamp": datetime.utcnow().isoformat(),
-        **metadata
+        **metadata,
     }
 
     await event_logger.log_event(
-        event_type=f"google.export.{export_type}",
-        data=event_data,
-        level="info"
+        event_type=f"google.export.{export_type}", data=event_data, level="info"
     )
 
     logger.info(f"Google {export_type} export: user={user_id}, session={session_id}")
 
 
 async def log_abnormal_activity(
-    user_id: str,
-    reason: str,
-    details: Optional[Dict[str, Any]] = None
+    user_id: str, reason: str, details: Optional[Dict[str, Any]] = None
 ) -> None:
     """
     이상 활동 로깅 (관리자 알림용)
@@ -82,13 +75,11 @@ async def log_abnormal_activity(
         "reason": reason,
         "severity": "high",
         "timestamp": datetime.utcnow().isoformat(),
-        **(details or {})
+        **(details or {}),
     }
 
     await event_logger.log_event(
-        event_type="security.abnormal_activity",
-        data=event_data,
-        level="warning"
+        event_type="security.abnormal_activity", data=event_data, level="warning"
     )
 
     logger.warning(f"Abnormal activity detected: user={user_id}, reason={reason}")
@@ -98,7 +89,7 @@ async def log_admin_action(
     admin_id: str,
     action: str,
     target: Optional[str] = None,
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None,
 ) -> None:
     """
     관리자 액션 로깅
@@ -124,14 +115,10 @@ async def log_admin_action(
         "action": action,
         "target": target,
         "timestamp": datetime.utcnow().isoformat(),
-        **(metadata or {})
+        **(metadata or {}),
     }
 
-    await event_logger.log_event(
-        event_type=f"admin.action.{action}",
-        data=event_data,
-        level="info"
-    )
+    await event_logger.log_event(event_type=f"admin.action.{action}", data=event_data, level="info")
 
     logger.info(f"Admin action: admin={admin_id}, action={action}, target={target}")
 
@@ -154,9 +141,10 @@ async def get_google_export_stats(hours: int = 24) -> Dict[str, Any]:
         #     "top_users": [("user123", 50), ("user456", 30)]
         # }
     """
-    from motor.motor_asyncio import AsyncIOMotorClient
     import os
     from datetime import timedelta
+
+    from motor.motor_asyncio import AsyncIOMotorClient
 
     mongo = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
     db = mongo.beanllm
@@ -166,10 +154,12 @@ async def get_google_export_stats(hours: int = 24) -> Dict[str, Any]:
     # 서비스별 통계
     by_service = {}
     for service in ["docs", "drive", "gmail", "sheets"]:
-        count = await db.events.count_documents({
-            "event_type": f"google.export.{service}",
-            "data.timestamp": {"$gte": since.isoformat()}
-        })
+        count = await db.events.count_documents(
+            {
+                "event_type": f"google.export.{service}",
+                "data.timestamp": {"$gte": since.isoformat()},
+            }
+        )
         by_service[service] = count
 
     total_exports = sum(by_service.values())
@@ -179,17 +169,12 @@ async def get_google_export_stats(hours: int = 24) -> Dict[str, Any]:
         {
             "$match": {
                 "event_type": {"$regex": "^google.export"},
-                "data.timestamp": {"$gte": since.isoformat()}
+                "data.timestamp": {"$gte": since.isoformat()},
             }
         },
-        {
-            "$group": {
-                "_id": "$data.user_id",
-                "count": {"$sum": 1}
-            }
-        },
+        {"$group": {"_id": "$data.user_id", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
-        {"$limit": 10}
+        {"$limit": 10},
     ]
 
     top_users_cursor = db.events.aggregate(pipeline)
@@ -199,7 +184,7 @@ async def get_google_export_stats(hours: int = 24) -> Dict[str, Any]:
         "total_exports": total_exports,
         "by_service": by_service,
         "top_users": top_users,
-        "period_hours": hours
+        "period_hours": hours,
     }
 
 
@@ -214,19 +199,27 @@ async def get_security_events(hours: int = 24, severity: str = "high") -> List[D
     Returns:
         보안 이벤트 목록
     """
-    from motor.motor_asyncio import AsyncIOMotorClient
     import os
     from datetime import timedelta
+
+    from motor.motor_asyncio import AsyncIOMotorClient
 
     mongo = AsyncIOMotorClient(os.getenv("MONGODB_URI"))
     db = mongo.beanllm
 
     since = datetime.utcnow() - timedelta(hours=hours)
 
-    events = await db.events.find({
-        "event_type": {"$regex": "^security"},
-        "data.timestamp": {"$gte": since.isoformat()},
-        "data.severity": severity
-    }).sort("data.timestamp", -1).limit(100).to_list(length=100)
+    events = (
+        await db.events.find(
+            {
+                "event_type": {"$regex": "^security"},
+                "data.timestamp": {"$gte": since.isoformat()},
+                "data.severity": severity,
+            }
+        )
+        .sort("data.timestamp", -1)
+        .limit(100)
+        .to_list(length=100)
+    )
 
     return [event.get("data", {}) for event in events]

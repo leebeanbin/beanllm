@@ -4,10 +4,11 @@ Common REPL Commands
 공통 명령어들 (help, exit, clear 등)
 """
 
+from typing import Any, Callable, Dict, List, Optional
+
 from rich.console import Console
-from rich.table import Table
 from rich.panel import Panel
-from typing import Dict, Any, List, Callable
+from rich.table import Table
 
 console = Console()
 
@@ -43,7 +44,7 @@ class CommonCommands:
             "usage": usage,
         }
 
-    def cmd_help(self, args: List[str] = None) -> None:
+    def cmd_help(self, args: Optional[List[str]] = None) -> None:
         """
         도움말 표시
 
@@ -58,7 +59,7 @@ class CommonCommands:
                 console.print(f"\n[bold cyan]{cmd_name}[/bold cyan]")
                 console.print(f"Category: {cmd_info['category']}")
                 console.print(f"Description: {cmd_info['description']}")
-                if cmd_info['usage']:
+                if cmd_info["usage"]:
                     console.print(f"\nUsage:\n  {cmd_info['usage']}")
             else:
                 console.print(f"[red]Unknown command: {cmd_name}[/red]")
@@ -67,10 +68,10 @@ class CommonCommands:
         # Show all commands grouped by category
         categories: Dict[str, List[tuple]] = {}
         for cmd_name, cmd_info in self.command_registry.items():
-            category = cmd_info['category']
+            category = cmd_info["category"]
             if category not in categories:
                 categories[category] = []
-            categories[category].append((cmd_name, cmd_info['description']))
+            categories[category].append((cmd_name, cmd_info["description"]))
 
         console.print("\n[bold cyan]Available Commands[/bold cyan]\n")
 
@@ -87,7 +88,7 @@ class CommonCommands:
 
         console.print("[dim]Type 'help <command>' for detailed information.[/dim]\n")
 
-    def cmd_exit(self, args: List[str] = None) -> bool:
+    def cmd_exit(self, args: Optional[List[str]] = None) -> bool:
         """
         REPL 종료
 
@@ -97,23 +98,25 @@ class CommonCommands:
         console.print("\n[cyan]Goodbye! 👋[/cyan]\n")
         return True
 
-    def cmd_quit(self, args: List[str] = None) -> bool:
+    def cmd_quit(self, args: Optional[List[str]] = None) -> bool:
         """Alias for exit"""
         return self.cmd_exit(args)
 
-    def cmd_clear(self, args: List[str] = None) -> None:
+    def cmd_clear(self, args: Optional[List[str]] = None) -> None:
         """화면 지우기"""
         import os
-        os.system('cls' if os.name == 'nt' else 'clear')
+
+        os.system("cls" if os.name == "nt" else "clear")
         console.print("[bold cyan]beanllm REPL[/bold cyan] - Type 'help' for commands\n")
 
-    def cmd_version(self, args: List[str] = None) -> None:
+    def cmd_version(self, args: Optional[List[str]] = None) -> None:
         """beanllm 버전 정보 표시"""
         try:
             import beanllm
-            version = getattr(beanllm, '__version__', 'unknown')
+
+            version = getattr(beanllm, "__version__", "unknown")
         except:
-            version = 'unknown'
+            version = "unknown"
 
         info_panel = Panel(
             f"[bold]beanllm[/bold] v{version}\n"
@@ -125,7 +128,7 @@ class CommonCommands:
         )
         console.print("\n", info_panel, "\n")
 
-    def cmd_status(self, args: List[str] = None) -> None:
+    def cmd_status(self, args: Optional[List[str]] = None) -> None:
         """현재 REPL 상태 표시"""
         table = Table(title="[bold]REPL Status[/bold]")
         table.add_column("Component", style="cyan")
@@ -136,7 +139,8 @@ class CommonCommands:
 
         # Check distributed features
         try:
-            from beanllm.infrastructure.distributed import check_redis_health, check_kafka_health
+            from beanllm.infrastructure.distributed import check_kafka_health, check_redis_health
+
             redis_status = "✅ Connected" if check_redis_health() else "❌ Disconnected"
             kafka_status = "✅ Connected" if check_kafka_health() else "❌ Disconnected"
         except:
@@ -148,7 +152,7 @@ class CommonCommands:
 
         console.print("\n", table, "\n")
 
-    def cmd_config(self, args: List[str] = None) -> None:
+    def cmd_config(self, args: Optional[List[str]] = None) -> None:
         """환경 설정 표시"""
         import os
 

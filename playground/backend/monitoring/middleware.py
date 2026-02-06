@@ -5,17 +5,15 @@ Kafka + Redis + 실시간 대시보드를 활용한 상세 로깅 및 모니터�
 §0 메시징 처리 적극 활용: RECORD_METRICS_FOR_ALL_API=true 시 전체 /api/* 메트릭 기록
 """
 
-import asyncio
 import json
 import logging
 import os
 import time
 import uuid
-from contextlib import asynccontextmanager
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from fastapi import Request, Response
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 try:
@@ -45,6 +43,7 @@ def _is_chat_api_path(path: str) -> bool:
 
 # 메트릭에 절대 넣지 않을 경로(대시보드 리프레시·헬스·설정 조회 등)
 _METRICS_EXCLUDED_PREFIXES = ("/api/monitoring", "/health", "/api/config", "/api/models", "/")
+
 
 def _should_record_metrics(path: str) -> bool:
     """
@@ -96,6 +95,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                 # 직접 get_redis_client를 호출해서 테스트
                 try:
                     from beanllm.infrastructure.distributed.redis.client import get_redis_client
+
                     logger.info("🔍 Testing Redis client creation...")
                     test_redis = get_redis_client()
                     if test_redis:
@@ -110,7 +110,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                     logger.error(f"❌ Failed to create Redis client: {e}", exc_info=True)
                     logger.error("   This might be a connection issue or import error")
                     self.enable_redis = False
-                
+
                 # RequestMonitor 초기화
                 if self.enable_redis:
                     try:
@@ -122,15 +122,21 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                         else:
                             logger.error("❌ RequestMonitor.redis is None after initialization")
                             logger.error("   RequestMonitor.__init__() completed but redis is None")
-                            logger.error("   This means get_redis_client() failed silently in RequestMonitor")
-                            logger.error("   Check RequestMonitor.__init__() logs (DEBUG level) for details")
+                            logger.error(
+                                "   This means get_redis_client() failed silently in RequestMonitor"
+                            )
+                            logger.error(
+                                "   Check RequestMonitor.__init__() logs (DEBUG level) for details"
+                            )
                             self.enable_redis = False
                     except Exception as e:
                         logger.error(f"❌ Failed to initialize RequestMonitor: {e}", exc_info=True)
                         logger.error("   Redis monitoring will be disabled.")
                         self.enable_redis = False
             except Exception as e:
-                logger.error(f"❌ Unexpected error during Redis monitoring setup: {e}", exc_info=True)
+                logger.error(
+                    f"❌ Unexpected error during Redis monitoring setup: {e}", exc_info=True
+                )
                 self.enable_redis = False
 
     async def dispatch(self, request: Request, call_next):
@@ -197,7 +203,9 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                     "method": request.method,
                 }
                 await self.request_monitor.redis.setex(
-                    f"request:status:{request_id}", 3600, json.dumps(status_data)  # 1시간 TTL
+                    f"request:status:{request_id}",
+                    3600,
+                    json.dumps(status_data),  # 1시간 TTL
                 )
                 logger.debug(f"✅ Saved request status to Redis: {request_id}")
             except Exception as e:
@@ -251,7 +259,9 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
             log_level = (
                 "error"
                 if error_occurred or status_code >= 500
-                else "warning" if status_code >= 400 else "info"
+                else "warning"
+                if status_code >= 400
+                else "info"
             )
             logger.log(
                 getattr(logging, log_level.upper()),
@@ -304,9 +314,7 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                         await self.request_monitor.redis.zadd(
                             "metrics:response_time", {request_id: duration_ms}
                         )
-                        await self.request_monitor.redis.expire(
-                            "metrics:response_time", 3600
-                        )
+                        await self.request_monitor.redis.expire("metrics:response_time", 3600)
                         # 2. 요청 수 카운터 (시간대별)
                         minute_key = f"metrics:requests:{int(time.time() // 60)}"
                         await self.request_monitor.redis.incr(minute_key)
@@ -318,16 +326,12 @@ class MonitoringMiddleware(BaseHTTPMiddleware):
                             await self.request_monitor.redis.expire(error_key, 3600)
                         # 4. 엔드포인트별 통계
                         endpoint_key = f"metrics:endpoint:{request.method}:{path}"
-                        await self.request_monitor.redis.hincrby(
-                            endpoint_key, "count", 1
-                        )
+                        await self.request_monitor.redis.hincrby(endpoint_key, "count", 1)
                         await self.request_monitor.redis.hincrby(
                             endpoint_key, "total_time_ms", int(duration_ms)
                         )
                         if error_occurred or status_code >= 500:
-                            await self.request_monitor.redis.hincrby(
-                                endpoint_key, "errors", 1
-                            )
+                            await self.request_monitor.redis.hincrby(endpoint_key, "errors", 1)
                         await self.request_monitor.redis.expire(endpoint_key, 3600)
 
                 except Exception as e:

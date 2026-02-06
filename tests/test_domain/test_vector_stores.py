@@ -2,11 +2,12 @@
 Vector Stores 테스트 - 벡터 스토어 구현체 테스트
 """
 
-import pytest
 from unittest.mock import Mock
 
-from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
+import pytest
+
 from beanllm.domain.loaders import Document
+from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
 
 
 class TestBaseVectorStore:
@@ -121,5 +122,3 @@ class TestSearchAlgorithms:
             assert isinstance(reranked, list)
         except (ImportError, ModuleNotFoundError, AttributeError):
             pytest.skip("SearchAlgorithms not available")
-
-

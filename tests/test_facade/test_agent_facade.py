@@ -2,8 +2,9 @@
 Agent Facade 테스트 - Agent 인터페이스 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
     from beanllm.facade.agent_facade import Agent, AgentResult
@@ -53,5 +54,3 @@ class TestAgentFacade:
         assert result.answer == "Agent response"
         assert result.total_steps == 1
         assert agent._agent_handler.handle_run.called
-
-

@@ -2,12 +2,14 @@
 Multi-Agent Request Schemas
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 
 class MultiAgentRequest(BaseModel):
     """Request to run multi-agent system"""
+
     task: str
     num_agents: int = 3
     strategy: str = "sequential"  # sequential, parallel, hierarchical, debate
@@ -22,6 +24,7 @@ class MultiAgentRequest(BaseModel):
 
 class WorkflowRequest(BaseModel):
     """Request to run orchestrator workflow"""
+
     workflow_type: str  # research_write, parallel_consensus, debate
     task: str
     input_data: Optional[Dict[str, Any]] = None
@@ -31,6 +34,7 @@ class WorkflowRequest(BaseModel):
 
 class ChainRequest(BaseModel):
     """Request to run a chain"""
+
     input: str
     chain_id: Optional[str] = None
     chain_type: str = "basic"  # basic, prompt

@@ -18,7 +18,7 @@ Requirements:
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from .base import BasePDFEngine
 

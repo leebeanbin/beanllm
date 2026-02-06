@@ -2,21 +2,19 @@
 StateGraph - LangGraph 스타일 워크플로우
 TypedDict 기반 타입 안전 상태 + Checkpointing
 """
-from typing_extensions import TypedDict
+
 from typing import Optional
-from beanllm import (
-    StateGraph,
-    END,
-    create_state_graph,
-    Checkpoint
-)
+
+from typing_extensions import TypedDict
+
+from beanllm import END, Checkpoint, StateGraph, create_state_graph
 
 
 def demo_basic():
     """기본 사용법"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("1️⃣  기본 StateGraph")
-    print("="*60)
+    print("=" * 60)
 
     # State 정의 (TypedDict)
     class MyState(TypedDict):
@@ -41,11 +39,7 @@ def demo_basic():
 
     # 실행
     print("\n[실행]")
-    result = graph.invoke({
-        "input": "hello world",
-        "output": "",
-        "count": 0
-    })
+    result = graph.invoke({"input": "hello world", "output": "", "count": 0})
 
     print(f"  Input:  {result['input']}")
     print(f"  Output: {result['output']}")
@@ -56,9 +50,9 @@ def demo_basic():
 
 def demo_sequential():
     """순차 실행"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2️⃣  순차 실행 (여러 노드)")
-    print("="*60)
+    print("=" * 60)
 
     class ProcessState(TypedDict):
         text: str
@@ -94,12 +88,9 @@ def demo_sequential():
 
     # 실행
     print("\n[실행]")
-    result = graph.invoke({
-        "text": "hello",
-        "step1_result": "",
-        "step2_result": "",
-        "step3_result": ""
-    })
+    result = graph.invoke(
+        {"text": "hello", "step1_result": "", "step2_result": "", "step3_result": ""}
+    )
 
     print(f"  원본:   {result['text']}")
     print(f"  Step1:  {result['step1_result']}")
@@ -111,9 +102,9 @@ def demo_sequential():
 
 def demo_conditional():
     """조건부 분기"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3️⃣  조건부 분기 (Conditional Edge)")
-    print("="*60)
+    print("=" * 60)
 
     class RouterState(TypedDict):
         value: int
@@ -152,14 +143,7 @@ def demo_conditional():
     graph.add_node("large", process_large)
 
     # 조건부 엣지
-    graph.add_conditional_edge(
-        "check",
-        route,
-        {
-            "small": "small",
-            "large": "large"
-        }
-    )
+    graph.add_conditional_edge("check", route, {"small": "small", "large": "large"})
 
     graph.add_edge("small", END)
     graph.add_edge("large", END)
@@ -183,9 +167,9 @@ def demo_conditional():
 
 def demo_loop():
     """루프 (반복)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4️⃣  루프 (반복 실행)")
-    print("="*60)
+    print("=" * 60)
 
     class LoopState(TypedDict):
         count: int
@@ -217,19 +201,15 @@ def demo_loop():
         should_continue,
         {
             "continue": "increment",  # 자기 자신으로 (루프)
-            "end": END
-        }
+            "end": END,
+        },
     )
 
     graph.set_entry_point("increment")
 
     # 실행
     print("\n[3번 반복]")
-    result = graph.invoke({
-        "count": 0,
-        "max_count": 3,
-        "result": ""
-    })
+    result = graph.invoke({"count": 0, "max_count": 3, "result": ""})
 
     print(f"  Final Count: {result['count']}")
     print(f"  Result:      {result['result']}")
@@ -239,23 +219,21 @@ def demo_loop():
 
 def demo_checkpointing():
     """체크포인팅"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("5️⃣  Checkpointing (상태 저장/복원)")
-    print("="*60)
+    print("=" * 60)
+
+    import shutil
+    from pathlib import Path
 
     from beanllm import GraphConfig
-    from pathlib import Path
-    import shutil
 
     class CheckpointState(TypedDict):
         step: int
         data: str
 
     # 체크포인팅 활성화
-    config = GraphConfig(
-        enable_checkpointing=True,
-        checkpoint_dir=Path(".demo_checkpoints")
-    )
+    config = GraphConfig(enable_checkpointing=True, checkpoint_dir=Path(".demo_checkpoints"))
 
     graph = StateGraph(CheckpointState, config=config)
 
@@ -289,10 +267,7 @@ def demo_checkpointing():
     # 첫 실행
     print("\n[첫 실행]")
     execution_id = "test_exec_001"
-    result = graph.invoke(
-        {"step": 0, "data": ""},
-        execution_id=execution_id
-    )
+    result = graph.invoke({"step": 0, "data": ""}, execution_id=execution_id)
     print(f"  Step: {result['step']}")
     print(f"  Data: {result['data']}")
 
@@ -320,9 +295,9 @@ def demo_checkpointing():
 
 def demo_streaming():
     """스트리밍 실행"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("6️⃣  스트리밍 (각 노드 실행 결과 즉시 확인)")
-    print("="*60)
+    print("=" * 60)
 
     class StreamState(TypedDict):
         value: int
@@ -365,9 +340,9 @@ def demo_streaming():
 
 def demo_visualization():
     """그래프 시각화"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("7️⃣  그래프 시각화")
-    print("="*60)
+    print("=" * 60)
 
     class VizState(TypedDict):
         data: str
@@ -386,9 +361,7 @@ def demo_visualization():
 
     # 조건부 엣지
     graph.add_conditional_edge(
-        "check",
-        lambda s: "finish",
-        {"finish": "finish", "retry": "process"}
+        "check", lambda s: "finish", {"finish": "finish", "retry": "process"}
     )
 
     graph.add_edge("finish", END)
@@ -402,9 +375,9 @@ def demo_visualization():
 
 def demo_practical_workflow():
     """실전 예제: 문서 처리 워크플로우"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("8️⃣  실전 예제 - 문서 처리 워크플로우")
-    print("="*60)
+    print("=" * 60)
 
     class DocumentWorkflowState(TypedDict):
         document: str
@@ -456,12 +429,7 @@ def demo_practical_workflow():
     graph.add_edge("summarize", "quality_check")
 
     graph.add_conditional_edge(
-        "quality_check",
-        route_by_quality,
-        {
-            "approve": "approve",
-            "reject": "reject"
-        }
+        "quality_check", route_by_quality, {"approve": "approve", "reject": "reject"}
     )
 
     graph.add_edge("approve", END)
@@ -471,13 +439,15 @@ def demo_practical_workflow():
 
     # 실행
     print("\n[문서 처리]")
-    result = graph.invoke({
-        "document": "  This is a TEST DOCUMENT  ",
-        "cleaned": "",
-        "summary": "",
-        "quality_score": 0,
-        "approved": False
-    })
+    result = graph.invoke(
+        {
+            "document": "  This is a TEST DOCUMENT  ",
+            "cleaned": "",
+            "summary": "",
+            "quality_score": 0,
+            "approved": False,
+        }
+    )
 
     print(f"  원본:      {result['document']}")
     print(f"  정제:      {result['cleaned']}")
@@ -490,9 +460,9 @@ def demo_practical_workflow():
 
 def main():
     """모든 데모 실행"""
-    print("="*60)
+    print("=" * 60)
     print("🚀 StateGraph - LangGraph 스타일")
-    print("="*60)
+    print("=" * 60)
     print("\n8가지 기능:")
     print("  1. 기본 StateGraph")
     print("  2. 순차 실행")
@@ -512,9 +482,9 @@ def main():
     demo_visualization()
     demo_practical_workflow()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 StateGraph 데모 완료!")
-    print("="*60)
+    print("=" * 60)
     print("\n✨ 핵심 기능:")
     print("  • TypedDict 기반 타입 안전 상태")
     print("  • 조건부 분기 (Conditional Edge)")

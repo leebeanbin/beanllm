@@ -38,9 +38,7 @@ class IKnowledgeGraphService(ABC):
     """
 
     @abstractmethod
-    async def extract_entities(
-        self, request: ExtractEntitiesRequest
-    ) -> EntitiesResponse:
+    async def extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
         """
         문서에서 엔티티 추출 (LLM-based NER)
 
@@ -53,9 +51,7 @@ class IKnowledgeGraphService(ABC):
         pass
 
     @abstractmethod
-    async def extract_relations(
-        self, request: ExtractRelationsRequest
-    ) -> RelationsResponse:
+    async def extract_relations(self, request: ExtractRelationsRequest) -> RelationsResponse:
         """
         엔티티 간 관계 추출
 
@@ -130,5 +126,15 @@ class IKnowledgeGraphService(ABC):
 
         Returns:
             Dict: 그래프 통계
+        """
+        pass
+
+    @abstractmethod
+    async def list_graphs(self) -> List[Dict[str, Any]]:
+        """
+        모든 그래프 목록 조회
+
+        Returns:
+            List[Dict]: 그래프 목록 [{id, name, num_nodes, num_edges, ...}]
         """
         pass

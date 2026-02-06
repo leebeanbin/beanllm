@@ -3,7 +3,8 @@ LayoutAnalyzer 단위 테스트
 """
 
 import pytest
-from beanllm.domain.loaders.pdf.utils.layout_analyzer import LayoutAnalyzer, Block
+
+from beanllm.domain.loaders.pdf.utils.layout_analyzer import Block, LayoutAnalyzer
 
 
 class TestLayoutAnalyzer:

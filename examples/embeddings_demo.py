@@ -2,22 +2,24 @@
 Embeddings Demo - 통합 인터페이스
 beanllm 방식: Client와 같은 패턴
 """
+
 import asyncio
+
 from beanllm import Embedding, embed, embed_sync
 
 
 async def demo_auto_detection():
     """자동 provider 감지"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🤖 자동 Provider 감지")
-    print("="*60)
+    print("=" * 60)
 
     # OpenAI (자동 감지)
     print("\n1. OpenAI (자동 감지):")
     try:
         emb = Embedding(model="text-embedding-3-small")
         vectors = await emb.embed(["Hello", "World"])
-        print(f"   ✓ OpenAI 자동 감지")
+        print("   ✓ OpenAI 자동 감지")
         print(f"   ✓ 2개 텍스트 → {len(vectors)} 벡터")
         print(f"   ✓ 벡터 차원: {len(vectors[0])}")
     except Exception as e:
@@ -28,7 +30,7 @@ async def demo_auto_detection():
     try:
         emb = Embedding(model="embed-english-v3.0")
         vectors = await emb.embed(["Hello", "World"])
-        print(f"   ✓ Cohere 자동 감지")
+        print("   ✓ Cohere 자동 감지")
         print(f"   ✓ 2개 텍스트 → {len(vectors)} 벡터")
         print(f"   ✓ 벡터 차원: {len(vectors[0])}")
     except Exception as e:
@@ -39,16 +41,16 @@ async def demo_auto_detection():
 
 async def demo_explicit_selection():
     """명시적 provider 선택"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎯 명시적 Provider 선택")
-    print("="*60)
+    print("=" * 60)
 
     # 방법 1: provider 파라미터
     print("\n1. provider 파라미터:")
     try:
         emb = Embedding(model="text-embedding-3-small", provider="openai")
         vectors = await emb.embed(["Test"])
-        print(f"   ✓ provider='openai' 명시")
+        print("   ✓ provider='openai' 명시")
         print(f"   ✓ {len(vectors)} 벡터 생성")
     except Exception as e:
         print(f"   ⚠️  {e}")
@@ -58,7 +60,7 @@ async def demo_explicit_selection():
     try:
         emb = Embedding.openai(model="text-embedding-3-small")
         vectors = await emb.embed(["Test"])
-        print(f"   ✓ Embedding.openai() 사용")
+        print("   ✓ Embedding.openai() 사용")
         print(f"   ✓ {len(vectors)} 벡터 생성")
     except Exception as e:
         print(f"   ⚠️  {e}")
@@ -68,9 +70,9 @@ async def demo_explicit_selection():
 
 async def demo_convenience_functions():
     """편의 함수"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("⚡ 편의 함수")
-    print("="*60)
+    print("=" * 60)
 
     # embed() 함수
     print("\n1. embed() 함수 (비동기):")
@@ -99,16 +101,16 @@ async def demo_convenience_functions():
 
 async def demo_batch_processing():
     """배치 처리"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📦 배치 처리")
-    print("="*60)
+    print("=" * 60)
 
     texts = [
         "Artificial Intelligence",
         "Machine Learning",
         "Deep Learning",
         "Neural Networks",
-        "Natural Language Processing"
+        "Natural Language Processing",
     ]
 
     print(f"\n{len(texts)}개 텍스트 임베딩:")
@@ -132,9 +134,9 @@ async def demo_batch_processing():
 
 async def demo_different_models():
     """다양한 모델"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🔄 다양한 모델")
-    print("="*60)
+    print("=" * 60)
 
     models = [
         "text-embedding-3-small",
@@ -158,20 +160,24 @@ async def demo_different_models():
 
 async def demo_integration_with_documents():
     """문서와 통합"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📄 문서 로딩 + 임베딩 통합")
-    print("="*60)
+    print("=" * 60)
+
+    from pathlib import Path
 
     from beanllm import DocumentLoader, TextSplitter
-    from pathlib import Path
 
     # 테스트 파일 생성
     test_file = Path("embedding_test.txt")
-    test_file.write_text("""
+    test_file.write_text(
+        """
 Artificial Intelligence is transforming the world.
 Machine learning algorithms learn from data.
 Deep learning uses neural networks.
-    """.strip(), encoding="utf-8")
+    """.strip(),
+        encoding="utf-8",
+    )
 
     try:
         # 1. 문서 로딩
@@ -202,9 +208,9 @@ Deep learning uses neural networks.
 
 def demo_comparison():
     """LangChain vs beanllm 비교"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📊 LangChain vs beanllm 비교")
-    print("="*60)
+    print("=" * 60)
 
     print("\n【 LangChain 방식 】")
     print("""
@@ -233,9 +239,9 @@ def demo_comparison():
 
 async def main():
     """모든 데모 실행"""
-    print("="*60)
+    print("=" * 60)
     print("🎯 Embeddings 데모")
-    print("="*60)
+    print("=" * 60)
     print("\nbeanllm의 철학:")
     print("  1. 자동 감지 (Client와 같은 패턴)")
     print("  2. 통합 인터페이스 (일관된 API)")
@@ -249,9 +255,9 @@ async def main():
     await demo_integration_with_documents()
     demo_comparison()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 Embeddings 완료!")
-    print("="*60)
+    print("=" * 60)
     print("\n✨ 주요 기능:")
     print("  1. Embedding(model='text-embedding-3-small')  # 자동 감지")
     print("  2. Embedding.openai()  # 명시적 선택")

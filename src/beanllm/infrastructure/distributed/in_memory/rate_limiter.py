@@ -3,7 +3,7 @@
 """
 
 import asyncio
-from typing import Dict, Any
+from typing import Any, Dict
 
 from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
 
@@ -97,4 +97,3 @@ class InMemoryRateLimiter(RateLimiterInterface):
             "key": key,
             **status,
         }
-

@@ -2,10 +2,11 @@
 PDFPlumberEngine 테스트
 """
 
-import pytest
 from pathlib import Path
-from src.beanllm.domain.loaders.pdf.engines.pdfplumber_engine import PDFPlumberEngine
 
+import pytest
+
+from src.beanllm.domain.loaders.pdf.engines.pdfplumber_engine import PDFPlumberEngine
 
 # 테스트 픽스처 경로
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures" / "pdf"

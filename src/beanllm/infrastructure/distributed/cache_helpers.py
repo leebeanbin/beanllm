@@ -6,7 +6,7 @@ RAG 검색 결과, LLM 응답, Agent/Chain 실행 결과 캐싱을 위한 헬퍼
 
 import hashlib
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from .factory import get_cache
 
@@ -76,7 +76,9 @@ async def get_rag_search_cache(query: str, vector_store_id: str, k: int, **kwarg
     return await get_cached_result(cache_key, ttl=3600)  # 1시간 TTL
 
 
-async def set_rag_search_cache(query: str, vector_store_id: str, k: int, results: Any, **kwargs) -> None:
+async def set_rag_search_cache(
+    query: str, vector_store_id: str, k: int, results: Any, **kwargs
+) -> None:
     """
     RAG 검색 결과 캐시에 저장
 
@@ -182,4 +184,3 @@ async def set_chain_result_cache(chain_id: str, input_data: Any, result: Any, **
     """
     cache_key = get_cache_key("chain:result", chain_id, input_data, **kwargs)
     await set_cached_result(cache_key, result, ttl=1800)  # 30분 TTL
-

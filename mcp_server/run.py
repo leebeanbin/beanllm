@@ -22,14 +22,16 @@ Usage:
       }
     }
 """
-import sys
+
 import asyncio
+import sys
 from pathlib import Path
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from fastmcp import FastMCP
+
 from mcp_server.config import MCPServerConfig
 
 # ============================================================================
@@ -49,11 +51,7 @@ print("🚀 Loading beanllm MCP Server...")
 
 # Tools
 try:
-    from mcp_server.tools import rag_tools
-    from mcp_server.tools import agent_tools
-    from mcp_server.tools import kg_tools
-    from mcp_server.tools import ml_tools
-    from mcp_server.tools import google_tools
+    from mcp_server.tools import agent_tools, google_tools, kg_tools, ml_tools, rag_tools
 
     print("✅ Tools loaded:")
     print("  - RAG Tools (5 tools)")
@@ -61,7 +59,7 @@ try:
     print("  - Knowledge Graph Tools (7 tools)")
     print("  - ML Tools (9 tools: audio, ocr, evaluation)")
     print("  - Google Workspace Tools (6 tools)")
-    print(f"  Total: 33 tools")
+    print("  Total: 33 tools")
 except Exception as e:
     print(f"⚠️  Warning: Failed to load some tools: {e}")
 
@@ -144,15 +142,15 @@ def main():
     print("\n🎯 MCP Server is ready!")
     print("\n📚 Usage:")
     print("  1. Add to Claude Desktop config:")
-    print('     ~/.config/claude/claude_desktop_config.json')
-    print('     {')
+    print("     ~/.config/claude/claude_desktop_config.json")
+    print("     {")
     print('       "mcpServers": {')
     print('         "beanllm": {')
     print('           "command": "python",')
     print(f'           "args": ["{Path(__file__).absolute()}"]')
-    print('         }')
-    print('       }')
-    print('     }')
+    print("         }")
+    print("       }")
+    print("     }")
     print("\n  2. Restart Claude Desktop")
     print("\n  3. Start chatting with beanllm tools!")
     print("     Example: '이 폴더의 PDF로 RAG 시스템 만들어줘'")

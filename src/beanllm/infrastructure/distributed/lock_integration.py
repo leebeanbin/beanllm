@@ -6,7 +6,7 @@
 """
 
 from contextlib import asynccontextmanager
-from typing import Any, Callable, Optional
+from typing import Callable
 
 from .factory import get_distributed_lock
 from .utils import sanitize_error_message
@@ -43,8 +43,8 @@ def with_distributed_lock(lock_key: str, timeout: float = 30.0):
     """
 
     def decorator(func: Callable) -> Callable:
-        import functools
         import asyncio
+        import functools
 
         lock = get_distributed_lock()
 
@@ -54,9 +54,7 @@ def with_distributed_lock(lock_key: str, timeout: float = 30.0):
                 async with lock.acquire(lock_key, timeout=timeout):
                     return await func(*args, **kwargs)
             except Exception as e:
-                logger.error(
-                    f"Failed to acquire lock {lock_key}: {sanitize_error_message(str(e))}"
-                )
+                logger.error(f"Failed to acquire lock {lock_key}: {sanitize_error_message(str(e))}")
                 raise
 
         @functools.wraps(func)
@@ -151,4 +149,3 @@ _global_lock_manager = LockManager()
 def get_lock_manager() -> LockManager:
     """전역 락 관리자 반환"""
     return _global_lock_manager
-

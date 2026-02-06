@@ -10,7 +10,6 @@ from .results import BatchEvaluationResult, EvaluationResult
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import ConcurrencyControllerProtocol, RateLimiterProtocol
-    from beanllm.utils.error_handling import AsyncTokenBucket
 
 
 class Evaluator:
@@ -104,9 +103,7 @@ class Evaluator:
             # 동시성 제어 (옵션)
             if concurrency_controller is not None:
                 async with concurrency_controller.with_concurrency_control(
-                    "evaluation",
-                    max_concurrent=max_concurrent,
-                    rate_limit_key="evaluation"
+                    "evaluation", max_concurrent=max_concurrent, rate_limit_key="evaluation"
                 ):
                     loop = asyncio.get_event_loop()
                     return await loop.run_in_executor(None, self.evaluate, pred, ref, **kwargs)

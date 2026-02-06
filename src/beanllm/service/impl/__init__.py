@@ -2,9 +2,9 @@
 
 # Backward compatibility: Re-export from subdirectories
 from .core.agent_service_impl import AgentServiceImpl
+from .core.chain_service_impl import ChainServiceImpl
 from .core.chat_service_impl import ChatServiceImpl
 from .core.rag_service_impl import RAGServiceImpl
-from .core.chain_service_impl import ChainServiceImpl
 
 # Advanced services (선택적 의존성)
 try:

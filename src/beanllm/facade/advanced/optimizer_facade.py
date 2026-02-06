@@ -4,7 +4,7 @@ Optimizer Facade - User-friendly Auto-Optimizer API
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from beanllm.dto.request.advanced.optimizer_request import (
     ABTestRequest,
@@ -675,9 +675,7 @@ class Optimizer:
 
             # Get recommendations from profile
             if recommend:
-                recommendations = await self.get_recommendations(
-                    profile_result.profile_id
-                )
+                recommendations = await self.get_recommendations(profile_result.profile_id)
                 results["recommendations"] = recommendations
 
         # Optimize common parameters

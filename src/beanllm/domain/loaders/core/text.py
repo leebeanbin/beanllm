@@ -7,21 +7,23 @@ Text Loader
 import logging
 import mmap
 import os
-import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import List, Optional, Union
 
-from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class TextLoader(BaseDocumentLoader):
     """
@@ -289,5 +291,3 @@ class TextLoader(BaseDocumentLoader):
                 chunk_index += 1
 
         logger.debug(f"Streamed {chunk_index} chunks (normal) from {self.file_path}")
-
-

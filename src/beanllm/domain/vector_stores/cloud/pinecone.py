@@ -142,5 +142,3 @@ class PineconeVectorStore(BaseVectorStore, AdvancedSearchMixin):
         """문서 삭제"""
         self.index.delete(ids=ids)
         return True
-
-

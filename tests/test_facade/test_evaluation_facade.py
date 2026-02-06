@@ -2,12 +2,13 @@
 Evaluation Facade 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.evaluation_facade import EvaluatorFacade
     from beanllm.domain.evaluation.results import BatchEvaluationResult
+    from beanllm.facade.evaluation_facade import EvaluatorFacade
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -19,12 +20,15 @@ class TestEvaluatorFacade:
     @pytest.fixture
     def evaluator(self):
         from beanllm.domain.evaluation.results import EvaluationResult
-        from beanllm.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
+        from beanllm.dto.response.evaluation_response import (
+            BatchEvaluationResponse,
+            EvaluationResponse,
+        )
 
         # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
         with patch("beanllm.handler.evaluation_handler.EvaluationHandler") as mock_handler_class:
             mock_handler = MagicMock()
-            
+
             # handle_evaluate는 EvaluationResponse를 반환
             mock_response = EvaluationResponse(
                 result=BatchEvaluationResult(
@@ -50,7 +54,7 @@ class TestEvaluatorFacade:
                 return mock_response_batch
 
             mock_handler.handle_batch_evaluate = MagicMock(side_effect=mock_handle_batch_evaluate)
-            
+
             # Handler 클래스가 인스턴스화될 때 mock_handler 반환
             mock_handler_class.return_value = mock_handler
 
@@ -76,4 +80,3 @@ class TestEvaluatorFacade:
         result = evaluator.add_metric(mock_metric)
         assert result is evaluator
         assert len(evaluator.metrics) == 1
-

@@ -7,16 +7,15 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-import time
 import uuid
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List
 
 from beanllm.domain.optimizer import (
-    ABTestResult,
     ABTester,
+    ABTestResult,
+    Benchmarker,
     BenchmarkQuery,
     BenchmarkResult,
-    Benchmarker,
     MultiObjectiveResult,
     Objective,
     OptimizationMethod,
@@ -26,11 +25,9 @@ from beanllm.domain.optimizer import (
     ParameterSpace,
     ParameterType,
     Priority,
-    ProfileResult,
     Profiler,
+    ProfileResult,
     QueryType,
-    Recommendation,
-    RecommendationCategory,
     Recommender,
 )
 from beanllm.dto.request.advanced.optimizer_request import (
@@ -46,9 +43,8 @@ from beanllm.dto.response.advanced.optimizer_response import (
     ProfileResponse,
     RecommendationResponse,
 )
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.optimizer_service import IOptimizerService
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -98,8 +94,7 @@ class OptimizerServiceImpl(IOptimizerService):
             RuntimeError: If benchmark execution fails
         """
         logger.info(
-            f"Running benchmark: {request.num_queries} queries, "
-            f"types={request.query_types}"
+            f"Running benchmark: {request.num_queries} queries, " f"types={request.query_types}"
         )
 
         benchmark_id = str(uuid.uuid4())
@@ -146,8 +141,7 @@ class OptimizerServiceImpl(IOptimizerService):
             self._benchmarks[benchmark_id] = result
 
             logger.info(
-                f"Benchmark completed: {benchmark_id}, "
-                f"{len(queries)} queries generated"
+                f"Benchmark completed: {benchmark_id}, " f"{len(queries)} queries generated"
             )
 
             return BenchmarkResponse(
@@ -188,8 +182,7 @@ class OptimizerServiceImpl(IOptimizerService):
             RuntimeError: If optimization fails
         """
         logger.info(
-            f"Starting optimization: method={request.method}, "
-            f"n_trials={request.n_trials}"
+            f"Starting optimization: method={request.method}, " f"n_trials={request.n_trials}"
         )
 
         optimization_id = str(uuid.uuid4())
@@ -328,8 +321,7 @@ class OptimizerServiceImpl(IOptimizerService):
             recommendations = self._recommender.analyze_profile(result)
 
             logger.info(
-                f"Profiling completed: {profile_id}, "
-                f"{len(recommendations)} recommendations"
+                f"Profiling completed: {profile_id}, " f"{len(recommendations)} recommendations"
             )
 
             return ProfileResponse(
@@ -463,9 +455,7 @@ class OptimizerServiceImpl(IOptimizerService):
             Priority.MEDIUM: 2,
             Priority.LOW: 3,
         }
-        recommendations = sorted(
-            recommendations, key=lambda r: priority_order[r.priority]
-        )
+        recommendations = sorted(recommendations, key=lambda r: priority_order[r.priority])
 
         logger.info(f"Generated {len(recommendations)} recommendations")
 
@@ -484,13 +474,9 @@ class OptimizerServiceImpl(IOptimizerService):
                 for rec in recommendations
             ],
             summary={
-                "critical": len(
-                    [r for r in recommendations if r.priority == Priority.CRITICAL]
-                ),
+                "critical": len([r for r in recommendations if r.priority == Priority.CRITICAL]),
                 "high": len([r for r in recommendations if r.priority == Priority.HIGH]),
-                "medium": len(
-                    [r for r in recommendations if r.priority == Priority.MEDIUM]
-                ),
+                "medium": len([r for r in recommendations if r.priority == Priority.MEDIUM]),
                 "low": len([r for r in recommendations if r.priority == Priority.LOW]),
             },
         )
@@ -575,9 +561,7 @@ class OptimizerServiceImpl(IOptimizerService):
         Returns:
             MultiObjectiveResult
         """
-        logger.info(
-            f"Running multi-objective optimization: {len(objectives)} objectives"
-        )
+        logger.info(f"Running multi-objective optimization: {len(objectives)} objectives")
 
         # Build objectives
         objective_list = []

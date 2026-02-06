@@ -4,11 +4,11 @@ beanllm Playground 전체 기능 종합 테스트
 - 모든 API 엔드포인트
 - 샘플 파일 활용
 """
-import requests
-import json
+
 import base64
-import io
 from pathlib import Path
+
+import requests
 
 BACKEND_URL = "http://localhost:8000"
 OLLAMA_CHAT_MODEL = "qwen2.5:0.5b"
@@ -23,11 +23,12 @@ def encode_file_to_base64(file_path):
 
 def test_document_loaders():
     """문서 로더 테스트 (직접 beanllm 사용)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("1. Document Loaders 테스트")
-    print("="*60)
+    print("=" * 60)
 
     import sys
+
     sys.path.insert(0, "/Users/leejungbin/Downloads/llmkit/src")
     from beanllm.domain.loaders.factory import DocumentLoader
 
@@ -65,9 +66,9 @@ def test_document_loaders():
 
 def test_rag_with_files():
     """RAG API - 파일 업로드 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2. RAG with File Upload 테스트")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # 파일 업로드
@@ -76,19 +77,17 @@ def test_rag_with_files():
             file_path = SAMPLE_DIR / f"sample.{ext}"
             if file_path.exists():
                 files.append(
-                    ('files', (file_path.name, open(file_path, 'rb'), 'application/octet-stream'))
+                    ("files", (file_path.name, open(file_path, "rb"), "application/octet-stream"))
                 )
 
         data = {
-            'collection_name': 'test_files',
-            'model': OLLAMA_CHAT_MODEL,
-            'embedding_model': 'nomic-embed-text'  # Ollama embedding
+            "collection_name": "test_files",
+            "model": OLLAMA_CHAT_MODEL,
+            "embedding_model": "nomic-embed-text",  # Ollama embedding
         }
 
         build_response = requests.post(
-            f"{BACKEND_URL}/api/rag/build_from_files",
-            files=files,
-            data=data
+            f"{BACKEND_URL}/api/rag/build_from_files", files=files, data=data
         )
 
         # Close files
@@ -107,12 +106,12 @@ def test_rag_with_files():
             json={
                 "query": "What is this about?",
                 "collection_name": "test_files",
-                "model": OLLAMA_CHAT_MODEL
-            }
+                "model": OLLAMA_CHAT_MODEL,
+            },
         )
 
         if query_response.status_code == 200:
-            print(f"✅ RAG Query 성공")
+            print("✅ RAG Query 성공")
             return True
         else:
             print(f"❌ Query 실패: {query_response.text[:200]}")
@@ -125,9 +124,9 @@ def test_rag_with_files():
 
 def test_vision_rag_with_images():
     """Vision RAG - 실제 이미지 파일 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3. Vision RAG with Images 테스트")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # 이미지를 base64로 인코딩
@@ -150,8 +149,8 @@ def test_vision_rag_with_images():
                 "texts": ["Sample image for testing", "Another test image"],
                 "collection_name": "test_vision_images",
                 "model": OLLAMA_CHAT_MODEL,
-                "generate_captions": False
-            }
+                "generate_captions": False,
+            },
         )
 
         if build_response.status_code != 200:
@@ -165,12 +164,12 @@ def test_vision_rag_with_images():
             f"{BACKEND_URL}/api/vision_rag/query",
             json={
                 "query": "What do you see in these images?",
-                "collection_name": "test_vision_images"
-            }
+                "collection_name": "test_vision_images",
+            },
         )
 
         if query_response.status_code == 200:
-            print(f"✅ Vision RAG Query 성공")
+            print("✅ Vision RAG Query 성공")
             return True
         else:
             print(f"❌ Query 실패: {query_response.text[:200]}")
@@ -183,9 +182,9 @@ def test_vision_rag_with_images():
 
 def test_ocr_with_image():
     """OCR - 실제 이미지로 텍스트 인식"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4. OCR with Real Image 테스트")
-    print("="*60)
+    print("=" * 60)
 
     try:
         img_path = SAMPLE_DIR / "sample.png"
@@ -193,15 +192,11 @@ def test_ocr_with_image():
             print("⚠️  이미지 파일 없음")
             return None
 
-        with open(img_path, 'rb') as f:
-            files = {'file': (img_path.name, f, 'image/png')}
-            data = {'language': 'eng', 'engine': 'paddleocr'}
+        with open(img_path, "rb") as f:
+            files = {"file": (img_path.name, f, "image/png")}
+            data = {"language": "eng", "engine": "paddleocr"}
 
-            response = requests.post(
-                f"{BACKEND_URL}/api/ocr/recognize",
-                files=files,
-                data=data
-            )
+            response = requests.post(f"{BACKEND_URL}/api/ocr/recognize", files=files, data=data)
 
         if response.status_code == 200:
             result = response.json()
@@ -218,9 +213,9 @@ def test_ocr_with_image():
 
 def test_knowledge_graph_with_docs():
     """Knowledge Graph - 문서로 그래프 구축"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("5. Knowledge Graph with Documents 테스트")
-    print("="*60)
+    print("=" * 60)
 
     try:
         # 텍스트 문서 읽기
@@ -229,17 +224,13 @@ def test_knowledge_graph_with_docs():
             print("⚠️  텍스트 파일 없음")
             return None
 
-        with open(txt_path, 'r') as f:
+        with open(txt_path, "r") as f:
             text = f.read()
 
         # Build
         build_response = requests.post(
             f"{BACKEND_URL}/api/kg/build",
-            json={
-                "documents": [text],
-                "graph_id": "test_kg_docs",
-                "model": OLLAMA_CHAT_MODEL
-            }
+            json={"documents": [text], "graph_id": "test_kg_docs", "model": OLLAMA_CHAT_MODEL},
         )
 
         if build_response.status_code != 200:
@@ -247,19 +238,18 @@ def test_knowledge_graph_with_docs():
             return False
 
         result = build_response.json()
-        print(f"✅ KG Build 성공: {result.get('num_entities', 0)} entities, {result.get('num_relations', 0)} relations")
+        print(
+            f"✅ KG Build 성공: {result.get('num_entities', 0)} entities, {result.get('num_relations', 0)} relations"
+        )
 
         # Query
         query_response = requests.post(
             f"{BACKEND_URL}/api/kg/query",
-            json={
-                "graph_id": "test_kg_docs",
-                "query": "MATCH (n) RETURN n LIMIT 5"
-            }
+            json={"graph_id": "test_kg_docs", "query": "MATCH (n) RETURN n LIMIT 5"},
         )
 
         if query_response.status_code == 200:
-            print(f"✅ KG Query 성공")
+            print("✅ KG Query 성공")
             return True
         else:
             print(f"❌ Query 실패: {query_response.text[:200]}")
@@ -272,11 +262,12 @@ def test_knowledge_graph_with_docs():
 
 def test_pdf_specific():
     """PDF 전용 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("6. PDF Specific 테스트")
-    print("="*60)
+    print("=" * 60)
 
     import sys
+
     sys.path.insert(0, "/Users/leejungbin/Downloads/llmkit/src")
 
     try:
@@ -303,9 +294,9 @@ def test_pdf_specific():
 
 def main():
     """전체 종합 테스트 실행"""
-    print("="*60)
+    print("=" * 60)
     print("beanllm Playground 전체 기능 종합 테스트")
-    print("="*60)
+    print("=" * 60)
 
     all_results = []
 
@@ -329,9 +320,9 @@ def main():
     all_results.append(("PDF Loader", test_pdf_specific()))
 
     # 결과 요약
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("전체 테스트 결과 요약")
-    print("="*60)
+    print("=" * 60)
 
     success = sum(1 for _, result in all_results if result is True)
     failed = sum(1 for _, result in all_results if result is False)
@@ -347,9 +338,9 @@ def main():
             status = "❌ FAIL"
         print(f"{status} - {name}")
 
-    print("="*60)
+    print("=" * 60)
     print(f"총 {success}/{total} 성공, {failed} 실패, {skipped} 스킵")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

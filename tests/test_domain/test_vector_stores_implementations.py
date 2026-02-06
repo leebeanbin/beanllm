@@ -2,8 +2,9 @@
 Vector Store Implementations 테스트 - 실제 구현체 테스트
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from beanllm.domain.loaders import Document
 from beanllm.domain.vector_stores.base import VectorSearchResult
@@ -148,5 +149,3 @@ class TestFAISSVectorStore:
             assert isinstance(results, list)
         except ImportError:
             pytest.skip("FAISS not installed")
-
-

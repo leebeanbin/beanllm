@@ -4,7 +4,6 @@ Chroma Vector Store Implementation
 Open-source embedding database
 """
 
-import os
 import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -38,13 +37,18 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
         except ImportError:
             raise ImportError("Chroma not installed. pip install chromadb")
 
-        # Chroma 클라이언트 설정
+        # Chroma 클라이언트 설정 (chromadb >= 0.4.0 API)
         if persist_directory:
-            self.client = chromadb.Client(
-                Settings(persist_directory=persist_directory, anonymized_telemetry=False)
+            # PersistentClient for persistent storage
+            self.client = chromadb.PersistentClient(
+                path=persist_directory,
+                settings=Settings(anonymized_telemetry=False),
             )
         else:
-            self.client = chromadb.Client()
+            # EphemeralClient for in-memory (each call creates new client)
+            self.client = chromadb.EphemeralClient(
+                settings=Settings(anonymized_telemetry=False, allow_reset=True),
+            )
 
         # Collection 생성/가져오기
         self.collection_name = collection_name
@@ -103,7 +107,7 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
                 return loop.run_until_complete(_add_documents_async())
         except RuntimeError:
             return asyncio.run(_add_documents_async())
-    
+
     def _add_documents_without_lock(self, documents: List[Any], **kwargs) -> List[str]:
         """락 없이 문서 추가 (fallback)"""
         texts = [doc.content for doc in documents]
@@ -198,5 +202,3 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
         """문서 삭제"""
         self.collection.delete(ids=ids)
         return True
-
-

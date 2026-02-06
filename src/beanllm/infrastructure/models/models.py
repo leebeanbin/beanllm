@@ -5,8 +5,8 @@ ModelConfigManager를 사용하되 기존 dict 형태 API 유지
 
 from typing import Dict, Optional
 
-from .model_config import ModelConfig, ModelConfigManager
 from .llm_provider import LLMProvider
+from .model_config import ModelConfig, ModelConfigManager
 
 
 def _model_config_to_dict(config: ModelConfig) -> Dict:
@@ -27,17 +27,13 @@ def _model_config_to_dict(config: ModelConfig) -> Dict:
 
 
 # Backward compatibility: ModelConfigManager.MODELS를 dict 형태로 변환
-MODELS = {
-    name: _model_config_to_dict(config)
-    for name, config in ModelConfigManager.MODELS.items()
-}
+MODELS = {name: _model_config_to_dict(config) for name, config in ModelConfigManager.MODELS.items()}
 
 
 def get_all_models() -> Dict[str, Dict]:
     """모든 모델 정보 조회"""
     return {
-        name: _model_config_to_dict(config)
-        for name, config in ModelConfigManager.MODELS.items()
+        name: _model_config_to_dict(config) for name, config in ModelConfigManager.MODELS.items()
     }
 
 
@@ -53,9 +49,9 @@ def get_models_by_provider(provider: str) -> Dict[str, Dict]:
         "deepseek": LLMProvider.DEEPSEEK,
         "perplexity": LLMProvider.PERPLEXITY,
     }
-    
+
     normalized_provider = provider_map.get(provider.lower(), provider.lower())
-    
+
     # Enum인 경우
     if isinstance(normalized_provider, LLMProvider):
         models = ModelConfigManager.get_models_by_provider(normalized_provider)
@@ -66,7 +62,7 @@ def get_models_by_provider(provider: str) -> Dict[str, Dict]:
             for name, config in ModelConfigManager.MODELS.items()
             if config.provider.value.lower() == normalized_provider.lower()
         }
-    
+
     return {name: _model_config_to_dict(config) for name, config in models.items()}
 
 

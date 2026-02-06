@@ -43,15 +43,12 @@ class EmbeddingAnalyzer:
     def _check_dependencies(self) -> None:
         """필수 라이브러리 확인"""
         try:
-            import umap  # noqa: F401
             import hdbscan  # noqa: F401
+            import umap  # noqa: F401
             from sklearn.manifold import TSNE  # noqa: F401
             from sklearn.metrics import silhouette_score  # noqa: F401
         except ImportError as e:
-            logger.error(
-                f"Missing dependency: {e}. "
-                "Install with: pip install beanllm[advanced]"
-            )
+            logger.error(f"Missing dependency: {e}. " "Install with: pip install beanllm[advanced]")
             raise ImportError(
                 "Advanced features require additional dependencies. "
                 "Install with: pip install beanllm[advanced]"
@@ -194,8 +191,7 @@ class EmbeddingAnalyzer:
         import hdbscan
 
         logger.info(
-            f"Running HDBSCAN: {len(embeddings)} points, "
-            f"min_cluster_size={min_cluster_size}"
+            f"Running HDBSCAN: {len(embeddings)} points, " f"min_cluster_size={min_cluster_size}"
         )
 
         clusterer = hdbscan.HDBSCAN(
@@ -229,9 +225,7 @@ class EmbeddingAnalyzer:
 
         return labels, stats
 
-    def detect_outliers(
-        self, embeddings: np.ndarray, labels: np.ndarray
-    ) -> List[int]:
+    def detect_outliers(self, embeddings: np.ndarray, labels: np.ndarray) -> List[int]:
         """
         이상치 탐지
 
@@ -330,20 +324,14 @@ class EmbeddingAnalyzer:
 
         # 1. Dimension reduction
         if method == "umap":
-            reduced = self.reduce_dimensions_umap(
-                embeddings, n_components=n_components
-            )
+            reduced = self.reduce_dimensions_umap(embeddings, n_components=n_components)
         elif method == "tsne":
-            reduced = self.reduce_dimensions_tsne(
-                embeddings, n_components=n_components
-            )
+            reduced = self.reduce_dimensions_tsne(embeddings, n_components=n_components)
         else:
             raise ValueError(f"Unknown method: {method}. Use 'umap' or 'tsne'.")
 
         # 2. Clustering
-        labels, cluster_stats = self.cluster_hdbscan(
-            reduced, min_cluster_size=n_clusters
-        )
+        labels, cluster_stats = self.cluster_hdbscan(reduced, min_cluster_size=n_clusters)
 
         # 3. Outlier detection
         outliers = []

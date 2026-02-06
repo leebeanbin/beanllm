@@ -3,9 +3,11 @@ MCP Server Configuration
 
 환경 변수 및 기본 설정을 관리합니다.
 """
+
 import os
 from pathlib import Path
 from typing import Optional
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -42,9 +44,7 @@ class MCPServerConfig:
 
     # Default models
     DEFAULT_CHAT_MODEL: str = os.getenv("DEFAULT_CHAT_MODEL", "qwen2.5:0.5b")
-    DEFAULT_EMBEDDING_MODEL: str = os.getenv(
-        "DEFAULT_EMBEDDING_MODEL", "nomic-embed-text:latest"
-    )
+    DEFAULT_EMBEDDING_MODEL: str = os.getenv("DEFAULT_EMBEDDING_MODEL", "nomic-embed-text:latest")
 
     # Paths
     BASE_DIR: Path = Path(__file__).parent.parent

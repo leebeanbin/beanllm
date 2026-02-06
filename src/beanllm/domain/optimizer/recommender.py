@@ -449,9 +449,7 @@ def print_recommendations(
         Priority.LOW: 3,
     }
 
-    sorted_recommendations = sorted(
-        recommendations, key=lambda r: priority_order[r.priority]
-    )
+    sorted_recommendations = sorted(recommendations, key=lambda r: priority_order[r.priority])
 
     for i, rec in enumerate(sorted_recommendations[:max_items], 1):
         print(f"\n{i}. [{rec.priority.value.upper()}] {rec.title}")

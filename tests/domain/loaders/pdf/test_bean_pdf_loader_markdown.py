@@ -2,8 +2,9 @@
 beanPDFLoader Markdown 변환 통합 테스트
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 class TestBeanPDFLoaderMarkdown:
@@ -32,7 +33,9 @@ class TestBeanPDFLoaderMarkdown:
             pytest.skip("Test PDF fixture not found")
 
         # to_markdown=True로 로딩
-        loader = beanPDFLoader(simple_pdf, to_markdown=True, extract_tables=False, extract_images=False)
+        loader = beanPDFLoader(
+            simple_pdf, to_markdown=True, extract_tables=False, extract_images=False
+        )
         docs = loader.load()
 
         # Document 객체 반환 확인

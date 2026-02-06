@@ -7,11 +7,11 @@ Kafka + Redis를 활용한 분산 모니터링 시스템의 시각화
 import json
 import os
 import time
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from datetime import datetime
+from typing import Dict, List
 
-import streamlit as st
 import pandas as pd
+import streamlit as st
 
 try:
     import plotly.express as px
@@ -29,8 +29,8 @@ REDIS_AVAILABLE = False
 REDIS_ASYNC = False
 
 try:
-    import redis.asyncio as redis_async_module
     import redis as redis_sync_module
+    import redis.asyncio as redis_async_module
 
     REDIS_AVAILABLE = True
     REDIS_ASYNC = True
@@ -109,7 +109,10 @@ def get_metrics_from_redis(redis_client, time_window_minutes: int = 60) -> Dict:
             # zrangebyscore는 score 범위로 필터링하는데, 우리는 request_id를 key로 사용하고 있음
             # 모든 항목을 가져온 후 최근 것만 필터링
             response_times_raw = redis_client.zrange(
-                "metrics:response_time", 0, -1, withscores=True  # 모든 항목
+                "metrics:response_time",
+                0,
+                -1,
+                withscores=True,  # 모든 항목
             )
             if response_times_raw:
                 # 최근 time_window_minutes 내의 데이터만 필터링
@@ -118,7 +121,7 @@ def get_metrics_from_redis(redis_client, time_window_minutes: int = 60) -> Dict:
                     for _, score in response_times_raw
                     if float(score) > 0  # 응답 시간은 항상 양수
                 ]
-        except Exception as e:
+        except Exception:
             # logger가 없으면 pass
             pass
 
@@ -320,7 +323,9 @@ def main():
         elif redis_client and len(metrics_keys) == 0 and len(request_keys) == 0:
             st.warning("⚠️ Redis에는 데이터가 있지만 메트릭 키가 없습니다.")
             st.info("백엔드가 요청을 받았지만 메트릭을 저장하지 못했을 수 있습니다.")
-            st.info("백엔드 로그에서 `Failed to save request status to Redis` 또는 `Failed to update metrics in Redis` 메시지를 확인하세요.")
+            st.info(
+                "백엔드 로그에서 `Failed to save request status to Redis` 또는 `Failed to update metrics in Redis` 메시지를 확인하세요."
+            )
 
     # 대시보드 레이아웃
     col1, col2, col3, col4 = st.columns(4)

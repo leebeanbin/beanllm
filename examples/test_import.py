@@ -3,6 +3,7 @@ Test Import Example
 다른 프로젝트에서 beanllm을 import해서 사용하는 예제
 """
 
+
 def test_import():
     """패키지 import 테스트"""
     print("=== Testing beanllm Import ===\n")
@@ -11,6 +12,7 @@ def test_import():
     print("1. Testing basic imports...")
     try:
         from beanllm import get_registry
+
         print("   ✅ get_registry imported")
     except ImportError as e:
         print(f"   ❌ Failed to import get_registry: {e}")
@@ -18,6 +20,7 @@ def test_import():
 
     try:
         from beanllm import ProviderFactory
+
         print("   ✅ ProviderFactory imported")
     except ImportError as e:
         print(f"   ❌ Failed to import ProviderFactory: {e}")
@@ -25,6 +28,7 @@ def test_import():
 
     try:
         from beanllm import ModelCapabilityInfo, ProviderInfo
+
         print("   ✅ Data classes imported")
     except ImportError as e:
         print(f"   ❌ Failed to import data classes: {e}")
@@ -34,6 +38,7 @@ def test_import():
     print("\n2. Testing utils imports...")
     try:
         from beanllm.utils import EnvConfig
+
         print("   ✅ EnvConfig imported")
         print(f"   Active providers: {EnvConfig.get_active_providers()}")
     except ImportError as e:
@@ -41,7 +46,8 @@ def test_import():
         return False
 
     try:
-        from beanllm.utils import ProviderError, retry, get_logger
+        from beanllm.utils import ProviderError, get_logger, retry
+
         print("   ✅ Utils imported (ProviderError, retry, get_logger)")
     except ImportError as e:
         print(f"   ❌ Failed to import utils: {e}")
@@ -61,6 +67,7 @@ def test_import():
     print("\n4. Testing CLI...")
     try:
         from beanllm.cli import main
+
         print("   ✅ CLI main imported")
     except ImportError as e:
         print(f"   ❌ Failed to import CLI: {e}")
@@ -68,6 +75,7 @@ def test_import():
 
     print("\n✅ All imports successful!")
     return True
+
 
 if __name__ == "__main__":
     success = test_import()

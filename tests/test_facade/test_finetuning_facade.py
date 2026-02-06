@@ -2,19 +2,20 @@
 FineTuning Facade 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.finetuning_facade import FineTuningManagerFacade
     from beanllm.domain.finetuning.providers import OpenAIFineTuningProvider
     from beanllm.domain.finetuning.types import FineTuningJob, TrainingExample
     from beanllm.dto.response.finetuning_response import (
-        PrepareDataResponse,
-        StartTrainingResponse,
         GetJobResponse,
         GetMetricsResponse,
+        PrepareDataResponse,
+        StartTrainingResponse,
     )
+    from beanllm.facade.finetuning_facade import FineTuningManagerFacade
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -78,6 +79,7 @@ class TestFineTuningManagerFacade:
 
             # get_metrics mock - metrics를 리스트로 설정
             from beanllm.domain.finetuning.types import FineTuningMetrics
+
             mock_metrics = [FineTuningMetrics(step=1, train_loss=0.5, valid_loss=0.6)]
             mock_metrics_response = GetMetricsResponse(metrics=mock_metrics)
 
@@ -126,4 +128,3 @@ class TestFineTuningManagerFacade:
         assert "metrics" in progress
         assert manager._finetuning_handler.handle_get_job.called
         assert manager._finetuning_handler.handle_get_metrics.called
-

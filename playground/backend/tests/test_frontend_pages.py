@@ -2,7 +2,9 @@
 프론트엔드 16개 페이지 테스트 스크립트
 - Ollama 무료 모델만 사용 (qwen2.5:0.5b, phi3, phi3.5, nomic-embed-text)
 """
+
 import asyncio
+
 import aiohttp
 
 FRONTEND_URL = "http://localhost:3000"
@@ -22,8 +24,9 @@ PAGES = [
     "/finetuning",
     "/rag-debug",
     "/optimizer",
-    "/orchestrator"
+    "/orchestrator",
 ]
+
 
 async def test_page(session, page_path):
     """페이지 로딩 테스트"""
@@ -34,26 +37,22 @@ async def test_page(session, page_path):
             html = await response.text()
 
             # 기본 체크
-            has_title = '<title>' in html
-            has_body = '<body' in html
-            has_error = 'Application error' in html or 'Error:' in html
+            has_title = "<title>" in html
+            has_body = "<body" in html
+            has_error = "Application error" in html or "Error:" in html
 
             return {
-                'path': page_path,
-                'status': status,
-                'has_title': has_title,
-                'has_body': has_body,
-                'has_error': has_error,
-                'size': len(html),
-                'success': status == 200 and has_title and has_body and not has_error
+                "path": page_path,
+                "status": status,
+                "has_title": has_title,
+                "has_body": has_body,
+                "has_error": has_error,
+                "size": len(html),
+                "success": status == 200 and has_title and has_body and not has_error,
             }
     except Exception as e:
-        return {
-            'path': page_path,
-            'status': 'ERROR',
-            'error': str(e),
-            'success': False
-        }
+        return {"path": page_path, "status": "ERROR", "error": str(e), "success": False}
+
 
 async def main():
     """모든 페이지 테스트"""
@@ -71,13 +70,15 @@ async def main():
         fail_count = 0
 
         for result in results:
-            page = result['path']
-            if result['success']:
-                print(f"✅ {page:25s} - OK (Status: {result['status']}, Size: {result['size']:,} bytes)")
+            page = result["path"]
+            if result["success"]:
+                print(
+                    f"✅ {page:25s} - OK (Status: {result['status']}, Size: {result['size']:,} bytes)"
+                )
                 success_count += 1
             else:
                 print(f"❌ {page:25s} - FAIL")
-                if 'error' in result:
+                if "error" in result:
                     print(f"   Error: {result['error']}")
                 else:
                     print(f"   Status: {result['status']}, Has Error: {result['has_error']}")
@@ -87,6 +88,7 @@ async def main():
         print("=" * 60)
         print(f"테스트 완료: {success_count}/{len(PAGES)} 성공, {fail_count}/{len(PAGES)} 실패")
         print("=" * 60)
+
 
 if __name__ == "__main__":
     asyncio.run(main())

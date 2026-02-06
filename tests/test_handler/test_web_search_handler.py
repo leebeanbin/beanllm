@@ -2,8 +2,9 @@
 WebSearchHandler 테스트 - Web Search Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.web_search_request import WebSearchRequest
 from beanllm.dto.response.web_search_response import WebSearchResponse
@@ -25,9 +26,7 @@ class TestWebSearchHandler:
             )
         )
         service.search_and_scrape = AsyncMock(
-            return_value=[
-                {"search_result": Mock(), "content": "Scraped content"}
-            ]
+            return_value=[{"search_result": Mock(), "content": "Scraped content"}]
         )
         return service
 
@@ -77,5 +76,3 @@ class TestWebSearchHandler:
         except ValueError:
             # 검증 에러가 발생하면 통과
             pass
-
-

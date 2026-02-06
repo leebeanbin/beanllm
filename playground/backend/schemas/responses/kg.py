@@ -2,12 +2,14 @@
 Knowledge Graph Response Schemas
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class EntityResponse(BaseModel):
     """Entity in the knowledge graph"""
+
     id: str
     name: str
     type: str = "UNKNOWN"
@@ -19,6 +21,7 @@ class EntityResponse(BaseModel):
 
 class RelationResponse(BaseModel):
     """Relation between entities"""
+
     source: str
     target: str
     type: str = "RELATED_TO"
@@ -27,6 +30,7 @@ class RelationResponse(BaseModel):
 
 class BuildGraphResponse(BaseModel):
     """Response from building a knowledge graph"""
+
     graph_id: str
     num_nodes: int
     num_edges: int
@@ -37,6 +41,7 @@ class BuildGraphResponse(BaseModel):
 
 class QueryGraphResponse(BaseModel):
     """Response from querying a knowledge graph"""
+
     graph_id: str
     results: List[Any]
     num_results: int

@@ -19,9 +19,8 @@ from beanllm.domain.web_search import (
 )
 from beanllm.dto.request.web.web_search_request import WebSearchRequest
 from beanllm.dto.response.web.web_search_response import WebSearchResponse
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.web_search_service import IWebSearchService
+from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
     pass
@@ -59,10 +58,11 @@ class WebSearchServiceImpl(IWebSearchService):
         """
         # Rate Limiting (분산 또는 인메모리)
         from beanllm.infrastructure.distributed.factory import get_rate_limiter
+
         rate_limiter = get_rate_limiter()
         engine_key = request.engine or "duckduckgo"
         await rate_limiter.wait(f"web_search:{engine_key}", cost=1.0)
-        
+
         # 엔진 결정 (기존과 동일)
         engine_enum = SearchEngine(request.engine) if request.engine else SearchEngine.DUCKDUCKGO
 

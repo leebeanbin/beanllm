@@ -6,7 +6,7 @@ Template Method Pattern을 사용하여 Provider 간 중복 코드 제거
 
 import os
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import LockManagerProtocol
@@ -34,12 +34,7 @@ class BaseEmbedding(ABC):
         - async → sync 위임
     """
 
-    def __init__(
-        self,
-        model: str,
-        lock_manager: Optional["LockManagerProtocol"] = None,
-        **kwargs
-    ):
+    def __init__(self, model: str, lock_manager: Optional["LockManagerProtocol"] = None, **kwargs):
         """
         Args:
             model: 모델 이름
@@ -52,9 +47,7 @@ class BaseEmbedding(ABC):
 
     # Template Methods - 공통 헬퍼 메서드
 
-    def _get_api_key(
-        self, api_key: Optional[str], env_vars: List[str], provider_name: str
-    ) -> str:
+    def _get_api_key(self, api_key: Optional[str], env_vars: List[str], provider_name: str) -> str:
         """
         API 키 가져오기 (환경변수 fallback)
 
@@ -157,7 +150,11 @@ class BaseEmbedding(ABC):
         Raises:
             Exception: 원본 에러를 다시 raise
         """
-        logger.error(f"{provider_name} embedding failed: {error}")
+        msg = str(error).lower()
+        if "not found" in msg or "404" in msg:
+            logger.warning("%s embedding failed (model/setup): %s", provider_name, error)
+        else:
+            logger.error("%s embedding failed: %s", provider_name, error)
         raise
 
     # Abstract Methods - 하위 클래스가 구현해야 함
@@ -258,7 +255,7 @@ class BaseLocalEmbedding(BaseEmbedding):
               - 분산 락 사용 권장 (프로세스 간 중복 로딩 방지)
         """
         pass
-    
+
     def _load_model_with_lock(self, model_name: str, loader_func: Callable[[], None]):
         """
         분산 락을 사용한 모델 로딩 헬퍼

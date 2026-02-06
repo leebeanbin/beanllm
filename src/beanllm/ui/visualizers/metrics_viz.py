@@ -7,15 +7,15 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
+from rich.tree import Tree
 
-from beanllm.ui.components import Badge, Divider, StatusIcon
+from beanllm.ui.components import StatusIcon
 from beanllm.ui.console import get_console
 
 
@@ -204,7 +204,9 @@ class MetricsVisualizer:
                     change_str = "[dim]0%[/dim]"
 
             # Format values
-            baseline_str = f"{baseline_val:.4f}" if isinstance(baseline_val, float) else str(baseline_val)
+            baseline_str = (
+                f"{baseline_val:.4f}" if isinstance(baseline_val, float) else str(baseline_val)
+            )
             new_str = f"{new_val:.4f}" if isinstance(new_val, float) else str(new_val)
 
             table.add_row(metric, baseline_str, new_str, change_str)
@@ -306,9 +308,7 @@ class MetricsVisualizer:
 
             bar = "█" * bar_length
 
-            self.console.print(
-                f"  {size_range:>12} [cyan]{bar}[/cyan] {count:,}"
-            )
+            self.console.print(f"  {size_range:>12} [cyan]{bar}[/cyan] {count:,}")
 
         self.console.print()
 
@@ -366,7 +366,11 @@ class MetricsVisualizer:
                 improvement_str = f"[dim]{improvement:+.3f}[/dim]"
 
             if show_queries:
-                query = result.get("query", "")[:37] + "..." if len(result.get("query", "")) > 40 else result.get("query", "")
+                query = (
+                    result.get("query", "")[:37] + "..."
+                    if len(result.get("query", "")) > 40
+                    else result.get("query", "")
+                )
                 table.add_row(
                     str(idx),
                     query,
@@ -510,16 +514,12 @@ class MetricsVisualizer:
         """
         if not errors:
             self.console.print()
-            self.console.print(
-                f"{StatusIcon.success()} [green]No errors found![/green]"
-            )
+            self.console.print(f"{StatusIcon.success()} [green]No errors found![/green]")
             self.console.print()
             return
 
         self.console.print()
-        self.console.print(
-            f"{StatusIcon.error()} [red bold]Errors Found: {len(errors)}[/red bold]"
-        )
+        self.console.print(f"{StatusIcon.error()} [red bold]Errors Found: {len(errors)}[/red bold]")
         self.console.print()
 
         for idx, error in enumerate(errors[:max_display], 1):
@@ -532,9 +532,7 @@ class MetricsVisualizer:
                 self.console.print(f"     [dim](occurred {count} times)[/dim]")
 
         if len(errors) > max_display:
-            self.console.print(
-                f"\n  [dim]... and {len(errors) - max_display} more errors[/dim]"
-            )
+            self.console.print(f"\n  [dim]... and {len(errors) - max_display} more errors[/dim]")
 
         self.console.print()
 
@@ -598,9 +596,7 @@ class MetricsVisualizer:
             return
 
         # Sort by percentage (descending)
-        sorted_breakdown = sorted(
-            breakdown.items(), key=lambda x: x[1], reverse=True
-        )
+        sorted_breakdown = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
 
         # Table
         table = Table(title="🔍 Component Breakdown", box=box.ROUNDED)
@@ -646,20 +642,24 @@ class MetricsVisualizer:
         initial_score = scores[0]
         final_score = scores[-1]
         best_score = max(scores)
-        improvement = ((final_score - initial_score) / initial_score * 100) if initial_score > 0 else 0
+        improvement = (
+            ((final_score - initial_score) / initial_score * 100) if initial_score > 0 else 0
+        )
 
         # Display
         self.console.print()
-        self.console.print(Panel(
-            f"[bold]Convergence Progress:[/bold]\n\n"
-            f"{sparkline}\n\n"
-            f"[cyan]Initial:[/cyan] {initial_score:.4f}\n"
-            f"[cyan]Final:[/cyan] {final_score:.4f}\n"
-            f"[cyan]Best:[/cyan] {best_score:.4f}\n"
-            f"[cyan]Improvement:[/cyan] {improvement:+.1f}%",
-            title="📈 Optimization Convergence",
-            border_style="green",
-        ))
+        self.console.print(
+            Panel(
+                f"[bold]Convergence Progress:[/bold]\n\n"
+                f"{sparkline}\n\n"
+                f"[cyan]Initial:[/cyan] {initial_score:.4f}\n"
+                f"[cyan]Final:[/cyan] {final_score:.4f}\n"
+                f"[cyan]Best:[/cyan] {best_score:.4f}\n"
+                f"[cyan]Improvement:[/cyan] {improvement:+.1f}%",
+                title="📈 Optimization Convergence",
+                border_style="green",
+            )
+        )
         self.console.print()
 
     def show_pareto_frontier(
@@ -685,8 +685,7 @@ class MetricsVisualizer:
 
         # Table
         table = Table(
-            title=f"🎯 Pareto Frontier ({len(pareto_solutions)} solutions)",
-            box=box.ROUNDED
+            title=f"🎯 Pareto Frontier ({len(pareto_solutions)} solutions)", box=box.ROUNDED
         )
         table.add_column("#", style="dim", justify="right")
 
@@ -775,10 +774,7 @@ class MetricsVisualizer:
             return
 
         # Table
-        table = Table(
-            title=f"💡 Recommendation Priorities (Total: {total})",
-            box=box.ROUNDED
-        )
+        table = Table(title=f"💡 Recommendation Priorities (Total: {total})", box=box.ROUNDED)
         table.add_column("Priority", style="cyan")
         table.add_column("Count", style="yellow", justify="right")
         table.add_column("% of Total", style="green", justify="right")
@@ -889,16 +885,12 @@ class MetricsVisualizer:
 
         # Nodes
         table.add_row(
-            "Nodes",
-            f"{num_nodes:,}",
-            self._create_bar(num_nodes, max(num_nodes, 100), 20, "cyan")
+            "Nodes", f"{num_nodes:,}", self._create_bar(num_nodes, max(num_nodes, 100), 20, "cyan")
         )
 
         # Edges
         table.add_row(
-            "Edges",
-            f"{num_edges:,}",
-            self._create_bar(num_edges, max(num_edges, 200), 20, "green")
+            "Edges", f"{num_edges:,}", self._create_bar(num_edges, max(num_edges, 200), 20, "green")
         )
 
         # Density
@@ -907,23 +899,21 @@ class MetricsVisualizer:
         table.add_row(
             "Density",
             f"{density:.4f}",
-            f"{self._create_percentage_bar(density_pct, 20, 'magenta')} {density_status}"
+            f"{self._create_percentage_bar(density_pct, 20, 'magenta')} {density_status}",
         )
 
         # Average degree
         table.add_row(
             "Average Degree",
             f"{avg_degree:.2f}",
-            self._create_bar(avg_degree, max(avg_degree, 10), 20, "yellow")
+            self._create_bar(avg_degree, max(avg_degree, 10), 20, "yellow"),
         )
 
         # Connected components
-        component_status = "✅ Connected" if num_components == 1 else f"⚠️  {num_components} components"
-        table.add_row(
-            "Connected Components",
-            str(num_components),
-            component_status
+        component_status = (
+            "✅ Connected" if num_components == 1 else f"⚠️  {num_components} components"
         )
+        table.add_row("Connected Components", str(num_components), component_status)
 
         self.console.print()
         self.console.print(table)
@@ -975,25 +965,17 @@ class MetricsVisualizer:
             # Emoji for rank
             rank_emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}"
 
-            table.add_row(
-                rank_emoji,
-                entity_type.upper(),
-                f"{count:,}",
-                f"{percentage:.1f}%",
-                bar
-            )
+            table.add_row(rank_emoji, entity_type.upper(), f"{count:,}", f"{percentage:.1f}%", bar)
 
         if len(sorted_entities) > max_display:
             remaining = len(sorted_entities) - max_display
-            remaining_count = sum(
-                count for _, count in sorted_entities[max_display:]
-            )
+            remaining_count = sum(count for _, count in sorted_entities[max_display:])
             table.add_row(
                 "...",
                 f"Others ({remaining})",
                 f"{remaining_count:,}",
                 f"{(remaining_count / total) * 100:.1f}%",
-                "[dim]...[/dim]"
+                "[dim]...[/dim]",
             )
 
         self.console.print()
@@ -1047,24 +1029,18 @@ class MetricsVisualizer:
             rank_emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}"
 
             table.add_row(
-                rank_emoji,
-                relation_type.upper(),
-                f"{count:,}",
-                f"{percentage:.1f}%",
-                bar
+                rank_emoji, relation_type.upper(), f"{count:,}", f"{percentage:.1f}%", bar
             )
 
         if len(sorted_relations) > max_display:
             remaining = len(sorted_relations) - max_display
-            remaining_count = sum(
-                count for _, count in sorted_relations[max_display:]
-            )
+            remaining_count = sum(count for _, count in sorted_relations[max_display:])
             table.add_row(
                 "...",
                 f"Others ({remaining})",
                 f"{remaining_count:,}",
                 f"{(remaining_count / total) * 100:.1f}%",
-                "[dim]...[/dim]"
+                "[dim]...[/dim]",
             )
 
         self.console.print()

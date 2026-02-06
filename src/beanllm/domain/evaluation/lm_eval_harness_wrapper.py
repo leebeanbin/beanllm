@@ -28,6 +28,7 @@ from .base_framework import BaseEvaluationFramework
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
@@ -101,7 +102,6 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
         "mmlu": "Massive Multitask Language Understanding (57 tasks)",
         "mmlu_pro": "Enhanced MMLU with harder questions (14K)",
         "bbh": "BIG-Bench Hard (23 challenging tasks)",
-
         # 추론
         "hellaswag": "Commonsense reasoning (10K questions)",
         "arc_easy": "ARC Easy (science Q&A)",
@@ -109,23 +109,18 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
         "winogrande": "Commonsense reasoning (1.3K questions)",
         "piqa": "Physical commonsense reasoning",
         "siqa": "Social commonsense reasoning",
-
         # 진실성
         "truthfulqa_mc1": "TruthfulQA (single-choice)",
         "truthfulqa_mc2": "TruthfulQA (multi-choice)",
-
         # 수학
         "gsm8k": "Grade School Math (8.5K questions)",
         "math": "Advanced Math (12.5K problems)",
-
         # 코딩
         "humaneval": "Code generation (164 Python problems)",
         "mbpp": "Mostly Basic Python Programming (1K problems)",
-
         # 읽기 이해
         "drop": "Reading comprehension + reasoning",
         "race": "Reading comprehension (high/middle school)",
-
         # 한국어
         "kobest": "Korean language understanding",
         "klue": "Korean Language Understanding Evaluation",
@@ -372,16 +367,18 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
             "coding": ["humaneval", "mbpp"],
             "korean": ["kobest", "klue"],
             "comprehensive": [
-                "mmlu", "mmlu_pro", "hellaswag", "arc_challenge",
-                "truthfulqa_mc2", "gsm8k", "humaneval"
+                "mmlu",
+                "mmlu_pro",
+                "hellaswag",
+                "arc_challenge",
+                "truthfulqa_mc2",
+                "gsm8k",
+                "humaneval",
             ],
         }
 
         if suite not in suites:
-            raise ValueError(
-                f"Unknown suite: {suite}. "
-                f"Available: {list(suites.keys())}"
-            )
+            raise ValueError(f"Unknown suite: {suite}. " f"Available: {list(suites.keys())}")
 
         tasks = suites[suite]
         logger.info(f"Evaluating {suite} suite: {tasks}")

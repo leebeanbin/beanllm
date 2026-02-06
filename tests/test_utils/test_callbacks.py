@@ -2,19 +2,20 @@
 Callbacks 테스트 - 콜백 시스템 테스트
 """
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
 
 from beanllm.utils.callbacks import (
     BaseCallback,
-    CallbackManager,
-    LoggingCallback,
-    CostTrackingCallback,
-    TimingCallback,
-    StreamingCallback,
-    FunctionCallback,
-    create_callback_manager,
     CallbackEvent,
+    CallbackManager,
+    CostTrackingCallback,
+    FunctionCallback,
+    LoggingCallback,
+    StreamingCallback,
+    TimingCallback,
+    create_callback_manager,
 )
 
 
@@ -176,5 +177,3 @@ class TestCreateCallbackManager:
         manager = create_callback_manager()
 
         assert isinstance(manager, CallbackManager)
-
-

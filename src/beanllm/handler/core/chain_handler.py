@@ -14,9 +14,9 @@ from typing import Any, Dict, List, Optional
 from beanllm.decorators.error_handler import handle_errors
 from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
-from beanllm.handler.base_handler import BaseHandler
 from beanllm.dto.request.core.chain_request import ChainRequest
 from beanllm.dto.response.core.chain_response import ChainResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.chain_service import IChainService
 
 

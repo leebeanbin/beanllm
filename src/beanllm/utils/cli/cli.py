@@ -69,6 +69,7 @@ def main():
     # Admin 명령어 (Google Workspace Monitoring)
     if command == "admin":
         from beanllm.utils.cli.admin_commands import main_admin
+
         asyncio.run(main_admin())
         return
 

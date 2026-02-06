@@ -2,8 +2,9 @@
 Embeddings 테스트 - 임베딩 구현체 테스트
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from beanllm.domain.embeddings.base import BaseEmbedding
 
@@ -45,7 +46,9 @@ class TestEmbeddingFactory:
 
             # Mock을 사용하여 실제 API 호출 없이 테스트
             with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
-                embedding = Embedding(model="text-embedding-3-small", provider="openai", api_key="test_key")
+                embedding = Embedding(
+                    model="text-embedding-3-small", provider="openai", api_key="test_key"
+                )
                 assert embedding is not None
                 assert embedding.model == "text-embedding-3-small"
         except (ImportError, ValueError, AttributeError) as e:
@@ -63,5 +66,3 @@ class TestEmbeddingFactory:
                 assert embedding.model == "nomic-embed-text"
         except (ImportError, ValueError, AttributeError) as e:
             pytest.skip(f"Ollama embedding not available: {e}")
-
-

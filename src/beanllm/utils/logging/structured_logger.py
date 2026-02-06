@@ -8,13 +8,14 @@ import logging
 import time
 from contextlib import contextmanager
 from enum import Enum
-from typing import Any, Dict, Iterator, Optional
+from typing import Any, Dict, Iterator, Optional, Union
 
 # Use standard logging, not our custom logger to avoid circular import
 
 
 class LogLevel(str, Enum):
     """Log level enumeration"""
+
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
@@ -48,13 +49,7 @@ class StructuredLogger:
         self.logger = logging.getLogger(name)
         self.enable_structured = enable_structured
 
-    def log_operation(
-        self,
-        level: str,
-        operation: str,
-        status: str,
-        **context: Any
-    ):
+    def log_operation(self, level: str, operation: str, status: str, **context: Any):
         """
         Log a generic operation with context
 
@@ -74,12 +69,9 @@ class StructuredLogger:
             ...     latency_ms=250
             ... )
         """
+        msg: Union[Dict[str, Any], str]
         if self.enable_structured:
-            msg = {
-                "operation": operation,
-                "status": status,
-                **context
-            }
+            msg = {"operation": operation, "status": status, **context}
         else:
             # Plain text format
             ctx_str = ", ".join(f"{k}={v}" for k, v in context.items())
@@ -96,7 +88,7 @@ class StructuredLogger:
         filepath: str,
         count: Optional[int] = None,
         success: bool = True,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """
         Log file loading operation
@@ -112,7 +104,7 @@ class StructuredLogger:
             >>> logger.log_file_load("/path/to/bad.pdf", success=False,
             ...                      error="File not found")
         """
-        context = {"filepath": filepath}
+        context: Dict[str, Any] = {"filepath": filepath}
         if count is not None:
             context["document_count"] = count
         if error:
@@ -122,7 +114,7 @@ class StructuredLogger:
             level="info" if success else "error",
             operation="file_load",
             status="success" if success else "failed",
-            **context
+            **context,
         )
 
     def log_api_call(
@@ -132,7 +124,7 @@ class StructuredLogger:
         success: bool = True,
         latency_ms: Optional[float] = None,
         tokens_used: Optional[int] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """
         Log LLM API call
@@ -149,10 +141,7 @@ class StructuredLogger:
             >>> logger.log_api_call("openai", "gpt-4o", latency_ms=250,
             ...                     tokens_used=1500)
         """
-        context = {
-            "provider": provider,
-            "model": model
-        }
+        context: Dict[str, Any] = {"provider": provider, "model": model}
         if latency_ms is not None:
             context["latency_ms"] = latency_ms
         if tokens_used is not None:
@@ -164,7 +153,7 @@ class StructuredLogger:
             level="info" if success else "error",
             operation="api_call",
             status="success" if success else "failed",
-            **context
+            **context,
         )
 
     def log_embedding_generation(
@@ -173,7 +162,7 @@ class StructuredLogger:
         embedding_dim: int,
         success: bool = True,
         latency_ms: Optional[float] = None,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ):
         """
         Log embedding generation
@@ -188,10 +177,7 @@ class StructuredLogger:
         Example:
             >>> logger.log_embedding_generation(100, 1536, latency_ms=500)
         """
-        context = {
-            "text_count": text_count,
-            "embedding_dim": embedding_dim
-        }
+        context: Dict[str, Any] = {"text_count": text_count, "embedding_dim": embedding_dim}
         if latency_ms is not None:
             context["latency_ms"] = latency_ms
         if error:
@@ -201,7 +187,7 @@ class StructuredLogger:
             level="info" if success else "error",
             operation="embedding_generation",
             status="success" if success else "failed",
-            **context
+            **context,
         )
 
     def log_vector_search(
@@ -209,7 +195,7 @@ class StructuredLogger:
         query: str,
         result_count: int,
         search_type: str = "similarity",
-        latency_ms: Optional[float] = None
+        latency_ms: Optional[float] = None,
     ):
         """
         Log vector search operation
@@ -224,27 +210,18 @@ class StructuredLogger:
             >>> logger.log_vector_search("What is RAG?", 5, "hybrid",
             ...                          latency_ms=50)
         """
-        context = {
+        context: Dict[str, Any] = {
             "query": query[:100],  # Truncate long queries
             "result_count": result_count,
-            "search_type": search_type
+            "search_type": search_type,
         }
         if latency_ms is not None:
             context["latency_ms"] = latency_ms
 
-        self.log_operation(
-            level="info",
-            operation="vector_search",
-            status="completed",
-            **context
-        )
+        self.log_operation(level="info", operation="vector_search", status="completed", **context)
 
     def log_cache_operation(
-        self,
-        cache_type: str,
-        operation: str,
-        hit: bool,
-        key: Optional[str] = None
+        self, cache_type: str, operation: str, hit: bool, key: Optional[str] = None
     ):
         """
         Log cache operation
@@ -260,27 +237,20 @@ class StructuredLogger:
             >>> logger.log_cache_operation("prompt", "set", hit=False,
             ...                            key="template_123")
         """
-        context = {
+        context: Dict[str, Any] = {
             "cache_type": cache_type,
             "cache_operation": operation,
-            "cache_hit": hit
+            "cache_hit": hit,
         }
         if key:
             context["key"] = key
 
         self.log_operation(
-            level="debug",
-            operation="cache",
-            status="hit" if hit else "miss",
-            **context
+            level="debug", operation="cache", status="hit" if hit else "miss", **context
         )
 
     @contextmanager
-    def log_duration(
-        self,
-        operation: str,
-        **context: Any
-    ) -> Iterator[Dict[str, Any]]:
+    def log_duration(self, operation: str, **context: Any) -> Iterator[Dict[str, Any]]:
         """
         Context manager to log operation duration
 
@@ -307,23 +277,13 @@ class StructuredLogger:
             duration_ms = (time.time() - start_time) * 1000
             log_context["duration_ms"] = round(duration_ms, 2)
 
-            self.log_operation(
-                level="info",
-                operation=operation,
-                status="completed",
-                **log_context
-            )
+            self.log_operation(level="info", operation=operation, status="completed", **log_context)
         except Exception as e:
             duration_ms = (time.time() - start_time) * 1000
             log_context["duration_ms"] = round(duration_ms, 2)
             log_context["error"] = str(e)
 
-            self.log_operation(
-                level="error",
-                operation=operation,
-                status="failed",
-                **log_context
-            )
+            self.log_operation(level="error", operation=operation, status="failed", **log_context)
             raise
 
     # Convenience methods

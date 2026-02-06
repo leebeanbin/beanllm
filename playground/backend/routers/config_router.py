@@ -7,18 +7,18 @@ System health checks, configuration, and API key management endpoints.
 import logging
 import os
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import List, Optional
 
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from schemas.database import (
+    PROVIDER_CONFIG,
     ApiKeyCreate,
-    ApiKeyResponse,
     ApiKeyListResponse,
+    ApiKeyResponse,
     ApiKeyValidationResult,
     ProviderInfo,
     ProviderListResponse,
-    PROVIDER_CONFIG,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,12 +56,12 @@ async def health():
         from common import (
             _client,
             _kg,
-            _rag_chains,
-            _web_search,
-            _rag_debugger,
-            _optimizer,
             _multi_agent,
+            _optimizer,
             _orchestrator,
+            _rag_chains,
+            _rag_debugger,
+            _web_search,
         )
         from database import ping_mongodb
 
@@ -184,7 +184,9 @@ async def get_available_models():
             ollama_models = await ollama.list_models()
             # 실제 설치된 모델만 반환 (하드코딩된 fallback 제거)
             if ollama_models:
-                available_models["ollama"] = [m["name"] if isinstance(m, dict) else str(m) for m in ollama_models]
+                available_models["ollama"] = [
+                    m["name"] if isinstance(m, dict) else str(m) for m in ollama_models
+                ]
             else:
                 # 모델이 없으면 빈 배열 (하드코딩된 모델 제거)
                 available_models["ollama"] = []
@@ -206,9 +208,11 @@ async def get_available_models():
 # API Key Management Endpoints
 # ===========================================
 
+
 def get_db():
     """Get MongoDB database connection."""
     from database import get_mongodb_database
+
     return get_mongodb_database()
 
 
@@ -221,22 +225,22 @@ async def list_api_keys(db=Depends(get_db)):
         List of API keys with provider, hint, validation status.
     """
     try:
-        from services.encryption_service import encryption_service
-
         keys_collection = db["api_keys"]
         cursor = keys_collection.find({})
         keys = []
 
         async for doc in cursor:
-            keys.append(ApiKeyResponse(
-                provider=doc["provider"],
-                key_hint=doc.get("key_hint", "****"),
-                is_valid=doc.get("is_valid", False),
-                last_validated=doc.get("last_validated"),
-                created_at=doc.get("created_at"),  # Use stored value, None if not present
-                updated_at=doc.get("updated_at"),  # Use stored value, None if not present
-                metadata=doc.get("metadata", {}),
-            ))
+            keys.append(
+                ApiKeyResponse(
+                    provider=doc["provider"],
+                    key_hint=doc.get("key_hint", "****"),
+                    is_valid=doc.get("is_valid", False),
+                    last_validated=doc.get("last_validated"),
+                    created_at=doc.get("created_at"),  # Use stored value, None if not present
+                    updated_at=doc.get("updated_at"),  # Use stored value, None if not present
+                    metadata=doc.get("metadata", {}),
+                )
+            )
 
         return ApiKeyListResponse(keys=keys, total=len(keys))
 
@@ -301,7 +305,7 @@ async def save_api_key(request: ApiKeyCreate, db=Depends(get_db)):
         if request.provider not in PROVIDER_CONFIG:
             raise HTTPException(
                 status_code=400,
-                detail=f"Invalid provider: {request.provider}. Valid providers: {list(PROVIDER_CONFIG.keys())}"
+                detail=f"Invalid provider: {request.provider}. Valid providers: {list(PROVIDER_CONFIG.keys())}",
             )
 
         # Encrypt the key
@@ -326,10 +330,7 @@ async def save_api_key(request: ApiKeyCreate, db=Depends(get_db)):
 
         if existing:
             # Update existing
-            await keys_collection.update_one(
-                {"provider": request.provider},
-                {"$set": doc}
-            )
+            await keys_collection.update_one({"provider": request.provider}, {"$set": doc})
             doc["created_at"] = existing.get("created_at", now)
         else:
             # Insert new
@@ -424,11 +425,13 @@ async def validate_api_key(provider: str, db=Depends(get_db)):
         now = datetime.now(timezone.utc)
         await keys_collection.update_one(
             {"provider": provider},
-            {"$set": {
-                "is_valid": result.is_valid,
-                "last_validated": now,
-                "updated_at": now,
-            }}
+            {
+                "$set": {
+                    "is_valid": result.is_valid,
+                    "last_validated": now,
+                    "updated_at": now,
+                }
+            },
         )
 
         return result
@@ -467,15 +470,17 @@ async def list_all_providers(db=Depends(get_db)):
             is_configured = provider_id in configured_keys or bool(os.getenv(config["env_var"]))
             is_valid = configured_keys.get(provider_id, {}).get("is_valid")
 
-            providers.append(ProviderInfo(
-                id=provider_id,
-                name=config["name"],
-                env_var=config["env_var"],
-                placeholder=config["placeholder"],
-                description=config["description"],
-                is_configured=is_configured,
-                is_valid=is_valid if is_configured else None,
-            ))
+            providers.append(
+                ProviderInfo(
+                    id=provider_id,
+                    name=config["name"],
+                    env_var=config["env_var"],
+                    placeholder=config["placeholder"],
+                    description=config["description"],
+                    is_configured=is_configured,
+                    is_valid=is_valid if is_configured else None,
+                )
+            )
 
         return ProviderListResponse(providers=providers)
 
@@ -491,6 +496,7 @@ async def list_all_providers(db=Depends(get_db)):
 
 class GoogleOAuthConfigCreate(BaseModel):
     """Google OAuth 설정 저장 요청"""
+
     client_id: str
     client_secret: str
     redirect_uri: Optional[str] = None
@@ -510,7 +516,9 @@ async def save_google_oauth_config(request: GoogleOAuthConfigCreate, db=Depends(
                 status_code=400,
                 detail="client_id와 client_secret은 필수입니다",
             )
-        redirect_uri = (request.redirect_uri or "").strip() or "http://localhost:8000/api/auth/google/callback"
+        redirect_uri = (
+            request.redirect_uri or ""
+        ).strip() or "http://localhost:8000/api/auth/google/callback"
         client_id_enc = encryption_service.encrypt(request.client_id.strip())
         client_secret_enc = encryption_service.encrypt(request.client_secret.strip())
 
@@ -614,11 +622,11 @@ async def get_provider_sdk_status():
     """
     try:
         from beanllm.providers.provider_factory import (
-            OpenAIProvider,
             ClaudeProvider,
+            DeepSeekProvider,
             GeminiProvider,
             OllamaProvider,
-            DeepSeekProvider,
+            OpenAIProvider,
             PerplexityProvider,
         )
 
@@ -725,7 +733,6 @@ async def install_package(request: PackageInstallRequest):
         설치 결과
     """
     import subprocess
-    import sys
 
     try:
         # 패키지 그룹 매핑

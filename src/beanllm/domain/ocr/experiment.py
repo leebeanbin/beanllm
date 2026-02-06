@@ -12,13 +12,13 @@ Features:
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union, cast
 
 import numpy as np
 from PIL import Image
 
 from .bean_ocr import beanOCR
-from .models import OCRConfig, OCRResult
+from .models import OCRConfig
 
 logger = logging.getLogger(__name__)
 
@@ -131,15 +131,17 @@ class OCRExperiment:
             processing_time = time.time() - start_time
 
             # 결과 정리
-            results.append({
-                "label": label,
-                "config": config,
-                "result": result,
-                "processing_time": processing_time,
-                "text_length": len(result.text),
-                "line_count": len(result.lines),
-                "avg_confidence": result.confidence,
-            })
+            results.append(
+                {
+                    "label": label,
+                    "config": config,
+                    "result": result,
+                    "processing_time": processing_time,
+                    "text_length": len(result.text),
+                    "line_count": len(result.lines),
+                    "avg_confidence": result.confidence,
+                }
+            )
 
         return results
 
@@ -256,8 +258,7 @@ class OCRExperiment:
             best_idx = max(range(len(results)), key=lambda i: results[i]["text_length"])
         else:
             raise ValueError(
-                f"Invalid metric: {metric}. "
-                f"Must be one of: confidence, speed, text_length"
+                f"Invalid metric: {metric}. " f"Must be one of: confidence, speed, text_length"
             )
 
         best_result = results[best_idx]
@@ -267,7 +268,7 @@ class OCRExperiment:
             f"time={best_result['processing_time']:.2f}s)"
         )
 
-        return best_result["config"]
+        return cast(OCRConfig, best_result["config"])
 
     def get_detailed_comparison(self, results: List[Dict]) -> Dict:
         """

@@ -2,8 +2,9 @@
 GraphHandler 테스트 - Graph Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.graph_request import GraphRequest
 from beanllm.dto.response.graph_response import GraphResponse
@@ -72,6 +73,7 @@ class TestGraphHandler:
     @pytest.mark.asyncio
     async def test_handle_run_with_conditional_edges(self, graph_handler):
         """조건부 엣지 포함 Graph 실행 테스트"""
+
         def condition(state):
             return state.get("value", 0) > 0
 

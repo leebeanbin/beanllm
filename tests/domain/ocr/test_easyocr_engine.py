@@ -18,9 +18,7 @@ try:
 except ImportError:
     HAS_EASYOCR = False
 
-skip_without_easyocr = pytest.mark.skipif(
-    not HAS_EASYOCR, reason="EasyOCR not installed"
-)
+skip_without_easyocr = pytest.mark.skipif(not HAS_EASYOCR, reason="EasyOCR not installed")
 
 
 class TestEasyOCREngineImport:

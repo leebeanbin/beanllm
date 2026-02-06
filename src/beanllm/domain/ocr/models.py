@@ -5,7 +5,10 @@ OCR 결과와 설정을 위한 데이터 클래스 정의.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Literal, Optional
+from typing import TYPE_CHECKING, Dict, List, Literal, Optional
+
+if TYPE_CHECKING:
+    from beanllm.infrastructure.distributed.config import OCRDistributedConfig
 
 __all__ = [
     "BoundingBox",
@@ -186,6 +189,7 @@ class DenoiseConfig:
         median_kernel: Median filter 커널 크기 (기본: 3)
         strength: 노이즈 제거 강도 (light/medium/strong)
     """
+
     enabled: bool = True
     gaussian_kernel: tuple[int, int] = (3, 3)
     median_kernel: int = 3
@@ -202,6 +206,7 @@ class ContrastConfig:
         clip_limit: CLAHE clip limit (기본: 2.0, 높을수록 강함)
         tile_grid_size: CLAHE tile grid 크기 (기본: (8, 8))
     """
+
     enabled: bool = True
     clip_limit: float = 2.0
     tile_grid_size: tuple[int, int] = (8, 8)
@@ -219,6 +224,7 @@ class BinarizeConfig:
         block_size: Adaptive 블록 크기 (method='adaptive'일 때, 홀수)
         c: Adaptive 상수 (method='adaptive'일 때)
     """
+
     enabled: bool = True
     method: Literal["otsu", "adaptive", "manual"] = "otsu"
     threshold: int = 127
@@ -235,6 +241,7 @@ class DeskewConfig:
         enabled: 기울기 보정 활성화
         angle_threshold: 보정 각도 임계값 (degrees, 이 값 이상만 보정)
     """
+
     enabled: bool = True
     angle_threshold: float = 0.5
 
@@ -248,6 +255,7 @@ class SharpenConfig:
         enabled: 선명화 활성화
         strength: 선명화 강도 (0.0-1.0, 기본: 0.5)
     """
+
     enabled: bool = True
     strength: float = 0.5
 
@@ -262,6 +270,7 @@ class ResizeConfig:
         max_size: 최대 크기 (픽셀, None이면 조정 안 함)
         interpolation: 보간 방법 (area/linear/cubic)
     """
+
     enabled: bool = True
     max_size: Optional[int] = None
     interpolation: Literal["area", "linear", "cubic"] = "area"
@@ -365,7 +374,7 @@ class OCRConfig:
     max_image_size: Optional[int] = None  # 최대 이미지 크기 (픽셀)
     max_new_tokens: int = 1024  # VLM 엔진용 최대 생성 토큰 수
     output_format: str = "text"  # text, json, markdown
-    
+
     # 분산 시스템 설정 (선택적, None이면 전역 설정 사용)
     distributed_config: Optional["OCRDistributedConfig"] = None
 
@@ -390,10 +399,7 @@ class OCRConfig:
             "deepseek-ocr",
         }
         if self.engine not in valid_engines:
-            raise ValueError(
-                f"Invalid engine: {self.engine}. "
-                f"Must be one of {valid_engines}"
-            )
+            raise ValueError(f"Invalid engine: {self.engine}. " f"Must be one of {valid_engines}")
 
         # 언어 유효성 검사 (일부만 체크)
         if self.language not in ["auto", "ko", "en", "zh", "ja"]:
@@ -414,9 +420,7 @@ class OCRConfig:
 
         # LLM 후처리 설정 검증
         if self.enable_llm_postprocessing and not self.llm_model:
-            raise ValueError(
-                "llm_model must be specified when enable_llm_postprocessing is True"
-            )
+            raise ValueError("llm_model must be specified when enable_llm_postprocessing is True")
 
         # 세부 설정 초기화 (레거시 bool 필드 기반)
         if self.denoise_config is None:
@@ -431,8 +435,7 @@ class OCRConfig:
             self.sharpen_config = SharpenConfig(enabled=self.sharpen)
         if self.resize_config is None:
             self.resize_config = ResizeConfig(
-                enabled=(self.max_image_size is not None),
-                max_size=self.max_image_size
+                enabled=(self.max_image_size is not None), max_size=self.max_image_size
             )
 
     def __repr__(self) -> str:

@@ -1,13 +1,16 @@
 """
 Audio Facade 테스트
 """
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.audio_facade import WhisperSTT, TextToSpeech, AudioRAG
-    from beanllm.domain.audio.types import TranscriptionResult, AudioSegment
+    from beanllm.domain.audio.types import AudioSegment, TranscriptionResult
     from beanllm.dto.response.audio_response import AudioResponse
+    from beanllm.facade.audio_facade import AudioRAG, TextToSpeech, WhisperSTT
+
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -26,16 +29,14 @@ class TestWhisperSTT:
         # Mock service instance
         mock_service = Mock()
         mock_transcription = TranscriptionResult(
-            text="Test transcription",
-            language="en",
-            segments=[]
+            text="Test transcription", language="en", segments=[]
         )
-        mock_service.transcribe = AsyncMock(return_value=AudioResponse(
-            transcription_result=mock_transcription
-        ))
+        mock_service.transcribe = AsyncMock(
+            return_value=AudioResponse(transcription_result=mock_transcription)
+        )
         mock_audio_service_class.return_value = mock_service
 
-        stt = WhisperSTT(model='base')
+        stt = WhisperSTT(model="base")
 
         yield stt
 
@@ -66,12 +67,10 @@ class TestTextToSpeech:
         # Mock service instance
         mock_service = Mock()
         mock_audio = AudioSegment(audio_data=b"fake", format="mp3", sample_rate=24000)
-        mock_service.synthesize = AsyncMock(return_value=AudioResponse(
-            audio_segment=mock_audio
-        ))
+        mock_service.synthesize = AsyncMock(return_value=AudioResponse(audio_segment=mock_audio))
         mock_audio_service_class.return_value = mock_service
 
-        tts = TextToSpeech(provider='openai', voice='alloy')
+        tts = TextToSpeech(provider="openai", voice="alloy")
 
         yield tts
 
@@ -113,9 +112,9 @@ class TestAudioRAG:
         # Mock service instance
         mock_service = Mock()
         mock_results = []
-        mock_service.search_audio = AsyncMock(return_value=AudioResponse(
-            search_results=mock_results
-        ))
+        mock_service.search_audio = AsyncMock(
+            return_value=AudioResponse(search_results=mock_results)
+        )
         mock_audio_service_class.return_value = mock_service
 
         rag = AudioRAG(vector_store=mock_vector_store)
@@ -128,5 +127,3 @@ class TestAudioRAG:
     def test_search(self, audio_rag):
         results = audio_rag.search("What was discussed?")
         assert isinstance(results, list)
-
-

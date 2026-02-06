@@ -18,8 +18,8 @@ from beanllm.decorators.validation import validate_input
 from beanllm.domain.audio import AudioSegment
 from beanllm.dto.request.ml.audio_request import AudioRequest
 from beanllm.dto.response.ml.audio_response import AudioResponse
-from beanllm.service.audio_service import IAudioService
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.service.audio_service import IAudioService
 
 
 class AudioHandler(BaseHandler):

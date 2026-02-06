@@ -12,7 +12,7 @@ Features:
 """
 
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 try:
     from beanllm.utils.logging import get_logger

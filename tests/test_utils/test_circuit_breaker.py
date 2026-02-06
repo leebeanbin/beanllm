@@ -2,12 +2,14 @@
 Circuit Breaker 테스트 - 에러 처리 유틸리티 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import asyncio
+from unittest.mock import Mock, patch
+
+import pytest
 
 try:
     from beanllm.utils.error_handling import CircuitBreaker, CircuitBreakerConfig
+
     CIRCUIT_BREAKER_AVAILABLE = True
 except ImportError:
     CIRCUIT_BREAKER_AVAILABLE = False
@@ -28,6 +30,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_success(self, circuit_breaker):
         """정상 실행 테스트"""
+
         def test_func():
             return "success"
 
@@ -38,6 +41,7 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_failure(self, circuit_breaker):
         """실패 누적 테스트"""
+
         def test_func():
             raise Exception("Test error")
 
@@ -52,9 +56,10 @@ class TestCircuitBreaker:
 
     def test_circuit_breaker_open_state(self, circuit_breaker):
         """열린 상태에서 호출 테스트"""
-        from beanllm.utils.error_handling import CircuitState
         import time
-        
+
+        from beanllm.utils.error_handling import CircuitState
+
         # Circuit을 열림 상태로 만듦
         circuit_breaker.failure_count = 3
         circuit_breaker.state = CircuitState.OPEN
@@ -65,12 +70,14 @@ class TestCircuitBreaker:
 
         # Circuit이 열려있으면 즉시 실패
         from beanllm.utils.error_handling import CircuitBreakerError
+
         with pytest.raises(CircuitBreakerError):
             circuit_breaker.call(test_func)
 
     @pytest.mark.asyncio
     async def test_circuit_breaker_async(self, circuit_breaker):
         """비동기 함수 테스트"""
+
         # CircuitBreaker는 동기 함수만 지원하므로 동기 함수로 테스트
         def sync_func():
             return "async success"
@@ -81,8 +88,9 @@ class TestCircuitBreaker:
     def test_circuit_breaker_recovery(self, circuit_breaker):
         """복구 테스트"""
         import time
+
         from beanllm.utils.error_handling import CircuitState
-        
+
         # Circuit을 열림 상태로 만듦
         circuit_breaker.failure_count = 3
         circuit_breaker.state = CircuitState.OPEN
@@ -96,5 +104,3 @@ class TestCircuitBreaker:
         assert result == "recovered"
         state = circuit_breaker.get_state()
         assert state["state"] in ["closed", "half_open"]
-
-

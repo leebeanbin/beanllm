@@ -2,13 +2,15 @@
 Rate Limiter 테스트 - 에러 처리 유틸리티 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch
 import asyncio
 import time
+from unittest.mock import Mock, patch
+
+import pytest
 
 try:
-    from beanllm.utils.error_handling import RateLimiter, RateLimitConfig
+    from beanllm.utils.error_handling import RateLimitConfig, RateLimiter
+
     RATE_LIMITER_AVAILABLE = True
 except ImportError:
     RATE_LIMITER_AVAILABLE = False
@@ -26,6 +28,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_allow(self, rate_limiter):
         """허용 테스트"""
+
         def test_func():
             return "allowed"
 
@@ -36,6 +39,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_limit(self, rate_limiter):
         """제한 테스트"""
+
         def test_func():
             return "allowed"
 
@@ -46,12 +50,14 @@ class TestRateLimiter:
 
         # 제한 초과 시도
         from beanllm.utils.error_handling import RateLimitError
+
         with pytest.raises(RateLimitError):
             rate_limiter.call(test_func)
 
     @pytest.mark.asyncio
     async def test_rate_limiter_async(self, rate_limiter):
         """비동기 함수 테스트"""
+
         # RateLimiter는 동기 함수만 지원하므로 동기 함수로 테스트
         def sync_func():
             return "async allowed"
@@ -61,6 +67,7 @@ class TestRateLimiter:
 
     def test_rate_limiter_reset(self, rate_limiter):
         """리셋 테스트"""
+
         def test_func():
             return "allowed"
 
@@ -72,5 +79,3 @@ class TestRateLimiter:
         time.sleep(1.1)  # time_window보다 긴 시간 대기
         result = rate_limiter.call(test_func)
         assert result == "allowed"
-
-

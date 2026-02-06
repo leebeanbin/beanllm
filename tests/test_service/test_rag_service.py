@@ -2,8 +2,9 @@
 RAGService 테스트 - RAG 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.rag_request import RAGRequest
 from beanllm.dto.response.rag_response import RAGResponse
@@ -456,4 +457,3 @@ class TestRAGService:
         assert response is not None
         assert rag_service._vector_store.hybrid_search.called
         assert not rag_service._vector_store.mmr_search.called
-

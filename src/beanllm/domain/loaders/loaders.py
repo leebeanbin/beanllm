@@ -14,6 +14,7 @@ This file re-exports all implementations for backward compatibility.
 """
 
 # Re-export all loaders
+from .advanced import DoclingLoader
 from .core import (
     CSVLoader,
     DirectoryLoader,
@@ -22,7 +23,6 @@ from .core import (
     PDFLoader,
     TextLoader,
 )
-from .advanced import DoclingLoader
 
 __all__ = [
     "TextLoader",

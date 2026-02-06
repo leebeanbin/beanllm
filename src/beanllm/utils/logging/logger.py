@@ -20,9 +20,7 @@ class SecureFormatter(logging.Formatter):
             r"(api[_-]?key|token|secret|password|passwd|pwd)['\"\s:=]+([a-zA-Z0-9_\-./]{10,})",
             re.IGNORECASE,
         ),
-        re.compile(
-            r"([A-Z_]+_(?:API_KEY|TOKEN|SECRET|PASSWORD))['\"\s:=]+([a-zA-Z0-9_\-./]{10,})"
-        ),
+        re.compile(r"([A-Z_]+_(?:API_KEY|TOKEN|SECRET|PASSWORD))['\"\s:=]+([a-zA-Z0-9_\-./]{10,})"),
         re.compile(r"Bearer\s+([a-zA-Z0-9_\-./]{10,})", re.IGNORECASE),
     ]
 

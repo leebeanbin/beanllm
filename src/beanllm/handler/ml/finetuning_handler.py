@@ -28,8 +28,8 @@ from beanllm.dto.response.ml.finetuning_response import (
     PrepareDataResponse,
     StartTrainingResponse,
 )
-from beanllm.service.finetuning_service import IFinetuningService
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.service.finetuning_service import IFinetuningService
 
 if TYPE_CHECKING:
     from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample

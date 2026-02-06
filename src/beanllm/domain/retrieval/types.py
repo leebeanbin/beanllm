@@ -3,7 +3,7 @@ Retrieval Types - 검색 관련 타입 정의
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass

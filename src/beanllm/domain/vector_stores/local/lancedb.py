@@ -4,9 +4,8 @@ LanceDB Vector Store Implementation
 Fast, embedded vector database
 """
 
-import os
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document
@@ -212,5 +211,3 @@ class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
             self.table.delete(f"id = '{id_}'")
 
         return True
-
-

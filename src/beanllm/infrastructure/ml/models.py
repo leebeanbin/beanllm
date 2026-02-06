@@ -339,8 +339,7 @@ class SklearnModel(BaseMLModel):
                     "Set verify_signature=False to skip verification."
                 )
                 raise ValueError(
-                    f"Signature file {sig_path} not found. "
-                    "Model integrity cannot be verified."
+                    f"Signature file {sig_path} not found. " "Model integrity cannot be verified."
                 )
 
             # 파일 내용 읽기
@@ -366,9 +365,7 @@ class SklearnModel(BaseMLModel):
             logger.info(f"Signature verified successfully for {model_path}")
 
         # 보안 경고
-        logger.warning(
-            "Loading model using pickle/joblib. Only load models from trusted sources!"
-        )
+        logger.warning("Loading model using pickle/joblib. Only load models from trusted sources!")
 
         # joblib 시도
         try:

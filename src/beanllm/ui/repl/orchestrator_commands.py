@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from rich import box
@@ -17,19 +16,15 @@ from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
-    BarColumn,
     Progress,
     SpinnerColumn,
-    TaskID,
     TextColumn,
     TimeElapsedColumn,
 )
 from rich.table import Table
-from rich.text import Text
-from rich.tree import Tree
 
 from beanllm.facade.advanced.orchestrator_facade import Orchestrator
-from beanllm.ui.components import Badge, Divider, OutputBlock, StatusIcon
+from beanllm.ui.components import OutputBlock, StatusIcon
 from beanllm.ui.console import get_console
 from beanllm.utils.logging import get_logger
 
@@ -188,9 +183,7 @@ class OrchestratorCommands:
             )
             ```
         """
-        self.console.print(
-            f"\n{StatusIcon.info()} [cyan]Creating workflow: {name}...[/cyan]"
-        )
+        self.console.print(f"\n{StatusIcon.info()} [cyan]Creating workflow: {name}...[/cyan]")
 
         try:
             with Progress(
@@ -216,7 +209,7 @@ class OrchestratorCommands:
             # Display result
             panel = Panel(
                 self._format_workflow_info(workflow),
-                title=f"✅ Workflow Created",
+                title="✅ Workflow Created",
                 border_style="green",
                 box=box.ROUNDED,
             )
@@ -360,9 +353,7 @@ class OrchestratorCommands:
             )
             ```
         """
-        self.console.print(
-            f"\n{StatusIcon.info()} [cyan]Monitoring workflow execution...[/cyan]"
-        )
+        self.console.print(f"\n{StatusIcon.info()} [cyan]Monitoring workflow execution...[/cyan]")
         self.console.print("[dim]Press Ctrl+C to stop[/dim]\n")
 
         start_time = asyncio.get_event_loop().time()
@@ -395,9 +386,7 @@ class OrchestratorCommands:
 
                     await asyncio.sleep(refresh_interval)
 
-            self.console.print(
-                f"\n{StatusIcon.success()} [green]Monitoring completed[/green]\n"
-            )
+            self.console.print(f"\n{StatusIcon.success()} [green]Monitoring completed[/green]\n")
 
         except KeyboardInterrupt:
             self.console.print(
@@ -485,9 +474,7 @@ class OrchestratorCommands:
             await cmd_visualize(workflow_id="wf-123")
             ```
         """
-        self.console.print(
-            f"\n{StatusIcon.info()} [cyan]Visualizing workflow...[/cyan]\n"
-        )
+        self.console.print(f"\n{StatusIcon.info()} [cyan]Visualizing workflow...[/cyan]\n")
 
         try:
             diagram = await self._orchestrator.visualize(workflow_id, style=style)
@@ -522,9 +509,7 @@ class OrchestratorCommands:
         ]
 
         if workflow.metadata:
-            lines.append(
-                f"[bold]Metadata:[/bold] {json.dumps(workflow.metadata, indent=2)}"
-            )
+            lines.append(f"[bold]Metadata:[/bold] {json.dumps(workflow.metadata, indent=2)}")
 
         return "\n".join(lines)
 

@@ -160,9 +160,9 @@ class CostTrackingCallback(BaseCallback):
 
     def __init__(self):
         self.calls: List[Dict[str, Any]] = []
-        self.total_input_tokens = 0
-        self.total_output_tokens = 0
-        self.total_cost = 0.0
+        self.total_input_tokens: int = 0
+        self.total_output_tokens: int = 0
+        self.total_cost: float = 0.0
 
     def on_llm_end(
         self,

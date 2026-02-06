@@ -152,8 +152,6 @@ class CompositeRule(RoutingRule):
         if total_weight == 0:
             return 0.0
 
-        weighted_sum = sum(
-            rule.evaluate(model, request) * weight for rule, weight in self.rules
-        )
+        weighted_sum = sum(rule.evaluate(model, request) * weight for rule, weight in self.rules)
 
         return weighted_sum / total_weight

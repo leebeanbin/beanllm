@@ -11,11 +11,12 @@ Features:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -194,7 +195,9 @@ class SuryaEngine(BaseOCREngine):
             )
 
             # OCRTextLine 생성
-            line = OCRTextLine(text=text, bbox=bbox, confidence=confidence, language=config.language)
+            line = OCRTextLine(
+                text=text, bbox=bbox, confidence=confidence, language=config.language
+            )
 
             lines.append(line)
             text_parts.append(text)

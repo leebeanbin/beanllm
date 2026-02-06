@@ -2,8 +2,9 @@
 GraphService 테스트 - Graph 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.domain.graph import FunctionNode, GraphState
 from beanllm.dto.request.graph_request import GraphRequest
@@ -392,4 +393,3 @@ class TestGraphService:
 
         assert response is not None
         assert response.final_state["output"] == "done"
-

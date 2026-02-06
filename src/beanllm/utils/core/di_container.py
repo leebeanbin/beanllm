@@ -8,12 +8,10 @@ SOLID 원칙:
 """
 
 import threading
-from typing import Any, Dict, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
 if TYPE_CHECKING:
-    from beanllm.facade.core.client_facade import SourceProviderFactoryAdapter
     from beanllm.handler.factory import HandlerFactory
-    from beanllm.providers.provider_factory import ProviderFactory as SourceProviderFactory
     from beanllm.service.factory import ServiceFactory
 
 

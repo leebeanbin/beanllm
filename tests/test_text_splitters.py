@@ -1,15 +1,17 @@
 """
 Tests for Text Splitters
 """
+
 import pytest
+
 from beanllm import (
-    Document,
     CharacterTextSplitter,
-    RecursiveCharacterTextSplitter,
-    TokenTextSplitter,
+    Document,
     MarkdownHeaderTextSplitter,
+    RecursiveCharacterTextSplitter,
     TextSplitter,
-    split_documents
+    TokenTextSplitter,
+    split_documents,
 )
 
 
@@ -51,11 +53,7 @@ class TestCharacterTextSplitter:
 
     def test_basic_split(self):
         """기본 분할 테스트"""
-        splitter = CharacterTextSplitter(
-            separator="\n\n",
-            chunk_size=100,
-            chunk_overlap=20
-        )
+        splitter = CharacterTextSplitter(separator="\n\n", chunk_size=100, chunk_overlap=20)
 
         text = "Paragraph 1\n\nParagraph 2\n\nParagraph 3"
         chunks = splitter.split_text(text)
@@ -65,10 +63,7 @@ class TestCharacterTextSplitter:
 
     def test_split_documents(self, sample_document):
         """문서 분할 테스트"""
-        splitter = CharacterTextSplitter(
-            separator="\n\n",
-            chunk_size=200
-        )
+        splitter = CharacterTextSplitter(separator="\n\n", chunk_size=200)
 
         chunks = splitter.split_documents([sample_document])
 
@@ -83,10 +78,7 @@ class TestRecursiveCharacterTextSplitter:
 
     def test_basic_split(self):
         """기본 분할 테스트"""
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=100,
-            chunk_overlap=20
-        )
+        splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=20)
 
         text = """
 # Header
@@ -106,9 +98,7 @@ Final paragraph.
     def test_custom_separators(self):
         """커스텀 구분자 테스트"""
         splitter = RecursiveCharacterTextSplitter(
-            separators=["###", "##", "#", "\n\n", "\n", " "],
-            chunk_size=50,
-            chunk_overlap=10
+            separators=["###", "##", "#", "\n\n", "\n", " "], chunk_size=50, chunk_overlap=10
         )
 
         text = "# Big header\n## Smaller\n### Smallest\nContent here"
@@ -118,10 +108,7 @@ Final paragraph.
 
     def test_split_documents(self, sample_document):
         """문서 분할 테스트"""
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=150,
-            chunk_overlap=30
-        )
+        splitter = RecursiveCharacterTextSplitter(chunk_size=150, chunk_overlap=30)
 
         chunks = splitter.split_documents([sample_document])
 
@@ -203,11 +190,7 @@ class TestTokenTextSplitter:
         except ImportError:
             pytest.skip("tiktoken not installed")
 
-        splitter = TokenTextSplitter(
-            encoding_name="cl100k_base",
-            chunk_size=50,
-            chunk_overlap=10
-        )
+        splitter = TokenTextSplitter(encoding_name="cl100k_base", chunk_size=50, chunk_overlap=10)
 
         chunks = splitter.split_text(long_text)
 
@@ -221,11 +204,7 @@ class TestTokenTextSplitter:
         except ImportError:
             pytest.skip("tiktoken not installed")
 
-        splitter = TokenTextSplitter(
-            model_name="gpt-4",
-            chunk_size=100,
-            chunk_overlap=20
-        )
+        splitter = TokenTextSplitter(model_name="gpt-4", chunk_size=100, chunk_overlap=20)
 
         chunks = splitter.split_text(long_text)
 
@@ -246,18 +225,13 @@ class TestTextSplitterFactory:
         """전략별 분할 테스트"""
         # Recursive
         chunks_recursive = TextSplitter.split(
-            [sample_document],
-            strategy="recursive",
-            chunk_size=100
+            [sample_document], strategy="recursive", chunk_size=100
         )
         assert len(chunks_recursive) > 0
 
         # Character
         chunks_char = TextSplitter.split(
-            [sample_document],
-            strategy="character",
-            separator="\n\n",
-            chunk_size=100
+            [sample_document], strategy="character", separator="\n\n", chunk_size=100
         )
         assert len(chunks_char) > 0
 
@@ -274,11 +248,7 @@ class TestTextSplitterFactory:
     def test_unknown_strategy(self, sample_document):
         """알 수 없는 전략 테스트"""
         # Should fall back to recursive
-        chunks = TextSplitter.split(
-            [sample_document],
-            strategy="unknown",
-            chunk_size=100
-        )
+        chunks = TextSplitter.split([sample_document], strategy="unknown", chunk_size=100)
         assert len(chunks) > 0
 
 
@@ -287,11 +257,7 @@ class TestConvenienceFunctions:
 
     def test_split_documents_function(self, sample_document):
         """split_documents 함수 테스트"""
-        chunks = split_documents(
-            [sample_document],
-            chunk_size=150,
-            chunk_overlap=30
-        )
+        chunks = split_documents([sample_document], chunk_size=150, chunk_overlap=30)
 
         assert len(chunks) > 0
         assert all(isinstance(chunk, Document) for chunk in chunks)
@@ -299,10 +265,7 @@ class TestConvenienceFunctions:
     def test_split_documents_with_strategy(self, sample_document):
         """전략 지정 테스트"""
         chunks = split_documents(
-            [sample_document],
-            strategy="character",
-            separator="\n\n",
-            chunk_size=100
+            [sample_document], strategy="character", separator="\n\n", chunk_size=100
         )
 
         assert len(chunks) > 0
@@ -313,12 +276,14 @@ class TestIntegration:
 
     def test_full_pipeline(self, tmp_path):
         """전체 파이프라인 테스트"""
-        from beanllm import DocumentLoader, TextSplitter
         from pathlib import Path
+
+        from beanllm import DocumentLoader, TextSplitter
 
         # 1. 문서 생성 (임시 디렉토리 사용)
         test_file = tmp_path / "test_integration.txt"
-        test_file.write_text("""
+        test_file.write_text(
+            """
 AI and Machine Learning are transforming the world.
 
 Deep learning uses neural networks with multiple layers.
@@ -326,7 +291,9 @@ Deep learning uses neural networks with multiple layers.
 Applications include computer vision and natural language processing.
 
 The future of AI is exciting and full of possibilities.
-        """.strip(), encoding="utf-8")
+        """.strip(),
+            encoding="utf-8",
+        )
 
         try:
             # 2. 문서 로딩

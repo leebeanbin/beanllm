@@ -168,9 +168,7 @@ Answer:"""
         if self.num_documents == 1:
             hypothetical_doc = self.llm_function(prompt)
 
-            logger.info(
-                f"HyDE document generated: length={len(hypothetical_doc)} chars"
-            )
+            logger.info(f"HyDE document generated: length={len(hypothetical_doc)} chars")
 
             return hypothetical_doc
 
@@ -181,17 +179,13 @@ Answer:"""
             hypothetical_docs.append(doc)
 
             logger.info(
-                f"HyDE document {i+1}/{self.num_documents} generated: "
-                f"length={len(doc)} chars"
+                f"HyDE document {i+1}/{self.num_documents} generated: " f"length={len(doc)} chars"
             )
 
         return hypothetical_docs
 
     def __repr__(self) -> str:
-        return (
-            f"HyDEExpander(num_docs={self.num_documents}, "
-            f"temperature={self.temperature})"
-        )
+        return f"HyDEExpander(num_docs={self.num_documents}, " f"temperature={self.temperature})"
 
 
 class MultiQueryExpander(BaseQueryExpander):
@@ -272,9 +266,7 @@ Please provide {num_queries} alternative versions:"""
             확장된 쿼리 리스트
         """
         # 프롬프트 생성
-        prompt = self.prompt_template.format(
-            query=query, num_queries=self.num_queries
-        )
+        prompt = self.prompt_template.format(query=query, num_queries=self.num_queries)
 
         logger.info(f"Generating {self.num_queries} alternative queries...")
 

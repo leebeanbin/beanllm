@@ -49,9 +49,7 @@ class ParameterTuner:
             "mmr_lambda": 0.5,
         }
 
-    def tune_top_k(
-        self, query: str, k_values: List[int]
-    ) -> Dict[str, Any]:
+    def tune_top_k(self, query: str, k_values: List[int]) -> Dict[str, Any]:
         """
         top_k 파라미터 튜닝
 
@@ -74,12 +72,8 @@ class ParameterTuner:
                     "avg_score": sum(r.score for r in search_results) / len(search_results)
                     if search_results
                     else 0.0,
-                    "min_score": min(r.score for r in search_results)
-                    if search_results
-                    else 0.0,
-                    "max_score": max(r.score for r in search_results)
-                    if search_results
-                    else 0.0,
+                    "min_score": min(r.score for r in search_results) if search_results else 0.0,
+                    "max_score": max(r.score for r in search_results) if search_results else 0.0,
                 }
             except Exception as e:
                 logger.error(f"Error tuning top_k={k}: {e}")
@@ -87,9 +81,7 @@ class ParameterTuner:
 
         return results
 
-    def tune_threshold(
-        self, query: str, thresholds: List[float], k: int = 10
-    ) -> Dict[str, Any]:
+    def tune_threshold(self, query: str, thresholds: List[float], k: int = 10) -> Dict[str, Any]:
         """
         score_threshold 파라미터 튜닝
 
@@ -101,9 +93,7 @@ class ParameterTuner:
         Returns:
             Dict: threshold별 결과
         """
-        logger.info(
-            f"Tuning score_threshold for query: '{query}' with values {thresholds}"
-        )
+        logger.info(f"Tuning score_threshold for query: '{query}' with values {thresholds}")
 
         # Get initial search results
         try:
@@ -120,17 +110,13 @@ class ParameterTuner:
 
             results[f"threshold={threshold}"] = {
                 "num_results": len(filtered),
-                "avg_score": sum(r.score for r in filtered) / len(filtered)
-                if filtered
-                else 0.0,
+                "avg_score": sum(r.score for r in filtered) / len(filtered) if filtered else 0.0,
                 "filtered_out": len(all_results) - len(filtered),
             }
 
         return results
 
-    def tune_mmr_lambda(
-        self, query: str, lambda_values: List[float], k: int = 4
-    ) -> Dict[str, Any]:
+    def tune_mmr_lambda(self, query: str, lambda_values: List[float], k: int = 4) -> Dict[str, Any]:
         """
         MMR lambda 파라미터 튜닝
 
@@ -175,9 +161,7 @@ class ParameterTuner:
 
         return results
 
-    def compare_with_baseline(
-        self, query: str, new_params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def compare_with_baseline(self, query: str, new_params: Dict[str, Any]) -> Dict[str, Any]:
         """
         새 파라미터를 baseline과 비교
 
@@ -206,20 +190,16 @@ class ParameterTuner:
 
         # New params results
         try:
-            new_results = self.vector_store.similarity_search(
-                query, k=new_params.get("top_k", 4)
-            )
-            new_score = (
-                sum(r.score for r in new_results) / len(new_results)
-                if new_results
-                else 0.0
-            )
+            new_results = self.vector_store.similarity_search(query, k=new_params.get("top_k", 4))
+            new_score = sum(r.score for r in new_results) / len(new_results) if new_results else 0.0
         except Exception as e:
             logger.error(f"Error in new params search: {e}")
             new_score = 0.0
 
         # Compare
-        improvement = ((new_score - baseline_score) / baseline_score * 100) if baseline_score > 0 else 0.0
+        improvement = (
+            ((new_score - baseline_score) / baseline_score * 100) if baseline_score > 0 else 0.0
+        )
 
         return {
             "baseline": {
@@ -253,15 +233,26 @@ class ParameterTuner:
             "score_threshold": [0.0, 0.3, 0.5],
         }
 
-        logger.info(
-            f"Auto-tuning with {len(test_queries)} queries and ranges {param_ranges}"
-        )
+        logger.info(f"Auto-tuning with {len(test_queries)} queries and ranges {param_ranges}")
 
         # TODO: Implement full grid search
         # For now, simplified version
 
         best_params = self.baseline_params.copy()
         best_score = 0.0
+
+        # Calculate baseline score first
+        baseline_scores = []
+        for query in test_queries:
+            try:
+                results = self.vector_store.similarity_search(
+                    query, k=self.baseline_params.get("top_k", 4)
+                )
+                avg_score = sum(r.score for r in results) / len(results) if results else 0.0
+                baseline_scores.append(avg_score)
+            except Exception:
+                continue
+        baseline_score = sum(baseline_scores) / len(baseline_scores) if baseline_scores else 0.0
 
         # Test each parameter independently (not full grid)
         for param_name, param_values in param_ranges.items():
@@ -276,11 +267,7 @@ class ParameterTuner:
                         results = self.vector_store.similarity_search(
                             query, k=test_params.get("top_k", 4)
                         )
-                        avg_score = (
-                            sum(r.score for r in results) / len(results)
-                            if results
-                            else 0.0
-                        )
+                        avg_score = sum(r.score for r in results) / len(results) if results else 0.0
                         scores.append(avg_score)
                     except Exception:
                         continue
@@ -296,8 +283,6 @@ class ParameterTuner:
             "best_score": best_score,
             "baseline_params": self.baseline_params,
             "improvement_pct": (
-                (best_score - baseline_score) / baseline_score * 100
-                if baseline_score > 0
-                else 0.0
+                (best_score - baseline_score) / baseline_score * 100 if baseline_score > 0 else 0.0
             ),
         }

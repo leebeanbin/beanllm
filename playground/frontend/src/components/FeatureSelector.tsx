@@ -9,15 +9,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  MessageSquare,
-  FileText,
   Users,
   Network,
   Mic,
   ScanText,
   FolderOpen,
-  Search,
   Sparkles,
+  Wand2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,80 +25,61 @@ interface FeatureSelectorProps {
   className?: string;
 }
 
-// 일반 기능 (자동 감지 가능)
-const GENERAL_FEATURES: Array<{
-  value: FeatureMode;
-  label: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
-  description: string;
-}> = [
-  {
-    value: "agentic",
-    label: "Agentic",
-    icon: Sparkles,
-    description: "Auto feature selection (default)",
-  },
-  {
-    value: "chat",
-    label: "Chat",
-    icon: MessageSquare,
-    description: "General chat",
-  },
-  {
-    value: "rag",
-    label: "RAG",
-    icon: FileText,
-    description: "Document search & Q&A",
-  },
-  {
-    value: "web-search",
-    label: "Web Search",
-    icon: Search,
-    description: "Web search",
-  },
-];
-
-// 특화 기능 (수동 선택 필요)
+/**
+ * 특화 기능 목록
+ *
+ * - Manual 모드에서만 표시됨
+ * - Auto(Agentic) 모드에서는 AI가 자동으로 chat, rag, web-search 등을 선택
+ * - 특화 기능은 명시적으로 선택해야 함
+ */
 const SPECIAL_FEATURES: Array<{
   value: FeatureMode;
   label: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
   description: string;
+  badge?: string;
 }> = [
+  {
+    value: "agentic",
+    label: "Auto (Agentic)",
+    icon: Sparkles,
+    description: "AI selects chat, RAG, search automatically",
+    badge: "Recommended",
+  },
   {
     value: "multi-agent",
     label: "Multi-Agent",
     icon: Users,
-    description: "Agent collaboration",
+    description: "Collaborate with multiple AI agents",
   },
   {
     value: "knowledge-graph",
     label: "Knowledge Graph",
     icon: Network,
-    description: "Knowledge graph construction & search",
+    description: "Build & query knowledge graphs",
   },
   {
     value: "audio",
     label: "Audio",
     icon: Mic,
-    description: "Speech recognition & transcription",
+    description: "Speech-to-text & audio processing",
   },
   {
     value: "ocr",
     label: "OCR",
     icon: ScanText,
-    description: "Image text recognition",
+    description: "Extract text from images",
   },
   {
     value: "google",
     label: "Google Workspace",
     icon: FolderOpen,
-    description: "Docs, Drive, Gmail integration",
+    description: "Drive, Docs, Sheets, Gmail, Calendar",
   },
 ];
 
-// 수동 모드에서만 특화 기능 표시
-const FEATURE_OPTIONS = [...GENERAL_FEATURES, ...SPECIAL_FEATURES];
+// All available features for lookup
+const FEATURE_OPTIONS = SPECIAL_FEATURES;
 
 export function FeatureSelector({
   value,
@@ -126,38 +105,33 @@ export function FeatureSelector({
         </div>
       </SelectTrigger>
       <SelectContent>
-        {/* General Features Section */}
-        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
-          General Features
-        </div>
-        {GENERAL_FEATURES.map((feature) => {
-          const Icon = feature.icon;
-          return (
-            <SelectItem key={feature.value} value={feature.value}>
-              <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                <div>
-                  <div className="font-medium">{feature.label}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {feature.description}
-                  </div>
-                </div>
-              </div>
-            </SelectItem>
-          );
-        })}
-        {/* Special Features Section */}
-        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t border-border/50 mt-1">
-          Special Features
+        <div className="px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+          Select Feature Mode
         </div>
         {SPECIAL_FEATURES.map((feature) => {
           const Icon = feature.icon;
+          const isRecommended = feature.badge === "Recommended";
           return (
             <SelectItem key={feature.value} value={feature.value}>
               <div className="flex items-center gap-2">
-                <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-                <div>
-                  <div className="font-medium">{feature.label}</div>
+                <Icon
+                  className={cn(
+                    "h-4 w-4",
+                    isRecommended ? "text-primary" : "text-muted-foreground"
+                  )}
+                  strokeWidth={1.5}
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={cn("font-medium", isRecommended && "text-primary")}>
+                      {feature.label}
+                    </span>
+                    {feature.badge && (
+                      <span className="px-1.5 py-0.5 text-[9px] font-medium bg-primary/10 text-primary rounded">
+                        {feature.badge}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     {feature.description}
                   </div>

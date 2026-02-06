@@ -1,4 +1,4 @@
-.PHONY: help install install-dev type-check lint lint-fix format check-fix all clean test
+.PHONY: help install install-dev type-check lint lint-fix format check-fix all clean test pre-commit quality
 
 # 기본 변수
 PYTHON := python
@@ -21,10 +21,25 @@ install: ## 필수 의존성 설치
 	@echo "$(GREEN)필수 의존성 설치 중...$(NC)"
 	$(PYTHON) -m pip install -e .
 
-install-dev: ## 개발 의존성 설치 (타입 체커, 린터 포함)
+install-dev: ## 개발 의존성 설치 (타입 체커, 린터, pre-commit 포함)
 	@echo "$(GREEN)개발 의존성 설치 중...$(NC)"
 	$(PYTHON) -m pip install -e ".[dev]"
 	@echo "$(GREEN)✅ 개발 도구 설치 완료$(NC)"
+
+pre-commit: ## pre-commit 훅 설치 (git commit 시 자동 품질 검사)
+	@echo "$(GREEN)pre-commit 훅 설치 중...$(NC)"
+	$(PYTHON) -m pre_commit install
+	@echo "$(GREEN)✅ pre-commit 설치 완료. 이제 git commit 시 Ruff/mypy/Bandit이 자동 실행됩니다.$(NC)"
+
+quality: ## 품질 검사 한 번에 실행 (Black/Ruff → mypy → Bandit → pytest, 글 예제 10.13 스타일)
+	@set -e; \
+	echo "$(GREEN)Python 코드 품질 검사 시작...$(NC)"; \
+	echo "\n▶ 코드 포매팅 (Ruff)..."; $(PYTHON) -m ruff format $(PACKAGE); \
+	echo "\n▶ 린팅 + 임포트 정렬 (Ruff)..."; $(PYTHON) -m ruff check --fix $(PACKAGE) --select E,F,I --ignore E501; \
+	echo "\n▶ 타입 체크 (mypy)..."; $(PYTHON) -m mypy $(PACKAGE) --ignore-missing-imports --no-error-summary || true; \
+	echo "\n▶ 보안 검사 (Bandit)..."; $(PYTHON) -m bandit -r $(PACKAGE) -q || true; \
+	echo "\n▶ 테스트 (pytest)..."; $(PYTHON) -m pytest $(TESTS) -v; \
+	echo "\n$(GREEN)모든 검사가 완료되었습니다!$(NC)"
 
 type-check: ## 타입 체크 (mypy)
 	@echo "$(GREEN)타입 체크 중...$(NC)"

@@ -70,6 +70,9 @@ class OptimizeResponse:
     convergence_curve: Optional[List[float]] = None
     best_score: float = 0.0
     baseline_score: float = 0.0
+    best_params: Optional[Dict[str, Any]] = None  # Alias for optimal_parameters
+    n_trials: int = 0  # Alias for num_trials
+    convergence_data: Optional[List[Dict[str, Any]]] = None  # Detailed convergence data
     recommendations: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -78,6 +81,10 @@ class OptimizeResponse:
             self.recommendations = []
         if self.metadata is None:
             self.metadata = {}
+        if self.best_params is None:
+            self.best_params = self.optimal_parameters
+        if self.n_trials == 0:
+            self.n_trials = self.num_trials
 
 
 @dataclass
@@ -94,6 +101,12 @@ class ProfileResponse:
     total_cost: float
     bottlenecks: List[Dict[str, Any]]
     cost_breakdown: Dict[str, float]
+    # Additional fields for service compatibility
+    total_duration_ms: float = 0.0
+    total_tokens: int = 0
+    components: Optional[List[Dict[str, Any]]] = None
+    bottleneck: Optional[str] = None  # Single bottleneck string (alias)
+    breakdown: Optional[Dict[str, float]] = None  # Alias for cost_breakdown
     recommendations: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
 
@@ -102,6 +115,12 @@ class ProfileResponse:
             self.recommendations = []
         if self.metadata is None:
             self.metadata = {}
+        if self.components is None:
+            self.components = []
+        if self.breakdown is None:
+            self.breakdown = self.cost_breakdown
+        if self.total_duration_ms == 0.0:
+            self.total_duration_ms = self.total_latency * 1000
 
 
 @dataclass
@@ -118,6 +137,8 @@ class ABTestResponse:
     results_b: Dict[str, float]
     statistical_significance: Dict[str, Any]  # {"p_value": 0.03, "significant": True}
     winner: Optional[str] = None  # "config_a", "config_b", or None (no significant diff)
+    variant_a_name: str = "variant_a"
+    variant_b_name: str = "variant_b"
     effect_size: Optional[Dict[str, float]] = None
     recommendations: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None

@@ -12,11 +12,12 @@ Features:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -216,10 +217,16 @@ class CloudOCREngine(BaseOCREngine):
             y_coords = [v.y for v in vertices]
 
             bbox = BoundingBox(
-                x0=min(x_coords), y0=min(y_coords), x1=max(x_coords), y1=max(y_coords), confidence=1.0
+                x0=min(x_coords),
+                y0=min(y_coords),
+                x1=max(x_coords),
+                y1=max(y_coords),
+                confidence=1.0,
             )
 
-            line = OCRTextLine(text=text.description, bbox=bbox, confidence=1.0, language=config.language)
+            line = OCRTextLine(
+                text=text.description, bbox=bbox, confidence=1.0, language=config.language
+            )
             lines.append(line)
 
         return {
@@ -282,7 +289,9 @@ class CloudOCREngine(BaseOCREngine):
                     confidence=confidence,
                 )
 
-                line = OCRTextLine(text=text, bbox=bbox, confidence=confidence, language=config.language)
+                line = OCRTextLine(
+                    text=text, bbox=bbox, confidence=confidence, language=config.language
+                )
 
                 lines.append(line)
                 text_parts.append(text)

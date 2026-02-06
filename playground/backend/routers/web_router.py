@@ -6,12 +6,11 @@ Uses Python best practices: dict comprehensions, optional chaining.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 
 from common import get_web_search
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,10 @@ router = APIRouter(prefix="/api/web", tags=["Web Search"])
 # Request/Response Models
 # ============================================================================
 
+
 class WebSearchRequest(BaseModel):
     """Request for web search"""
+
     query: str = Field(..., description="Search query")
     num_results: int = Field(default=5, ge=1, le=20, description="Number of results")
     engine: str = Field(default="duckduckgo", description="Search engine")
@@ -38,6 +39,7 @@ class WebSearchRequest(BaseModel):
 
 class SearchResult(BaseModel):
     """Single search result"""
+
     title: str
     url: str
     snippet: str
@@ -45,6 +47,7 @@ class SearchResult(BaseModel):
 
 class WebSearchResponse(BaseModel):
     """Response from web search"""
+
     query: str
     results: List[SearchResult]
     num_results: int
@@ -54,6 +57,7 @@ class WebSearchResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _build_chat_kwargs(request: WebSearchRequest) -> Dict[str, Any]:
     """Build chat kwargs from request, filtering None values"""
@@ -117,6 +121,7 @@ async def _generate_summary(
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/search", response_model=WebSearchResponse)
 async def web_search(request: WebSearchRequest) -> WebSearchResponse:

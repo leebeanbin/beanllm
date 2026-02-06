@@ -12,11 +12,12 @@ Features:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -79,8 +80,7 @@ class EasyOCREngine(BaseOCREngine):
             import easyocr  # noqa: F401
         except ImportError:
             raise ImportError(
-                "EasyOCR is required for EasyOCREngine. "
-                "Install it with: pip install easyocr"
+                "EasyOCR is required for EasyOCREngine. " "Install it with: pip install easyocr"
             )
 
     def _get_language_code(self, language: str) -> str:

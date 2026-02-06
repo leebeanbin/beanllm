@@ -19,6 +19,22 @@ if TYPE_CHECKING:
     from beanllm.facade.service.types import VectorStoreProtocol
 
 
+def _safe_log_event(
+    event_logger: Any,
+    event_type: str,
+    data: Dict[str, Any],
+    level: str = "info",
+) -> None:
+    """이벤트 로깅을 안전하게 수행하는 헬퍼 함수"""
+    if event_logger is None:
+        return
+    try:
+        log_method = getattr(event_logger, level, event_logger.info)
+        log_method(event_type, data)
+    except Exception:
+        pass  # 로깅 실패는 무시
+
+
 class RAGChain(AsyncHelperMixin):
     """
     완전한 RAG 파이프라인 (Facade 패턴)
@@ -107,12 +123,12 @@ Answer:"""
             **kwargs: 추가 파라미터
         """
         # 기존 로직 사용 (점진적 마이그레이션)
-        from beanllm.domain.loaders import DocumentLoader
         from beanllm.domain.embeddings import Embedding
+        from beanllm.domain.loaders import DocumentLoader
         from beanllm.domain.splitters import TextSplitter
         from beanllm.domain.vector_stores import from_documents
         from beanllm.infrastructure.distributed import get_event_logger
-        
+
         event_logger = get_event_logger()
 
         # 파이프라인 시작 이벤트
@@ -120,10 +136,12 @@ Answer:"""
             event_logger,
             "rag.pipeline.started",
             {
-                "source": str(source)[:200] if isinstance(source, (str, Path)) else f"list({len(source)})",
+                "source": str(source)[:200]
+                if isinstance(source, (str, Path))
+                else f"list({len(source)})",
                 "chunk_size": chunk_size,
                 "embedding_model": embedding_model,
-            }
+            },
         )
 
         try:
@@ -135,19 +153,17 @@ Answer:"""
 
             # 문서 로딩 완료 이벤트
             _safe_log_event(
-                event_logger,
-                "rag.pipeline.documents_loaded",
-                {"document_count": len(documents)}
+                event_logger, "rag.pipeline.documents_loaded", {"document_count": len(documents)}
             )
 
             # 2. 텍스트 분할
-            chunks = TextSplitter.split(documents, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+            chunks = TextSplitter.split(
+                documents, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+            )
 
             # 텍스트 분할 완료 이벤트
             _safe_log_event(
-                event_logger,
-                "rag.pipeline.chunks_created",
-                {"chunk_count": len(chunks)}
+                event_logger, "rag.pipeline.chunks_created", {"chunk_count": len(chunks)}
             )
 
             # 3. 임베딩 및 Vector Store
@@ -166,17 +182,14 @@ Answer:"""
                 {
                     "chunk_count": len(chunks),
                     "vector_store_type": vector_store.__class__.__name__,
-                }
+                },
             )
 
             return cls(vector_store=vector_store, llm=llm, **kwargs)
         except Exception as e:
             # 파이프라인 오류 이벤트
             _safe_log_event(
-                event_logger,
-                "rag.pipeline.error",
-                {"error": str(e)[:500]},
-                level="error"
+                event_logger, "rag.pipeline.error", {"error": str(e)[:500]}, level="error"
             )
             raise
 
@@ -206,7 +219,6 @@ Answer:"""
             검색 결과 리스트
         """
         # Handler를 통한 처리
-        import asyncio
 
         from beanllm.facade.dto.request.core.rag_request import RAGRequest
 
@@ -263,7 +275,6 @@ Answer:"""
             답변 (include_sources=True면 (답변, 출처) 튜플)
         """
         # Handler를 통한 처리
-        import asyncio
 
         llm_model = model or (self.llm.model if self.llm else "gpt-4o-mini")
 
@@ -313,7 +324,6 @@ Answer:"""
         # 기존 rag_chain.py의 stream_query 정확히 마이그레이션
         # 기존: for chunk in llm.stream(prompt): yield chunk.content
         # 기존 코드: llm.stream(prompt)는 llm.stream_chat([{"role": "user", "content": prompt}])와 동일
-        import asyncio
 
         llm_model = model or (self.llm.model if self.llm else "gpt-4o-mini")
 
@@ -400,10 +410,9 @@ Answer:"""
             answers = rag.batch_query(questions, model="gpt-4o")
         """
         # 내부적으로 병렬 처리 사용 (사용자는 신경 쓸 필요 없음)
-        import asyncio
 
         # 분산 아키텍처 사용 (환경변수에 따라 자동 선택)
-        from beanllm.infrastructure.distributed import get_rate_limiter, ConcurrencyController
+        from beanllm.infrastructure.distributed import ConcurrencyController, get_rate_limiter
 
         # 자동 최적화 설정
         rate_limiter = get_rate_limiter()
@@ -415,12 +424,12 @@ Answer:"""
                 """단일 질의 (Rate Limiting + 동시성 제어)"""
                 # Rate Limiting (분산 또는 인메모리)
                 await rate_limiter.wait(f"llm:{model or 'default'}", cost=1.0)
-                
+
                 # 동시성 제어 (분산 또는 인메모리)
                 async with concurrency_controller.with_concurrency_control(
                     "rag.query",
                     max_concurrent=max_concurrent,
-                    rate_limit_key=f"llm:{model or 'default'}"
+                    rate_limit_key=f"llm:{model or 'default'}",
                 ):
                     return await self.aquery(question, k=k, model=model, **kwargs)
 
@@ -478,7 +487,6 @@ Answer:"""
             답변 (include_sources=True면 (답변, 출처) 튜플)
         """
         # 기존 rag_chain.py의 aquery 정확히 마이그레이션
-        import asyncio
 
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
@@ -577,12 +585,16 @@ class RAGBuilder:
         # 임베딩 기본값 - Ollama 사용 시 Ollama embedding 사용
         if self.embedding is None:
             # LLM이 Ollama면 Ollama embedding 사용 (API key 불필요)
-            if self.llm_client and hasattr(self.llm_client, 'provider') and self.llm_client.provider == 'ollama':
+            if (
+                self.llm_client
+                and hasattr(self.llm_client, "provider")
+                and self.llm_client.provider == "ollama"
+            ):
                 self.embedding = Embedding(model="nomic-embed-text")
-            elif self.llm_client and hasattr(self.llm_client, 'model'):
+            elif self.llm_client and hasattr(self.llm_client, "model"):
                 # 모델 이름으로 Ollama 감지
                 model_lower = self.llm_client.model.lower()
-                if any(x in model_lower for x in ['llama', 'mistral', 'qwen', 'phi', 'gemma']):
+                if any(x in model_lower for x in ["llama", "mistral", "qwen", "phi", "gemma"]):
                     self.embedding = Embedding(model="nomic-embed-text")
                 else:
                     self.embedding = Embedding(model="text-embedding-3-small")

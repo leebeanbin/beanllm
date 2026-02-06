@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from beanllm.dto.request.core.chain_request import ChainRequest
 from beanllm.dto.response.core.chain_response import ChainResponse
 from beanllm.infrastructure.distributed.pipeline_decorators import (
-    with_batch_processing,
     with_distributed_features,
 )
 from beanllm.service.chain_service import IChainService
@@ -61,7 +60,9 @@ class ChainServiceImpl(IChainService):
         enable_rate_limiting=True,
         enable_event_streaming=True,
         cache_key_prefix="chain:basic",
-        rate_limit_key=lambda self, args, kwargs: f"llm:{(args[0] if args else kwargs.get('request')).model if hasattr(args[0] if args else kwargs.get('request'), 'model') else 'default'}",
+        rate_limit_key=lambda self,
+        args,
+        kwargs: f"llm:{(args[0] if args else kwargs.get('request')).model if hasattr(args[0] if args else kwargs.get('request'), 'model') else 'default'}",
         event_type="chain.basic",
     )
     async def run_chain(self, request: ChainRequest) -> ChainResponse:
@@ -158,7 +159,9 @@ class ChainServiceImpl(IChainService):
         pipeline_type="chain",
         enable_event_streaming=True,
         enable_distributed_lock=True,
-        lock_key=lambda self, args, kwargs: f"chain:sequential:{hash(str((args[0] if args else kwargs.get('request')).chains)) if hasattr(args[0] if args else kwargs.get('request'), 'chains') else 'default'}",
+        lock_key=lambda self,
+        args,
+        kwargs: f"chain:sequential:{hash(str((args[0] if args else kwargs.get('request')).chains)) if hasattr(args[0] if args else kwargs.get('request'), 'chains') else 'default'}",
         event_type="chain.sequential",
     )
     async def run_sequential_chain(self, request: ChainRequest) -> ChainResponse:
@@ -211,7 +214,9 @@ class ChainServiceImpl(IChainService):
         pipeline_type="chain",
         enable_rate_limiting=True,
         enable_event_streaming=True,
-        rate_limit_key=lambda self, args, kwargs: f"llm:{(args[0] if args else kwargs.get('request')).model if hasattr(args[0] if args else kwargs.get('request'), 'model') else 'default'}",
+        rate_limit_key=lambda self,
+        args,
+        kwargs: f"llm:{(args[0] if args else kwargs.get('request')).model if hasattr(args[0] if args else kwargs.get('request'), 'model') else 'default'}",
         event_type="chain.parallel",
     )
     async def run_parallel_chain(self, request: ChainRequest) -> ChainResponse:
@@ -249,7 +254,7 @@ class ChainServiceImpl(IChainService):
                     async with concurrency_controller.with_concurrency_control(
                         "chain.parallel",
                         max_concurrent=10,
-                        rate_limit_key=f"llm:{chain_req.model or 'default'}"
+                        rate_limit_key=f"llm:{chain_req.model or 'default'}",
                     ):
                         return await run_chain_request(chain_req)
 
@@ -259,13 +264,20 @@ class ChainServiceImpl(IChainService):
                     items=chains,
                     item_to_task_data=lambda chain_req: {"chain_request": chain_req},
                     handler=lambda task_data: run_with_concurrency(task_data["chain_request"]),
-                    priority=0
+                    priority=0,
                 )
 
                 # 결과 정리
-                chain_results = [r if isinstance(r, ChainResponse) else ChainResponse(output=str(r), success=False) for r in results]
+                chain_results = [
+                    r
+                    if isinstance(r, ChainResponse)
+                    else ChainResponse(output=str(r), success=False)
+                    for r in results
+                ]
             except Exception as e:
-                logger.warning(f"Distributed parallel chain failed: {e}, falling back to sequential")
+                logger.warning(
+                    f"Distributed parallel chain failed: {e}, falling back to sequential"
+                )
                 # Fallback to sequential
                 tasks = [run_chain_request(chain_request) for chain_request in chains]
                 chain_results = await asyncio.gather(*tasks)

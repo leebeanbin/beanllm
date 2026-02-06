@@ -51,8 +51,9 @@ class ConfigService:
         Returns:
             Number of keys loaded successfully
         """
-        from services.encryption_service import encryption_service
         from schemas.database import PROVIDER_CONFIG
+
+        from services.encryption_service import encryption_service
 
         keys_collection = db["api_keys"]
         count = 0
@@ -77,7 +78,9 @@ class ConfigService:
                     self._loaded_providers[provider] = doc.get("is_valid", False)
                     count += 1
 
-                    logger.info(f"Loaded API key for {provider} (valid: {doc.get('is_valid', False)})")
+                    logger.info(
+                        f"Loaded API key for {provider} (valid: {doc.get('is_valid', False)})"
+                    )
 
                 except Exception as e:
                     logger.warning(f"Failed to load API key for {provider}: {e}")
@@ -208,6 +211,7 @@ class ConfigService:
         """
         try:
             from beanllm.providers.provider_factory import ProviderFactory
+
             ProviderFactory.clear_cache()
             logger.debug("Cleared ProviderFactory cache")
         except ImportError:

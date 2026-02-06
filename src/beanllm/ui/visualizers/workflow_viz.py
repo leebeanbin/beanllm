@@ -12,12 +12,9 @@ from typing import Any, Dict, List, Optional
 from rich import box
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, TaskID, TextColumn
 from rich.table import Table
-from rich.text import Text
 from rich.tree import Tree
 
-from beanllm.ui.components import Badge, StatusIcon
 from beanllm.ui.console import get_console
 
 
@@ -129,9 +126,11 @@ class WorkflowVisualizer:
         table.add_row("Total Nodes", str(total_nodes))
         table.add_row(
             "Completed",
-            f"[green]{completed_count}[/green] ({', '.join(nodes_completed[:3])}" +
-            (f", +{len(nodes_completed) - 3} more" if len(nodes_completed) > 3 else "") + ")"
-            if nodes_completed else "[dim]None[/dim]",
+            f"[green]{completed_count}[/green] ({', '.join(nodes_completed[:3])}"
+            + (f", +{len(nodes_completed) - 3} more" if len(nodes_completed) > 3 else "")
+            + ")"
+            if nodes_completed
+            else "[dim]None[/dim]",
         )
         table.add_row(
             "Running",
@@ -141,9 +140,11 @@ class WorkflowVisualizer:
         )
         table.add_row(
             "Pending",
-            f"[dim]{len(nodes_pending)}[/dim] ({', '.join(nodes_pending[:3])}" +
-            (f", +{len(nodes_pending) - 3} more" if len(nodes_pending) > 3 else "") + ")"
-            if nodes_pending else "[dim]None[/dim]",
+            f"[dim]{len(nodes_pending)}[/dim] ({', '.join(nodes_pending[:3])}"
+            + (f", +{len(nodes_pending) - 3} more" if len(nodes_pending) > 3 else "")
+            + ")"
+            if nodes_pending
+            else "[dim]None[/dim]",
         )
 
         if nodes_failed:
@@ -371,9 +372,7 @@ class WorkflowVisualizer:
         table.add_column("Cost", style="green", width=15)
         table.add_column("% of Total", style="cyan", width=15)
 
-        for node_id, cost in sorted(
-            cost_breakdown.items(), key=lambda x: x[1], reverse=True
-        ):
+        for node_id, cost in sorted(cost_breakdown.items(), key=lambda x: x[1], reverse=True):
             percentage = (cost / total_cost * 100) if total_cost > 0 else 0
 
             table.add_row(

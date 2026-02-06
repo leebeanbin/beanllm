@@ -2,8 +2,9 @@
 Client Facade 테스트 - 클라이언트 인터페이스 테스트
 """
 
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
 try:
     from beanllm.dto.response.chat_response import ChatResponse
@@ -71,5 +72,3 @@ class TestClientFacade:
             chunks.append(chunk)
 
         assert len(chunks) > 0
-
-

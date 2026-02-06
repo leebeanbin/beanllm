@@ -1,15 +1,17 @@
 """
 개선된 API 데모 - 사용자가 쉽게 설정하고 조정할 수 있는 방법
 """
+
 from pathlib import Path
-from beanllm import DocumentLoader, TextSplitter, Document
+
+from beanllm import Document, DocumentLoader, TextSplitter
 
 
 def demo_loader_type_selection():
     """DocumentLoader - 명시적 타입 지정"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📂 DocumentLoader - 타입 지정 데모")
-    print("="*60)
+    print("=" * 60)
 
     # 테스트 파일 생성
     test_txt = Path("test.txt")
@@ -34,11 +36,7 @@ def demo_loader_type_selection():
 
         # 방법 3: 타입 지정 + 추가 파라미터
         print("\n3. 타입 + 파라미터:")
-        docs_custom = DocumentLoader.load(
-            "test.csv",
-            loader_type="csv",
-            content_columns=["name"]
-        )
+        docs_custom = DocumentLoader.load("test.csv", loader_type="csv", content_columns=["name"])
         print(f"   ✓ CSV 특정 컬럼만: {docs_custom[0].content}")
 
         print("\n✓ DocumentLoader: 자동 감지 + 명시적 선택 둘 다 가능!")
@@ -51,9 +49,9 @@ def demo_loader_type_selection():
 
 def demo_splitter_strategies():
     """TextSplitter - 쉬운 전략 선택"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✂️  TextSplitter - 전략 선택 데모")
-    print("="*60)
+    print("=" * 60)
 
     # 테스트 문서
     text = """
@@ -114,9 +112,9 @@ Deep learning uses neural networks.
 
 def demo_advanced_customization():
     """고급 커스터마이징 예제"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🔧 고급 커스터마이징 데모")
-    print("="*60)
+    print("=" * 60)
 
     text = "AI is amazing. " * 50
     docs = [Document(content=text, metadata={"source": "test"})]
@@ -126,7 +124,7 @@ def demo_advanced_customization():
     splitter = TextSplitter.recursive(
         chunk_size=100,
         chunk_overlap=20,
-        separators=[". ", " "]  # 문장 우선, 그 다음 단어
+        separators=[". ", " "],  # 문장 우선, 그 다음 단어
     )
     chunks = splitter.split_documents(docs)
     print(f"   ✓ {len(chunks)} 청크 생성")
@@ -134,11 +132,7 @@ def demo_advanced_customization():
 
     # 2. Character with custom separator
     print("\n2. Character + 커스텀 구분자:")
-    splitter = TextSplitter.character(
-        separator=". ",
-        chunk_size=80,
-        chunk_overlap=10
-    )
+    splitter = TextSplitter.character(separator=". ", chunk_size=80, chunk_overlap=10)
     chunks = splitter.split_documents(docs)
     print(f"   ✓ {len(chunks)} 청크 생성")
 
@@ -174,15 +168,16 @@ Content 3
 
 def demo_real_world_usage():
     """실전 사용 예제"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 실전 사용 예제")
-    print("="*60)
+    print("=" * 60)
 
     # 시나리오 1: PDF 문서를 작은 청크로 분할
     print("\n시나리오 1: 문서 로딩 → 분할 (간단!)")
 
     test_file = Path("document.txt")
-    test_file.write_text("""
+    test_file.write_text(
+        """
 Introduction to AI
 
 Artificial Intelligence (AI) is revolutionizing technology.
@@ -196,7 +191,9 @@ It powers modern AI applications.
 Applications
 
 AI is used in various fields: healthcare, finance, and more.
-    """.strip(), encoding="utf-8")
+    """.strip(),
+        encoding="utf-8",
+    )
 
     try:
         # 한 줄씩 간단하게!
@@ -236,11 +233,7 @@ AI is used in various fields: healthcare, finance, and more.
     print("\n시나리오 3: 계층적 분할 (똑똑!)")
 
     # separators 파라미터로 간단히!
-    chunks = TextSplitter.split(
-        log_docs,
-        separators=["---", "\n", " "],
-        chunk_size=80
-    )
+    chunks = TextSplitter.split(log_docs, separators=["---", "\n", " "], chunk_size=80)
     print(f"   ✓ 계층적 구분자로 {len(chunks)} 청크")
 
     print("\n✓ 실전 사용: 간단하고 직관적!")
@@ -248,9 +241,9 @@ AI is used in various fields: healthcare, finance, and more.
 
 def demo_comparison():
     """LangChain vs beanllm 비교"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📊 LangChain vs beanllm 비교")
-    print("="*60)
+    print("=" * 60)
 
     print("\n【 LangChain 방식 】(복잡)")
     print("""
@@ -293,9 +286,9 @@ def demo_comparison():
 
 def main():
     """모든 데모 실행"""
-    print("="*60)
+    print("=" * 60)
     print("🎯 개선된 API 데모")
-    print("="*60)
+    print("=" * 60)
     print("\nbeanllm의 철학:")
     print("  1. 자동 감지 (80% 케이스)")
     print("  2. 명시적 선택 (세밀한 제어)")
@@ -307,9 +300,9 @@ def main():
     demo_real_world_usage()
     demo_comparison()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 개선 완료!")
-    print("="*60)
+    print("=" * 60)
     print("\n✨ 주요 개선사항:")
     print("  1. DocumentLoader.load(file, loader_type='pdf')")
     print("  2. TextSplitter.recursive(chunk_size=1000)")

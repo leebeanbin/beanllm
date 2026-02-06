@@ -27,9 +27,7 @@ class DebugReportExporter:
     """
 
     @staticmethod
-    def export_json(
-        data: Dict[str, Any], output_path: str, pretty: bool = True
-    ) -> str:
+    def export_json(data: Dict[str, Any], output_path: str, pretty: bool = True) -> str:
         """
         JSON 포맷으로 내보내기
 
@@ -93,39 +91,25 @@ class DebugReportExporter:
             md_lines.append("## Vector Store Metadata")
             md_lines.append(f"- **Documents**: {metadata.get('num_documents', 0)}")
             md_lines.append(f"- **Embeddings**: {metadata.get('num_embeddings', 0)}")
-            md_lines.append(
-                f"- **Embedding Dimension**: {metadata.get('embedding_dim', 0)}"
-            )
-            md_lines.append(
-                f"- **VectorStore Type**: {metadata.get('vector_store_type', 'N/A')}"
-            )
+            md_lines.append(f"- **Embedding Dimension**: {metadata.get('embedding_dim', 0)}")
+            md_lines.append(f"- **VectorStore Type**: {metadata.get('vector_store_type', 'N/A')}")
             md_lines.append("")
 
         # Embedding Analysis
         if "embedding_analysis" in data:
             analysis = data["embedding_analysis"]
             md_lines.append("## Embedding Analysis")
-            md_lines.append(
-                f"- **Method**: {analysis.get('method', 'N/A').upper()}"
-            )
-            md_lines.append(
-                f"- **Components**: {analysis.get('n_components', 0)}"
-            )
+            md_lines.append(f"- **Method**: {analysis.get('method', 'N/A').upper()}")
+            md_lines.append(f"- **Components**: {analysis.get('n_components', 0)}")
 
             if "cluster_stats" in analysis:
                 stats = analysis["cluster_stats"]
-                md_lines.append(
-                    f"- **Clusters**: {stats.get('n_clusters', 0)}"
-                )
+                md_lines.append(f"- **Clusters**: {stats.get('n_clusters', 0)}")
                 md_lines.append(f"- **Noise Points**: {stats.get('n_noise', 0)}")
-                md_lines.append(
-                    f"- **Noise Ratio**: {stats.get('noise_ratio', 0):.2%}"
-                )
+                md_lines.append(f"- **Noise Ratio**: {stats.get('noise_ratio', 0):.2%}")
 
             if "silhouette_score" in analysis:
-                md_lines.append(
-                    f"- **Silhouette Score**: {analysis['silhouette_score']:.4f}"
-                )
+                md_lines.append(f"- **Silhouette Score**: {analysis['silhouette_score']:.4f}")
 
             md_lines.append("")
 
@@ -133,22 +117,14 @@ class DebugReportExporter:
         if "chunk_validation" in data:
             validation = data["chunk_validation"]
             md_lines.append("## Chunk Validation")
-            md_lines.append(
-                f"- **Total Chunks**: {validation.get('total_chunks', 0)}"
-            )
-            md_lines.append(
-                f"- **Valid Chunks**: {validation.get('valid_chunks', 0)}"
-            )
+            md_lines.append(f"- **Total Chunks**: {validation.get('total_chunks', 0)}")
+            md_lines.append(f"- **Valid Chunks**: {validation.get('valid_chunks', 0)}")
 
             if "size_issues" in validation:
-                md_lines.append(
-                    f"- **Size Issues**: {len(validation['size_issues'])}"
-                )
+                md_lines.append(f"- **Size Issues**: {len(validation['size_issues'])}")
 
             if "duplicate_chunks" in validation:
-                md_lines.append(
-                    f"- **Duplicate Chunks**: {len(validation['duplicate_chunks'])}"
-                )
+                md_lines.append(f"- **Duplicate Chunks**: {len(validation['duplicate_chunks'])}")
 
             if "recommendations" in validation:
                 md_lines.append("\n### Recommendations")
@@ -168,9 +144,7 @@ class DebugReportExporter:
                     md_lines.append(f"- **{key}**: {value}")
 
             if "improvement_pct" in tuning:
-                md_lines.append(
-                    f"\n**Improvement**: {tuning['improvement_pct']:.2f}%"
-                )
+                md_lines.append(f"\n**Improvement**: {tuning['improvement_pct']:.2f}%")
 
             md_lines.append("")
 
@@ -335,21 +309,15 @@ class DebugReportExporter:
 
         if "json" in formats:
             json_path = output_dir_path / f"debug_report_{session_id}_{timestamp}.json"
-            results["json"] = DebugReportExporter.export_json(
-                session_data, str(json_path)
-            )
+            results["json"] = DebugReportExporter.export_json(session_data, str(json_path))
 
         if "markdown" in formats:
             md_path = output_dir_path / f"debug_report_{session_id}_{timestamp}.md"
-            results["markdown"] = DebugReportExporter.export_markdown(
-                session_data, str(md_path)
-            )
+            results["markdown"] = DebugReportExporter.export_markdown(session_data, str(md_path))
 
         if "html" in formats:
             html_path = output_dir_path / f"debug_report_{session_id}_{timestamp}.html"
-            results["html"] = DebugReportExporter.export_html(
-                session_data, str(html_path)
-            )
+            results["html"] = DebugReportExporter.export_html(session_data, str(html_path))
 
         logger.info(f"Full report created: {len(results)} files")
         return results

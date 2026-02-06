@@ -2,23 +2,19 @@
 Vector Store 선택 방법 - 3가지 방법
 Embedding과 같은 패턴으로 통일
 """
-from beanllm import (
-    VectorStore,
-    Document,
-    Embedding,
-    create_vector_store,
-    from_documents
-)
+
+from beanllm import Document, Embedding, VectorStore, create_vector_store, from_documents
 
 
 def demo_auto_selection():
     """방법 1: 자동 선택 (가장 간단!)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("1️⃣  자동 선택 (추천!)")
-    print("="*60)
+    print("=" * 60)
 
     # 더미 임베딩 (API 키 없이도 테스트)
     import random
+
     embed_func = lambda texts: [[random.random() for _ in range(384)] for _ in texts]
 
     try:
@@ -32,7 +28,7 @@ def demo_auto_selection():
         docs = [
             Document(content="AI is amazing"),
             Document(content="ML is powerful"),
-            Document(content="DL is deep")
+            Document(content="DL is deep"),
         ]
 
         store.add_documents(docs)
@@ -50,20 +46,19 @@ def demo_auto_selection():
 
 def demo_explicit_selection():
     """방법 2: 명시적 선택"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2️⃣  명시적 선택")
-    print("="*60)
+    print("=" * 60)
 
     import random
+
     embed_func = lambda texts: [[random.random() for _ in range(384)] for _ in texts]
 
     # Chroma 명시
     print("\n[1] Chroma 명시:")
     try:
         store = VectorStore(
-            provider="chroma",
-            embedding_function=embed_func,
-            collection_name="explicit_demo"
+            provider="chroma", embedding_function=embed_func, collection_name="explicit_demo"
         )
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
@@ -72,11 +67,7 @@ def demo_explicit_selection():
     # FAISS 명시
     print("\n[2] FAISS 명시:")
     try:
-        store = VectorStore(
-            provider="faiss",
-            dimension=384,
-            embedding_function=embed_func
-        )
+        store = VectorStore(provider="faiss", dimension=384, embedding_function=embed_func)
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
         print(f"  ⚠️  {e}")
@@ -86,20 +77,18 @@ def demo_explicit_selection():
 
 def demo_factory_methods():
     """방법 3: 팩토리 메서드 (기존 방식)"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3️⃣  팩토리 메서드")
-    print("="*60)
+    print("=" * 60)
 
     import random
+
     embed_func = lambda texts: [[random.random() for _ in range(384)] for _ in texts]
 
     # Chroma
     print("\n[1] VectorStore.chroma():")
     try:
-        store = VectorStore.chroma(
-            embedding_function=embed_func,
-            collection_name="factory_demo"
-        )
+        store = VectorStore.chroma(embedding_function=embed_func, collection_name="factory_demo")
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
         print(f"  ⚠️  {e}")
@@ -107,10 +96,7 @@ def demo_factory_methods():
     # FAISS
     print("\n[2] VectorStore.faiss():")
     try:
-        store = VectorStore.faiss(
-            dimension=384,
-            embedding_function=embed_func
-        )
+        store = VectorStore.faiss(dimension=384, embedding_function=embed_func)
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
         print(f"  ⚠️  {e}")
@@ -119,9 +105,7 @@ def demo_factory_methods():
     print("\n[3] VectorStore.pinecone():")
     try:
         store = VectorStore.pinecone(
-            index_name="test",
-            dimension=384,
-            embedding_function=embed_func
+            index_name="test", dimension=384, embedding_function=embed_func
         )
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
@@ -132,18 +116,15 @@ def demo_factory_methods():
 
 def demo_convenience_functions():
     """편의 함수도 동일한 패턴"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4️⃣  편의 함수")
-    print("="*60)
+    print("=" * 60)
 
     import random
+
     embed_func = lambda texts: [[random.random() for _ in range(384)] for _ in texts]
 
-    docs = [
-        Document(content="Test 1"),
-        Document(content="Test 2"),
-        Document(content="Test 3")
-    ]
+    docs = [Document(content="Test 1"), Document(content="Test 2"), Document(content="Test 3")]
 
     # create_vector_store - 자동 선택
     print("\n[1] create_vector_store() - 자동:")
@@ -156,10 +137,7 @@ def demo_convenience_functions():
     # create_vector_store - 명시적
     print("\n[2] create_vector_store() - 명시:")
     try:
-        store = create_vector_store(
-            provider="chroma",
-            embedding_function=embed_func
-        )
+        store = create_vector_store(provider="chroma", embedding_function=embed_func)
         print(f"  ✓ {store.__class__.__name__} 생성")
     except Exception as e:
         print(f"  ⚠️  {e}")
@@ -187,9 +165,9 @@ def demo_convenience_functions():
 
 def demo_comparison():
     """Embedding과 동일한 패턴"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("5️⃣  Embedding과 동일한 패턴")
-    print("="*60)
+    print("=" * 60)
 
     print("\n【 Embedding 패턴 】")
     print("""
@@ -220,27 +198,32 @@ def demo_comparison():
 
 def demo_practical_usage():
     """실전 사용 예시"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("6️⃣  실전 사용 - RAG 파이프라인")
-    print("="*60)
+    print("=" * 60)
+
+    from pathlib import Path
 
     from beanllm import DocumentLoader, TextSplitter
-    from pathlib import Path
 
     # 테스트 파일
     test_file = Path("selection_test.txt")
-    test_file.write_text("""
+    test_file.write_text(
+        """
 AI is transforming technology.
 Machine learning learns from data.
 Deep learning uses neural networks.
-    """.strip(), encoding="utf-8")
+    """.strip(),
+        encoding="utf-8",
+    )
 
     try:
         import random
+
         embed_func = lambda texts: [[random.random() for _ in range(384)] for _ in texts]
 
         print("\n[가장 간단한 방법]")
-        print("="*60)
+        print("=" * 60)
 
         # 파이프라인 (모두 자동!)
         docs = DocumentLoader.load(test_file)
@@ -255,7 +238,7 @@ Deep learning uses neural networks.
         print(f"  ✓ 검색: {len(results)}개 결과")
 
         print("\n[특정 provider 사용]")
-        print("="*60)
+        print("=" * 60)
 
         # FAISS를 명시적으로 선택
         try:
@@ -263,7 +246,7 @@ Deep learning uses neural networks.
                 chunks,
                 embed_func,
                 provider="faiss",  # 명시
-                dimension=384
+                dimension=384,
             )
             print(f"  ✓ Vector Store: {store.__class__.__name__}")
         except Exception as e:
@@ -278,9 +261,9 @@ Deep learning uses neural networks.
 
 def main():
     """모든 데모 실행"""
-    print("="*60)
+    print("=" * 60)
     print("🎯 Vector Store 선택 방법 - 3가지")
-    print("="*60)
+    print("=" * 60)
     print("\nEmbedding과 동일한 패턴으로 통일!")
     print("1. 자동 선택 (provider 생략)")
     print("2. 명시적 선택 (provider 지정)")
@@ -293,9 +276,9 @@ def main():
     demo_comparison()
     demo_practical_usage()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 Vector Store 선택 데모 완료!")
-    print("="*60)
+    print("=" * 60)
     print("\n✨ 핵심:")
     print("  1. 기본은 자동 선택 (가장 간단)")
     print("  2. 필요할 때 명시적 선택")

@@ -453,9 +453,7 @@ class Benchmarker:
 
         return results
 
-    def generate_latency_distribution(
-        self, result: BenchmarkResult
-    ) -> Dict[str, List[float]]:
+    def generate_latency_distribution(self, result: BenchmarkResult) -> Dict[str, List[float]]:
         """
         지연시간 분포 데이터 생성
 
@@ -465,7 +463,6 @@ class Benchmarker:
                 "counts": [10, 25, 40, ...]  # 각 버킷의 쿼리 수
             }
         """
-        import math
 
         latencies = result.latencies
 

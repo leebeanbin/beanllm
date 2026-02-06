@@ -2,8 +2,9 @@
 ParameterAdapter 테스트 - 파라미터 변환 테스트
 """
 
-import pytest
 from unittest.mock import Mock, patch
+
+import pytest
 
 from beanllm.infrastructure.adapter import (
     AdaptedParameters,
@@ -161,5 +162,3 @@ class TestParameterAdapter:
 
         assert isinstance(is_valid, bool)
         assert isinstance(errors, list)
-
-

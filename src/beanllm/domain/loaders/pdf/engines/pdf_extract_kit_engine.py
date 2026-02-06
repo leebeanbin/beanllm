@@ -17,7 +17,7 @@ Requirements:
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from .base import BasePDFEngine
 
@@ -258,9 +258,7 @@ class PDFExtractKitEngine(BasePDFEngine):
         # 임시: PyMuPDF로 텍스트 추출 (fallback)
         return ""
 
-    def _extract_tables(
-        self, layout_results: List, page_image, table_format: str
-    ) -> List[Dict]:
+    def _extract_tables(self, layout_results: List, page_image, table_format: str) -> List[Dict]:
         """
         StructTable-InternVL2로 테이블 추출
 
@@ -284,9 +282,7 @@ class PDFExtractKitEngine(BasePDFEngine):
         # 임시 반환
         return []
 
-    def _extract_images(
-        self, layout_results: List, page_image, page_num: int
-    ) -> List[Dict]:
+    def _extract_images(self, layout_results: List, page_image, page_num: int) -> List[Dict]:
         """
         레이아웃에서 이미지 추출
 

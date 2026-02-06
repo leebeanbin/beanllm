@@ -28,6 +28,7 @@ from .base_framework import BaseEvaluationFramework
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
@@ -129,8 +130,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             import deepeval
         except ImportError:
             raise ImportError(
-                "deepeval is required for DeepEvalWrapper. "
-                "Install it with: pip install deepeval"
+                "deepeval is required for DeepEvalWrapper. " "Install it with: pip install deepeval"
             )
 
         self._deepeval = deepeval
@@ -181,8 +181,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
         if metric_name not in metric_map:
             raise ValueError(
-                f"Unknown metric: {metric_name}. "
-                f"Available: {list(metric_map.keys())}"
+                f"Unknown metric: {metric_name}. " f"Available: {list(metric_map.keys())}"
             )
 
         metric_class = metric_map[metric_name]
@@ -494,12 +493,14 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
             except Exception as e:
                 logger.error(f"DeepEval evaluation failed for item {item}: {e}")
-                results.append({
-                    "score": 0.0,
-                    "reason": f"Error: {e}",
-                    "is_successful": False,
-                    "error": str(e),
-                })
+                results.append(
+                    {
+                        "score": 0.0,
+                        "reason": f"Error: {e}",
+                        "is_successful": False,
+                        "error": str(e),
+                    }
+                )
 
         logger.info(f"DeepEval batch evaluation completed: {len(results)} items")
 
@@ -507,7 +508,9 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
     # BaseEvaluationFramework 추상 메서드 구현
 
-    def evaluate(self, metric: str, data: Union[Dict[str, Any], List[Dict[str, Any]]], **kwargs) -> Dict[str, Any]:
+    def evaluate(
+        self, metric: str, data: Union[Dict[str, Any], List[Dict[str, Any]]], **kwargs
+    ) -> Dict[str, Any]:
         """
         평가 실행 (BaseEvaluationFramework 인터페이스)
 
@@ -556,8 +559,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
                 return self.evaluate_toxicity(**data, **kwargs)
             else:
                 raise ValueError(
-                    f"Unknown metric: {metric}. "
-                    f"Available: {list(self.list_tasks().keys())}"
+                    f"Unknown metric: {metric}. " f"Available: {list(self.list_tasks().keys())}"
                 )
 
     def list_tasks(self) -> Dict[str, str]:

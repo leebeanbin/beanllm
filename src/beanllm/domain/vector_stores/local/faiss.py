@@ -4,9 +4,8 @@ FAISS Vector Store Implementation
 Facebook AI Similarity Search
 """
 
-import os
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List
 
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document
@@ -215,16 +214,15 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # 문서 및 매핑 저장 (JSON으로 안전하게 직렬화)
         serialized_docs = []
         for doc in self.documents:
-            serialized_docs.append({
-                "content": doc.content,
-                "metadata": doc.metadata
-            })
+            serialized_docs.append({"content": doc.content, "metadata": doc.metadata})
 
         with open(f"{path}.json", "w", encoding="utf-8") as f:
-            json.dump({
-                "documents": serialized_docs,
-                "ids_to_index": self.ids_to_index
-            }, f, ensure_ascii=False, indent=2)
+            json.dump(
+                {"documents": serialized_docs, "ids_to_index": self.ids_to_index},
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
 
     def load(self, path: str):
         """인덱스 로드"""
@@ -242,12 +240,7 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
             # Document 객체로 재구성
             self.documents = []
             for doc_data in data["documents"]:
-                doc = Document(
-                    content=doc_data["content"],
-                    metadata=doc_data.get("metadata", {})
-                )
+                doc = Document(content=doc_data["content"], metadata=doc_data.get("metadata", {}))
                 self.documents.append(doc)
 
             self.ids_to_index = data["ids_to_index"]
-
-

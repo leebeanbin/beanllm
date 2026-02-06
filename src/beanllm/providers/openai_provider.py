@@ -138,7 +138,7 @@ class OpenAIProvider(BaseLLMProvider):
         },
     }
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         super().__init__(config or {})
 
         if AsyncOpenAI is None:
@@ -175,7 +175,7 @@ class OpenAIProvider(BaseLLMProvider):
         """
         # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"openai:{model or self.default_model}", cost=1.0)
-        
+
         try:
             openai_messages = messages.copy()
             if system:
@@ -247,6 +247,7 @@ class OpenAIProvider(BaseLLMProvider):
         # 2. 베이스 모델 추출 후 캐시 재조회
         # 예: "gpt-4o-2024-05-13" → "gpt-4o"
         from .model_parameter_strategy import ModelParameterFactory
+
         base_model = ModelParameterFactory.extract_base_model(model)
 
         if base_model != model and base_model in self.MODEL_PARAMETER_CACHE:
@@ -413,11 +414,22 @@ class OpenAIProvider(BaseLLMProvider):
     def _filter_chat_models(self, models: List[str]) -> List[str]:
         """채팅용 모델만 필터링 (embedding, tts 등 제외)"""
         excluded = [
-            "embedding", "tts", "dall-e", "whisper", "codex", "transcribe",
-            "audio", "realtime", "search", "image", "moderation", "diarize"
+            "embedding",
+            "tts",
+            "dall-e",
+            "whisper",
+            "codex",
+            "transcribe",
+            "audio",
+            "realtime",
+            "search",
+            "image",
+            "moderation",
+            "diarize",
         ]
         return [
-            m for m in models
+            m
+            for m in models
             if (m.startswith("gpt-") or m.startswith("o"))
             and not any(x in m.lower() for x in excluded)
             and not m.endswith(("-tts", "-transcribe"))

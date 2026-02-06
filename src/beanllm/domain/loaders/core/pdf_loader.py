@@ -5,22 +5,23 @@ PDF 파일 로더
 """
 
 import logging
-import mmap
-import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import List, Optional, Union
 
-from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class PDFLoader(BaseDocumentLoader):
     """
@@ -109,5 +110,3 @@ class PDFLoader(BaseDocumentLoader):
     def lazy_load(self):
         """지연 로딩"""
         yield from self.load()
-
-

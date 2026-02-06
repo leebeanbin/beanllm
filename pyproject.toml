@@ -7,7 +7,7 @@ name = "beanllm"
 version = "0.2.2"
 description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 license = "MIT"
 authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
@@ -44,6 +44,8 @@ dependencies = [
     "PyMuPDF>=1.23.0,<2.0.0",  # Fast PDF 파싱 (fitz)
     "pdfplumber>=0.10.0,<1.0.0",  # 정확한 테이블 추출
     "pandas>=2.0.0,<3.0.0",  # 테이블 데이터 처리
+    "chromadb (>=1.4.1,<2.0.0)",
+    "openai (>=2.16.0,<3.0.0)",
 ]
 
 # 선택적 의존성 (Provider별로 선택 가능)
@@ -108,6 +110,11 @@ all = [
     "sse-starlette>=1.6.0,<2.0.0",
 ]
 
+# 벡터 스토어 (세션 검색·메시지 임베딩, Chroma)
+vector = [
+    "chromadb>=0.4.0,<1.0.0",
+]
+
 # Continuous Evaluation (선택적)
 evaluation = [
     "apscheduler>=3.10.0,<4.0.0",
@@ -143,6 +150,49 @@ neo4j = [
     "neo4j>=5.0.0,<6.0.0",
 ]
 
+# ============================================
+# RAG 고급 기능 (쉬운 설치)
+# ============================================
+
+# 데이터베이스 로더
+# pip install beanllm[db]
+db = [
+    "psycopg2-binary>=2.9.0,<3.0.0",  # PostgreSQL (동기)
+    "asyncpg>=0.29.0,<1.0.0",  # PostgreSQL (비동기)
+    "pymongo>=4.0.0,<5.0.0",  # MongoDB (동기)
+    "motor>=3.3.0,<4.0.0",  # MongoDB (비동기)
+]
+
+# 시맨틱 청킹 (의미 기반 분할, 20-40% 검색 품질 향상)
+# pip install beanllm[semantic]
+semantic = [
+    "sentence-transformers>=2.2.0,<4.0.0",
+    "semchunk>=0.3.0,<1.0.0",
+]
+
+# ColBERT (Multi-vector 검색, 10-30% 검색 품질 향상)
+# pip install beanllm[colbert]
+colbert = [
+    "ragatouille>=0.0.8,<1.0.0",
+]
+
+# ColPali (비전 문서 검색, OCR 불필요)
+# pip install beanllm[colpali]
+colpali = [
+    "byaldi>=0.0.1,<1.0.0",
+]
+
+# 엔터프라이즈 RAG (전부 포함)
+# pip install beanllm[ragpro]
+ragpro = [
+    "sentence-transformers>=2.2.0,<4.0.0",
+    "semchunk>=0.3.0,<1.0.0",
+    "ragatouille>=0.0.8,<1.0.0",
+    "psycopg2-binary>=2.9.0,<3.0.0",
+    "pymongo>=4.0.0,<5.0.0",
+    "motor>=3.3.0,<4.0.0",
+]
+
 # Web playground backend
 web = [
     "fastapi>=0.100.0,<1.0.0",
@@ -171,6 +221,8 @@ dev = [
     "black>=23.0.0,<26.0.0",
     "ruff>=0.1.0,<1.0.0",
     "mypy>=1.0.0,<2.0.0",
+    "bandit>=1.7.0,<2.0.0",  # 보안 검사 (pre-commit)
+    "pre-commit>=3.0.0,<4.0.0",  # pre-commit 훅
     "faker>=20.0.0,<25.0.0",  # 테스트 데이터 생성
     # CLI dependencies (directly included to avoid circular reference)
     "typer[all]>=0.9.0,<1.0.0",
@@ -246,7 +298,7 @@ asyncio_mode = "auto"
 packages = [{include = "beanllm", from = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<4.0"
+python = ">=3.10,<3.14"
 httpx = ">=0.24.0,<1.0.0"
 python-dotenv = ">=1.0.0,<2.0.0"
 rich = ">=13.0.0,<15.0.0"
@@ -320,6 +372,8 @@ pytest-cov = ">=4.0.0,<5.0.0"
 black = ">=23.0.0,<26.0.0"
 ruff = ">=0.1.0,<1.0.0"
 mypy = ">=1.0.0,<2.0.0"
+bandit = ">=1.7.0,<2.0.0"
+pre-commit = ">=3.0.0,<4.0.0"
 faker = ">=20.0.0,<25.0.0"
 
 # Scripts는 [project.scripts]에 정의되어 있으므로 여기서는 제거

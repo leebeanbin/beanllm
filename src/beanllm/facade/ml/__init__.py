@@ -1,6 +1,7 @@
 """ML Facades - ML Facade"""
 
-from .audio_facade import WhisperSTT, TextToSpeech as TTS, AudioRAG
+from .audio_facade import AudioRAG, WhisperSTT
+from .audio_facade import TextToSpeech as TTS
 from .evaluation_facade import EvaluatorFacade
 from .finetuning_facade import FineTuningManagerFacade
 from .vision_rag_facade import VisionRAG
@@ -15,4 +16,3 @@ __all__ = [
     "FineTuningManagerFacade",
     "WebSearch",
 ]
-

@@ -11,7 +11,7 @@ Features:
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from beanllm.domain.ocr.models import OCRResult, OCRTextLine
 
@@ -79,9 +79,7 @@ class LLMPostprocessor:
 
             self.llm = BeanLLM(model=self.model)
         except ImportError:
-            logger.warning(
-                "BeanLLM not available. LLM postprocessing will be disabled."
-            )
+            logger.warning("BeanLLM not available. LLM postprocessing will be disabled.")
             self.llm = None
 
     def process(self, ocr_result: OCRResult) -> OCRResult:

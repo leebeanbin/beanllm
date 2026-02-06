@@ -9,10 +9,9 @@ from typing import Dict, List, Optional
 from .types import HybridModelInfo
 
 try:
+    from beanllm.infrastructure.inferrer import MetadataInferrer
     from beanllm.infrastructure.models import MODELS
     from beanllm.utils.logging import get_logger
-
-    from beanllm.infrastructure.inferrer import MetadataInferrer
 except ImportError:
     import logging
 

@@ -5,7 +5,7 @@ STT (Speech-to-Text) 모델 및 설정
 """
 
 from dataclasses import dataclass
-from typing import Literal, Optional
+from typing import Literal
 
 
 @dataclass
@@ -126,13 +126,22 @@ class STTConfig:
             "moonshine-base",
         }
         if self.engine not in valid_engines:
-            raise ValueError(
-                f"Invalid engine: {self.engine}. "
-                f"Must be one of {valid_engines}"
-            )
+            raise ValueError(f"Invalid engine: {self.engine}. " f"Must be one of {valid_engines}")
 
         # 언어 유효성 검사 (일부만 체크)
-        if self.language not in ["auto", "ko", "en", "zh", "ja", "es", "fr", "de", "ru", "ar", "hi"]:
+        if self.language not in [
+            "auto",
+            "ko",
+            "en",
+            "zh",
+            "ja",
+            "es",
+            "fr",
+            "de",
+            "ru",
+            "ar",
+            "hi",
+        ]:
             # 경고만 출력 (99+ languages 지원하므로)
             import warnings
 
@@ -143,9 +152,7 @@ class STTConfig:
 
         # 온도 범위 검사
         if not 0.0 <= self.temperature <= 1.0:
-            raise ValueError(
-                f"temperature must be between 0.0 and 1.0, got {self.temperature}"
-            )
+            raise ValueError(f"temperature must be between 0.0 and 1.0, got {self.temperature}")
 
         # Beam size 범위 검사
         if self.beam_size < 1:

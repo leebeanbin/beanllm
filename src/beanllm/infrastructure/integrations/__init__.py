@@ -32,7 +32,7 @@ beanLLM과 외부 LLM 프레임워크를 통합합니다.
     loader = TextLoader("document.txt")
     docs = loader.load()
     embedding = OpenAIEmbedding()
-    
+
     query_engine = create_llamaindex_query_engine(
         documents=docs,
         embedding_function=embedding.embed

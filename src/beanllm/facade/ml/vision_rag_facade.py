@@ -12,14 +12,14 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Union
 
+from beanllm.domain.vector_stores import VectorSearchResult
 from beanllm.domain.vision.embeddings import CLIPEmbedding, MultimodalEmbedding
 from beanllm.domain.vision.loaders import load_images
+from beanllm.facade.core.client_facade import Client
 from beanllm.handler.ml.vision_rag_handler import VisionRAGHandler
 from beanllm.infrastructure.distributed import get_event_logger
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
-from beanllm.domain.vector_stores import VectorSearchResult
-from beanllm.facade.core.client_facade import Client
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
@@ -134,7 +134,7 @@ Answer:"""
             event_logger.log_event(
                 "vision_rag.from_images.started",
                 {"source": str(source), "generate_captions": generate_captions},
-                level="info"
+                level="info",
             )
         )
 
@@ -144,9 +144,7 @@ Answer:"""
         # 이벤트 발행: 이미지 로딩 완료
         asyncio.create_task(
             event_logger.log_event(
-                "vision_rag.from_images.images_loaded",
-                {"image_count": len(images)},
-                level="info"
+                "vision_rag.from_images.images_loaded", {"image_count": len(images)}, level="info"
             )
         )
 
@@ -169,7 +167,9 @@ Answer:"""
             try:
                 from beanllm.infrastructure.distributed import BatchProcessor
 
-                batch_processor = BatchProcessor(task_type="vision_rag.embedding", max_concurrent=10)
+                batch_processor = BatchProcessor(
+                    task_type="vision_rag.embedding", max_concurrent=10
+                )
 
                 async def embed_batch_task(task_data):
                     """배치 임베딩 작업"""
@@ -179,20 +179,22 @@ Answer:"""
                 # 배치 처리
                 async def process_embeddings_async():
                     # 각 이미지의 텍스트(캡션) 추출
-                    texts = [img.content if hasattr(img, 'content') else str(img) for img in images]
+                    texts = [img.content if hasattr(img, "content") else str(img) for img in images]
                     # 배치로 나누기 (100개씩)
                     batch_size = 100
                     all_embeddings = []
                     for i in range(0, len(texts), batch_size):
-                        batch_texts = texts[i:i + batch_size]
+                        batch_texts = texts[i : i + batch_size]
                         results = await batch_processor.process_items(
                             task_name="embed",
                             items=batch_texts,
                             item_to_task_data=lambda t: {"texts": [t]},
                             handler=lambda task_data: embed_batch_task(task_data),
-                            priority=0
+                            priority=0,
                         )
-                        all_embeddings.extend([r[0] if isinstance(r, list) and r else [] for r in results])
+                        all_embeddings.extend(
+                            [r[0] if isinstance(r, list) and r else [] for r in results]
+                        )
 
                     return all_embeddings
 
@@ -201,7 +203,10 @@ Answer:"""
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
                         logger.warning("Event loop already running, using sequential embedding")
-                        embeddings = [embed_func([img.content if hasattr(img, 'content') else str(img)])[0] for img in images]
+                        embeddings = [
+                            embed_func([img.content if hasattr(img, "content") else str(img)])[0]
+                            for img in images
+                        ]
                     else:
                         embeddings = loop.run_until_complete(process_embeddings_async())
                 except RuntimeError:
@@ -212,7 +217,7 @@ Answer:"""
                     event_logger.log_event(
                         "vision_rag.from_images.embeddings_completed",
                         {"embedding_count": len(embeddings)},
-                        level="info"
+                        level="info",
                     )
                 )
 
@@ -225,6 +230,7 @@ Answer:"""
                         if idx < len(embeddings):
                             return [embeddings[idx]]
                         return embed_func(texts)
+
                     return _embed
 
                 # 각 이미지에 대해 임베딩 함수 생성
@@ -233,10 +239,12 @@ Answer:"""
                 logger.warning(f"Distributed embedding failed: {e}, falling back to sequential")
                 # Fallback to sequential
                 from beanllm.facade.vector_stores import from_documents
+
                 vector_store = from_documents(images, embed_func)
         else:
             # 3. Vector Store (기존과 동일)
             from beanllm.facade.vector_stores import from_documents
+
             vector_store = from_documents(images, embed_func)
 
         # 이벤트 발행: 벡터 스토어 생성 완료
@@ -244,7 +252,7 @@ Answer:"""
             event_logger.log_event(
                 "vision_rag.from_images.vector_store_created",
                 {"document_count": len(images)},
-                level="info"
+                level="info",
             )
         )
 
@@ -256,7 +264,7 @@ Answer:"""
             event_logger.log_event(
                 "vision_rag.from_images.completed",
                 {"image_count": len(images), "llm_model": llm_model},
-                level="info"
+                level="info",
             )
         )
 
@@ -276,7 +284,9 @@ Answer:"""
             검색 결과 리스트 (ImageDocument 포함)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = run_async_in_sync(self._vision_rag_handler.handle_retrieve(query=query, k=k, **kwargs))
+        response = run_async_in_sync(
+            self._vision_rag_handler.handle_retrieve(query=query, k=k, **kwargs)
+        )
         # DTO에서 값 추출 (기존 API 호환성 유지)
         return response.results or []
 
@@ -415,7 +425,9 @@ class MultimodalRAG(VisionRAG):
                     chunks = TextSplitter.split(docs)
                     all_documents.extend(chunks)
                 except Exception as e:
-                    logger.debug(f"Failed to load text documents from {source_path} (continuing): {e}")
+                    logger.debug(
+                        f"Failed to load text documents from {source_path} (continuing): {e}"
+                    )
 
             # 개별 파일 (기존과 동일)
             else:
@@ -431,7 +443,9 @@ class MultimodalRAG(VisionRAG):
                         chunks = TextSplitter.split(docs)
                         all_documents.extend(chunks)
                     except Exception as e:
-                        logger.debug(f"Failed to load document from {source_path} (continuing): {e}")
+                        logger.debug(
+                            f"Failed to load document from {source_path} (continuing): {e}"
+                        )
 
         # 임베딩 (기존과 동일)
         multimodal_embed = MultimodalEmbedding()

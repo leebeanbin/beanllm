@@ -3,6 +3,7 @@ Test ModelRegistry
 """
 
 import pytest
+
 from beanllm import get_registry
 
 

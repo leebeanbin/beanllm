@@ -28,7 +28,6 @@ from beanllm.dto.response.ml.evaluation_response import (
     BatchEvaluationResponse,
     EvaluationResponse,
 )
-
 from beanllm.service.evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
@@ -68,7 +67,7 @@ class EvaluationServiceImpl(IEvaluationService):
 
         # 내부적으로 자동 병렬 처리 (사용자는 신경 쓸 필요 없음)
         # 기본 설정: max_concurrent=10, rate_limiter 자동 생성 (분산 아키텍처 사용)
-        from beanllm.infrastructure.distributed import get_rate_limiter, ConcurrencyController
+        from beanllm.infrastructure.distributed import ConcurrencyController, get_rate_limiter
 
         rate_limiter = get_rate_limiter()
         concurrency_controller = ConcurrencyController()

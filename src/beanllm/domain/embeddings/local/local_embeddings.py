@@ -11,7 +11,6 @@ Local-Based Embeddings - 로컬 모델 기반 임베딩 Provider 구현체들
 Template Method Pattern을 사용하여 중복 코드 제거
 """
 
-import os
 from typing import List, Optional
 
 from beanllm.domain.embeddings.base import BaseLocalEmbedding
@@ -113,6 +112,7 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
 
     def _load_model(self):
         """모델 로딩 (lazy loading, GPU 최적화, 분산 락 적용)"""
+
         def _load_impl():
             # 실제 모델 로딩 구현
             self._load_model_impl()
@@ -143,8 +143,6 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
         # GPU 최적화: FP16 (mixed precision)
         if self._device == "cuda" and self.use_fp16:
             try:
-                import torch
-
                 # 모델을 FP16으로 변환
                 self._model = self._model.half()
                 logger.info("Enabled FP16 (mixed precision) for GPU inference")
@@ -319,9 +317,7 @@ class NVEmbedEmbedding(BaseLocalEmbedding):
         # 모델 로드
         self._model = SentenceTransformer(self.model, device=self._device, trust_remote_code=True)
 
-        logger.info(
-            f"NVIDIA NV-Embed-v2 loaded (max_seq_length: {self._model.max_seq_length})"
-        )
+        logger.info(f"NVIDIA NV-Embed-v2 loaded (max_seq_length: {self._model.max_seq_length})")
 
     def _prepare_texts(self, texts: List[str]) -> List[str]:
         """
@@ -364,9 +360,7 @@ class NVEmbedEmbedding(BaseLocalEmbedding):
                 convert_to_numpy=True,
             )
 
-            self._log_embed_success(
-                len(texts), f"prefix: {self.prefix}, shape: {embeddings.shape}"
-            )
+            self._log_embed_success(len(texts), f"prefix: {self.prefix}, shape: {embeddings.shape}")
 
             return embeddings.tolist()
 
@@ -430,6 +424,7 @@ class Qwen3Embedding(BaseLocalEmbedding):
 
     def _load_model(self):
         """모델 로딩 (lazy loading, 분산 락 적용)"""
+
         def _load_impl():
             # Import 검증
             self._validate_import("sentence_transformers", "sentence-transformers")
@@ -448,7 +443,7 @@ class Qwen3Embedding(BaseLocalEmbedding):
                 f"Qwen3 model loaded: {self.model} "
                 f"(max_seq_length: {self._model.max_seq_length})"
             )
-        
+
         # 분산 락을 사용한 모델 로딩
         self._load_model_with_lock(self.model, _load_impl)
 
@@ -552,6 +547,7 @@ class CodeEmbedding(BaseLocalEmbedding):
 
     def _load_model(self):
         """모델 로딩 (lazy loading, 분산 락 적용)"""
+
         def _load_impl():
             # Import 검증
             self._validate_import("transformers", "transformers")
@@ -570,7 +566,7 @@ class CodeEmbedding(BaseLocalEmbedding):
             self._model.eval()
 
             logger.info(f"Code model loaded: {self.model}")
-        
+
         # 분산 락을 사용한 모델 로딩
         self._load_model_with_lock(self.model, _load_impl)
 
@@ -579,9 +575,7 @@ class CodeEmbedding(BaseLocalEmbedding):
         import torch
 
         token_embeddings = model_output[0]  # First element = token embeddings
-        input_mask_expanded = (
-            attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
-        )
+        input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
         return torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(
             input_mask_expanded.sum(1), min=1e-9
         )

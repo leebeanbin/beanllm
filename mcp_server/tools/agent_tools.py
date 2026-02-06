@@ -3,24 +3,24 @@ Multi-Agent Tools - 기존 beanllm Multi-Agent 기능을 MCP tool로 wrapping
 
 🎯 핵심: 새로운 코드를 만들지 않고 기존 코드를 함수화!
 """
+
 import asyncio
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from fastmcp import FastMCP
 
+from beanllm.facade.advanced import MultiAgent
+
 # 기존 beanllm 코드 import (wrapping 대상)
-from beanllm.facade.advanced import MultiAgentFacade
-from beanllm.dto.request.multi_agent import (
-    MultiAgentRequest,
-    AgentConfig,
-    CommunicationStrategy,
-)
+from beanllm.facade.core import Agent
 from mcp_server.config import MCPServerConfig
 
 # FastMCP 인스턴스 생성
 mcp = FastMCP("Multi-Agent Tools")
 
 # 전역 Multi-Agent 시스템 캐시
-_multiagent_systems: Dict[str, MultiAgentFacade] = {}
+_multiagent_systems: Dict[str, MultiAgent] = {}
+_agents_cache: Dict[str, Dict[str, Agent]] = {}
 
 
 @mcp.tool()
@@ -45,7 +45,7 @@ async def create_multiagent_system(
                 },
                 ...
             ]
-        strategy: 통신 전략 (sequential, round_robin, debate, hierarchical)
+        strategy: 통신 전략 (sequential, parallel, debate, hierarchical)
         max_rounds: 최대 라운드 수
 
     Returns:
@@ -65,43 +65,38 @@ async def create_multiagent_system(
     """
     try:
         # 🎯 기존 beanllm 코드 재사용!
-        # 1. AgentConfig 객체 생성
-        agents = []
+        # 1. Agent 객체 생성
+        agents: Dict[str, Agent] = {}
         for config in agent_configs:
-            agent = AgentConfig(
-                name=config["name"],
-                role=config.get("role", config["name"]),
-                model=config.get("model", MCPServerConfig.DEFAULT_CHAT_MODEL),
-                temperature=config.get("temperature", 0.7),
-                system_prompt=config.get("system_prompt"),
-                tools=config.get("tools", []),
+            agent_name = config["name"]
+            model = config.get("model", MCPServerConfig.DEFAULT_CHAT_MODEL)
+            system_prompt = config.get("system_prompt") or config.get("role", agent_name)
+            temperature = config.get("temperature", 0.7)
+
+            agent = Agent(
+                model=model,
+                system_prompt=f"You are {agent_name}. {system_prompt}",
+                temperature=temperature,
             )
-            agents.append(agent)
+            agents[agent_name] = agent
 
-        # 2. CommunicationStrategy enum 변환
-        strategy_map = {
-            "sequential": CommunicationStrategy.SEQUENTIAL,
-            "round_robin": CommunicationStrategy.ROUND_ROBIN,
-            "debate": CommunicationStrategy.DEBATE,
-            "hierarchical": CommunicationStrategy.HIERARCHICAL,
+        # 2. MultiAgent (MultiAgentCoordinator) 생성
+        coordinator = MultiAgent(agents=agents)
+
+        # 3. 캐시에 저장 (strategy와 max_rounds는 메타데이터로 저장)
+        _multiagent_systems[system_name] = coordinator
+        _agents_cache[system_name] = {
+            "agents": agents,
+            "strategy": strategy,
+            "max_rounds": max_rounds,
+            "configs": agent_configs,
         }
-        comm_strategy = strategy_map.get(strategy, CommunicationStrategy.SEQUENTIAL)
-
-        # 3. MultiAgentFacade 생성
-        facade = MultiAgentFacade(
-            agents=agents,
-            strategy=comm_strategy,
-            max_rounds=max_rounds,
-        )
-
-        # 4. 캐시에 저장
-        _multiagent_systems[system_name] = facade
 
         return {
             "success": True,
             "system_name": system_name,
             "agent_count": len(agents),
-            "agent_names": [a.name for a in agents],
+            "agent_names": list(agents.keys()),
             "strategy": strategy,
             "max_rounds": max_rounds,
         }
@@ -145,36 +140,65 @@ async def run_multiagent_task(
                 "error": f"Multi-agent system '{system_name}' not found. Please create it first.",
             }
 
-        facade = _multiagent_systems[system_name]
+        coordinator = _multiagent_systems[system_name]
+        meta = _agents_cache.get(system_name, {})
+        strategy = meta.get("strategy", "sequential")
+        max_rounds = meta.get("max_rounds", 3)
+        agent_names = list(meta.get("agents", {}).keys())
 
-        # 2. 🎯 기존 MultiAgentFacade.run() 메서드 사용!
-        request = MultiAgentRequest(
-            task=task,
-            context=context or {},
-        )
-
-        result = await facade.run(request)
+        # 2. 🎯 기존 MultiAgent의 실행 메서드 사용!
+        if strategy == "sequential":
+            result = await coordinator.execute_sequential(
+                task=task,
+                agent_order=agent_names,
+            )
+        elif strategy == "parallel":
+            result = await coordinator.execute_parallel(
+                task=task,
+                agents=agent_names,
+                aggregation="concatenate",
+            )
+        elif strategy == "debate":
+            result = await coordinator.execute_debate(
+                topic=task,
+                participants=agent_names,
+                rounds=max_rounds,
+            )
+        elif strategy == "hierarchical":
+            result = await coordinator.execute_hierarchical(
+                task=task,
+                leader=agent_names[0] if agent_names else "leader",
+                workers=agent_names[1:] if len(agent_names) > 1 else [],
+            )
+        else:
+            # 기본: sequential
+            result = await coordinator.execute_sequential(
+                task=task,
+                agent_order=agent_names,
+            )
 
         # 3. 결과 포매팅
         agent_responses = []
-        for msg in result.messages:
-            agent_responses.append(
-                {
-                    "agent": msg.agent_name,
-                    "role": msg.role,
-                    "content": msg.content,
-                    "round": msg.metadata.get("round", 0),
-                }
-            )
+        if isinstance(result, dict):
+            for agent_name, response in result.items():
+                if agent_name not in ["final_result", "metadata"]:
+                    agent_responses.append(
+                        {
+                            "agent": agent_name,
+                            "content": str(response),
+                        }
+                    )
+            final_result = result.get("final_result", str(result))
+        else:
+            final_result = str(result)
 
         return {
             "success": True,
             "system_name": system_name,
             "task": task,
+            "strategy": strategy,
             "agent_responses": agent_responses,
-            "final_result": result.final_result,
-            "total_rounds": result.metadata.get("total_rounds", 0),
-            "strategy": result.metadata.get("strategy", "unknown"),
+            "final_result": final_result,
         }
 
     except Exception as e:
@@ -206,18 +230,18 @@ async def get_multiagent_stats(system_name: str) -> dict:
                 "error": f"Multi-agent system '{system_name}' not found.",
             }
 
-        facade = _multiagent_systems[system_name]
+        meta = _agents_cache.get(system_name, {})
+        configs = meta.get("configs", [])
 
         # 에이전트 정보 수집
         agents_info = []
-        for agent in facade._agents:
+        for config in configs:
             agents_info.append(
                 {
-                    "name": agent.name,
-                    "role": agent.role,
-                    "model": agent.model,
-                    "temperature": agent.temperature,
-                    "tools_count": len(agent.tools) if agent.tools else 0,
+                    "name": config.get("name"),
+                    "role": config.get("role", config.get("name")),
+                    "model": config.get("model", MCPServerConfig.DEFAULT_CHAT_MODEL),
+                    "temperature": config.get("temperature", 0.7),
                 }
             )
 
@@ -226,8 +250,8 @@ async def get_multiagent_stats(system_name: str) -> dict:
             "system_name": system_name,
             "agent_count": len(agents_info),
             "agents": agents_info,
-            "strategy": facade._strategy.value,
-            "max_rounds": facade._max_rounds,
+            "strategy": meta.get("strategy", "sequential"),
+            "max_rounds": meta.get("max_rounds", 3),
         }
 
     except Exception as e:
@@ -279,6 +303,8 @@ async def delete_multiagent_system(system_name: str) -> dict:
             }
 
         del _multiagent_systems[system_name]
+        if system_name in _agents_cache:
+            del _agents_cache[system_name]
 
         return {
             "success": True,

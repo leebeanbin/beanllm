@@ -11,11 +11,9 @@ from typing import Any, Dict
 
 from beanllm.domain.rag_debug import (
     ChunkValidator,
-    DebugReportExporter,
     DebugSession,
     EmbeddingAnalyzer,
     ParameterTuner,
-    SimilarityTester,
 )
 from beanllm.dto.request.ml.rag_debug_request import (
     AnalyzeEmbeddingsRequest,
@@ -29,9 +27,8 @@ from beanllm.dto.response.ml.rag_debug_response import (
     TuneParametersResponse,
     ValidateChunksResponse,
 )
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.rag_debug_service import IRAGDebugService
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -52,9 +49,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         self._sessions: Dict[str, DebugSession] = {}
         logger.info("RAGDebugService initialized")
 
-    async def start_session(
-        self, request: StartDebugSessionRequest
-    ) -> DebugSessionResponse:
+    async def start_session(self, request: StartDebugSessionRequest) -> DebugSessionResponse:
         """
         디버그 세션 시작
 
@@ -167,9 +162,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         )
         return response
 
-    async def validate_chunks(
-        self, request: ValidateChunksRequest
-    ) -> ValidateChunksResponse:
+    async def validate_chunks(self, request: ValidateChunksRequest) -> ValidateChunksResponse:
         """
         청크 검증 (크기, 중복, 메타데이터)
 
@@ -209,8 +202,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
             session_id=request.session_id,
             total_chunks=validation_result["total_chunks"],
             valid_chunks=validation_result["valid_chunks"],
-            issues=validation_result["size_issues"]
-            + validation_result["metadata_issues"],
+            issues=validation_result["size_issues"] + validation_result["metadata_issues"],
             size_distribution=validation_result["size_distribution"],
             overlap_stats=validation_result["overlap_stats"],
             duplicate_chunks=validation_result["duplicate_chunks"],
@@ -223,9 +215,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         )
         return response
 
-    async def tune_parameters(
-        self, request: TuneParametersRequest
-    ) -> TuneParametersResponse:
+    async def tune_parameters(self, request: TuneParametersRequest) -> TuneParametersResponse:
         """
         파라미터 실시간 튜닝
 
@@ -236,8 +226,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
             TuneParametersResponse: 튜닝 결과
         """
         logger.info(
-            f"Tuning parameters for session: {request.session_id}, "
-            f"params={request.parameters}"
+            f"Tuning parameters for session: {request.session_id}, " f"params={request.parameters}"
         )
 
         # Get session
@@ -252,9 +241,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         }
 
         # Create tuner
-        tuner = ParameterTuner(
-            vector_store=session.vector_store, baseline_params=baseline_params
-        )
+        tuner = ParameterTuner(vector_store=session.vector_store, baseline_params=baseline_params)
 
         # Test parameters with test queries
         test_results = []
@@ -266,9 +253,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         # Compute average score
         avg_score = 0.0
         if test_results:
-            avg_score = sum(r["new"]["avg_score"] for r in test_results) / len(
-                test_results
-            )
+            avg_score = sum(r["new"]["avg_score"] for r in test_results) / len(test_results)
 
         # Compare with baseline
         baseline_score = 0.0
@@ -281,9 +266,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
             "baseline_score": baseline_score,
             "new_score": avg_score,
             "improvement_pct": (
-                (avg_score - baseline_score) / baseline_score * 100
-                if baseline_score > 0
-                else 0.0
+                (avg_score - baseline_score) / baseline_score * 100 if baseline_score > 0 else 0.0
             ),
         }
 
@@ -292,9 +275,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
         if comparison["improvement_pct"] > 5:
             recommendations.append("✅ New parameters show significant improvement!")
         elif comparison["improvement_pct"] < -5:
-            recommendations.append(
-                "⚠️  New parameters perform worse than baseline. Keep baseline."
-            )
+            recommendations.append("⚠️  New parameters perform worse than baseline. Keep baseline.")
         else:
             recommendations.append("💡 Marginal difference. A/B testing recommended.")
 

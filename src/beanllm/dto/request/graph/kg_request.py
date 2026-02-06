@@ -23,11 +23,15 @@ class ExtractEntitiesRequest:
     text: Optional[str] = None  # Raw text to extract entities from
     entity_types: Optional[List[str]] = None  # ["PERSON", "ORG", "LOCATION", ...]
     use_coreference: bool = True
+    resolve_coreferences: bool = True  # Alias for use_coreference
     llm_model: str = "gpt-4o-mini"
 
     def __post_init__(self):
         if self.entity_types is None:
             self.entity_types = ["PERSON", "ORG", "LOCATION", "DATE", "EVENT"]
+        # Sync aliases
+        if not self.resolve_coreferences:
+            self.use_coreference = False
 
 
 @dataclass
@@ -42,6 +46,7 @@ class ExtractRelationsRequest:
     entity_pairs: Optional[List[tuple]] = None  # [(entity1, entity2), ...]
     relation_types: Optional[List[str]] = None
     bidirectional: bool = True
+    infer_implicit: bool = False  # Infer implicit relations
     llm_model: str = "gpt-4o-mini"
 
     def __post_init__(self):

@@ -1,12 +1,15 @@
 """
 Vision RAG Facade 테스트
 """
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.vision_rag_facade import VisionRAG
     from beanllm.domain.vector_stores.base import BaseVectorStore
+    from beanllm.facade.vision_rag_facade import VisionRAG
+
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -25,24 +28,28 @@ class TestVisionRAG:
         patcher = patch("beanllm.utils.di_container.get_container")
         mock_get_container = patcher.start()
 
-        from beanllm.dto.response.vision_rag_response import VisionRAGResponse
-        from beanllm.dto.response.chat_response import ChatResponse
         from unittest.mock import AsyncMock
+
+        from beanllm.dto.response.chat_response import ChatResponse
+        from beanllm.dto.response.vision_rag_response import VisionRAGResponse
 
         # Mock vision RAG handler
         mock_vision_rag_handler = MagicMock()
+
         async def mock_handle_query(*args, **kwargs):
-            include_sources = kwargs.get('include_sources', False)
+            include_sources = kwargs.get("include_sources", False)
             return VisionRAGResponse(
-                answer="Vision RAG answer",
-                sources=[] if include_sources else None
+                answer="Vision RAG answer", sources=[] if include_sources else None
             )
+
         mock_vision_rag_handler.handle_query = AsyncMock(side_effect=mock_handle_query)
 
         # Mock chat handler (for Client used by VisionRAG)
         mock_chat_handler = MagicMock()
+
         async def mock_handle_chat(*args, **kwargs):
             return ChatResponse(content="Vision RAG answer", model="gpt-4o", provider="openai")
+
         mock_chat_handler.handle_chat = AsyncMock(side_effect=mock_handle_chat)
 
         # Mock handler factory
@@ -78,5 +85,3 @@ class TestVisionRAG:
         assert len(result) == 2
         assert isinstance(result[0], str)
         assert isinstance(result[1], list)
-
-

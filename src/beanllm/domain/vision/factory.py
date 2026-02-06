@@ -4,15 +4,15 @@ Vision Task Model Factory - 비전 태스크 모델 생성 함수
 비전 태스크 모델을 쉽게 생성할 수 있는 Factory 함수를 제공합니다.
 """
 
-from typing import Optional
-
 from .base_task_model import BaseVisionTaskModel
 
 try:
     from beanllm.utils.logging import get_logger
+
     logger = get_logger(__name__)
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
@@ -87,6 +87,7 @@ def create_vision_task_model(
     if model in ["sam", "sam2", "segment-anything"]:
         try:
             from .models import SAMWrapper
+
             logger.info("Creating SAM model")
             return SAMWrapper(**kwargs)
         except ImportError:
@@ -99,28 +100,29 @@ def create_vision_task_model(
     elif model in ["florence2", "florence-2", "florence"]:
         try:
             from .models import Florence2Wrapper
+
             logger.info("Creating Florence-2 model")
             return Florence2Wrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "transformers required for Florence-2. "
-                "Install with: pip install transformers"
+                "transformers required for Florence-2. " "Install with: pip install transformers"
             )
 
     elif model in ["yolo", "yolov8", "yolov11", "yolov12"]:
         try:
             from .models import YOLOWrapper
+
             logger.info("Creating YOLO model")
             return YOLOWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "ultralytics required for YOLO. "
-                "Install with: pip install ultralytics"
+                "ultralytics required for YOLO. " "Install with: pip install ultralytics"
             )
 
     elif model in ["qwen3vl", "qwen-vl", "qwen3-vl"]:
         try:
             from .models import Qwen3VLWrapper
+
             logger.info("Creating Qwen3-VL model")
             return Qwen3VLWrapper(**kwargs)
         except ImportError:
@@ -130,10 +132,7 @@ def create_vision_task_model(
             )
 
     else:
-        raise ValueError(
-            f"Unknown model: {model}. "
-            f"Available: sam, florence2, yolo, qwen3vl"
-        )
+        raise ValueError(f"Unknown model: {model}. " f"Available: sam, florence2, yolo, qwen3vl")
 
 
 def list_available_models() -> dict:

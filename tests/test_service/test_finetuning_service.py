@@ -2,31 +2,32 @@
 FinetuningService 테스트 - Finetuning 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from beanllm.domain.finetuning.enums import FineTuningStatus
+from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob
 from beanllm.dto.request.finetuning_request import (
-    PrepareDataRequest,
+    CancelJobRequest,
     CreateJobRequest,
     GetJobRequest,
-    ListJobsRequest,
-    CancelJobRequest,
     GetMetricsRequest,
+    ListJobsRequest,
+    PrepareDataRequest,
+    QuickFinetuneRequest,
     StartTrainingRequest,
     WaitForCompletionRequest,
-    QuickFinetuneRequest,
 )
 from beanllm.dto.response.finetuning_response import (
-    PrepareDataResponse,
+    CancelJobResponse,
     CreateJobResponse,
     GetJobResponse,
-    ListJobsResponse,
-    CancelJobResponse,
     GetMetricsResponse,
+    ListJobsResponse,
+    PrepareDataResponse,
     StartTrainingResponse,
 )
-from beanllm.domain.finetuning.types import FineTuningJob, FineTuningConfig
-from beanllm.domain.finetuning.enums import FineTuningStatus
 from beanllm.service.impl.finetuning_service_impl import FinetuningServiceImpl
 
 
@@ -39,7 +40,6 @@ class TestFinetuningService:
         provider = Mock()
 
         # Mock job - FineTuningJob은 dataclass이므로 실제 인스턴스 생성
-        from beanllm.domain.finetuning.types import FineTuningJob, FineTuningStatus
         import time
 
         mock_job = FineTuningJob(
@@ -61,7 +61,6 @@ class TestFinetuningService:
     @pytest.fixture
     def mock_manager(self):
         """Mock FineTuningManager"""
-        from beanllm.domain.finetuning.types import FineTuningJob, FineTuningStatus
         import time
 
         manager = Mock()
@@ -265,5 +264,3 @@ class TestFinetuningService:
         assert response is not None
         assert isinstance(response, CreateJobResponse)
         assert response.job.job_id == "job_123"
-
-

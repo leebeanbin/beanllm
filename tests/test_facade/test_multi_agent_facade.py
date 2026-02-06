@@ -2,12 +2,13 @@
 Multi-Agent Facade 테스트 - Multi-Agent 인터페이스 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.multi_agent_facade import MultiAgentCoordinator
     from beanllm.facade.agent_facade import Agent
+    from beanllm.facade.multi_agent_facade import MultiAgentCoordinator
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -58,5 +59,3 @@ class TestMultiAgentFacade:
         assert result["final_result"] == "Multi-agent result"
         assert result["strategy"] == "sequential"
         assert coordinator._multi_agent_handler.handle_execute.called
-
-

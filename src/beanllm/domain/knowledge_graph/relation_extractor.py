@@ -326,11 +326,7 @@ class RelationExtractor:
         elif direction == "target":
             return [r for r in relations if r.target_id == entity_id]
         else:  # both
-            return [
-                r
-                for r in relations
-                if r.source_id == entity_id or r.target_id == entity_id
-            ]
+            return [r for r in relations if r.source_id == entity_id or r.target_id == entity_id]
 
     def get_relations_by_type(
         self,

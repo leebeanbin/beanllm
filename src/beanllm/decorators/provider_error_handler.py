@@ -13,17 +13,15 @@ Provider Error Handler Decorator - Provider 전용 에러 핸들링
 
 import functools
 import inspect
-from typing import Any, Callable, Optional, TypeVar
+from typing import Callable, Optional, TypeVar
 
 from beanllm.utils.exceptions import ProviderError
-from beanllm.utils.logging import get_logger
 from beanllm.utils.integration.security import sanitize_error_message
+from beanllm.utils.logging import get_logger
 
 T = TypeVar("T")
 
 logger = get_logger(__name__)
-
-
 
 
 def provider_error_handler(
@@ -70,6 +68,7 @@ def provider_error_handler(
 
         # async generator 함수인지 확인
         if inspect.isasyncgenfunction(func):
+
             @functools.wraps(func)
             async def async_gen_wrapper(self, *args, **kwargs):
                 provider = provider_name or getattr(self, "name", self.__class__.__name__)
@@ -92,6 +91,7 @@ def provider_error_handler(
 
         # 동기 generator 함수인지 확인
         elif inspect.isgeneratorfunction(func):
+
             @functools.wraps(func)
             def sync_gen_wrapper(self, *args, **kwargs):
                 provider = provider_name or getattr(self, "name", self.__class__.__name__)
@@ -114,6 +114,7 @@ def provider_error_handler(
 
         # 일반 async 함수인 경우
         elif inspect.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(self, *args, **kwargs):
                 provider = provider_name or getattr(self, "name", self.__class__.__name__)
@@ -135,6 +136,7 @@ def provider_error_handler(
 
         # 동기 함수인 경우
         else:
+
             @functools.wraps(func)
             def sync_wrapper(self, *args, **kwargs):
                 provider = provider_name or getattr(self, "name", self.__class__.__name__)
@@ -155,4 +157,3 @@ def provider_error_handler(
             return sync_wrapper
 
     return decorator
-

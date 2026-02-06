@@ -2,17 +2,6 @@
 Embeddings Domain - 임베딩 도메인
 """
 
-from .utils.advanced import (
-    MatryoshkaEmbedding,
-    batch_truncate_embeddings,
-    find_hard_negatives,
-    mmr_search,
-    query_expansion,
-    truncate_embedding,
-)
-from .base import BaseEmbedding
-from .utils.cache import EmbeddingCache
-from .factory import Embedding, embed, embed_sync
 from .api.providers import (
     CodeEmbedding,
     CohereEmbedding,
@@ -26,7 +15,18 @@ from .api.providers import (
     Qwen3Embedding,
     VoyageEmbedding,
 )
+from .base import BaseEmbedding
+from .factory import Embedding, embed, embed_sync
 from .types import EmbeddingResult
+from .utils.advanced import (
+    MatryoshkaEmbedding,
+    batch_truncate_embeddings,
+    find_hard_negatives,
+    mmr_search,
+    query_expansion,
+    truncate_embedding,
+)
+from .utils.cache import EmbeddingCache
 from .utils.utils import (
     batch_cosine_similarity,
     cosine_similarity,

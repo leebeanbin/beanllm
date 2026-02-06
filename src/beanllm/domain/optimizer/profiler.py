@@ -74,9 +74,7 @@ class ProfileResult:
         """자동 계산"""
         if self.components:
             # Calculate totals
-            self.total_duration_ms = sum(
-                m.duration_ms for m in self.components.values()
-            )
+            self.total_duration_ms = sum(m.duration_ms for m in self.components.values())
             self.total_cost = sum(m.estimated_cost for m in self.components.values())
 
             # Find bottleneck
@@ -225,9 +223,7 @@ class Profiler:
 
             # Estimate cost (예: GPT-4: $0.03/1K tokens)
             cost_per_1k_tokens = 0.03
-            self._metrics[component_name].estimated_cost = (
-                token_count / 1000 * cost_per_1k_tokens
-            )
+            self._metrics[component_name].estimated_cost = token_count / 1000 * cost_per_1k_tokens
 
     def set_memory(self, component_name: str, memory_mb: float) -> None:
         """

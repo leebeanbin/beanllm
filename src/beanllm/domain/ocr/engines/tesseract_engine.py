@@ -12,11 +12,12 @@ Features:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)

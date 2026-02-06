@@ -68,8 +68,8 @@ class RAGServiceImpl(IRAGService):
         pipeline_type="rag",
         enable_rate_limiting=True,
         rate_limit_key=lambda self, args, kwargs: (
-            f"rag:query:{args[0].llm_model}" 
-            if args and hasattr(args[0], 'llm_model') and args[0].llm_model 
+            f"rag:query:{args[0].llm_model}"
+            if args and hasattr(args[0], "llm_model") and args[0].llm_model
             else "rag:query:default"
         ),
     )
@@ -90,11 +90,19 @@ class RAGServiceImpl(IRAGService):
             - if-else/try-catch 없음
         """
         # 0. 캐시 확인 (RAG 검색 결과)
-        from beanllm.infrastructure.distributed.cache_helpers import get_rag_search_cache, set_rag_search_cache
+        from beanllm.infrastructure.distributed.cache_helpers import (
+            get_rag_search_cache,
+            set_rag_search_cache,
+        )
+
         vector_store_id = str(id(self._vector_store))  # 벡터 스토어 ID (간단한 구현)
         cached_results = await get_rag_search_cache(
-            request.query, vector_store_id, request.k,
-            rerank=request.rerank, mmr=request.mmr, hybrid=request.hybrid
+            request.query,
+            vector_store_id,
+            request.k,
+            rerank=request.rerank,
+            mmr=request.mmr,
+            hybrid=request.hybrid,
         )
         if cached_results is not None:
             # 캐시 히트 - 검색 결과 재사용
@@ -104,8 +112,13 @@ class RAGServiceImpl(IRAGService):
             search_results = await self.retrieve(request)
             # 캐시에 저장
             await set_rag_search_cache(
-                request.query, vector_store_id, request.k, search_results,
-                rerank=request.rerank, mmr=request.mmr, hybrid=request.hybrid
+                request.query,
+                vector_store_id,
+                request.k,
+                search_results,
+                rerank=request.rerank,
+                mmr=request.mmr,
+                hybrid=request.hybrid,
             )
 
         # 2. 컨텍스트 생성 (비즈니스 로직)
@@ -189,7 +202,7 @@ class RAGServiceImpl(IRAGService):
             context_parts.append(f"[{i}] {content}")
         return "\n\n".join(context_parts)
 
-    def _build_prompt(self, query: str, context: str, template: str = None) -> str:
+    def _build_prompt(self, query: str, context: str, template: Optional[str] = None) -> str:
         """프롬프트 생성 (비즈니스 로직)"""
         if template is None:
             template = """Based on the following context, answer the question.

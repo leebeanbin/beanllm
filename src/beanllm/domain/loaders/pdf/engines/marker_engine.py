@@ -138,8 +138,7 @@ class MarkerEngine(BasePDFEngine):
 
         if not self._marker_available:
             raise ImportError(
-                "marker-pdf is not available. "
-                "Install it with: pip install marker-pdf"
+                "marker-pdf is not available. " "Install it with: pip install marker-pdf"
             )
 
         # marker-pdf import
@@ -148,8 +147,7 @@ class MarkerEngine(BasePDFEngine):
             from marker.models import load_all_models
         except ImportError as e:
             raise ImportError(
-                f"Failed to import marker-pdf: {e}. "
-                "Install it with: pip install marker-pdf"
+                f"Failed to import marker-pdf: {e}. " "Install it with: pip install marker-pdf"
             )
 
         # 설정 추출
@@ -198,8 +196,7 @@ class MarkerEngine(BasePDFEngine):
             result["metadata"]["from_cache"] = False
 
             logger.info(
-                f"MarkerEngine extracted {len(result['pages'])} pages "
-                f"in {processing_time:.2f}s"
+                f"MarkerEngine extracted {len(result['pages'])} pages " f"in {processing_time:.2f}s"
             )
 
             # 결과 캐싱
@@ -319,9 +316,7 @@ class MarkerEngine(BasePDFEngine):
 
         return pages
 
-    def _extract_tables_from_markdown(
-        self, markdown_text: str, pages: List[Dict]
-    ) -> List[Dict]:
+    def _extract_tables_from_markdown(self, markdown_text: str, pages: List[Dict]) -> List[Dict]:
         """
         Markdown 텍스트에서 테이블 추출
 
@@ -366,9 +361,7 @@ class MarkerEngine(BasePDFEngine):
 
         return tables
 
-    def _estimate_page_from_position(
-        self, position: int, total_length: int, num_pages: int
-    ) -> int:
+    def _estimate_page_from_position(self, position: int, total_length: int, num_pages: int) -> int:
         """텍스트 위치에서 페이지 번호 추정"""
         if num_pages == 0:
             return 0
@@ -559,9 +552,7 @@ class MarkerEngine(BasePDFEngine):
             "use_gpu": self.use_gpu,
         }
 
-    def extract_batch(
-        self, pdf_paths: List[Union[str, Path]], config: Dict
-    ) -> List[Dict]:
+    def extract_batch(self, pdf_paths: List[Union[str, Path]], config: Dict) -> List[Dict]:
         """
         여러 PDF를 배치로 처리
 

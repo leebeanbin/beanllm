@@ -5,15 +5,15 @@ Intelligent model selection based on request characteristics
 """
 
 from beanllm.infrastructure.routing import (
-    ModelRouter,
-    RoutingStrategy,
-    ModelInfo,
-    RequestCharacteristics,
-    ComplexityRule,
-    CostRule,
     CapabilityRule,
-    LatencyRule,
+    ComplexityRule,
     CompositeRule,
+    CostRule,
+    LatencyRule,
+    ModelInfo,
+    ModelRouter,
+    RequestCharacteristics,
+    RoutingStrategy,
 )
 from beanllm.infrastructure.routing.model_router import create_default_router
 
@@ -35,7 +35,7 @@ def example_1_basic_routing():
     )
 
     decision = router.route(request)
-    print(f"\n📋 Request: Simple text task (500 chars)")
+    print("\n📋 Request: Simple text task (500 chars)")
     print(f"✅ Selected: {decision.selected_model.provider}:{decision.selected_model.model_id}")
     print(f"💰 Estimated cost: ${decision.estimated_cost:.6f}")
     print(f"🎯 Reason: {decision.reason}")
@@ -172,36 +172,42 @@ def example_6_custom_rules():
     router = ModelRouter(strategy=RoutingStrategy.BALANCED)
 
     # Register a few models manually
-    router.register_model(ModelInfo(
-        provider="openai",
-        model_id="gpt-4",
-        context_window=8000,
-        cost_per_1k_input=0.03,
-        cost_per_1k_output=0.06,
-        quality_score=0.95,
-        supports_function_calling=True,
-        latency_score=0.5,
-        reliability_score=0.99,
-    ))
-    router.register_model(ModelInfo(
-        provider="openai",
-        model_id="gpt-3.5-turbo",
-        context_window=4000,
-        cost_per_1k_input=0.0015,
-        cost_per_1k_output=0.002,
-        quality_score=0.7,
-        supports_function_calling=True,
-        latency_score=0.2,
-        reliability_score=0.95,
-    ))
+    router.register_model(
+        ModelInfo(
+            provider="openai",
+            model_id="gpt-4",
+            context_window=8000,
+            cost_per_1k_input=0.03,
+            cost_per_1k_output=0.06,
+            quality_score=0.95,
+            supports_function_calling=True,
+            latency_score=0.5,
+            reliability_score=0.99,
+        )
+    )
+    router.register_model(
+        ModelInfo(
+            provider="openai",
+            model_id="gpt-3.5-turbo",
+            context_window=4000,
+            cost_per_1k_input=0.0015,
+            cost_per_1k_output=0.002,
+            quality_score=0.7,
+            supports_function_calling=True,
+            latency_score=0.2,
+            reliability_score=0.95,
+        )
+    )
 
     # Create composite rule
-    composite_rule = CompositeRule([
-        (ComplexityRule(), 0.3),
-        (CostRule(), 0.3),
-        (LatencyRule(), 0.2),
-        (CapabilityRule(), 0.2),
-    ])
+    composite_rule = CompositeRule(
+        [
+            (ComplexityRule(), 0.3),
+            (CostRule(), 0.3),
+            (LatencyRule(), 0.2),
+            (CapabilityRule(), 0.2),
+        ]
+    )
 
     print("\n🎨 Using custom composite rule (complexity + cost + latency + capability):")
 
@@ -240,7 +246,7 @@ def example_7_fallback():
     print(f"\n🔄 Primary model: {decision.selected_model.model_id}")
     print(f"   Cost: ${decision.estimated_cost:.6f}")
 
-    print(f"\n📋 Fallback models (if primary fails):")
+    print("\n📋 Fallback models (if primary fails):")
     for i, fallback in enumerate(decision.fallback_models, 1):
         print(f"   {i}. {fallback.model_id} (quality: {fallback.quality_score:.2f})")
 
@@ -296,6 +302,7 @@ def example_9_statistics():
 
         # Simulate success/failure (90% success rate for demo)
         import random
+
         success = random.random() < 0.9
         latency = random.uniform(0.5, 2.0)
 
@@ -307,16 +314,16 @@ def example_9_statistics():
 
     # Print statistics
     stats = router.get_stats()
-    print(f"\n📈 Router Statistics:")
+    print("\n📈 Router Statistics:")
     print(f"   Strategy: {stats['strategy']}")
     print(f"   Registered models: {stats['registered_models']}")
     print(f"   Fallback enabled: {stats['enable_fallback']}")
 
-    print(f"\n📊 Model Performance:")
-    for model_key, model_stats in stats['model_stats'].items():
-        total = model_stats['total_requests']
+    print("\n📊 Model Performance:")
+    for model_key, model_stats in stats["model_stats"].items():
+        total = model_stats["total_requests"]
         if total > 0:
-            success_rate = model_stats['successful_requests'] / total * 100
+            success_rate = model_stats["successful_requests"] / total * 100
             print(f"\n   {model_key}:")
             print(f"      Total requests: {total}")
             print(f"      Success rate: {success_rate:.1f}%")

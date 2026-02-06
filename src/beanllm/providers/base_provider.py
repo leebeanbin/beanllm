@@ -15,12 +15,15 @@ except ImportError:
     # Fallback: 기본 Exception 사용
     class ProviderError(Exception):  # type: ignore
         """Provider 에러"""
+
         pass
+
 
 # logger 임포트 시도
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
@@ -34,7 +37,7 @@ class LLMResponse:
     usage: Optional[Dict] = None
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseLLMProvider(ABC):
@@ -149,11 +152,12 @@ class BaseLLMProvider(ABC):
             ```
         """
         error_message = fallback_message or f"{self.name} {operation} failed"
-        
+
         # 에러 메시지에서 API 키 마스킹 (Helper 함수 사용)
         from beanllm.utils.integration.security import sanitize_error_message
+
         error_str = sanitize_error_message(error)
-        
+
         full_message = f"{error_message}: {error_str}"
 
         # 로깅 (마스킹된 메시지)
@@ -220,9 +224,7 @@ class BaseLLMProvider(ABC):
             openai_messages.insert(0, {"role": "system", "content": system})
         return openai_messages
 
-    def _extract_openai_usage(
-        self, response: Any
-    ) -> Optional[Dict[str, int]]:
+    def _extract_openai_usage(self, response: Any) -> Optional[Dict[str, int]]:
         """
         OpenAI 호환 API 응답에서 Usage 정보 추출
 
@@ -247,9 +249,7 @@ class BaseLLMProvider(ABC):
             }
         return None
 
-    async def _safe_health_check(
-        self, health_check_fn: Callable[[], bool]
-    ) -> bool:
+    async def _safe_health_check(self, health_check_fn: Callable[[], bool]) -> bool:
         """
         Health check를 안전하게 실행 (모든 provider에서 동일한 패턴)
 
@@ -336,4 +336,6 @@ class BaseLLMProvider(ABC):
             await rate_limiter.wait(rate_limit_key, cost=cost)
         except Exception as e:
             # Rate Limiting 실패 시 로깅만 하고 계속 진행 (Fallback)
-            self._logger.warning(f"Rate limiting failed for {self.name}: {e}, continuing without rate limit")
+            self._logger.warning(
+                f"Rate limiting failed for {self.name}: {e}, continuing without rate limit"
+            )

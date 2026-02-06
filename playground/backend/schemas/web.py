@@ -3,11 +3,13 @@ Web Search Request Schemas
 """
 
 from typing import Optional
+
 from pydantic import BaseModel
 
 
 class WebSearchRequest(BaseModel):
     """Request for web search"""
+
     query: str
     num_results: int = 5
     engine: str = "duckduckgo"

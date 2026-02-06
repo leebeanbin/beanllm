@@ -201,7 +201,9 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
                     score = 1 - score
 
                 doc = Document(content=text, metadata=metadata)
-                search_results.append(VectorSearchResult(document=doc, score=score, metadata=metadata))
+                search_results.append(
+                    VectorSearchResult(document=doc, score=score, metadata=metadata)
+                )
 
         return search_results
 
@@ -256,7 +258,9 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
                     score = 1 - score
 
                 doc = Document(content=text, metadata=metadata)
-                search_results.append(VectorSearchResult(document=doc, score=score, metadata=metadata))
+                search_results.append(
+                    VectorSearchResult(document=doc, score=score, metadata=metadata)
+                )
 
         return search_results
 
@@ -270,5 +274,3 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
         self.collection.flush()
 
         return True
-
-

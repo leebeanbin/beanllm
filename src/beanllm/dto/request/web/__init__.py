@@ -7,4 +7,3 @@ from .web_search_request import WebSearchRequest
 __all__ = [
     "WebSearchRequest",
 ]
-

@@ -2,41 +2,43 @@
 Phase 5 통합 데모: Tools, Agent, Memory, Chain
 LangChain 스타일의 고급 기능 시연
 """
+
 import asyncio
+
 from beanllm import (
+    # Agent
+    Agent,
+    # Memory
+    BufferMemory,
+    # Chain
+    Chain,
+    ChainBuilder,
     Client,
+    ConversationMemory,
+    ParallelChain,
+    PromptChain,
+    SequentialChain,
+    TokenMemory,
     # Tools
     Tool,
     ToolRegistry,
-    register_tool,
-    # Agent
-    Agent,
-    create_agent,
-    # Memory
-    BufferMemory,
     WindowMemory,
-    TokenMemory,
-    ConversationMemory,
-    create_memory,
-    # Chain
-    Chain,
-    PromptChain,
-    SequentialChain,
-    ParallelChain,
-    ChainBuilder,
+    create_agent,
     create_chain,
+    create_memory,
+    register_tool,
 )
-
 
 # ============================================================================
 # 1. Tool System 데모
 # ============================================================================
 
+
 def demo_tools():
     """Tool 시스템 기본 사용"""
-    print("="*60)
+    print("=" * 60)
     print("1. Tool System Demo")
-    print("="*60)
+    print("=" * 60)
 
     # 도구 정의
     @register_tool
@@ -52,6 +54,7 @@ def demo_tools():
 
     # 도구 실행
     from beanllm.tools import get_all_tools
+
     tools = get_all_tools()
     print(f"\n등록된 도구: {len(tools)}개")
     for tool in tools:
@@ -66,11 +69,12 @@ def demo_tools():
 # 2. Agent 데모
 # ============================================================================
 
+
 async def demo_agent():
     """ReAct 에이전트 사용"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2. Agent Demo (ReAct Pattern)")
-    print("="*60)
+    print("=" * 60)
 
     # 커스텀 도구 정의
     def calculator(operation: str, a: float, b: float) -> float:
@@ -90,12 +94,9 @@ async def demo_agent():
     # 에이전트 생성
     agent = Agent(
         model="gpt-4o-mini",
-        tools=[
-            Tool.from_function(calculator),
-            Tool.from_function(search)
-        ],
+        tools=[Tool.from_function(calculator), Tool.from_function(search)],
         max_iterations=5,
-        verbose=True
+        verbose=True,
     )
 
     # 복잡한 작업 수행
@@ -111,11 +112,12 @@ async def demo_agent():
 # 3. Memory 데모
 # ============================================================================
 
+
 async def demo_memory():
     """메모리 시스템 사용"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3. Memory System Demo")
-    print("="*60)
+    print("=" * 60)
 
     # (1) BufferMemory
     print("\n[BufferMemory] 모든 메시지 저장")
@@ -154,11 +156,12 @@ async def demo_memory():
 # 4. Chain 데모
 # ============================================================================
 
+
 async def demo_chain():
     """체인 시스템 사용"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4. Chain System Demo")
-    print("="*60)
+    print("=" * 60)
 
     client = Client(model="gpt-4o-mini")
 
@@ -175,10 +178,7 @@ async def demo_chain():
     Answer briefly: {question}
     """
     prompt_chain = PromptChain(client, template)
-    result = await prompt_chain.run(
-        role="Python expert",
-        question="What is async/await?"
-    )
+    result = await prompt_chain.run(role="Python expert", question="What is async/await?")
     print(f"  응답: {result.output[:100]}...")
 
     # (3) ChainBuilder (Fluent API)
@@ -219,11 +219,12 @@ async def demo_chain():
 # 5. 통합 시나리오
 # ============================================================================
 
+
 async def demo_integrated():
     """모든 기능을 통합한 실전 시나리오"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("5. Integrated Scenario")
-    print("="*60)
+    print("=" * 60)
     print("시나리오: 메모리를 가진 에이전트 + 체인")
 
     # 도구 정의
@@ -243,7 +244,7 @@ async def demo_integrated():
         model="gpt-4o-mini",
         tools=[Tool.from_function(search_docs)],
         max_iterations=3,
-        verbose=False
+        verbose=False,
     )
 
     # 체인과 결합
@@ -259,6 +260,7 @@ async def demo_integrated():
 # ============================================================================
 # Main
 # ============================================================================
+
 
 async def main():
     """전체 데모 실행"""

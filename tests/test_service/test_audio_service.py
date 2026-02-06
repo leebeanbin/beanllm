@@ -2,13 +2,19 @@
 AudioService 테스트 - Audio 서비스 구현체 테스트
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch, MagicMock
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
+import pytest
+
+from beanllm.domain.audio import (
+    AudioSegment,
+    TranscriptionResult,
+    TranscriptionSegment,
+    TTSProvider,
+)
 from beanllm.dto.request.audio_request import AudioRequest
 from beanllm.dto.response.audio_response import AudioResponse
-from beanllm.domain.audio import AudioSegment, TranscriptionResult, TranscriptionSegment, TTSProvider
 from beanllm.service.impl.audio_service_impl import AudioServiceImpl
 
 
@@ -349,5 +355,3 @@ class TestAudioService:
         assert len(response.audio_ids) == 2
         assert "audio_1" in response.audio_ids
         assert "audio_2" in response.audio_ids
-
-

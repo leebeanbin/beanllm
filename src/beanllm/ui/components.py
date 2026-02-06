@@ -135,7 +135,7 @@ class Prompt:
     """프롬프트 컴포넌트 ($, > 같은 입력 시작점)"""
 
     @staticmethod
-    def render(prompt_char: str = "$", style: str = None) -> str:
+    def render(prompt_char: str = "$", style: Optional[str] = None) -> str:
         """프롬프트 렌더링"""
         if style is None:
             style = f"{tokens.color.accent} bold"

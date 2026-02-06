@@ -3,16 +3,19 @@ ML Tools (Audio, OCR, Evaluation) - 기존 beanllm ML 기능을 MCP tool로 wrap
 
 🎯 핵심: 새로운 코드를 만들지 않고 기존 코드를 함수화!
 """
+
 import asyncio
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from fastmcp import FastMCP
 
-# 기존 beanllm 코드 import (wrapping 대상)
-from beanllm.facade.ml import AudioFacade, EvaluationFacade
 from beanllm.domain.ocr import beanOCR
 from beanllm.dto.request.audio import AudioRequest
 from beanllm.dto.request.evaluation import EvaluationRequest
+
+# 기존 beanllm 코드 import (wrapping 대상)
+from beanllm.facade.ml import AudioFacade, EvaluationFacade
 from mcp_server.config import MCPServerConfig
 
 # FastMCP 인스턴스 생성
@@ -340,9 +343,7 @@ async def benchmark_models(
             )
 
         # 점수 기준 정렬
-        results_sorted = sorted(
-            results, key=lambda x: x["overall_score"], reverse=True
-        )
+        results_sorted = sorted(results, key=lambda x: x["overall_score"], reverse=True)
 
         return {
             "success": True,
@@ -384,8 +385,9 @@ async def compare_model_outputs(
     """
     try:
         # 기존 Client 사용
-        from beanllm.facade.core import Client
         import time
+
+        from beanllm.facade.core import Client
 
         results = []
 

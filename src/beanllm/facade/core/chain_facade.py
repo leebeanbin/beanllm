@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 from beanllm.domain.memory import BaseMemory, BufferMemory, create_memory
 from beanllm.domain.tools import Tool
 from beanllm.utils.logging import get_logger
+
 from .client_facade import Client
 
 logger = get_logger(__name__)

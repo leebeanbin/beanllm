@@ -63,6 +63,8 @@ class BuildGraphResponse:
     document_ids: List[str]
     created_at: str
     statistics: Dict[str, Any]  # {"density": 0.1, "avg_degree": 2.5}
+    density: float = 0.0
+    num_connected_components: int = 1
     metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
@@ -103,6 +105,9 @@ class GraphRAGResponse:
     traditional_rag_context: Optional[str] = None
     hybrid_score: Optional[float] = None
     sources: Optional[List[Any]] = None
+    entity_results: Optional[List[Dict[str, Any]]] = None
+    path_results: Optional[List[Dict[str, Any]]] = None
+    hybrid_results: Optional[List[Dict[str, Any]]] = None
     metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):

@@ -3,14 +3,17 @@ Knowledge Graph Tools - 기존 beanllm KG 기능을 MCP tool로 wrapping
 
 🎯 핵심: 새로운 코드를 만들지 않고 기존 코드를 함수화!
 """
+
 import asyncio
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from fastmcp import FastMCP
+
+from beanllm.dto.request.graph import KGQueryRequest, KGRequest
 
 # 기존 beanllm 코드 import (wrapping 대상)
 from beanllm.facade.advanced import KnowledgeGraphFacade
-from beanllm.dto.request.graph import KGRequest, KGQueryRequest
 from mcp_server.config import MCPServerConfig
 
 # FastMCP 인스턴스 생성

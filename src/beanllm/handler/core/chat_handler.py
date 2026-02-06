@@ -15,9 +15,9 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from beanllm.decorators.error_handler import handle_errors
 from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
-from beanllm.handler.base_handler import BaseHandler
 from beanllm.dto.request.core.chat_request import ChatRequest
 from beanllm.dto.response.core.chat_response import ChatResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.chat_service import IChatService
 
 

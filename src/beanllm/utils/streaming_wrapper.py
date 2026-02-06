@@ -17,7 +17,7 @@ class BufferedStreamWrapper:
     def __init__(
         self,
         stream: AsyncIterator[str],
-        buffer: StreamingBuffer,
+        buffer: StreamBuffer,
         stream_id: str = "default",
     ):
         self.stream = stream

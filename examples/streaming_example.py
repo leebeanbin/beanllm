@@ -5,14 +5,14 @@ WebSocket을 사용한 실시간 진행 상황 스트리밍 예제
 """
 
 import asyncio
+
 from beanllm import Client
 from beanllm.facade.advanced.knowledge_graph_facade import KnowledgeGraph
 from beanllm.infrastructure.streaming import (
+    ProgressTracker,
     WebSocketServer,
     get_websocket_server,
-    ProgressTracker,
 )
-
 
 # ============================================================================
 # Server Example: Knowledge Graph Building with Progress Streaming
@@ -105,7 +105,7 @@ async def run_server_example():
     server = get_websocket_server(host="localhost", port=8765)
     await server.start()
 
-    print(f"\n✅ Server started: ws://localhost:8765")
+    print("\n✅ Server started: ws://localhost:8765")
     print("📡 Waiting for client connections...")
     print("\nPress Ctrl+C to stop\n")
 
@@ -133,9 +133,7 @@ async def run_server_example():
                         "Google was founded by Larry Page and Sergey Brin.",
                     ]
 
-                    asyncio.create_task(
-                        build_knowledge_graph_with_streaming(documents, session)
-                    )
+                    asyncio.create_task(build_knowledge_graph_with_streaming(documents, session))
 
     except KeyboardInterrupt:
         print("\n\nStopping server...")
@@ -195,13 +193,13 @@ async def run_client_example():
 
                 elif msg_type == "result":
                     result_data = data["data"]
-                    print(f"\n\n📊 Result received:")
+                    print("\n\n📊 Result received:")
                     for key, value in result_data.items():
                         print(f"   {key}: {value}")
 
                 elif msg_type == "complete":
                     final_data = data["data"]
-                    print(f"\n\n✅ Task completed!")
+                    print("\n\n✅ Task completed!")
                     print(f"   {final_data.get('message', 'Done')}")
                     if "elapsed_time" in final_data:
                         print(f"   Elapsed time: {final_data['elapsed_time']:.2f}s")

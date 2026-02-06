@@ -171,7 +171,7 @@ def demo_multi_query():
     print(f"\n원본 쿼리: {query}")
 
     expanded_queries = expander.expand(query)
-    print(f"\n확장된 쿼리들:")
+    print("\n확장된 쿼리들:")
     for i, q in enumerate(expanded_queries, 1):
         print(f"  {i}. {q}")
 

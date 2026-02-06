@@ -15,8 +15,8 @@ from enum import Enum
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from services.intent_classifier import IntentResult, IntentType
-from services.tool_registry import Tool, ToolCheckResult, ToolRegistry, tool_registry
 from services.mcp_client_service import mcp_client
+from services.tool_registry import Tool, ToolCheckResult, ToolRegistry, tool_registry
 
 logger = logging.getLogger(__name__)
 
@@ -26,27 +26,29 @@ MAX_NODES = 6
 
 class EventType(str, Enum):
     """SSE 이벤트 타입"""
-    INTENT = "intent"                   # 의도 분류 결과
-    TOOL_SELECT = "tool_select"         # 도구 선택
-    PROPOSAL = "proposal"               # 제안 단계: 노드/파이프라인 제안 (챗 전용)
-    HUMAN_APPROVAL = "human_approval"   # Human-in-the-loop: 도구 실행 전 승인 요청
-    TOOL_START = "tool_start"           # 도구 실행 시작
-    TOOL_PROGRESS = "tool_progress"     # 도구 진행 상황
-    TOOL_RESULT = "tool_result"         # 도구 실행 결과
-    TEXT = "text"                       # 텍스트 청크 (스트리밍)
-    TEXT_DONE = "text_done"             # 텍스트 완료
-    ERROR = "error"                     # 오류
-    DONE = "done"                       # 전체 완료
-    STREAM_PAUSED = "stream_paused"     # Human-in-the-loop: 승인 대기로 스트림 일시 중단
+
+    INTENT = "intent"  # 의도 분류 결과
+    TOOL_SELECT = "tool_select"  # 도구 선택
+    PROPOSAL = "proposal"  # 제안 단계: 노드/파이프라인 제안 (챗 전용)
+    HUMAN_APPROVAL = "human_approval"  # Human-in-the-loop: 도구 실행 전 승인 요청
+    TOOL_START = "tool_start"  # 도구 실행 시작
+    TOOL_PROGRESS = "tool_progress"  # 도구 진행 상황
+    TOOL_RESULT = "tool_result"  # 도구 실행 결과
+    TEXT = "text"  # 텍스트 청크 (스트리밍)
+    TEXT_DONE = "text_done"  # 텍스트 완료
+    ERROR = "error"  # 오류
+    DONE = "done"  # 전체 완료
+    STREAM_PAUSED = "stream_paused"  # Human-in-the-loop: 승인 대기로 스트림 일시 중단
     # 병렬 처리 관련
-    PARALLEL_START = "parallel_start"   # 병렬 작업 시작
+    PARALLEL_START = "parallel_start"  # 병렬 작업 시작
     PARALLEL_PROGRESS = "parallel_progress"  # 병렬 작업 진행 상황 (개별)
-    PARALLEL_DONE = "parallel_done"     # 병렬 작업 완료
+    PARALLEL_DONE = "parallel_done"  # 병렬 작업 완료
 
 
 @dataclass
 class AgenticEvent:
     """SSE 이벤트"""
+
     type: EventType
     data: Dict[str, Any]
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
@@ -71,14 +73,15 @@ class AgenticEvent:
 @dataclass
 class OrchestratorContext:
     """Orchestrator 실행 컨텍스트"""
-    query: str                              # 원본 쿼리
-    intent: IntentResult                    # 분류된 의도
-    selected_tools: List[ToolCheckResult]   # 선택된 도구들
-    model: str = "qwen2.5:0.5b"            # 사용할 모델
-    temperature: float = 0.7                # 온도
-    max_tokens: int = 2000                  # 최대 토큰
-    session_id: Optional[str] = None        # 세션 ID
-    user_id: Optional[str] = None           # 사용자 ID
+
+    query: str  # 원본 쿼리
+    intent: IntentResult  # 분류된 의도
+    selected_tools: List[ToolCheckResult]  # 선택된 도구들
+    model: str = "qwen2.5:0.5b"  # 사용할 모델
+    temperature: float = 0.7  # 온도
+    max_tokens: int = 2000  # 최대 토큰
+    session_id: Optional[str] = None  # 세션 ID
+    user_id: Optional[str] = None  # 사용자 ID
     extra_params: Dict[str, Any] = field(default_factory=dict)
     # 제안 단계: 유저가 챗으로 보낸 값 (approved | modified | custom_spec)
     proposal_action: Optional[str] = None
@@ -103,6 +106,66 @@ class AgenticOrchestrator:
         self._tool_handlers: Dict[str, Any] = {}
         self._mcp_client = mcp_client  # MCP Client Service (중앙 관리 포인트)
         self._init_handlers()
+
+    # ===========================================
+    # Google OAuth Helper (중복 제거)
+    # ===========================================
+
+    async def _get_google_access_token(
+        self,
+        context: OrchestratorContext,
+        tool: Tool,
+    ) -> Optional[str]:
+        """
+        Google OAuth 액세스 토큰 가져오기 (공통 인증 로직).
+
+        Args:
+            context: 실행 컨텍스트
+            tool: 현재 도구
+
+        Returns:
+            액세스 토큰 또는 None (인증 필요 시)
+
+        Note:
+            None 반환 시 호출자는 ERROR 이벤트를 yield해야 함
+        """
+        from database import get_mongodb_database
+
+        from services.google_oauth_service import google_oauth_service
+
+        db = get_mongodb_database()
+        user_id = context.user_id or "default"
+
+        return await google_oauth_service.get_valid_access_token(user_id, db)
+
+    def _create_google_auth_error_event(self, tool: Tool) -> AgenticEvent:
+        """Google 인증 필요 에러 이벤트 생성."""
+        return AgenticEvent(
+            type=EventType.ERROR,
+            data={
+                "tool": tool.name,
+                "message": "Google sign-in required. Sign in with Google in Settings.",
+                "auth_required": True,
+            },
+        )
+
+    def _create_progress_event(
+        self,
+        tool: Tool,
+        step: str,
+        message: str,
+        progress: float,
+    ) -> AgenticEvent:
+        """진행 상황 이벤트 생성 (공통 패턴)."""
+        return AgenticEvent(
+            type=EventType.TOOL_PROGRESS,
+            data={
+                "tool": tool.name,
+                "step": step,
+                "message": message,
+                "progress": progress,
+            },
+        )
 
     def _init_handlers(self):
         """도구 핸들러 초기화"""
@@ -145,8 +208,10 @@ class AgenticOrchestrator:
             AgenticEvent: SSE 이벤트
         """
         try:
-            logger.info(f"Orchestrator.execute started: query={context.query[:50]}..., tools={len(context.selected_tools)}, start_from={start_from_tool_index}")
-            
+            logger.info(
+                f"Orchestrator.execute started: query={context.query[:50]}..., tools={len(context.selected_tools)}, start_from={start_from_tool_index}"
+            )
+
             if start_from_tool_index == 0:
                 # 1. Intent 이벤트
                 logger.info(f"Yielding INTENT event: {context.intent.primary_intent.value}")
@@ -157,7 +222,7 @@ class AgenticOrchestrator:
                         "confidence": context.intent.confidence,
                         "secondary_intents": [i.value for i in context.intent.secondary_intents],
                         "extracted_entities": context.intent.extracted_entities,
-                    }
+                    },
                 )
 
                 # 2. 도구가 없으면 기본 Chat으로 폴백
@@ -170,14 +235,15 @@ class AgenticOrchestrator:
                     else:
                         logger.error("No chat tool available")
                         yield AgenticEvent(
-                            type=EventType.ERROR,
-                            data={"message": "No tools available"}
+                            type=EventType.ERROR, data={"message": "No tools available"}
                         )
                         return
 
                 # 노드 최대 개수 검증 (최대 MAX_NODES)
                 if len(context.selected_tools) > MAX_NODES:
-                    logger.warning(f"Tool count {len(context.selected_tools)} exceeds MAX_NODES={MAX_NODES}, capping")
+                    logger.warning(
+                        f"Tool count {len(context.selected_tools)} exceeds MAX_NODES={MAX_NODES}, capping"
+                    )
                     context.selected_tools = context.selected_tools[:MAX_NODES]
 
                 # 3. 도구 선택 이벤트
@@ -188,7 +254,7 @@ class AgenticOrchestrator:
                     data={
                         "tools": tool_names,
                         "count": len(context.selected_tools),
-                    }
+                    },
                 )
 
                 # 3.5 제안 단계: 노드/파이프라인 제안 (챗 전용)
@@ -200,7 +266,7 @@ class AgenticOrchestrator:
                         "nodes": node_count,
                         "pipeline": pipeline,
                         "reason": f"Suggested pipeline with {node_count} step(s): {' → '.join(pipeline)}. Reply to approve, change, or specify your own.",
-                    }
+                    },
                 )
 
                 # 3.6 proposal_action 반영: custom_spec / modified 시 proposal_pipeline 순서로 도구 재구성
@@ -232,14 +298,15 @@ class AgenticOrchestrator:
                             "message": f"Tool '{tool.name}' is not available",
                             "missing_keys": tool_check.missing_keys,
                             "missing_packages": tool_check.missing_packages,
-                        }
+                        },
                     )
                     continue
 
                 # Human-in-the-loop: 도구 실행 직전 승인 요청 이벤트 (실행/취소/다른 도구로)
                 approval_data = {
                     "tool": tool.name,
-                    "query_snippet": context.query[:80] + ("..." if len(context.query) > 80 else ""),
+                    "query_snippet": context.query[:80]
+                    + ("..." if len(context.query) > 80 else ""),
                     "actions": ["run", "cancel", "change_tool"],
                 }
                 if context.run_id:
@@ -250,7 +317,9 @@ class AgenticOrchestrator:
                 if context.require_approval and context.run_id:
                     try:
                         import json
+
                         from beanllm.infrastructure.distributed.redis.client import get_redis_client
+
                         redis = get_redis_client()
                         if redis:
                             state = {
@@ -268,7 +337,9 @@ class AgenticOrchestrator:
                             }
                             key = f"run:approval:{context.run_id}"
                             await redis.setex(key, 3600, json.dumps(state))  # 1시간 TTL
-                            logger.info(f"Saved run state for approval: run_id={context.run_id}, tool_index={idx}")
+                            logger.info(
+                                f"Saved run state for approval: run_id={context.run_id}, tool_index={idx}"
+                            )
                     except Exception as e:
                         logger.warning(f"Failed to save run state for approval: {e}")
                     yield AgenticEvent(
@@ -284,7 +355,7 @@ class AgenticOrchestrator:
                         "tool": tool.name,
                         "description": tool.description_ko,
                         "is_streaming": tool.is_streaming,
-                    }
+                    },
                 )
 
                 # 도구 실행
@@ -297,27 +368,36 @@ class AgenticOrchestrator:
                         # 최종 결과 수집
                         if event.type == EventType.TOOL_RESULT:
                             result = event.data.get("result")
-                            all_results.append({
-                                "tool": tool.name,
-                                "result": result,
-                            })
+                            all_results.append(
+                                {
+                                    "tool": tool.name,
+                                    "result": result,
+                                }
+                            )
                             # 토큰 메트릭 수집 (handler가 usage를 넘기면 합산)
                             usage = event.data.get("usage")
                             if isinstance(usage, dict):
-                                accumulated_usage["input_tokens"] += int(usage.get("input_tokens") or 0)
-                                accumulated_usage["output_tokens"] += int(usage.get("output_tokens") or 0)
+                                accumulated_usage["input_tokens"] += int(
+                                    usage.get("input_tokens") or 0
+                                )
+                                accumulated_usage["output_tokens"] += int(
+                                    usage.get("output_tokens") or 0
+                                )
                 except Exception as e:
                     error_message = str(e)
                     logger.error(f"Tool execution error: {tool.name} - {error_message}")
                     logger.error(traceback.format_exc())
-                    
+
                     # 메모리 부족 에러 등 특정 에러에 대한 사용자 친화적 메시지
                     user_friendly_message = error_message
-                    if "memory" in error_message.lower() or "requires more" in error_message.lower():
+                    if (
+                        "memory" in error_message.lower()
+                        or "requires more" in error_message.lower()
+                    ):
                         user_friendly_message = f"메모리 부족: {error_message}. 더 작은 모델을 사용하거나 메모리를 확보해주세요."
                     elif "not found" in error_message.lower() or "404" in error_message:
                         user_friendly_message = f"모델을 찾을 수 없습니다: {error_message}. 모델이 설치되어 있는지 확인해주세요."
-                    
+
                     yield AgenticEvent(
                         type=EventType.ERROR,
                         data={
@@ -325,7 +405,7 @@ class AgenticOrchestrator:
                             "message": user_friendly_message,
                             "original_error": error_message,
                             "traceback": traceback.format_exc(),
-                        }
+                        },
                     )
 
             # 5. 완료 이벤트 (usage 있으면 메트릭·로깅용)
@@ -346,7 +426,7 @@ class AgenticOrchestrator:
                 data={
                     "message": str(e),
                     "traceback": traceback.format_exc(),
-                }
+                },
             )
 
     # ===========================================
@@ -354,13 +434,13 @@ class AgenticOrchestrator:
     # ===========================================
 
     async def _handle_chat(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Chat 도구 핸들러 (스트리밍, 컨텍스트 관리 통합)"""
         try:
-            logger.info(f"_handle_chat started: tool={tool.name}, model={context.model}, session_id={context.session_id}")
+            logger.info(
+                f"_handle_chat started: tool={tool.name}, model={context.model}, session_id={context.session_id}"
+            )
             from beanllm.facade.core import Client
             from services.context_manager import context_manager
 
@@ -373,7 +453,7 @@ class AgenticOrchestrator:
                     "step": "initializing",
                     "message": "Initializing LLM client...",
                     "progress": 0.1,
-                }
+                },
             )
 
             # 세션이 있으면 컨텍스트 관리 사용
@@ -388,13 +468,12 @@ class AgenticOrchestrator:
                             "step": "summarizing",
                             "message": "Summarizing conversation...",
                             "progress": 0.15,
-                        }
+                        },
                     )
 
                     # 요약 생성
                     summary = await context_manager.summarize_if_needed(
-                        context.session_id,
-                        model=context.model
+                        context.session_id, model=context.model
                     )
 
                     if summary:
@@ -406,7 +485,7 @@ class AgenticOrchestrator:
                                 "message": f"Summary done: {summary[:100]}...",
                                 "progress": 0.2,
                                 "summary_preview": summary[:200],
-                            }
+                            },
                         )
 
                 # 사용자 메시지 추가
@@ -416,8 +495,8 @@ class AgenticOrchestrator:
                     context.query,
                 )
 
-                # 요약 포함된 컨텍스트 가져오기
-                messages = context_manager.get_context_with_summary(context.session_id)
+                # 요약 포함된 컨텍스트 가져오기 (MongoDB fallback 포함)
+                messages = await context_manager.get_context_with_summary_async(context.session_id)
             else:
                 # 세션 없으면 단일 메시지
                 messages = [{"role": "user", "content": context.query}]
@@ -433,7 +512,7 @@ class AgenticOrchestrator:
                     "step": "generating",
                     "message": "Generating response...",
                     "progress": 0.3,
-                }
+                },
             )
 
             # 스트리밍 응답
@@ -446,16 +525,18 @@ class AgenticOrchestrator:
                     chunk_count += 1
                     full_content += chunk
                     if chunk_count % 10 == 0:  # 10개마다 로깅
-                        logger.debug(f"Streaming chunk #{chunk_count}, accumulated: {len(full_content)} chars")
+                        logger.debug(
+                            f"Streaming chunk #{chunk_count}, accumulated: {len(full_content)} chars"
+                        )
                     yield AgenticEvent(
                         type=EventType.TEXT,
                         data={
                             "tool": tool.name,
                             "content": chunk,
                             "accumulated_length": len(full_content),
-                        }
+                        },
                     )
-            
+
             logger.info(f"Stream completed: {chunk_count} chunks, {len(full_content)} total chars")
 
             # 텍스트 완료
@@ -464,7 +545,7 @@ class AgenticOrchestrator:
                 data={
                     "tool": tool.name,
                     "total_length": len(full_content),
-                }
+                },
             )
 
             # 세션이 있으면 assistant 응답 저장
@@ -486,7 +567,7 @@ class AgenticOrchestrator:
                         "has_context": context.session_id is not None,
                     },
                     "status": "completed",
-                }
+                },
             )
 
         except Exception as e:
@@ -494,9 +575,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_rag(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """RAG 도구 핸들러 (MCP 서버 사용)"""
         try:
@@ -508,7 +587,7 @@ class AgenticOrchestrator:
                     "step": "searching",
                     "message": "Searching documents...",
                     "progress": 0.2,
-                }
+                },
             )
 
             collection_name = context.extra_params.get("collection_name", "default")
@@ -521,7 +600,7 @@ class AgenticOrchestrator:
                     "step": "generating",
                     "message": "Generating reply...",
                     "progress": 0.6,
-                }
+                },
             )
 
             # MCP 서버의 query_rag_system 호출
@@ -540,13 +619,13 @@ class AgenticOrchestrator:
                 if answer:
                     chunk_size = 50
                     for i in range(0, len(answer), chunk_size):
-                        chunk = answer[i:i + chunk_size]
+                        chunk = answer[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 # 결과
@@ -561,7 +640,7 @@ class AgenticOrchestrator:
                             "collection": collection_name,
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -569,7 +648,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "RAG query failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -577,9 +656,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_agent(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Agent 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -589,7 +666,7 @@ class AgenticOrchestrator:
                 "step": "initializing",
                 "message": "Initializing agent...",
                 "progress": 0.2,
-            }
+            },
         )
 
         try:
@@ -603,7 +680,7 @@ class AgenticOrchestrator:
                     "step": "executing",
                     "message": "Running agent task...",
                     "progress": 0.5,
-                }
+                },
             )
 
             # MCP 서버의 run_multiagent_task 호출
@@ -620,13 +697,13 @@ class AgenticOrchestrator:
                 if final_result:
                     chunk_size = 50
                     for i in range(0, len(final_result), chunk_size):
-                        chunk = final_result[i:i + chunk_size]
+                        chunk = final_result[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 yield AgenticEvent(
@@ -635,7 +712,7 @@ class AgenticOrchestrator:
                         "tool": tool.name,
                         "result": result,
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -643,7 +720,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "Agent execution failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -651,9 +728,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_multi_agent(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Multi-Agent 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -663,7 +738,7 @@ class AgenticOrchestrator:
                 "step": "initializing",
                 "message": "Initializing multi-agent system...",
                 "progress": 0.2,
-            }
+            },
         )
 
         try:
@@ -676,7 +751,7 @@ class AgenticOrchestrator:
                     "step": "executing",
                     "message": "Running multi-agent collaboration...",
                     "progress": 0.5,
-                }
+                },
             )
 
             # MCP 서버의 run_multiagent_task 호출
@@ -699,7 +774,7 @@ class AgenticOrchestrator:
                             "message": f"Agent '{resp.get('agent', 'unknown')}' responded",
                             "agent": resp.get("agent"),
                             "content": resp.get("content", "")[:200],
-                        }
+                        },
                     )
 
                 # 최종 결과 스트리밍
@@ -707,13 +782,13 @@ class AgenticOrchestrator:
                 if final_result:
                     chunk_size = 50
                     for i in range(0, len(final_result), chunk_size):
-                        chunk = final_result[i:i + chunk_size]
+                        chunk = final_result[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 yield AgenticEvent(
@@ -727,7 +802,7 @@ class AgenticOrchestrator:
                             "strategy": result.get("strategy", "unknown"),
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -735,7 +810,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "Multi-agent execution failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -743,9 +818,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_web_search(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Web Search 도구 핸들러"""
         yield AgenticEvent(
@@ -755,7 +828,7 @@ class AgenticOrchestrator:
                 "step": "searching",
                 "message": "Searching the web...",
                 "progress": 0.3,
-            }
+            },
         )
 
         # TODO: beanllm WebSearch Facade 연동
@@ -765,13 +838,11 @@ class AgenticOrchestrator:
                 "tool": tool.name,
                 "result": {"message": "Web search tool not yet implemented"},
                 "status": "pending",
-            }
+            },
         )
 
     async def _handle_code(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Code 도구 핸들러 (Chat과 유사하지만 코드 특화)"""
         # Chat 핸들러 재사용 (코드 모드 시스템 프롬프트 추가)
@@ -779,57 +850,66 @@ class AgenticOrchestrator:
             yield event
 
     async def _handle_google_drive(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
-        """Google Drive 도구 핸들러"""
-        from services.google_oauth_service import google_oauth_service
-        from database import get_mongodb_database
-
-        yield AgenticEvent(
-            type=EventType.TOOL_PROGRESS,
-            data={
-                "tool": tool.name,
-                "step": "authenticating",
-                "message": "Checking Google authentication...",
-                "progress": 0.1,
-            }
+        """Google Drive 도구 핸들러 (파일 목록, 읽기, 저장)."""
+        yield self._create_progress_event(
+            tool, "authenticating", "Checking Google authentication...", 0.1
         )
 
         try:
-            db = get_mongodb_database()
-            user_id = context.user_id or "default"
-
-            # 토큰 확인
-            access_token = await google_oauth_service.get_valid_access_token(user_id, db)
+            access_token = await self._get_google_access_token(context, tool)
             if not access_token:
-                yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={
-                        "tool": tool.name,
-                        "message": "Google sign-in required. Sign in with Google in Settings.",
-                        "auth_required": True,
-                    }
-                )
+                yield self._create_google_auth_error_event(tool)
                 return
 
-            yield AgenticEvent(
-                type=EventType.TOOL_PROGRESS,
-                data={
-                    "tool": tool.name,
-                    "step": "processing",
-                    "message": "Processing Google Drive request...",
-                    "progress": 0.3,
-                }
+            user_id = context.user_id or "default"
+            yield self._create_progress_event(
+                tool, "processing", "Processing Google Drive request...", 0.3
             )
 
-            # 쿼리 분석 (파일 목록 조회 vs 저장)
+            # 쿼리 분석 (읽기/학습 vs 목록 조회 vs 저장)
             query_lower = context.query.lower()
 
-            if any(kw in query_lower for kw in ["목록", "리스트", "list", "보여", "파일"]):
+            if any(
+                kw in query_lower for kw in ["읽어", "가져와", "학습", "import", "인덱싱", "rag"]
+            ):
+                # 파일 읽기 및 RAG 학습
+                file_id = context.extra_params.get("file_id")
+                if not file_id:
+                    yield AgenticEvent(
+                        type=EventType.ERROR,
+                        data={
+                            "tool": tool.name,
+                            "message": "file_id가 필요합니다. tool_options에 file_id를 포함해주세요.",
+                        },
+                    )
+                    return
+
+                yield AgenticEvent(
+                    type=EventType.TOOL_PROGRESS,
+                    data={
+                        "tool": tool.name,
+                        "step": "reading",
+                        "message": "Google Drive에서 파일을 읽는 중...",
+                        "progress": 0.5,
+                    },
+                )
+
+                from mcp_server.tools.google_tools import import_google_data_to_rag
+
+                result = await import_google_data_to_rag(
+                    access_token=access_token,
+                    session_id=context.session_id or "default",
+                    source_type="drive",
+                    source_id=file_id,
+                    collection_name=context.extra_params.get("collection_name"),
+                )
+
+            elif any(kw in query_lower for kw in ["목록", "리스트", "list", "보여", "파일"]):
                 # 파일 목록 조회
                 from mcp_server.tools.google_tools import list_google_drive_files
+
                 result = await list_google_drive_files(
                     access_token=access_token,
                     page_size=context.extra_params.get("page_size", 10),
@@ -837,6 +917,7 @@ class AgenticOrchestrator:
             else:
                 # 파일 저장
                 from mcp_server.tools.google_tools import save_to_google_drive
+
                 result = await save_to_google_drive(
                     filename=context.extra_params.get("filename", "beanllm_chat.txt"),
                     user_id=user_id,
@@ -851,7 +932,7 @@ class AgenticOrchestrator:
                     "tool": tool.name,
                     "result": result,
                     "status": "completed" if result.get("success") else "error",
-                }
+                },
             )
 
         except Exception as e:
@@ -859,58 +940,77 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_google_docs(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
-        """Google Docs 도구 핸들러"""
-        from services.google_oauth_service import google_oauth_service
-        from database import get_mongodb_database
-
-        yield AgenticEvent(
-            type=EventType.TOOL_PROGRESS,
-            data={
-                "tool": tool.name,
-                "step": "authenticating",
-                "message": "Checking Google authentication...",
-                "progress": 0.1,
-            }
+        """Google Docs 도구 핸들러 (문서 읽기, 내보내기)."""
+        yield self._create_progress_event(
+            tool, "authenticating", "Checking Google authentication...", 0.1
         )
 
         try:
-            db = get_mongodb_database()
-            user_id = context.user_id or "default"
-
-            access_token = await google_oauth_service.get_valid_access_token(user_id, db)
+            access_token = await self._get_google_access_token(context, tool)
             if not access_token:
-                yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={
-                        "tool": tool.name,
-                        "message": "Google sign-in required. Sign in with Google in Settings.",
-                        "auth_required": True,
-                    }
-                )
+                yield self._create_google_auth_error_event(tool)
                 return
 
-            yield AgenticEvent(
-                type=EventType.TOOL_PROGRESS,
-                data={
-                    "tool": tool.name,
-                    "step": "creating",
-                    "message": "Creating Google Docs document...",
-                    "progress": 0.5,
-                }
-            )
+            user_id = context.user_id or "default"
+            query_lower = context.query.lower()
 
-            from mcp_server.tools.google_tools import export_to_google_docs
-            result = await export_to_google_docs(
-                title=context.extra_params.get("title", "beanllm Chat Export"),
-                user_id=user_id,
-                access_token=access_token,
-                session_id=context.session_id,
-                content=context.extra_params.get("content"),
-            )
+            if any(
+                kw in query_lower for kw in ["읽어", "가져와", "학습", "import", "인덱싱", "rag"]
+            ):
+                # 문서 읽기 및 RAG 학습
+                doc_id = context.extra_params.get("doc_id")
+                if not doc_id:
+                    yield AgenticEvent(
+                        type=EventType.ERROR,
+                        data={
+                            "tool": tool.name,
+                            "message": "doc_id가 필요합니다. tool_options에 doc_id를 포함해주세요.",
+                        },
+                    )
+                    return
+
+                yield AgenticEvent(
+                    type=EventType.TOOL_PROGRESS,
+                    data={
+                        "tool": tool.name,
+                        "step": "reading",
+                        "message": "Google Docs 문서를 읽는 중...",
+                        "progress": 0.5,
+                    },
+                )
+
+                from mcp_server.tools.google_tools import import_google_data_to_rag
+
+                result = await import_google_data_to_rag(
+                    access_token=access_token,
+                    session_id=context.session_id or "default",
+                    source_type="docs",
+                    source_id=doc_id,
+                    collection_name=context.extra_params.get("collection_name"),
+                )
+            else:
+                # 문서 내보내기
+                yield AgenticEvent(
+                    type=EventType.TOOL_PROGRESS,
+                    data={
+                        "tool": tool.name,
+                        "step": "creating",
+                        "message": "Creating Google Docs document...",
+                        "progress": 0.5,
+                    },
+                )
+
+                from mcp_server.tools.google_tools import export_to_google_docs
+
+                result = await export_to_google_docs(
+                    title=context.extra_params.get("title", "beanllm Chat Export"),
+                    user_id=user_id,
+                    access_token=access_token,
+                    session_id=context.session_id,
+                    content=context.extra_params.get("content"),
+                )
 
             yield AgenticEvent(
                 type=EventType.TOOL_RESULT,
@@ -918,7 +1018,7 @@ class AgenticOrchestrator:
                     "tool": tool.name,
                     "result": result,
                     "status": "completed" if result.get("success") else "error",
-                }
+                },
             )
 
         except Exception as e:
@@ -926,46 +1026,26 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_google_gmail(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
-        """Gmail 도구 핸들러"""
-        from services.google_oauth_service import google_oauth_service
-        from database import get_mongodb_database
-
-        yield AgenticEvent(
-            type=EventType.TOOL_PROGRESS,
-            data={
-                "tool": tool.name,
-                "step": "authenticating",
-                "message": "Checking Google authentication...",
-                "progress": 0.1,
-            }
+        """Gmail 도구 핸들러 (이메일 전송)."""
+        yield self._create_progress_event(
+            tool, "authenticating", "Checking Google authentication...", 0.1
         )
 
         try:
-            db = get_mongodb_database()
-            user_id = context.user_id or "default"
-
-            access_token = await google_oauth_service.get_valid_access_token(user_id, db)
+            access_token = await self._get_google_access_token(context, tool)
             if not access_token:
-                yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={
-                        "tool": tool.name,
-                        "message": "Google sign-in required. Sign in with Google in Settings.",
-                        "auth_required": True,
-                    }
-                )
+                yield self._create_google_auth_error_event(tool)
                 return
 
-            # 수신자 이메일 추출 (쿼리에서 또는 extra_params에서)
+            user_id = context.user_id or "default"
             recipient_email = context.extra_params.get("recipient_email")
             if not recipient_email:
                 # 쿼리에서 이메일 추출 시도
                 import re
-                email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', context.query)
+
+                email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", context.query)
                 if email_match:
                     recipient_email = email_match.group()
                 else:
@@ -974,7 +1054,7 @@ class AgenticOrchestrator:
                         data={
                             "tool": tool.name,
                             "message": "Specify recipient email.",
-                        }
+                        },
                     )
                     return
 
@@ -985,10 +1065,11 @@ class AgenticOrchestrator:
                     "step": "sending",
                     "message": f"Sending email to {recipient_email}...",
                     "progress": 0.5,
-                }
+                },
             )
 
             from mcp_server.tools.google_tools import share_via_gmail
+
             result = await share_via_gmail(
                 recipient_email=recipient_email,
                 subject=context.extra_params.get("subject", "beanllm Chat History"),
@@ -1005,7 +1086,7 @@ class AgenticOrchestrator:
                     "tool": tool.name,
                     "result": result,
                     "status": "completed" if result.get("success") else "error",
-                }
+                },
             )
 
         except Exception as e:
@@ -1013,38 +1094,17 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_google_calendar(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
-        """Google Calendar 도구 핸들러"""
-        from services.google_oauth_service import google_oauth_service
-        from database import get_mongodb_database
-
-        yield AgenticEvent(
-            type=EventType.TOOL_PROGRESS,
-            data={
-                "tool": tool.name,
-                "step": "authenticating",
-                "message": "Checking Google authentication...",
-                "progress": 0.1,
-            }
+        """Google Calendar 도구 핸들러 (이벤트 생성/조회)."""
+        yield self._create_progress_event(
+            tool, "authenticating", "Checking Google authentication...", 0.1
         )
 
         try:
-            db = get_mongodb_database()
-            user_id = context.user_id or "default"
-
-            access_token = await google_oauth_service.get_valid_access_token(user_id, db)
+            access_token = await self._get_google_access_token(context, tool)
             if not access_token:
-                yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={
-                        "tool": tool.name,
-                        "message": "Google sign-in required. Sign in with Google in Settings.",
-                        "auth_required": True,
-                    }
-                )
+                yield self._create_google_auth_error_event(tool)
                 return
 
             # TODO: Google Calendar API 연동 (이벤트 생성/조회)
@@ -1057,7 +1117,7 @@ class AgenticOrchestrator:
                         "authenticated": True,
                     },
                     "status": "pending",
-                }
+                },
             )
 
         except Exception as e:
@@ -1065,51 +1125,71 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_google_sheets(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
-        """Google Sheets 도구 핸들러"""
-        from services.google_oauth_service import google_oauth_service
-        from database import get_mongodb_database
-
-        yield AgenticEvent(
-            type=EventType.TOOL_PROGRESS,
-            data={
-                "tool": tool.name,
-                "step": "authenticating",
-                "message": "Checking Google authentication...",
-                "progress": 0.1,
-            }
+        """Google Sheets 도구 핸들러 (스프레드시트 읽기/내보내기)."""
+        yield self._create_progress_event(
+            tool, "authenticating", "Checking Google authentication...", 0.1
         )
 
         try:
-            db = get_mongodb_database()
-            user_id = context.user_id or "default"
-
-            access_token = await google_oauth_service.get_valid_access_token(user_id, db)
+            access_token = await self._get_google_access_token(context, tool)
             if not access_token:
-                yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={
-                        "tool": tool.name,
-                        "message": "Google sign-in required. Sign in with Google in Settings.",
-                        "auth_required": True,
-                    }
-                )
+                yield self._create_google_auth_error_event(tool)
                 return
 
-            # TODO: Google Sheets API 연동 (시트 생성/데이터 입력)
+            query_lower = context.query.lower()
+
+            if any(
+                kw in query_lower for kw in ["읽어", "가져와", "학습", "import", "인덱싱", "rag"]
+            ):
+                # 스프레드시트 읽기 및 RAG 학습
+                spreadsheet_id = context.extra_params.get("spreadsheet_id")
+                if not spreadsheet_id:
+                    yield AgenticEvent(
+                        type=EventType.ERROR,
+                        data={
+                            "tool": tool.name,
+                            "message": "spreadsheet_id가 필요합니다. tool_options에 spreadsheet_id를 포함해주세요.",
+                        },
+                    )
+                    return
+
+                yield AgenticEvent(
+                    type=EventType.TOOL_PROGRESS,
+                    data={
+                        "tool": tool.name,
+                        "step": "reading",
+                        "message": "Google Sheets 데이터를 읽는 중...",
+                        "progress": 0.5,
+                    },
+                )
+
+                from mcp_server.tools.google_tools import import_google_data_to_rag
+
+                result = await import_google_data_to_rag(
+                    access_token=access_token,
+                    session_id=context.session_id or "default",
+                    source_type="sheets",
+                    source_id=spreadsheet_id,
+                    sheet_name=context.extra_params.get("sheet_name"),
+                    collection_name=context.extra_params.get("collection_name"),
+                )
+            else:
+                # TODO: Google Sheets 내보내기 (시트 생성/데이터 입력)
+                result = {
+                    "success": False,
+                    "message": "Google Sheets 내보내기는 아직 지원되지 않습니다. 읽기/학습 기능만 사용 가능합니다.",
+                    "authenticated": True,
+                }
+
             yield AgenticEvent(
                 type=EventType.TOOL_RESULT,
                 data={
                     "tool": tool.name,
-                    "result": {
-                        "message": "Google Sheets is not available yet.",
-                        "authenticated": True,
-                    },
-                    "status": "pending",
-                }
+                    "result": result,
+                    "status": "completed" if result.get("success") else "pending",
+                },
             )
 
         except Exception as e:
@@ -1117,9 +1197,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_audio(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Audio 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -1129,7 +1207,7 @@ class AgenticOrchestrator:
                 "step": "transcribing",
                 "message": "Transcribing audio...",
                 "progress": 0.3,
-            }
+            },
         )
 
         try:
@@ -1140,7 +1218,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": "audio_path is required.",
-                    }
+                    },
                 )
                 return
 
@@ -1158,13 +1236,13 @@ class AgenticOrchestrator:
                 if text:
                     chunk_size = 100
                     for i in range(0, len(text), chunk_size):
-                        chunk = text[i:i + chunk_size]
+                        chunk = text[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 yield AgenticEvent(
@@ -1178,7 +1256,7 @@ class AgenticOrchestrator:
                             "duration_seconds": result.get("duration_seconds"),
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -1186,7 +1264,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "Audio transcription failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -1194,9 +1272,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_vision(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Vision 도구 핸들러"""
         yield AgenticEvent(
@@ -1205,13 +1281,11 @@ class AgenticOrchestrator:
                 "tool": tool.name,
                 "result": {"message": "Vision tool not yet implemented"},
                 "status": "pending",
-            }
+            },
         )
 
     async def _handle_ocr(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """OCR 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -1221,7 +1295,7 @@ class AgenticOrchestrator:
                 "step": "processing",
                 "message": "Extracting text from image...",
                 "progress": 0.3,
-            }
+            },
         )
 
         try:
@@ -1232,7 +1306,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": "image_path is required.",
-                    }
+                    },
                 )
                 return
 
@@ -1250,13 +1324,13 @@ class AgenticOrchestrator:
                 if text:
                     chunk_size = 100
                     for i in range(0, len(text), chunk_size):
-                        chunk = text[i:i + chunk_size]
+                        chunk = text[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 yield AgenticEvent(
@@ -1269,7 +1343,7 @@ class AgenticOrchestrator:
                             "engine": result.get("engine"),
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -1277,7 +1351,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "OCR failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -1285,9 +1359,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_knowledge_graph(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Knowledge Graph 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -1297,7 +1369,7 @@ class AgenticOrchestrator:
                 "step": "querying",
                 "message": "Querying knowledge graph...",
                 "progress": 0.3,
-            }
+            },
         )
 
         try:
@@ -1318,13 +1390,13 @@ class AgenticOrchestrator:
                 if answer:
                     chunk_size = 50
                     for i in range(0, len(answer), chunk_size):
-                        chunk = answer[i:i + chunk_size]
+                        chunk = answer[i : i + chunk_size]
                         yield AgenticEvent(
                             type=EventType.TEXT,
                             data={
                                 "tool": tool.name,
                                 "content": chunk,
-                            }
+                            },
                         )
 
                 yield AgenticEvent(
@@ -1338,7 +1410,7 @@ class AgenticOrchestrator:
                             "graph_name": graph_name,
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -1346,7 +1418,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "Knowledge graph query failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -1354,9 +1426,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_evaluation(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Evaluation 도구 핸들러 (MCP 서버 사용)"""
         yield AgenticEvent(
@@ -1366,7 +1436,7 @@ class AgenticOrchestrator:
                 "step": "evaluating",
                 "message": "Evaluating model...",
                 "progress": 0.3,
-            }
+            },
         )
 
         try:
@@ -1393,7 +1463,7 @@ class AgenticOrchestrator:
                             "metric_scores": result.get("metric_scores", {}),
                         },
                         "status": "completed",
-                    }
+                    },
                 )
             else:
                 yield AgenticEvent(
@@ -1401,7 +1471,7 @@ class AgenticOrchestrator:
                     data={
                         "tool": tool.name,
                         "message": result.get("error", "Evaluation failed"),
-                    }
+                    },
                 )
 
         except Exception as e:
@@ -1409,9 +1479,7 @@ class AgenticOrchestrator:
             raise
 
     async def _handle_unknown(
-        self,
-        context: OrchestratorContext,
-        tool: Tool
+        self, context: OrchestratorContext, tool: Tool
     ) -> AsyncGenerator[AgenticEvent, None]:
         """Unknown 도구 핸들러"""
         yield AgenticEvent(
@@ -1419,7 +1487,7 @@ class AgenticOrchestrator:
             data={
                 "tool": tool.name,
                 "message": f"Unknown tool handler: {tool.name}",
-            }
+            },
         )
 
     # ===========================================
@@ -1427,8 +1495,7 @@ class AgenticOrchestrator:
     # ===========================================
 
     async def execute_parallel(
-        self,
-        context: OrchestratorContext
+        self, context: OrchestratorContext
     ) -> AsyncGenerator[AgenticEvent, None]:
         """
         병렬 도구 실행 및 결과 스트리밍
@@ -1449,7 +1516,7 @@ class AgenticOrchestrator:
                     "primary_intent": context.intent.primary_intent.value,
                     "confidence": context.intent.confidence,
                     "secondary_intents": [i.value for i in context.intent.secondary_intents],
-                }
+                },
             )
 
             # 2. 도구가 없으면 기본 Chat으로 폴백
@@ -1458,18 +1525,14 @@ class AgenticOrchestrator:
                 if chat_tool:
                     context.selected_tools = [chat_tool]
                 else:
-                    yield AgenticEvent(
-                        type=EventType.ERROR,
-                        data={"message": "No tools available"}
-                    )
+                    yield AgenticEvent(type=EventType.ERROR, data={"message": "No tools available"})
                     return
 
             available_tools = [t for t in context.selected_tools if t.is_available]
 
             if not available_tools:
                 yield AgenticEvent(
-                    type=EventType.ERROR,
-                    data={"message": "No available tools to execute"}
+                    type=EventType.ERROR, data={"message": "No available tools to execute"}
                 )
                 return
 
@@ -1480,7 +1543,7 @@ class AgenticOrchestrator:
                     "tools": [t.tool.name for t in available_tools],
                     "count": len(available_tools),
                     "message": f"{len(available_tools)}개 작업을 병렬로 실행합니다.",
-                }
+                },
             )
 
             # 4. 각 도구에 대한 진행 상황 수집을 위한 큐
@@ -1488,27 +1551,26 @@ class AgenticOrchestrator:
             results: Dict[str, Any] = {}
             errors: Dict[str, str] = {}
 
-            async def run_tool_with_progress(
-                tool_check: ToolCheckResult,
-                index: int
-            ):
+            async def run_tool_with_progress(tool_check: ToolCheckResult, index: int):
                 """개별 도구 실행 및 진행 상황 큐에 추가"""
                 tool = tool_check.tool
                 tool_name = tool.name
 
                 try:
                     # 시작 이벤트
-                    await event_queue.put(AgenticEvent(
-                        type=EventType.PARALLEL_PROGRESS,
-                        data={
-                            "task_index": index,
-                            "tool": tool_name,
-                            "step": "starting",
-                            "message": f"Task {index + 1} started",
-                            "progress": 0.0,
-                            "total_tasks": len(available_tools),
-                        }
-                    ))
+                    await event_queue.put(
+                        AgenticEvent(
+                            type=EventType.PARALLEL_PROGRESS,
+                            data={
+                                "task_index": index,
+                                "tool": tool_name,
+                                "step": "starting",
+                                "message": f"Task {index + 1} started",
+                                "progress": 0.0,
+                                "total_tasks": len(available_tools),
+                            },
+                        )
+                    )
 
                     # 도구 핸들러 실행
                     handler = self._tool_handlers.get(tool_name, self._handle_unknown)
@@ -1517,28 +1579,32 @@ class AgenticOrchestrator:
                     async for event in handler(context, tool):
                         # 진행 상황 이벤트에 task_index 추가하여 큐에 전송
                         if event.type == EventType.TOOL_PROGRESS:
-                            await event_queue.put(AgenticEvent(
-                                type=EventType.PARALLEL_PROGRESS,
-                                data={
-                                    "task_index": index,
-                                    "tool": tool_name,
-                                    **event.data,
-                                    "total_tasks": len(available_tools),
-                                }
-                            ))
+                            await event_queue.put(
+                                AgenticEvent(
+                                    type=EventType.PARALLEL_PROGRESS,
+                                    data={
+                                        "task_index": index,
+                                        "tool": tool_name,
+                                        **event.data,
+                                        "total_tasks": len(available_tools),
+                                    },
+                                )
+                            )
                         elif event.type == EventType.TOOL_RESULT:
                             tool_result = event.data.get("result")
-                            await event_queue.put(AgenticEvent(
-                                type=EventType.PARALLEL_PROGRESS,
-                                data={
-                                    "task_index": index,
-                                    "tool": tool_name,
-                                    "step": "completed",
-                                    "message": f"Task {index + 1} completed",
-                                    "progress": 1.0,
-                                    "total_tasks": len(available_tools),
-                                }
-                            ))
+                            await event_queue.put(
+                                AgenticEvent(
+                                    type=EventType.PARALLEL_PROGRESS,
+                                    data={
+                                        "task_index": index,
+                                        "tool": tool_name,
+                                        "step": "completed",
+                                        "message": f"Task {index + 1} completed",
+                                        "progress": 1.0,
+                                        "total_tasks": len(available_tools),
+                                    },
+                                )
+                            )
                         elif event.type in (EventType.TEXT, EventType.TEXT_DONE):
                             # 텍스트 스트리밍 이벤트도 전달
                             event.data["task_index"] = index
@@ -1552,14 +1618,16 @@ class AgenticOrchestrator:
                 except Exception as e:
                     logger.error(f"Parallel tool error: {tool_name} - {e}")
                     errors[tool_name] = str(e)
-                    await event_queue.put(AgenticEvent(
-                        type=EventType.ERROR,
-                        data={
-                            "task_index": index,
-                            "tool": tool_name,
-                            "message": str(e),
-                        }
-                    ))
+                    await event_queue.put(
+                        AgenticEvent(
+                            type=EventType.ERROR,
+                            data={
+                                "task_index": index,
+                                "tool": tool_name,
+                                "message": str(e),
+                            },
+                        )
+                    )
 
             # 5. 병렬 실행 시작
             tasks = [
@@ -1584,8 +1652,10 @@ class AgenticOrchestrator:
                 yield event
 
                 # 완료된 작업 카운트
-                if (event.type == EventType.PARALLEL_PROGRESS and
-                    event.data.get("step") == "completed"):
+                if (
+                    event.type == EventType.PARALLEL_PROGRESS
+                    and event.data.get("step") == "completed"
+                ):
                     completed_count += 1
 
             # 7. 병렬 작업 완료 이벤트
@@ -1597,7 +1667,7 @@ class AgenticOrchestrator:
                     "total_count": len(available_tools),
                     "results": results,
                     "errors": errors if errors else None,
-                }
+                },
             )
 
             # 8. 전체 완료 이벤트
@@ -1608,10 +1678,9 @@ class AgenticOrchestrator:
                     "tool_count": len(available_tools),
                     "parallel": True,
                     "results": [
-                        {"tool": name, "result": result}
-                        for name, result in results.items()
+                        {"tool": name, "result": result} for name, result in results.items()
                     ],
-                }
+                },
             )
 
         except Exception as e:
@@ -1622,7 +1691,7 @@ class AgenticOrchestrator:
                 data={
                     "message": str(e),
                     "traceback": traceback.format_exc(),
-                }
+                },
             )
 
 

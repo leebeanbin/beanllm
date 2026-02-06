@@ -7,7 +7,6 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
@@ -421,7 +420,9 @@ class AudioRAG:
             TranscriptionResult: 전사 결과 (없으면 None)
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        response = run_async_in_sync(self._audio_handler.handle_get_transcription(audio_id=audio_id))
+        response = run_async_in_sync(
+            self._audio_handler.handle_get_transcription(audio_id=audio_id)
+        )
         # DTO에서 값 추출 (기존 API 호환성 유지)
         return response.transcription
 

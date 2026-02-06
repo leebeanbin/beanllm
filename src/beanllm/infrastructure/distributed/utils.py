@@ -7,7 +7,7 @@
 import asyncio
 import functools
 import logging
-from typing import Any, Callable, Dict, Optional
+from typing import Callable, Optional
 
 try:
     from beanllm.utils.logging import get_logger
@@ -16,6 +16,7 @@ except ImportError:
 
     def get_logger(name: str):
         return logging.getLogger(name)
+
 
 try:
     from beanllm.utils.integration.security import sanitize_error_message
@@ -147,4 +148,3 @@ class ConnectionError(DistributedError):
     """연결 오류"""
 
     pass
-

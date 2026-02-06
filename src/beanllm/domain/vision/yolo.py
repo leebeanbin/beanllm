@@ -15,7 +15,7 @@ Requirements:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 
@@ -24,11 +24,13 @@ from .base_task_model import BaseVisionTaskModel
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
 
 logger = get_logger(__name__)
+
 
 class YOLOWrapper(BaseVisionTaskModel):
     """
@@ -155,11 +157,13 @@ class YOLOWrapper(BaseVisionTaskModel):
         detections = []
         for result in results:
             for box in result.boxes:
-                detections.append({
-                    "class": result.names[int(box.cls)],
-                    "confidence": float(box.conf),
-                    "box": box.xyxy[0].tolist(),  # [x1, y1, x2, y2]
-                })
+                detections.append(
+                    {
+                        "class": result.names[int(box.cls)],
+                        "confidence": float(box.conf),
+                        "box": box.xyxy[0].tolist(),  # [x1, y1, x2, y2]
+                    }
+                )
 
         logger.info(f"YOLO detected {len(detections)} objects")
 
@@ -199,12 +203,14 @@ class YOLOWrapper(BaseVisionTaskModel):
                 continue
 
             for i, (box, mask) in enumerate(zip(result.boxes, result.masks)):
-                segments.append({
-                    "class": result.names[int(box.cls)],
-                    "confidence": float(box.conf),
-                    "box": box.xyxy[0].tolist(),
-                    "mask": mask.data.cpu().numpy(),
-                })
+                segments.append(
+                    {
+                        "class": result.names[int(box.cls)],
+                        "confidence": float(box.conf),
+                        "box": box.xyxy[0].tolist(),
+                        "mask": mask.data.cpu().numpy(),
+                    }
+                )
 
         logger.info(f"YOLO segmented {len(segments)} objects")
 
@@ -250,5 +256,3 @@ class YOLOWrapper(BaseVisionTaskModel):
 
     def __repr__(self) -> str:
         return f"YOLOWrapper(version={self.version}, size={self.model_size}, task={self.task})"
-
-

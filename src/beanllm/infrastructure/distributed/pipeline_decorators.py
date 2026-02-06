@@ -15,13 +15,13 @@ import asyncio
 import functools
 import hashlib
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, TypeVar, Union, List
+from typing import Any, Callable, List, Optional, TypeVar, Union
 
-from .config import DistributedConfig, get_distributed_config
-from .factory import get_rate_limiter, get_cache
-from .event_integration import get_event_logger
-from .lock_integration import get_lock_manager
 from .cache_wrapper import SyncCacheWrapper
+from .config import get_distributed_config
+from .event_integration import get_event_logger
+from .factory import get_cache, get_rate_limiter
+from .lock_integration import get_lock_manager
 from .task_processor import BatchProcessor
 
 try:

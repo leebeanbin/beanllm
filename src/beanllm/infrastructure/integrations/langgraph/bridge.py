@@ -5,7 +5,7 @@ beanLLM의 State Graph를 LangGraph 형식으로 변환합니다.
 """
 
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict
 
 try:
     from beanllm.utils.logging import get_logger
@@ -81,9 +81,7 @@ class LangGraphBridge:
                     state_fields[field_name] = field_type
 
         # TypedDict 생성
-        LangGraphState = type(
-            "LangGraphState", (TypedDict,), state_fields
-        )
+        LangGraphState = type("LangGraphState", (TypedDict,), state_fields)
 
         logger.info(f"Created LangGraph State schema with fields: {list(state_fields.keys())}")
 

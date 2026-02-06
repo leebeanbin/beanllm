@@ -2,12 +2,13 @@
 WebSearchService 테스트 - Web Search 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
 
+import pytest
+
+from beanllm.domain.web_search import SearchEngine, SearchResult
 from beanllm.dto.request.web_search_request import WebSearchRequest
 from beanllm.dto.response.web_search_response import WebSearchResponse
-from beanllm.domain.web_search import SearchResult, SearchEngine
 from beanllm.service.impl.web_search_service_impl import WebSearchServiceImpl
 
 
@@ -156,7 +157,8 @@ class TestWebSearchService:
         mock_engine.search_async = AsyncMock(return_value=mock_search_response)
 
         with patch(
-            "beanllm.service.impl.web_search_service_impl.DuckDuckGoSearch", return_value=mock_engine
+            "beanllm.service.impl.web_search_service_impl.DuckDuckGoSearch",
+            return_value=mock_engine,
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -251,5 +253,3 @@ class TestWebSearchService:
             assert len(results) == 2
             assert results[0]["content"] == "Content 1"
             assert results[1]["content"] == "Content 2"
-
-

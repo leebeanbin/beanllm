@@ -5,13 +5,13 @@ REPL Shell - beanllm Interactive CLI
 """
 
 import asyncio
-import sys
-from typing import Dict, Any, List, Callable, Optional
+from typing import Any, Dict, List, Optional
+
 from rich.console import Console
 from rich.panel import Panel
 from rich.prompt import Prompt
 
-from .common_commands import create_common_commands, CommonCommands
+from .common_commands import create_common_commands
 
 console = Console()
 
@@ -63,7 +63,7 @@ class REPLShell:
                 # Get description from docstring
                 description = handler.__doc__ or f"{cmd_name} command"
                 if description:
-                    description = description.strip().split('\n')[0]
+                    description = description.strip().split("\n")[0]
 
                 self.common_commands.register_command(
                     name=cmd_name,
@@ -126,6 +126,7 @@ class REPLShell:
             console.print(f"[red]Error executing command: {e}[/red]\n")
             if "--debug" in args or "-d" in args:
                 import traceback
+
                 console.print("[dim]" + traceback.format_exc() + "[/dim]")
 
         return False
@@ -148,6 +149,7 @@ class REPLShell:
         # Try to load command modules
         try:
             from .knowledge_graph_commands import KnowledgeGraphCommands
+
             kg_commands = KnowledgeGraphCommands(client=self.client)
             self.register_module("kg", kg_commands, "Knowledge Graph")
             console.print("[dim]✓ Knowledge Graph commands loaded[/dim]")
@@ -156,6 +158,7 @@ class REPLShell:
 
         try:
             from .rag_commands import RAGDebugCommands
+
             rag_commands = RAGDebugCommands(client=self.client)
             self.register_module("rag", rag_commands, "RAG Debug")
             console.print("[dim]✓ RAG Debug commands loaded[/dim]")
@@ -164,6 +167,7 @@ class REPLShell:
 
         try:
             from .optimizer_commands import OptimizerCommands
+
             opt_commands = OptimizerCommands(client=self.client)
             self.register_module("optimizer", opt_commands, "Optimizer")
             console.print("[dim]✓ Optimizer commands loaded[/dim]")
@@ -172,6 +176,7 @@ class REPLShell:
 
         try:
             from .orchestrator_commands import OrchestratorCommands
+
             orch_commands = OrchestratorCommands(client=self.client)
             self.register_module("orchestrator", orch_commands, "Orchestrator")
             console.print("[dim]✓ Orchestrator commands loaded[/dim]")

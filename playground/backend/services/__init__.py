@@ -16,21 +16,50 @@ Services for the playground backend.
 - context_manager: Session context management with beanllm memory
 """
 
-from services.encryption_service import EncryptionService, encryption_service
-from services.key_validator import KeyValidator, key_validator
 from services.config_service import ConfigService, config_service, init_config_on_startup
-from services.intent_classifier import IntentType, IntentResult, IntentClassifier, intent_classifier
-from services.tool_registry import Tool, ToolRegistry, ToolCheckResult, ToolStatus, tool_registry
+from services.context_manager import ContextManager, context_manager
+from services.encryption_service import EncryptionService, encryption_service
+from services.google_oauth_service import GOOGLE_SCOPES, GoogleOAuthService, google_oauth_service
+from services.intent_classifier import IntentClassifier, IntentResult, IntentType, intent_classifier
+from services.key_validator import KeyValidator, key_validator
+from services.mcp_client_service import MCPClientService, mcp_client
+from services.message_vector_store import (
+    MessageVectorStore,
+    message_vector_store,
+)
 from services.orchestrator import (
-    AgenticOrchestrator,
     AgenticEvent,
-    OrchestratorContext,
+    AgenticOrchestrator,
     EventType,
+    OrchestratorContext,
     orchestrator,
 )
-from services.google_oauth_service import GoogleOAuthService, google_oauth_service, GOOGLE_SCOPES
-from services.mcp_client_service import MCPClientService, mcp_client
-from services.context_manager import ContextManager, context_manager
+from services.prompt_builder import (
+    PromptBuilder,
+    PromptComposer,
+    PromptOptimizer,
+    PromptTemplate,
+    prompt_builder,
+)
+from services.query_refiner import (
+    QueryRefiner,
+    RefinedQuery,
+    query_refiner,
+)
+from services.session_cache import (
+    SessionCacheService,
+    session_cache,
+)
+from services.session_rag_service import (
+    SessionRAGInfo,
+    SessionRAGService,
+    session_rag_service,
+)
+from services.session_search_service import (
+    SessionSearchService,
+    session_search,
+)
+from services.tool_registry import Tool, ToolCheckResult, ToolRegistry, ToolStatus, tool_registry
 
 __all__ = [
     # Config & Security
@@ -68,4 +97,27 @@ __all__ = [
     # Context Manager
     "ContextManager",
     "context_manager",
+    # Prompt Builder
+    "PromptBuilder",
+    "PromptTemplate",
+    "PromptComposer",
+    "PromptOptimizer",
+    "prompt_builder",
+    # Query Refiner
+    "QueryRefiner",
+    "RefinedQuery",
+    "query_refiner",
+    # Session RAG Service
+    "SessionRAGService",
+    "SessionRAGInfo",
+    "session_rag_service",
+    # Session Cache
+    "SessionCacheService",
+    "session_cache",
+    # Session Search
+    "SessionSearchService",
+    "session_search",
+    # Message Vector Store
+    "MessageVectorStore",
+    "message_vector_store",
 ]

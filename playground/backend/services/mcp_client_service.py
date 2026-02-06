@@ -40,11 +40,11 @@ class MCPClientService:
         try:
             # MCP tools 모듈 import
             from mcp_server.tools import (
-                rag_tools,
                 agent_tools,
+                google_tools,
                 kg_tools,
                 ml_tools,
-                google_tools,
+                rag_tools,
             )
 
             # 각 모듈에서 tool 함수 수집
@@ -123,8 +123,7 @@ class MCPClientService:
         if tool_func is None:
             available = ", ".join(sorted(self._tools_cache.keys())[:10])
             raise ValueError(
-                f"Tool '{tool_name}' not found in MCP server. "
-                f"Available tools: {available}..."
+                f"Tool '{tool_name}' not found in MCP server. " f"Available tools: {available}..."
             )
 
         # session_id 추가 (tool이 지원하는 경우)

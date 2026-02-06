@@ -5,6 +5,7 @@ beanllm의 기본 사용법
 
 from beanllm import get_registry
 
+
 def main():
     print("=== beanllm Basic Usage ===\n")
 
@@ -40,7 +41,7 @@ def main():
         print(f"Provider: {model_info.provider}")
         print(f"Display Name: {model_info.display_name}")
         print(f"Description: {model_info.description}")
-        print(f"\nCapabilities:")
+        print("\nCapabilities:")
         print(f"  - Streaming: {model_info.supports_streaming}")
         print(f"  - Temperature: {model_info.supports_temperature}")
         print(f"  - Max Tokens: {model_info.supports_max_tokens}")
@@ -52,12 +53,13 @@ def main():
     # 5. Get summary
     print("\n5. Getting summary...")
     summary = registry.get_summary()
-    print(f"\nSummary:")
+    print("\nSummary:")
     print(f"  Total providers: {summary['total_providers']}")
     print(f"  Active providers: {summary['active_providers']}")
     print(f"  Total models: {summary['total_models']}")
 
     print("\n✅ Done!")
+
 
 if __name__ == "__main__":
     main()

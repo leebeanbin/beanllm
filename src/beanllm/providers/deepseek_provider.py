@@ -25,7 +25,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
-from beanllm.utils.exceptions import ProviderError
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -37,7 +36,7 @@ logger = get_logger(__name__)
 class DeepSeekProvider(BaseLLMProvider):
     """DeepSeek 제공자 (OpenAI 호환 API)"""
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         super().__init__(config or {})
 
         if AsyncOpenAI is None:
@@ -62,15 +61,15 @@ class DeepSeekProvider(BaseLLMProvider):
         # 모델 목록
         self._available_models = [
             # Core Models
-            "deepseek-chat",                # 일반 대화
-            "deepseek-reasoner",            # 사고 모드 (복잡한 추론)
+            "deepseek-chat",  # 일반 대화
+            "deepseek-reasoner",  # 사고 모드 (복잡한 추론)
             # V3 Series (2025)
-            "deepseek-v3-0324",             # V3 (2025.03.24)
-            "deepseek-v3-1",                # V3.1
-            "deepseek-v3-2",                # V3.2
+            "deepseek-v3-0324",  # V3 (2025.03.24)
+            "deepseek-v3-1",  # V3.1
+            "deepseek-v3-2",  # V3.2
             # R1 Series (2025) - Reasoning models
-            "deepseek-r1",                  # R1 Reasoning
-            "deepseek-r1-0528",             # R1 (2025.05.28)
+            "deepseek-r1",  # R1 Reasoning
+            "deepseek-r1-0528",  # R1 (2025.05.28)
         ]
 
     @provider_error_handler(

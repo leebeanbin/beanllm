@@ -6,7 +6,7 @@ Uses Python best practices: duck typing, list comprehensions.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -20,14 +20,17 @@ router = APIRouter(prefix="/api/audio", tags=["Audio"])
 # Request/Response Models
 # ============================================================================
 
+
 class AudioTranscribeRequest(BaseModel):
     """Request to transcribe audio to text"""
+
     audio_file: str = Field(..., description="Base64 encoded audio or file path")
     model: Optional[str] = Field(default="base", description="Whisper model size")
 
 
 class AudioSynthesizeRequest(BaseModel):
     """Request to synthesize text to speech"""
+
     text: str = Field(..., description="Text to synthesize")
     voice: Optional[str] = Field(None, description="Voice to use")
     speed: float = Field(default=1.0, ge=0.5, le=2.0, description="Speech speed")
@@ -36,6 +39,7 @@ class AudioSynthesizeRequest(BaseModel):
 
 class AudioRAGRequest(BaseModel):
     """Request for Audio RAG query"""
+
     query: str = Field(..., description="Search query")
     audio_files: Optional[List[str]] = Field(None, description="Audio files to add")
     collection_name: Optional[str] = Field(default="default")
@@ -45,6 +49,7 @@ class AudioRAGRequest(BaseModel):
 
 class TranscriptSegment(BaseModel):
     """Segment of transcribed audio"""
+
     start: float
     end: float
     text: str
@@ -52,6 +57,7 @@ class TranscriptSegment(BaseModel):
 
 class TranscribeResponse(BaseModel):
     """Response from audio transcription"""
+
     text: str
     language: Optional[str] = None
     segments: List[TranscriptSegment] = Field(default_factory=list)
@@ -59,6 +65,7 @@ class TranscribeResponse(BaseModel):
 
 class SynthesizeResponse(BaseModel):
     """Response from text-to-speech synthesis"""
+
     text: str
     audio_base64: str
     format: str = "wav"
@@ -66,6 +73,7 @@ class SynthesizeResponse(BaseModel):
 
 class AudioSearchResult(BaseModel):
     """Result from audio search"""
+
     text: str
     audio_segment: str = ""
     score: float = 0.0
@@ -73,6 +81,7 @@ class AudioSearchResult(BaseModel):
 
 class AudioRAGResponse(BaseModel):
     """Response from Audio RAG query"""
+
     query: str
     results: List[AudioSearchResult]
     num_results: int
@@ -81,6 +90,7 @@ class AudioRAGResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _extract_segments(result: Any) -> List[Dict[str, Any]]:
     """Extract transcript segments using duck typing"""
@@ -101,9 +111,15 @@ def _extract_search_results(results: List[Any], top_k: int) -> List[Dict[str, An
     """Extract search results using duck typing"""
     return [
         {
-            "text": (result.get("text", "") if isinstance(result, dict) else getattr(result, "text", ""))[:200],
-            "audio_segment": result.get("audio_segment", "") if isinstance(result, dict) else getattr(result, "audio_segment", ""),
-            "score": result.get("score", 0.0) if isinstance(result, dict) else getattr(result, "score", 0.0),
+            "text": (
+                result.get("text", "") if isinstance(result, dict) else getattr(result, "text", "")
+            )[:200],
+            "audio_segment": result.get("audio_segment", "")
+            if isinstance(result, dict)
+            else getattr(result, "audio_segment", ""),
+            "score": result.get("score", 0.0)
+            if isinstance(result, dict)
+            else getattr(result, "score", 0.0),
         }
         for result in results[:top_k]
     ]
@@ -112,6 +128,7 @@ def _extract_search_results(results: List[Any], top_k: int) -> List[Dict[str, An
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/transcribe", response_model=TranscribeResponse)
 async def audio_transcribe(request: AudioTranscribeRequest) -> TranscribeResponse:
@@ -126,10 +143,7 @@ async def audio_transcribe(request: AudioTranscribeRequest) -> TranscribeRespons
         stt = WhisperSTT(model=request.model or "base")
         result = await stt.transcribe_async(request.audio_file)
 
-        segments = [
-            TranscriptSegment(**seg)
-            for seg in _extract_segments(result)
-        ]
+        segments = [TranscriptSegment(**seg) for seg in _extract_segments(result)]
 
         return TranscribeResponse(
             text=getattr(result, "text", str(result)),

@@ -1,13 +1,16 @@
 """
 StateGraph Facade 테스트
 """
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.state_graph_facade import StateGraph
-    from beanllm.domain.state_graph import END
     from beanllm.domain.graph.graph_state import GraphState
+    from beanllm.domain.state_graph import END
+    from beanllm.facade.state_graph_facade import StateGraph
+
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -19,19 +22,23 @@ class TestStateGraph:
     def graph(self):
         with patch("beanllm.utils.di_container.get_container") as mock_get_container:
             from unittest.mock import AsyncMock
+
             mock_handler = MagicMock()
             mock_response = Mock()
             mock_response.final_state = GraphState(data={"result": "test"})
             mock_response.visited_nodes = ["node1"]
             mock_response.metadata = {}
+
             async def mock_handle_invoke(*args, **kwargs):
                 return mock_response
+
             mock_handler.handle_invoke = AsyncMock(side_effect=mock_handle_invoke)
 
             # stream mock - generator 함수 (node_name, state) 튜플 반환
             def mock_handle_stream(*args, **kwargs):
                 yield ("node1", {"step": 1})  # state는 Dict
                 yield ("node2", {"step": 2})
+
             mock_handler.handle_stream = MagicMock(return_value=mock_handle_stream())
 
             mock_handler_factory = Mock()
@@ -55,7 +62,7 @@ class TestStateGraph:
             assert result == {"result": "test"}
         else:
             # GraphState 객체인 경우
-            assert hasattr(result, 'data')
+            assert hasattr(result, "data")
             assert result.data == {"result": "test"}
         assert graph._state_graph_handler.handle_invoke.called
 
@@ -69,6 +76,7 @@ class TestStateGraph:
     def test_add_node(self, graph):
         def new_node(state):
             return state
+
         graph.add_node("node2", new_node)
         assert "node2" in graph.nodes
 
@@ -85,5 +93,3 @@ class TestStateGraph:
         graph.add_node("node2", lambda state: state)
         graph.set_entry_point("node2")
         assert graph.entry_point == "node2"
-
-

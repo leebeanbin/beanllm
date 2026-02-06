@@ -2,15 +2,16 @@
 RAG Demo - Document Loading & Text Splitting
 beanllm 방식: 자동 감지 + 스마트 기본값
 """
+
 import asyncio
 from pathlib import Path
 
 
 def demo_document_loading():
     """Document Loading 데모"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("📄 Document Loading Demo")
-    print("="*60)
+    print("=" * 60)
 
     from beanllm import DocumentLoader, load_documents
 
@@ -18,7 +19,9 @@ def demo_document_loading():
     print("\n1. Auto-detect Text File:")
     # 테스트 파일 생성
     test_file = Path("test_doc.txt")
-    test_file.write_text("This is a test document.\nWith multiple lines.\nFor testing beanllm!", encoding="utf-8")
+    test_file.write_text(
+        "This is a test document.\nWith multiple lines.\nFor testing beanllm!", encoding="utf-8"
+    )
 
     docs = DocumentLoader.load(test_file)
     print(f"   Loaded {len(docs)} document(s)")
@@ -35,7 +38,9 @@ def demo_document_loading():
     # 2. CSV 파일 (자동 감지!)
     print("\n2. Auto-detect CSV File:")
     csv_file = Path("test_data.csv")
-    csv_file.write_text("name,age,city\nAlice,30,Seoul\nBob,25,Busan\nCharlie,35,Incheon", encoding="utf-8")
+    csv_file.write_text(
+        "name,age,city\nAlice,30,Seoul\nBob,25,Busan\nCharlie,35,Incheon", encoding="utf-8"
+    )
 
     docs = DocumentLoader.load(csv_file)
     print(f"   Loaded {len(docs)} document(s) (one per row)")
@@ -53,11 +58,11 @@ def demo_document_loading():
 
 def demo_text_splitting():
     """Text Splitting 데모"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("✂️  Text Splitting Demo")
-    print("="*60)
+    print("=" * 60)
 
-    from beanllm import DocumentLoader, TextSplitter, split_documents, Document
+    from beanllm import Document, DocumentLoader, TextSplitter, split_documents
 
     # 테스트 문서 생성
     long_text = """
@@ -105,20 +110,12 @@ AI continues to evolve rapidly. The future holds exciting possibilities.
 
     # Recursive (기본, 가장 권장)
     chunks_recursive = TextSplitter.split(
-        docs,
-        strategy="recursive",
-        chunk_size=200,
-        chunk_overlap=50
+        docs, strategy="recursive", chunk_size=200, chunk_overlap=50
     )
     print(f"   Recursive: {len(chunks_recursive)} chunks (recommended)")
 
     # Character
-    chunks_char = TextSplitter.split(
-        docs,
-        strategy="character",
-        separator="\n\n",
-        chunk_size=200
-    )
+    chunks_char = TextSplitter.split(docs, strategy="character", separator="\n\n", chunk_size=200)
     print(f"   Character: {len(chunks_char)} chunks")
 
     # 4. 마크다운 헤더 분할
@@ -142,9 +139,9 @@ AI continues to evolve rapidly. The future holds exciting possibilities.
 
 def demo_token_splitting():
     """Token-based Splitting 데모"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🔢 Token-based Splitting Demo")
-    print("="*60)
+    print("=" * 60)
 
     try:
         import tiktoken
@@ -152,7 +149,7 @@ def demo_token_splitting():
         print("\n⚠️  tiktoken not installed. Install with: pip install tiktoken")
         return
 
-    from beanllm import TextSplitter, Document
+    from beanllm import Document, TextSplitter
 
     text = "AI is amazing. " * 100  # 긴 텍스트
     docs = [Document(content=text, metadata={"source": "test"})]
@@ -163,7 +160,7 @@ def demo_token_splitting():
         docs,
         strategy="token",
         chunk_size=50,  # 토큰 단위
-        chunk_overlap=10
+        chunk_overlap=10,
     )
     print(f"   Split into {len(chunks)} chunks (50 tokens each)")
     print(f"   First chunk: {chunks[0].content[:50]}...")
@@ -172,11 +169,7 @@ def demo_token_splitting():
     print("\n2. Model-specific (GPT-4):")
     from beanllm import TokenTextSplitter
 
-    splitter = TokenTextSplitter(
-        model_name="gpt-4",
-        chunk_size=100,
-        chunk_overlap=20
-    )
+    splitter = TokenTextSplitter(model_name="gpt-4", chunk_size=100, chunk_overlap=20)
     chunks2 = splitter.split_documents(docs)
     print(f"   Split for GPT-4: {len(chunks2)} chunks")
 
@@ -185,16 +178,17 @@ def demo_token_splitting():
 
 def demo_full_pipeline():
     """전체 파이프라인 데모"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🚀 Full RAG Pipeline Demo")
-    print("="*60)
+    print("=" * 60)
 
     from beanllm import DocumentLoader, TextSplitter
 
     # 1. 문서 로딩 (자동 감지)
     print("\n1. Load Documents (Auto-detect):")
     test_file = Path("rag_test.txt")
-    test_file.write_text("""
+    test_file.write_text(
+        """
 AI and Machine Learning
 
 Artificial Intelligence is revolutionizing technology. Machine learning algorithms learn from data.
@@ -210,7 +204,9 @@ AI powers many applications: voice assistants, image recognition, autonomous veh
 Future of AI
 
 The future of AI is bright. New breakthroughs happen constantly.
-    """.strip(), encoding="utf-8")
+    """.strip(),
+        encoding="utf-8",
+    )
 
     docs = DocumentLoader.load(test_file)
     print(f"   ✓ Loaded: {len(docs)} document(s)")
@@ -230,9 +226,9 @@ The future of AI is bright. New breakthroughs happen constantly.
     # 정리
     test_file.unlink()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🎉 beanllm RAG: Simple & Pythonic!")
-    print("="*60)
+    print("=" * 60)
     print("\nKey Features:")
     print("  ✅ Auto-detection (no manual loader selection)")
     print("  ✅ Smart defaults (optimal settings out of the box)")

@@ -7,11 +7,11 @@ Uses Python best practices: context managers, type hints.
 
 import logging
 import os
-import tempfile
 import shutil
-from typing import Dict, List, Any, Optional
+import tempfile
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, File, UploadFile
+from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -23,8 +23,10 @@ router = APIRouter(prefix="/api/ocr", tags=["OCR"])
 # Response Models
 # ============================================================================
 
+
 class BoundingBox(BaseModel):
     """Bounding box for text region"""
+
     x: int
     y: int
     width: int
@@ -33,6 +35,7 @@ class BoundingBox(BaseModel):
 
 class OCRLine(BaseModel):
     """Single line of OCR result"""
+
     text: str
     confidence: float
     bbox: Optional[BoundingBox] = None
@@ -40,6 +43,7 @@ class OCRLine(BaseModel):
 
 class OCRResponse(BaseModel):
     """Response from OCR recognition"""
+
     text: str
     confidence: float
     processing_time: float
@@ -52,6 +56,7 @@ class OCRResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _extract_bbox(bbox: Any) -> Optional[Dict[str, int]]:
     """Extract bounding box using duck typing"""
@@ -85,6 +90,7 @@ def _extract_lines(lines: List[Any]) -> List[Dict[str, Any]]:
 # Endpoints
 # ============================================================================
 
+
 @router.post("/recognize", response_model=OCRResponse)
 async def ocr_recognize(
     file: UploadFile = File(..., description="Image file to recognize"),
@@ -116,7 +122,7 @@ async def ocr_recognize(
     - qwen2vl-2b: Vision-language model
     """
     try:
-        from beanllm.domain.ocr import beanOCR, OCRConfig
+        from beanllm.domain.ocr import OCRConfig, beanOCR
 
         # Get file extension
         ext = file.filename.split(".")[-1] if file.filename else "jpg"

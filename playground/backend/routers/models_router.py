@@ -4,14 +4,14 @@ Models Router
 Model management endpoints (list, pull, analyze, scan)
 """
 
-import logging
 import json
+import logging
+from typing import Any, Dict
 from urllib.parse import unquote
+
+from common import get_downloaded_models, get_ollama_model_name_for_chat, track_downloaded_model
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from typing import Dict, Any
-
-from common import get_ollama_model_name_for_chat, track_downloaded_model, get_downloaded_models
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +34,18 @@ async def get_models() -> Dict[str, Any]:
             provider = model_info["provider"]
             if provider not in grouped:
                 grouped[provider] = []
-            grouped[provider].append({
-                "name": model_name,
-                "display_name": model_info["display_name"],
-                "description": model_info["description"],
-                "use_case": model_info["use_case"],
-                "max_tokens": model_info["max_tokens"],
-                "type": model_info["type"],
-                "provider": provider,
-                "installed": None,
-            })
+            grouped[provider].append(
+                {
+                    "name": model_name,
+                    "display_name": model_info["display_name"],
+                    "description": model_info["description"],
+                    "use_case": model_info["use_case"],
+                    "max_tokens": model_info["max_tokens"],
+                    "type": model_info["type"],
+                    "provider": provider,
+                    "installed": None,
+                }
+            )
 
         # Check Ollama installed models
         try:
@@ -62,9 +64,11 @@ async def get_models() -> Dict[str, Any]:
                 model_name = model.get("name")
                 mapped_name = get_ollama_model_name_for_chat(model_name)
 
-                if (model_name.lower() in installed_set or
-                    mapped_name.lower() in installed_set or
-                    model_name in downloaded_models):
+                if (
+                    model_name.lower() in installed_set
+                    or mapped_name.lower() in installed_set
+                    or model_name in downloaded_models
+                ):
                     model["installed"] = True
                 else:
                     model["installed"] = False
@@ -75,16 +79,18 @@ async def get_models() -> Dict[str, Any]:
                 if installed_model.lower() not in existing_names:
                     if "ollama" not in grouped:
                         grouped["ollama"] = []
-                    grouped["ollama"].append({
-                        "name": installed_model,
-                        "display_name": installed_model,
-                        "description": f"Installed Ollama model: {installed_model}",
-                        "use_case": "chat",
-                        "max_tokens": 4096,
-                        "type": "llm",
-                        "installed": True,
-                        "provider": "ollama",
-                    })
+                    grouped["ollama"].append(
+                        {
+                            "name": installed_model,
+                            "display_name": installed_model,
+                            "description": f"Installed Ollama model: {installed_model}",
+                            "use_case": "chat",
+                            "max_tokens": 4096,
+                            "type": "llm",
+                            "installed": True,
+                            "provider": "ollama",
+                        }
+                    )
 
         except Exception as e:
             logger.debug(f"Failed to scan Ollama models: {e}")
@@ -101,7 +107,9 @@ async def get_models() -> Dict[str, Any]:
 async def get_models_by_provider(provider: str) -> Dict[str, Any]:
     """Get models for a specific provider"""
     try:
-        from beanllm.infrastructure.models.models import get_models_by_provider as get_provider_models
+        from beanllm.infrastructure.models.models import (
+            get_models_by_provider as get_provider_models,
+        )
 
         models = get_provider_models(provider)
 
@@ -211,9 +219,21 @@ async def pull_model(model_name: str):
                 )
 
                 async for chunk in pull_stream:
-                    status = getattr(chunk, 'status', None) if not isinstance(chunk, dict) else chunk.get('status')
-                    completed = getattr(chunk, 'completed', 0) if not isinstance(chunk, dict) else chunk.get('completed', 0)
-                    total = getattr(chunk, 'total', 0) if not isinstance(chunk, dict) else chunk.get('total', 0)
+                    status = (
+                        getattr(chunk, "status", None)
+                        if not isinstance(chunk, dict)
+                        else chunk.get("status")
+                    )
+                    completed = (
+                        getattr(chunk, "completed", 0)
+                        if not isinstance(chunk, dict)
+                        else chunk.get("completed", 0)
+                    )
+                    total = (
+                        getattr(chunk, "total", 0)
+                        if not isinstance(chunk, dict)
+                        else chunk.get("total", 0)
+                    )
 
                     if status is None:
                         continue

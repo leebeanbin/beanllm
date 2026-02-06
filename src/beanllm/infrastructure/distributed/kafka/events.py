@@ -9,10 +9,14 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Any, AsyncIterator, Callable, Dict
+from typing import Any, AsyncIterator, Dict
 
-from beanllm.infrastructure.distributed.interfaces import EventProducerInterface, EventConsumerInterface
+from beanllm.infrastructure.distributed.interfaces import (
+    EventConsumerInterface,
+    EventProducerInterface,
+)
 from beanllm.utils import check_kafka_health, sanitize_error_message
+
 from .client import get_kafka_client
 
 try:
@@ -69,9 +73,7 @@ class KafkaEventProducer(EventProducerInterface):
                     self.producer.send,
                     topic,
                     value=event_json,
-                    key=event.get("request_id", "").encode()
-                    if event.get("request_id")
-                    else None,
+                    key=event.get("request_id", "").encode() if event.get("request_id") else None,
                 ),
                 timeout=5.0,
             )
@@ -114,9 +116,7 @@ class KafkaEventConsumer(EventConsumerInterface):
 
         while True:
             # Kafka Consumer는 동기적이므로 비동기로 래핑
-            message_pack = await asyncio.to_thread(
-                self.consumer.poll, timeout_ms=1000
-            )
+            message_pack = await asyncio.to_thread(self.consumer.poll, timeout_ms=1000)
 
             if message_pack:
                 for topic_partition, messages in message_pack.items():
@@ -132,5 +132,5 @@ class KafkaEventConsumer(EventConsumerInterface):
                         except Exception as e:
                             # 오류 처리
                             import logging
-                            logging.error(f"Error processing event: {e}", exc_info=True)
 
+                            logging.error(f"Error processing event: {e}", exc_info=True)

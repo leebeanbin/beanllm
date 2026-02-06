@@ -3,7 +3,7 @@ Base Reranker - 재순위화 모델 추상 클래스
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Union
+from typing import List, Optional
 
 from .types import RerankResult
 

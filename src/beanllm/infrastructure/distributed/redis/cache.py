@@ -11,6 +11,7 @@ from typing import Generic, Optional, TypeVar
 from beanllm.infrastructure.distributed.interfaces import CacheInterface
 from beanllm.infrastructure.distributed.utils import check_redis_health
 from beanllm.utils import sanitize_error_message
+
 from .client import get_redis_client
 
 try:
@@ -71,7 +72,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
 
             try:
                 if isinstance(value, bytes):
-                    value = value.decode('utf-8')
+                    value = value.decode("utf-8")
                 return json.loads(value)
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 logger.warning(f"Cache value decode error for key: {key}: {e}")
@@ -80,9 +81,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
             logger.warning(f"Redis cache get timeout for key: {key}")
             return None  # 타임아웃 시 캐시 미스로 처리
         except Exception as e:
-            logger.error(
-                f"Redis cache get error for key: {key}: {sanitize_error_message(str(e))}"
-            )
+            logger.error(f"Redis cache get error for key: {key}: {sanitize_error_message(str(e))}")
             return None  # 오류 시 캐시 미스로 처리
 
     async def set(self, key: K, value: V, ttl: Optional[int] = None):
@@ -99,18 +98,16 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
 
             if ttl:
                 await asyncio.wait_for(
-                    self.redis.setex(cache_key, ttl, value_json.encode('utf-8')), timeout=2.0
+                    self.redis.setex(cache_key, ttl, value_json.encode("utf-8")), timeout=2.0
                 )
             else:
                 await asyncio.wait_for(
-                    self.redis.set(cache_key, value_json.encode('utf-8')), timeout=2.0
+                    self.redis.set(cache_key, value_json.encode("utf-8")), timeout=2.0
                 )
         except asyncio.TimeoutError:
             logger.warning(f"Redis cache set timeout for key: {key}")
         except Exception as e:
-            logger.error(
-                f"Redis cache set error for key: {key}: {sanitize_error_message(str(e))}"
-            )
+            logger.error(f"Redis cache set error for key: {key}: {sanitize_error_message(str(e))}")
 
     async def delete(self, key: K):
         """값 삭제"""
@@ -132,7 +129,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
         """모든 캐시 삭제 (접두사로 시작하는 키만)"""
         try:
             if not await check_redis_health(self.redis):
-                logger.warning(f"Redis not connected, cache clear skipped")
+                logger.warning("Redis not connected, cache clear skipped")
                 return
 
             # Redis SCAN으로 접두사로 시작하는 키 찾기
@@ -147,7 +144,6 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
                 if cursor == 0:
                     break
         except asyncio.TimeoutError:
-            logger.warning(f"Redis cache clear timeout")
+            logger.warning("Redis cache clear timeout")
         except Exception as e:
             logger.error(f"Redis cache clear error: {sanitize_error_message(str(e))}")
-

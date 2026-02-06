@@ -68,7 +68,7 @@ async def example_basic_api():
             n_clusters=5,
             detect_outliers=True,
         )
-        print(f"✅ Analysis completed:")
+        print("✅ Analysis completed:")
         print(f"   Clusters: {analysis.num_clusters}")
         print(f"   Outliers: {len(analysis.outliers)}")
         print(f"   Silhouette Score: {analysis.silhouette_score:.4f}")
@@ -80,7 +80,7 @@ async def example_basic_api():
     validation = await debug.validate_chunks(
         size_threshold=2000,
     )
-    print(f"✅ Validation completed:")
+    print("✅ Validation completed:")
     print(f"   Total chunks: {validation.total_chunks}")
     print(f"   Valid chunks: {validation.valid_chunks}")
     print(f"   Issues: {len(validation.issues)}")
@@ -92,7 +92,7 @@ async def example_basic_api():
         parameters={"top_k": 10, "score_threshold": 0.7},
         test_queries=["What is RAG?", "How does retrieval work?"],
     )
-    print(f"✅ Tuning completed:")
+    print("✅ Tuning completed:")
     print(f"   Avg Score: {tuning.avg_score:.4f}")
     if tuning.comparison_with_baseline:
         improvement = tuning.comparison_with_baseline.get("improvement_pct", 0.0)
@@ -106,7 +106,7 @@ async def example_basic_api():
         output_dir=str(output_dir),
         formats=["json", "markdown"],
     )
-    print(f"✅ Report exported:")
+    print("✅ Report exported:")
     for fmt, path in results.items():
         print(f"   {fmt.upper()}: {path}")
 
@@ -126,8 +126,7 @@ async def example_one_stop():
     class MockVectorStore:
         def __init__(self):
             self._documents = [
-                {"page_content": f"Sample text {i}" * 30, "metadata": {"id": i}}
-                for i in range(50)
+                {"page_content": f"Sample text {i}" * 30, "metadata": {"id": i}} for i in range(50)
             ]
 
         def similarity_search(self, query, k=4):
@@ -144,7 +143,7 @@ async def example_one_stop():
         tune_parameters=False,  # Skip if no test queries
     )
 
-    print(f"\n✅ Full analysis completed!")
+    print("\n✅ Full analysis completed!")
     print(f"   Session ID: {results['session'].session_id}")
 
     if "chunk_validation" in results:
@@ -169,8 +168,7 @@ async def example_rich_cli():
     class MockVectorStore:
         def __init__(self):
             self._documents = [
-                {"page_content": f"Content {i}" * 40, "metadata": {"idx": i}}
-                for i in range(80)
+                {"page_content": f"Content {i}" * 40, "metadata": {"idx": i}} for i in range(80)
             ]
 
         def similarity_search(self, query, k=4):
@@ -225,12 +223,10 @@ async def example_visualizers():
 
     # Mock data: 2D coordinates
     import random
+
     random.seed(42)
 
-    reduced_embeddings = [
-        [random.uniform(-5, 5), random.uniform(-5, 5)]
-        for _ in range(50)
-    ]
+    reduced_embeddings = [[random.uniform(-5, 5), random.uniform(-5, 5)] for _ in range(50)]
 
     labels = [i % 3 for i in range(50)]  # 3 clusters
     outliers = [5, 15, 35]  # Some outliers

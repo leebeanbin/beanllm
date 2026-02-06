@@ -4,7 +4,6 @@ Security Utilities - 보안 관련 유틸리티
 """
 
 import re
-from typing import Optional
 
 
 def sanitize_error_message(error: Exception) -> str:
@@ -29,6 +28,7 @@ def sanitize_error_message(error: Exception) -> str:
     error_str = str(error)
     try:
         from beanllm.utils.resilience.error_tracker import ProductionErrorSanitizer
+
         return ProductionErrorSanitizer.sanitize_message(error_str, production=True)
     except ImportError:
         # ProductionErrorSanitizer가 없으면 기본 마스킹
@@ -71,4 +71,3 @@ def _basic_sanitize(message: str) -> str:
         sanitized = re.sub(pattern, replacement, sanitized, flags=flags)
 
     return sanitized
-

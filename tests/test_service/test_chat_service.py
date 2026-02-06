@@ -2,8 +2,9 @@
 ChatService 테스트 - 채팅 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from beanllm.dto.request.chat_request import ChatRequest
 from beanllm.dto.response.chat_response import ChatResponse
@@ -110,6 +111,7 @@ class TestChatService:
     @pytest.mark.asyncio
     async def test_stream_chat(self, chat_service):
         """스트리밍 채팅 테스트"""
+
         # provider.stream_chat을 async generator로 설정
         async def mock_stream_chat(*args, **kwargs):
             chunks = ["Hello", " ", "world", "!"]
@@ -292,6 +294,7 @@ class TestChatService:
     @pytest.mark.asyncio
     async def test_stream_chat_with_system(self, chat_service):
         """시스템 프롬프트 포함 스트리밍 채팅 테스트"""
+
         async def mock_stream_chat(*args, **kwargs):
             chunks = ["Hello", " ", "world", "!"]
             for chunk in chunks:
@@ -456,6 +459,7 @@ class TestChatService:
     @pytest.mark.asyncio
     async def test_stream_chat_empty_response(self, chat_service):
         """빈 스트리밍 응답 테스트"""
+
         # 빈 응답을 반환하는 async generator
         async def mock_empty_stream(*args, **kwargs):
             # 빈 generator - yield 없음

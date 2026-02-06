@@ -12,7 +12,7 @@ import os
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 import streamlit as st
 
@@ -20,12 +20,13 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 try:
+    from beanllm.facade.core.client_facade import Client
     from beanllm.infrastructure.distributed.google_events import (
         get_google_export_stats,
         get_security_events,
-        log_admin_action
+        log_admin_action,
     )
-    from beanllm.facade.core.client_facade import Client
+
     BEANLLM_AVAILABLE = True
 except ImportError:
     BEANLLM_AVAILABLE = False
@@ -35,11 +36,12 @@ st.set_page_config(
     page_title="beanllm Admin Dashboard",
     page_icon="👑",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
 # 커스텀 CSS
-st.markdown("""
+st.markdown(
+    """
 <style>
     .main-header {
         font-size: 2.5rem;
@@ -80,7 +82,9 @@ st.markdown("""
         font-weight: 600;
     }
 </style>
-""", unsafe_allow_html=True)
+""",
+    unsafe_allow_html=True,
+)
 
 
 def check_dependencies() -> bool:
@@ -108,8 +112,13 @@ def render_header():
     col1, col2 = st.columns([3, 1])
 
     with col1:
-        st.markdown('<div class="main-header">👑 beanllm Admin Dashboard</div>', unsafe_allow_html=True)
-        st.markdown('<div class="sub-header">Google Workspace Monitoring & Analytics</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="main-header">👑 beanllm Admin Dashboard</div>', unsafe_allow_html=True
+        )
+        st.markdown(
+            '<div class="sub-header">Google Workspace Monitoring & Analytics</div>',
+            unsafe_allow_html=True,
+        )
 
     with col2:
         st.markdown(f"**Last Updated**: {datetime.now().strftime('%H:%M:%S')}")
@@ -163,7 +172,7 @@ def render_overview_tab():
         "조회 기간",
         options=[1, 6, 12, 24, 72, 168],
         index=3,
-        format_func=lambda x: f"최근 {x}시간" if x < 24 else f"최근 {x//24}일"
+        format_func=lambda x: f"최근 {x}시간" if x < 24 else f"최근 {x//24}일",
     )
 
     # 통계 로드
@@ -177,56 +186,69 @@ def render_overview_tab():
         with col1:
             st.metric(
                 label="📤 Total Exports",
-                value=stats['total_exports'],
-                delta=f"+{stats['total_exports'] - stats.get('prev_total', 0)}" if stats.get('prev_total') else None
+                value=stats["total_exports"],
+                delta=f"+{stats['total_exports'] - stats.get('prev_total', 0)}"
+                if stats.get("prev_total")
+                else None,
             )
 
         with col2:
             st.metric(
                 label="👥 Active Users",
-                value=len(stats['top_users']),
+                value=len(stats["top_users"]),
             )
 
         with col3:
-            most_popular = max(stats['by_service'], key=stats['by_service'].get) if stats['by_service'] else "N/A"
+            most_popular = (
+                max(stats["by_service"], key=stats["by_service"].get)
+                if stats["by_service"]
+                else "N/A"
+            )
             st.metric(
                 label="🔥 Most Popular",
-                value=most_popular.capitalize() if most_popular != "N/A" else "N/A"
+                value=most_popular.capitalize() if most_popular != "N/A" else "N/A",
             )
 
         with col4:
-            avg_per_user = stats['total_exports'] / len(stats['top_users']) if stats['top_users'] else 0
-            st.metric(
-                label="📊 Avg/User",
-                value=f"{avg_per_user:.1f}"
+            avg_per_user = (
+                stats["total_exports"] / len(stats["top_users"]) if stats["top_users"] else 0
             )
+            st.metric(label="📊 Avg/User", value=f"{avg_per_user:.1f}")
 
         # 서비스별 사용량 차트
         st.subheader("서비스별 사용량")
 
-        if stats['by_service']:
+        if stats["by_service"]:
             import pandas as pd
 
-            df = pd.DataFrame([
-                {"Service": k.capitalize(), "Count": v}
-                for k, v in sorted(stats['by_service'].items(), key=lambda x: x[1], reverse=True)
-            ])
+            df = pd.DataFrame(
+                [
+                    {"Service": k.capitalize(), "Count": v}
+                    for k, v in sorted(
+                        stats["by_service"].items(), key=lambda x: x[1], reverse=True
+                    )
+                ]
+            )
 
             st.bar_chart(df.set_index("Service"))
 
         # 상위 사용자
         st.subheader("👥 상위 사용자")
 
-        if stats['top_users']:
+        if stats["top_users"]:
             user_data = []
-            for i, (user_id, count) in enumerate(stats['top_users'][:10], 1):
-                percentage = (count / stats['total_exports'] * 100) if stats['total_exports'] > 0 else 0
-                user_data.append({
-                    "Rank": i,
-                    "User ID": user_id,
-                    "Exports": count,
-                    "Percentage": f"{percentage:.1f}%"
-                })
+            for i, (user_id, count) in enumerate(stats["top_users"][:10], 1):
+                percentage = (
+                    (count / stats["total_exports"] * 100) if stats["total_exports"] > 0 else 0
+                )
+                user_data.append(
+                    {
+                        "Rank": i,
+                        "User ID": user_id,
+                        "Exports": count,
+                        "Percentage": f"{percentage:.1f}%",
+                    }
+                )
 
             st.dataframe(user_data, use_container_width=True)
         else:
@@ -263,23 +285,31 @@ def render_analysis_tab():
             st.markdown("### 📊 Data Summary")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("Total Exports", stats['total_exports'])
+                st.metric("Total Exports", stats["total_exports"])
             with col2:
-                st.metric("Active Users", len(stats['top_users']))
+                st.metric("Active Users", len(stats["top_users"]))
             with col3:
-                most_popular = max(stats['by_service'], key=stats['by_service'].get) if stats['by_service'] else "N/A"
-                st.metric("Most Popular", most_popular.capitalize() if most_popular != "N/A" else "N/A")
+                most_popular = (
+                    max(stats["by_service"], key=stats["by_service"].get)
+                    if stats["by_service"]
+                    else "N/A"
+                )
+                st.metric(
+                    "Most Popular", most_popular.capitalize() if most_popular != "N/A" else "N/A"
+                )
 
             st.markdown("### 🧠 Gemini Insights")
             st.info(analysis)
 
             # 관리자 액션 로깅
             try:
-                asyncio.run(log_admin_action(
-                    admin_id=st.session_state.get("admin_id", "admin"),
-                    action="gemini_analysis",
-                    metadata={"hours": hours, "total_exports": stats['total_exports']}
-                ))
+                asyncio.run(
+                    log_admin_action(
+                        admin_id=st.session_state.get("admin_id", "admin"),
+                        action="gemini_analysis",
+                        metadata={"hours": hours, "total_exports": stats["total_exports"]},
+                    )
+                )
             except:
                 pass
 
@@ -298,14 +328,10 @@ def render_security_tab():
             "조회 기간",
             options=[1, 6, 12, 24, 72, 168],
             index=3,
-            format_func=lambda x: f"최근 {x}시간" if x < 24 else f"최근 {x//24}일"
+            format_func=lambda x: f"최근 {x}시간" if x < 24 else f"최근 {x//24}일",
         )
     with col2:
-        severity = st.selectbox(
-            "심각도",
-            options=["low", "medium", "high"],
-            index=2
-        )
+        severity = st.selectbox("심각도", options=["low", "medium", "high"], index=2)
 
     # 보안 이벤트 로드
     try:
@@ -323,17 +349,21 @@ def render_security_tab():
         # 이벤트 테이블
         event_data = []
         for event in events[:50]:  # 최근 50개만
-            event_data.append({
-                "Time": event.get("timestamp", ""),
-                "User": event.get("user_id", "unknown"),
-                "Reason": event.get("reason", ""),
-                "Severity": event.get("severity", "").upper()
-            })
+            event_data.append(
+                {
+                    "Time": event.get("timestamp", ""),
+                    "User": event.get("user_id", "unknown"),
+                    "Reason": event.get("reason", ""),
+                    "Severity": event.get("severity", "").upper(),
+                }
+            )
 
         st.dataframe(event_data, use_container_width=True)
 
         # Gemini 분석 버튼
-        if os.getenv("GEMINI_API_KEY") and st.button("🤖 Analyze with Gemini", use_container_width=True):
+        if os.getenv("GEMINI_API_KEY") and st.button(
+            "🤖 Analyze with Gemini", use_container_width=True
+        ):
             with st.spinner("🤖 Analyzing security events with Gemini..."):
                 prompt = f"""
 보안 이벤트 분석:
@@ -473,7 +503,7 @@ def main():
         tabs = st.radio(
             "Select a tab:",
             options=["Overview", "AI Analysis", "Security", "Cost", "Settings"],
-            label_visibility="collapsed"
+            label_visibility="collapsed",
         )
 
         st.divider()
@@ -481,8 +511,8 @@ def main():
         st.markdown("### 📊 Quick Stats")
         try:
             stats = asyncio.run(get_stats_async(24))
-            st.metric("24h Exports", stats['total_exports'])
-            st.metric("Active Users", len(stats['top_users']))
+            st.metric("24h Exports", stats["total_exports"])
+            st.metric("Active Users", len(stats["top_users"]))
         except:
             st.info("Stats unavailable")
 

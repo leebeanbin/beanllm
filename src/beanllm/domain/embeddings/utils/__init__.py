@@ -34,4 +34,3 @@ __all__ = [
     "euclidean_distance",
     "normalize_vector",
 ]
-

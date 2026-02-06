@@ -13,7 +13,6 @@ except ImportError:
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
-from beanllm.utils.exceptions import ProviderError
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -25,7 +24,7 @@ logger = get_logger(__name__)
 class GeminiProvider(BaseLLMProvider):
     """Gemini 제공자 (최신 SDK: google-genai 패키지 사용)"""
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         super().__init__(config or {})
 
         if genai is None:
@@ -56,7 +55,7 @@ class GeminiProvider(BaseLLMProvider):
         """
         # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"gemini:{model or self.default_model}", cost=1.0)
-        
+
         try:
             # 메시지를 contents 형식으로 변환
             contents = []
@@ -101,7 +100,7 @@ class GeminiProvider(BaseLLMProvider):
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
         # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"gemini:{model or self.default_model}", cost=1.0)
-        
+
         contents = []
         if system:
             contents.append(system)
@@ -136,7 +135,7 @@ class GeminiProvider(BaseLLMProvider):
             "gemini-1.5-pro",
             "gemini-1.5-flash",
             # Gemini 2.0 Series (2025)
-            "gemini-2.0-flash-exp",         # Experimental
+            "gemini-2.0-flash-exp",  # Experimental
             "gemini-2.0-flash",
             "gemini-2.0-pro",
             "gemini-2.0-flash-lite",
@@ -146,7 +145,7 @@ class GeminiProvider(BaseLLMProvider):
             "gemini-2.5-flash-lite",
             # Gemini 3.0 Series (2025-2026)
             "gemini-3.0-pro",
-            "gemini-3.0-deep-think",        # Reasoning model
+            "gemini-3.0-deep-think",  # Reasoning model
         ]
 
     def is_available(self) -> bool:

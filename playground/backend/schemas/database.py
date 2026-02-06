@@ -5,9 +5,10 @@ MongoDB schema for chat sessions and messages.
 """
 
 from datetime import datetime, timezone
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+
 from bson import ObjectId
+from pydantic import BaseModel, Field
 
 
 def utc_now() -> datetime:
@@ -41,7 +42,9 @@ class ChatMessage(BaseModel):
     timestamp: datetime = Field(default_factory=utc_now, description="Message timestamp")
     model: Optional[str] = Field(None, description="Model used for this message")
     usage: Optional[Dict[str, int]] = Field(None, description="Token usage")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
+    metadata: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
     class Config:
         json_schema_extra = {
@@ -50,7 +53,7 @@ class ChatMessage(BaseModel):
                 "content": "What is beanllm?",
                 "timestamp": "2026-01-23T10:00:00Z",
                 "model": "gpt-4o",
-                "metadata": {"feature": "chat"}
+                "metadata": {"feature": "chat"},
             }
         }
 
@@ -61,12 +64,16 @@ class ChatSession(BaseModel):
     id: Optional[PyObjectId] = Field(default=None, alias="_id", description="Session ID")
     session_id: str = Field(..., description="Unique session ID")
     title: str = Field(default="New Chat", description="Session title")
-    feature_mode: str = Field(default="chat", description="Feature mode: chat, rag, multi-agent, etc.")
+    feature_mode: str = Field(
+        default="chat", description="Feature mode: chat, rag, multi-agent, etc."
+    )
     model: str = Field(..., description="Primary model used")
     messages: List[ChatMessage] = Field(default_factory=list, description="Chat messages")
 
     # Feature-specific options
-    feature_options: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Feature options")
+    feature_options: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Feature options"
+    )
 
     # Metadata
     created_at: datetime = Field(default_factory=utc_now, description="Session created time")
@@ -88,10 +95,10 @@ class ChatSession(BaseModel):
                 "model": "gpt-4o",
                 "messages": [
                     {"role": "user", "content": "Hello"},
-                    {"role": "assistant", "content": "Hi!"}
+                    {"role": "assistant", "content": "Hi!"},
                 ],
                 "created_at": "2026-01-23T10:00:00Z",
-                "total_tokens": 150
+                "total_tokens": 150,
             }
         }
 
@@ -132,8 +139,10 @@ class SessionResponse(BaseModel):
 # API Key Models
 # ===========================================
 
+
 class ProviderType(str):
     """Supported API key providers"""
+
     OPENAI = "openai"
     ANTHROPIC = "anthropic"
     GOOGLE = "google"
@@ -156,85 +165,89 @@ PROVIDER_CONFIG = {
         "name": "OpenAI",
         "env_var": "OPENAI_API_KEY",
         "placeholder": "sk-...",
-        "description": "GPT-4, GPT-4o, o1 등"
+        "description": "GPT-4, GPT-4o, o1 등",
     },
     "anthropic": {
         "name": "Anthropic",
         "env_var": "ANTHROPIC_API_KEY",
         "placeholder": "sk-ant-...",
-        "description": "Claude 3, Sonnet, Haiku"
+        "description": "Claude 3, Sonnet, Haiku",
     },
     "google": {
         "name": "Google AI",
         "env_var": "GOOGLE_API_KEY",
         "placeholder": "AIza...",
-        "description": "Gemini Pro, PaLM"
+        "description": "Gemini Pro, PaLM",
     },
     "gemini": {
         "name": "Gemini",
         "env_var": "GEMINI_API_KEY",
         "placeholder": "AIza...",
-        "description": "Gemini API"
+        "description": "Gemini API",
     },
     "deepseek": {
         "name": "DeepSeek",
         "env_var": "DEEPSEEK_API_KEY",
         "placeholder": "sk-...",
-        "description": "DeepSeek R1, Coder"
+        "description": "DeepSeek R1, Coder",
     },
     "perplexity": {
         "name": "Perplexity",
         "env_var": "PERPLEXITY_API_KEY",
         "placeholder": "pplx-...",
-        "description": "Perplexity AI"
+        "description": "Perplexity AI",
     },
     "tavily": {
         "name": "Tavily",
         "env_var": "TAVILY_API_KEY",
         "placeholder": "tvly-...",
-        "description": "Web Search API"
+        "description": "Web Search API",
     },
     "serpapi": {
         "name": "SerpAPI",
         "env_var": "SERPAPI_API_KEY",
         "placeholder": "",
-        "description": "Google Search API"
+        "description": "Google Search API",
     },
     "pinecone": {
         "name": "Pinecone",
         "env_var": "PINECONE_API_KEY",
         "placeholder": "",
-        "description": "Vector Database"
+        "description": "Vector Database",
     },
     "qdrant": {
         "name": "Qdrant",
         "env_var": "QDRANT_API_KEY",
         "placeholder": "",
-        "description": "Vector Database"
+        "description": "Vector Database",
     },
     "weaviate": {
         "name": "Weaviate",
         "env_var": "WEAVIATE_API_KEY",
         "placeholder": "",
-        "description": "Vector Database"
+        "description": "Vector Database",
     },
     "neo4j": {
         "name": "Neo4j",
         "env_var": "NEO4J_PASSWORD",
         "placeholder": "",
-        "description": "Graph Database"
+        "description": "Graph Database",
     },
 }
 
 
 class ApiKeyBase(BaseModel):
     """Base model for API keys"""
+
     provider: str = Field(..., description="Provider name (openai, anthropic, etc.)")
-    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Additional metadata")
+    metadata: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Additional metadata"
+    )
 
 
 class ApiKeyCreate(ApiKeyBase):
     """Request to create/update an API key"""
+
     api_key: str = Field(..., description="The actual API key", min_length=1)
 
     class Config:
@@ -242,13 +255,14 @@ class ApiKeyCreate(ApiKeyBase):
             "example": {
                 "provider": "openai",
                 "api_key": "sk-1234567890abcdef",
-                "metadata": {"organization": "my-org"}
+                "metadata": {"organization": "my-org"},
             }
         }
 
 
 class ApiKeyInDB(ApiKeyBase):
     """API key as stored in MongoDB"""
+
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     key_encrypted: str = Field(..., description="Encrypted API key")
     key_hint: str = Field(..., description="Last 4 characters for identification")
@@ -265,6 +279,7 @@ class ApiKeyInDB(ApiKeyBase):
 
 class ApiKeyResponse(BaseModel):
     """Response for API key (without the actual key)"""
+
     provider: str = Field(..., description="Provider name")
     key_hint: str = Field(..., description="Last 4 characters (e.g., '...7890')")
     is_valid: bool = Field(..., description="Whether the key is valid")
@@ -282,36 +297,41 @@ class ApiKeyResponse(BaseModel):
                 "is_valid": True,
                 "last_validated": "2026-01-23T10:00:00Z",
                 "created_at": "2026-01-23T09:00:00Z",
-                "updated_at": "2026-01-23T10:00:00Z"
+                "updated_at": "2026-01-23T10:00:00Z",
             }
         }
 
 
 class ApiKeyListResponse(BaseModel):
     """Response for listing all API keys"""
+
     keys: List[ApiKeyResponse] = Field(..., description="List of API keys")
     total: int = Field(..., description="Total count")
 
 
 class ApiKeyValidationResult(BaseModel):
     """Result of API key validation"""
+
     provider: str = Field(..., description="Provider name")
     is_valid: bool = Field(..., description="Whether the key is valid")
     error: Optional[str] = Field(None, description="Error message if invalid")
-    models_available: Optional[List[str]] = Field(None, description="Available models (if applicable)")
+    models_available: Optional[List[str]] = Field(
+        None, description="Available models (if applicable)"
+    )
 
     class Config:
         json_schema_extra = {
             "example": {
                 "provider": "openai",
                 "is_valid": True,
-                "models_available": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"]
+                "models_available": ["gpt-4o", "gpt-4o-mini", "gpt-3.5-turbo"],
             }
         }
 
 
 class ProviderInfo(BaseModel):
     """Information about a provider"""
+
     id: str = Field(..., description="Provider ID")
     name: str = Field(..., description="Display name")
     env_var: str = Field(..., description="Environment variable name")
@@ -323,6 +343,7 @@ class ProviderInfo(BaseModel):
 
 class ProviderListResponse(BaseModel):
     """Response for listing providers"""
+
     providers: List[ProviderInfo] = Field(..., description="List of providers")
 
 
@@ -330,8 +351,10 @@ class ProviderListResponse(BaseModel):
 # Google OAuth Models
 # ===========================================
 
+
 class GoogleOAuthToken(BaseModel):
     """Google OAuth token stored in MongoDB"""
+
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     user_id: str = Field(default="default", description="User identifier")
     access_token_encrypted: str = Field(..., description="Encrypted access token")
@@ -350,10 +373,13 @@ class GoogleOAuthToken(BaseModel):
 
 class GoogleAuthStatus(BaseModel):
     """Google OAuth authentication status"""
+
     is_authenticated: bool = Field(..., description="Whether user is authenticated")
     scopes: List[str] = Field(default_factory=list, description="Granted scopes")
     expires_at: Optional[datetime] = Field(None, description="Token expiration")
-    available_services: List[str] = Field(default_factory=list, description="Available Google services")
+    available_services: List[str] = Field(
+        default_factory=list, description="Available Google services"
+    )
 
     class Config:
         json_encoders = {datetime: lambda v: v.isoformat()}
@@ -363,8 +389,10 @@ class GoogleAuthStatus(BaseModel):
 # Request Log Models (for monitoring)
 # ===========================================
 
+
 class RequestLog(BaseModel):
     """Request log for monitoring"""
+
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     request_id: str = Field(..., description="Unique request ID")
     session_id: Optional[str] = Field(None, description="Associated session ID")

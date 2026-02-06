@@ -21,7 +21,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
-from beanllm.utils.exceptions import ProviderError
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -33,7 +32,7 @@ logger = get_logger(__name__)
 class ClaudeProvider(BaseLLMProvider):
     """Claude 제공자 (최신 SDK: messages.stream() 사용)"""
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         super().__init__(config or {})
         if AsyncAnthropic is None:
             raise ImportError(
@@ -70,7 +69,7 @@ class ClaudeProvider(BaseLLMProvider):
         """
         # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"claude:{model or self.default_model}", cost=1.0)
-        
+
         # Claude 메시지 형식 변환
         claude_messages = []
         for msg in messages:
@@ -109,7 +108,7 @@ class ClaudeProvider(BaseLLMProvider):
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
         # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"claude:{model or self.default_model}", cost=1.0)
-        
+
         claude_messages = []
         for msg in messages:
             if msg["role"] in ["user", "assistant"]:
@@ -137,21 +136,21 @@ class ClaudeProvider(BaseLLMProvider):
         return [
             # Claude 3 Series
             "claude-3-5-sonnet-20241022",  # Latest Sonnet 3.5
-            "claude-3-5-haiku-20241022",   # Latest Haiku 3.5
-            "claude-3-opus-20240229",       # Opus 3
-            "claude-3-sonnet-20240229",     # Sonnet 3.0
-            "claude-3-haiku-20240307",      # Haiku 3.0
+            "claude-3-5-haiku-20241022",  # Latest Haiku 3.5
+            "claude-3-opus-20240229",  # Opus 3
+            "claude-3-sonnet-20240229",  # Sonnet 3.0
+            "claude-3-haiku-20240307",  # Haiku 3.0
             # Claude 4 Series (2025)
-            "claude-opus-4",                # Opus 4
-            "claude-sonnet-4",              # Sonnet 4
-            "claude-haiku-4",               # Haiku 4
+            "claude-opus-4",  # Opus 4
+            "claude-sonnet-4",  # Sonnet 4
+            "claude-haiku-4",  # Haiku 4
             # Claude 4.1 Series (2025)
-            "claude-opus-4-1",              # Opus 4.1
-            "claude-sonnet-4-1",            # Sonnet 4.1
+            "claude-opus-4-1",  # Opus 4.1
+            "claude-sonnet-4-1",  # Sonnet 4.1
             # Claude 4.5 Series (2025)
-            "claude-opus-4-5",              # Opus 4.5 (with thinking/effort)
-            "claude-sonnet-4-5",            # Sonnet 4.5 (with thinking)
-            "claude-haiku-4-5",             # Haiku 4.5
+            "claude-opus-4-5",  # Opus 4.5 (with thinking/effort)
+            "claude-sonnet-4-5",  # Sonnet 4.5 (with thinking)
+            "claude-haiku-4-5",  # Haiku 4.5
         ]
 
     def is_available(self) -> bool:

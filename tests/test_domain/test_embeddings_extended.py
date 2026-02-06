@@ -2,8 +2,9 @@
 Embeddings 확장 테스트 - Embedding Cache, Factory 등
 """
 
+from unittest.mock import AsyncMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, AsyncMock
 
 from beanllm.domain.embeddings.base import BaseEmbedding
 
@@ -50,7 +51,9 @@ class TestEmbeddingFactory:
             from beanllm.domain.embeddings.factory import Embedding
 
             with patch("beanllm.domain.embeddings.providers.OpenAI"):
-                embedding = Embedding(model="text-embedding-3-small", provider="openai", api_key="test_key")
+                embedding = Embedding(
+                    model="text-embedding-3-small", provider="openai", api_key="test_key"
+                )
                 assert embedding is not None
                 assert embedding.model == "text-embedding-3-small"
         except (ImportError, ValueError, AttributeError) as e:
@@ -76,8 +79,9 @@ class TestEmbeddingProviders:
     async def test_openai_embedding_embed(self):
         """OpenAI Embedding embed 테스트"""
         try:
-            from beanllm.domain.embeddings.providers import OpenAIEmbedding
             from unittest.mock import AsyncMock, patch
+
+            from beanllm.domain.embeddings.providers import OpenAIEmbedding
 
             with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
@@ -96,8 +100,9 @@ class TestEmbeddingProviders:
     def test_openai_embedding_embed_sync(self):
         """OpenAI Embedding embed_sync 테스트"""
         try:
+            from unittest.mock import Mock, patch
+
             from beanllm.domain.embeddings.providers import OpenAIEmbedding
-            from unittest.mock import Mock, patch
 
             with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
                 mock_response = Mock()
@@ -112,26 +117,6 @@ class TestEmbeddingProviders:
                 assert len(result) > 0
         except (ImportError, ValueError, AttributeError) as e:
             pytest.skip(f"OpenAI embedding not available: {e}")
-
-
-
-            from unittest.mock import Mock, patch
-
-            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
-                mock_response = Mock()
-                mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
-                mock_response.usage = Mock(total_tokens=1)
-                mock_openai.return_value.embeddings.create = Mock(return_value=mock_response)
-
-                embedding = OpenAIEmbedding(model="text-embedding-3-small", api_key="test_key")
-                result = embedding.embed_sync(["test text"])
-
-                assert isinstance(result, list)
-                assert len(result) > 0
-        except (ImportError, ValueError, AttributeError) as e:
-            pytest.skip(f"OpenAI embedding not available: {e}")
-
-
 
             from unittest.mock import Mock, patch
 
@@ -149,4 +134,18 @@ class TestEmbeddingProviders:
         except (ImportError, ValueError, AttributeError) as e:
             pytest.skip(f"OpenAI embedding not available: {e}")
 
+            from unittest.mock import Mock, patch
 
+            with patch("beanllm.domain.embeddings.providers.OpenAI") as mock_openai:
+                mock_response = Mock()
+                mock_response.data = [Mock(embedding=[0.1, 0.2, 0.3])]
+                mock_response.usage = Mock(total_tokens=1)
+                mock_openai.return_value.embeddings.create = Mock(return_value=mock_response)
+
+                embedding = OpenAIEmbedding(model="text-embedding-3-small", api_key="test_key")
+                result = embedding.embed_sync(["test text"])
+
+                assert isinstance(result, list)
+                assert len(result) > 0
+        except (ImportError, ValueError, AttributeError) as e:
+            pytest.skip(f"OpenAI embedding not available: {e}")

@@ -2,8 +2,9 @@
 AgentHandler 테스트 - Agent Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.agent_request import AgentRequest
 from beanllm.dto.response.agent_response import AgentResponse
@@ -170,5 +171,3 @@ class TestAgentHandler:
         call_args = agent_handler._agent_service.run.call_args[0][0]
         assert "extra_param1" in call_args.extra_params
         assert call_args.extra_params["extra_param1"] == "value1"
-
-

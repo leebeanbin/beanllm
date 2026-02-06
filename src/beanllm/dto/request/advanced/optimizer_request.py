@@ -98,6 +98,10 @@ class ABTestRequest:
     config_a_id: str
     config_b_id: str
     test_queries: List[str]
+    variant_a_name: str = "variant_a"
+    variant_b_name: str = "variant_b"
+    num_queries: int = 100
+    confidence_level: float = 0.95
     metrics: Optional[List[str]] = None
     statistical_test: str = "ttest"  # "ttest", "mannwhitney", "wilcoxon"
 

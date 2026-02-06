@@ -29,7 +29,7 @@ References:
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from .base_framework import BaseEvaluationFramework
 
@@ -213,7 +213,7 @@ class TruLensWrapper(BaseEvaluationFramework):
         self._check_dependencies()
 
         try:
-            from trulens_eval.feedback import Feedback, GroundTruthAgreement
+            from trulens_eval.feedback import Feedback
 
             # LLM Provider
             llm = self._get_llm()
@@ -269,9 +269,7 @@ class TruLensWrapper(BaseEvaluationFramework):
                 question=kwargs["question"], contexts=kwargs["contexts"]
             )
         elif metric == "groundedness":
-            return self.evaluate_groundedness(
-                answer=kwargs["answer"], contexts=kwargs["contexts"]
-            )
+            return self.evaluate_groundedness(answer=kwargs["answer"], contexts=kwargs["contexts"])
         elif metric == "answer_relevance":
             return self.evaluate_answer_relevance(
                 question=kwargs["question"], answer=kwargs["answer"]
@@ -305,13 +303,9 @@ class TruLensWrapper(BaseEvaluationFramework):
         logger.info("Evaluating RAG Triad...")
 
         # 개별 메트릭 평가
-        context_relevance = self.evaluate_context_relevance(question, contexts)[
-            "context_relevance"
-        ]
+        context_relevance = self.evaluate_context_relevance(question, contexts)["context_relevance"]
         groundedness = self.evaluate_groundedness(answer, contexts)["groundedness"]
-        answer_relevance = self.evaluate_answer_relevance(question, answer)[
-            "answer_relevance"
-        ]
+        answer_relevance = self.evaluate_answer_relevance(question, answer)["answer_relevance"]
 
         result = {
             "context_relevance": context_relevance,
@@ -326,9 +320,7 @@ class TruLensWrapper(BaseEvaluationFramework):
 
         return result
 
-    def evaluate_context_relevance(
-        self, question: str, contexts: List[str]
-    ) -> Dict[str, float]:
+    def evaluate_context_relevance(self, question: str, contexts: List[str]) -> Dict[str, float]:
         """
         Context Relevance 평가
 
@@ -366,9 +358,7 @@ class TruLensWrapper(BaseEvaluationFramework):
             logger.error(f"Failed to evaluate context relevance: {e}")
             return {"context_relevance": 0.0}
 
-    def evaluate_groundedness(
-        self, answer: str, contexts: List[str]
-    ) -> Dict[str, float]:
+    def evaluate_groundedness(self, answer: str, contexts: List[str]) -> Dict[str, float]:
         """
         Groundedness 평가 (Hallucination 체크)
 
@@ -391,9 +381,7 @@ class TruLensWrapper(BaseEvaluationFramework):
 
             # Groundedness 평가
             source = "\n\n".join(contexts)
-            score = provider.groundedness_measure_with_cot_reasons(
-                source=source, statement=answer
-            )
+            score = provider.groundedness_measure_with_cot_reasons(source=source, statement=answer)
 
             # score는 (점수, 이유) 튜플일 수 있음
             if isinstance(score, tuple):
@@ -407,9 +395,7 @@ class TruLensWrapper(BaseEvaluationFramework):
             logger.error(f"Failed to evaluate groundedness: {e}")
             return {"groundedness": 0.0}
 
-    def evaluate_answer_relevance(
-        self, question: str, answer: str
-    ) -> Dict[str, float]:
+    def evaluate_answer_relevance(self, question: str, answer: str) -> Dict[str, float]:
         """
         Answer Relevance 평가
 
@@ -491,9 +477,7 @@ class TruLensWrapper(BaseEvaluationFramework):
         브라우저에서 http://localhost:8501 에 대시보드가 열립니다.
         """
         if not self.enable_dashboard:
-            logger.warning(
-                "Dashboard is disabled. Set enable_dashboard=True to enable."
-            )
+            logger.warning("Dashboard is disabled. Set enable_dashboard=True to enable.")
             return
 
         self._check_dependencies()

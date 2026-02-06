@@ -830,71 +830,69 @@ export default function MonitoringPage() {
   }, [autoRefresh, fetchData]);
 
   return (
-    <PageLayout
-      title="Chat & AI Metrics"
-      description="챗(AI 활용) 메트릭 전용 — 분산 시스템(Redis) 기반, /api/chat·/api/chat/* 구간만 집계. 요청·에러·응답시간·엔드포인트·토큰 세부 수치 표시"
-    >
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-          {lastUpdate && (
-            <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={cn(
-              "text-xs sm:text-sm h-8 sm:h-9 border-border/40 bg-transparent hover:bg-muted/30",
-              autoRefresh && "bg-muted/50 border-border/50"
-            )}
-          >
-            <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-            Auto {autoRefresh ? "On" : "Off"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchData}
-            disabled={loading}
-            className="text-xs sm:text-sm h-8 sm:h-9 border-border/40 bg-transparent hover:bg-muted/30"
-          >
-            <RefreshCw
-              className={cn(
-                "w-3 h-3 sm:w-4 sm:h-4 mr-1",
-                loading && "animate-spin"
+    <PageLayout title="Monitoring" description="Chat & AI metrics">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+          {/* Header bar — Chat-style: border only, muted */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 rounded-lg border border-border/50 bg-muted/5 px-3 py-2.5">
+            <div className="text-xs sm:text-sm text-muted-foreground">
+              {lastUpdate ? (
+                <span>Last updated: {lastUpdate.toLocaleTimeString()}</span>
+              ) : (
+                <span>Loading…</span>
               )}
-            />
-            Refresh
-          </Button>
-        </div>
-      </div>
-
-      {/* Error State — state.danger만 강조, 나머지 Minimal */}
-      {error && (
-        <div className="mb-4 bg-background border border-destructive/40 rounded-lg p-4 flex items-center gap-2 text-sm text-destructive">
-          <AlertTriangle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Loading State — Minimal: bg.surface, border.subtle */}
-      {loading && !data ? (
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              className={cn(CARD_CLASS, "p-4 animate-pulse")}
-            >
-              <div className="h-3 bg-muted rounded mb-2" />
-              <div className="h-7 bg-muted rounded" />
             </div>
-          ))}
-        </div>
-      ) : data ? (
-        <div className="space-y-4 sm:space-y-6">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                className={cn(
+                  "h-8 text-[13px] font-medium tracking-tight border border-transparent rounded-lg",
+                  autoRefresh && "bg-muted/30 border-border/40"
+                )}
+              >
+                <Activity className="w-4 h-4 mr-1.5" />
+                Auto {autoRefresh ? "On" : "Off"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchData}
+                disabled={loading}
+                className="h-8 text-[13px] font-medium tracking-tight border-border/40 rounded-lg hover:bg-muted/30"
+              >
+                <RefreshCw
+                  className={cn("w-4 h-4 mr-1.5", loading && "animate-spin")}
+                />
+                Refresh
+              </Button>
+            </div>
+          </div>
+
+          {/* Error — destructive only */}
+          {error && (
+            <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 flex items-center gap-2 text-sm text-destructive">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Loading skeleton — same container width as Chat */}
+          {loading && !data ? (
+            <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className={cn(CARD_CLASS, "p-4 animate-pulse")}
+                >
+                  <div className="h-3 bg-muted rounded mb-2" />
+                  <div className="h-7 bg-muted rounded" />
+                </div>
+              ))}
+            </div>
+          ) : data ? (
+            <div className="space-y-4 sm:space-y-6">
           {/* Summary Stats — 챗(AI 활용) 세부 수치 전부 (CACHE_AND_METRICS_POLICY §3.2) */}
           <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-5">
             <StatCard
@@ -956,12 +954,14 @@ export default function MonitoringPage() {
             onOpenChange={(o) => !o && setDetailItem(null)}
             formatNumber={formatNumber}
           />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-border/50 bg-muted/5 py-12 text-center text-sm text-muted-foreground">
+              No monitoring data available
+            </div>
+          )}
         </div>
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          No monitoring data available
-        </div>
-      )}
+      </div>
     </PageLayout>
   );
 }

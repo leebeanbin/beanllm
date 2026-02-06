@@ -14,9 +14,8 @@ from beanllm.dto.request.ml.vision_rag_request import VisionRAGRequest
 from beanllm.dto.response.ml.vision_rag_response import VisionRAGResponse
 from beanllm.infrastructure.distributed import get_event_logger, get_rate_limiter
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.vision_rag_service import IVisionRAGService
+from beanllm.utils.logging import get_logger
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
@@ -157,7 +156,9 @@ Answer:"""
         pipeline_type="vision_rag",
         enable_rate_limiting=True,
         enable_event_streaming=True,
-        rate_limit_key=lambda self, args, kwargs: f"llm:{(args[0] if args else kwargs.get('request')).llm_model if hasattr(args[0] if args else kwargs.get('request'), 'llm_model') else 'default'}",
+        rate_limit_key=lambda self,
+        args,
+        kwargs: f"llm:{(args[0] if args else kwargs.get('request')).llm_model if hasattr(args[0] if args else kwargs.get('request'), 'llm_model') else 'default'}",
         event_type="vision_rag.query",
     )
     async def query(self, request: VisionRAGRequest) -> VisionRAGResponse:

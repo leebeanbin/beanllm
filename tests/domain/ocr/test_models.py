@@ -62,9 +62,7 @@ class TestOCRTextLine:
     def test_ocr_text_line_creation(self):
         """OCRTextLine 생성 테스트"""
         bbox = BoundingBox(x0=10, y0=20, x1=100, y1=50, confidence=0.95)
-        line = OCRTextLine(
-            text="안녕하세요", bbox=bbox, confidence=0.92, language="ko"
-        )
+        line = OCRTextLine(text="안녕하세요", bbox=bbox, confidence=0.92, language="ko")
 
         assert line.text == "안녕하세요"
         assert line.bbox == bbox
@@ -274,9 +272,7 @@ class TestOCRConfig:
 
     def test_ocr_config_preprocessing_options(self):
         """OCRConfig 전처리 옵션 테스트"""
-        config = OCRConfig(
-            denoise=False, contrast_adjustment=False, rotation_correction=False
-        )
+        config = OCRConfig(denoise=False, contrast_adjustment=False, rotation_correction=False)
 
         assert config.denoise is False
         assert config.contrast_adjustment is False

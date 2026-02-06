@@ -11,11 +11,9 @@ SOLID:
 - OCP: 새로운 진행 상황 타입 쉽게 추가
 """
 
-import asyncio
 import time
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
-from datetime import datetime
 
 try:
     from beanllm.utils.logging import get_logger
@@ -440,9 +438,7 @@ class MultiStageProgressTracker:
             websocket_session=self.websocket_session,
             stage=self.current_stage_name,
         )
-        await self._current_tracker.start(
-            message=f"Starting stage: {self.current_stage_name}"
-        )
+        await self._current_tracker.start(message=f"Starting stage: {self.current_stage_name}")
 
     async def set_stage(self, stage_name: str):
         """
@@ -538,7 +534,5 @@ class MultiStageProgressTracker:
             "overall_percentage": (self.overall_progress / self.total_steps * 100)
             if self.total_steps > 0
             else 0.0,
-            "elapsed_time": time.time() - self.start_time
-            if self.start_time
-            else 0.0,
+            "elapsed_time": time.time() - self.start_time if self.start_time else 0.0,
         }

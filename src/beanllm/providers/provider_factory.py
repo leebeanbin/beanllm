@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.logging import get_logger
+
 from .base_provider import BaseLLMProvider
 
 # Get logger first for error logging
@@ -50,9 +51,11 @@ except Exception as e:
     PerplexityProvider = None  # type: ignore
 
 # Debug: Log which providers are available
-logger.info(f"Provider import status: OpenAI={OpenAIProvider is not None}, Claude={ClaudeProvider is not None}, "
-            f"Gemini={GeminiProvider is not None}, DeepSeek={DeepSeekProvider is not None}, "
-            f"Perplexity={PerplexityProvider is not None}, Ollama={OllamaProvider is not None}")
+logger.info(
+    f"Provider import status: OpenAI={OpenAIProvider is not None}, Claude={ClaudeProvider is not None}, "
+    f"Gemini={GeminiProvider is not None}, DeepSeek={DeepSeekProvider is not None}, "
+    f"Perplexity={PerplexityProvider is not None}, Ollama={OllamaProvider is not None}"
+)
 
 
 class ProviderFactory:
@@ -227,8 +230,9 @@ class ProviderFactory:
                 # Ollama는 선택적이므로 실패해도 조용히 처리 (DEBUG 레벨)
                 # 에러 메시지에서 API 키 마스킹 (Helper 함수 사용)
                 from beanllm.utils.integration.security import sanitize_error_message
+
                 error_str = sanitize_error_message(e)
-                
+
                 if name == "ollama":
                     logger.debug(f"Ollama provider not available: {error_str}")
                 else:
@@ -239,9 +243,10 @@ class ProviderFactory:
                 continue
 
         # 사용 가능한 제공자가 없음
-        error_msg = f"No available LLM provider found"
+        error_msg = "No available LLM provider found"
         if last_error:
             from beanllm.utils.integration.security import sanitize_error_message
+
             safe_error = sanitize_error_message(last_error)
             error_msg = f"{error_msg}. Last error: {safe_error}"
         logger.error(error_msg)

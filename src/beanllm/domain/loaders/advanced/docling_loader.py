@@ -5,23 +5,22 @@ Docling 고급 문서 로더
 """
 
 import logging
-import mmap
 import os
-import re
-from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Union
+from typing import Any, Dict, List
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
-from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class DoclingLoader(BaseDocumentLoader):
     """
@@ -118,8 +117,7 @@ class DoclingLoader(BaseDocumentLoader):
         valid_formats = ["markdown", "text"]
         if self.output_format not in valid_formats:
             raise ValueError(
-                f"Invalid output_format: {self.output_format}. "
-                f"Available: {valid_formats}"
+                f"Invalid output_format: {self.output_format}. " f"Available: {valid_formats}"
             )
 
     def load(self) -> List[Document]:
@@ -129,8 +127,7 @@ class DoclingLoader(BaseDocumentLoader):
             from docling.document_converter import DocumentConverter
         except ImportError:
             raise ImportError(
-                "docling is required for DoclingLoader. "
-                "Install it with: pip install docling"
+                "docling is required for DoclingLoader. " "Install it with: pip install docling"
             )
 
         # 파일 존재 확인
@@ -252,8 +249,7 @@ class DoclingLoader(BaseDocumentLoader):
             from beanllm.domain.loaders.splitters import RecursiveCharacterTextSplitter
         except ImportError:
             logger.warning(
-                "RecursiveCharacterTextSplitter not available, "
-                "returning unsplit documents"
+                "RecursiveCharacterTextSplitter not available, " "returning unsplit documents"
             )
             return docs
 

@@ -191,7 +191,67 @@ else
         echo -e "${YELLOW}  ⚠️  Redis 클라이언트가 설치되어 있지 않습니다.${NC}"
         echo -e "${YELLOW}     설치: brew install redis${NC}"
     fi
+
 fi
+
+# ===== Ollama 시작 및 모델 확인 (로컬/Docker 모드 공통) =====
+start_ollama() {
+    OLLAMA_PID_FILE="$PROJECT_ROOT/.ollama-serve.pid"
+    DEFAULT_MODEL="qwen2.5:0.5b"  # 메모리 효율적인 기본 모델
+
+    if command -v ollama &> /dev/null; then
+        # Ollama 실행 상태 확인
+        if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 http://localhost:11434/api/tags 2>/dev/null | grep -q "200"; then
+            echo -e "${GREEN}  ✅ Ollama 이미 실행 중 (localhost:11434)${NC}"
+        else
+            echo -e "${BLUE}  → Ollama 시작 중 (백그라운드)...${NC}"
+            nohup ollama serve > /dev/null 2>&1 &
+            echo $! > "$OLLAMA_PID_FILE"
+            sleep 3  # Ollama 초기화 대기
+
+            # 시작 확인 (최대 10초 대기)
+            for i in {1..10}; do
+                if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 1 http://localhost:11434/api/tags 2>/dev/null | grep -q "200"; then
+                    echo -e "${GREEN}  ✅ Ollama 시작됨 (PID $(cat "$OLLAMA_PID_FILE"))${NC}"
+                    break
+                fi
+                sleep 1
+            done
+
+            if ! curl -s -o /dev/null -w "%{http_code}" --connect-timeout 1 http://localhost:11434/api/tags 2>/dev/null | grep -q "200"; then
+                echo -e "${YELLOW}  ⚠️  Ollama 시작 확인 실패. 수동 실행: ollama serve${NC}"
+                rm -f "$OLLAMA_PID_FILE"
+                return 1
+            fi
+        fi
+
+        # 설치된 모델 확인
+        echo -e "${BLUE}  → Ollama 모델 확인 중...${NC}"
+        INSTALLED_MODELS=$(curl -s http://localhost:11434/api/tags 2>/dev/null | grep -o '"name":"[^"]*"' | head -5 || echo "")
+
+        if [ -z "$INSTALLED_MODELS" ] || [ "$INSTALLED_MODELS" == "" ]; then
+            echo -e "${YELLOW}  ⚠️  설치된 Ollama 모델이 없습니다.${NC}"
+            echo -e "${BLUE}  → 기본 모델 다운로드 중: $DEFAULT_MODEL (약 500MB)...${NC}"
+            echo -e "${YELLOW}     (처음 실행 시 시간이 걸릴 수 있습니다)${NC}"
+
+            if ollama pull "$DEFAULT_MODEL" 2>&1 | tail -1; then
+                echo -e "${GREEN}  ✅ $DEFAULT_MODEL 다운로드 완료${NC}"
+            else
+                echo -e "${YELLOW}  ⚠️  모델 다운로드 실패. 수동 설치: ollama pull $DEFAULT_MODEL${NC}"
+            fi
+        else
+            MODEL_COUNT=$(echo "$INSTALLED_MODELS" | wc -l | tr -d ' ')
+            echo -e "${GREEN}  ✅ Ollama 모델 $MODEL_COUNT개 설치됨${NC}"
+        fi
+    else
+        echo -e "${YELLOW}  ⚠️  Ollama 미설치. 로컬 LLM 사용 시:${NC}"
+        echo -e "${BLUE}     macOS: brew install ollama${NC}"
+        echo -e "${BLUE}     또는: https://ollama.com${NC}"
+    fi
+}
+
+echo -e "${BLUE}  → Ollama 확인 중...${NC}"
+start_ollama
 
 echo ""
 
@@ -219,6 +279,24 @@ if ! poetry show motor &> /dev/null; then
     poetry install --with web
 else
     echo -e "${GREEN}  ✅ 의존성 이미 설치됨${NC}"
+fi
+
+# ChromaDB 설치 확인 (벡터 스토어 기능)
+echo -e "${BLUE}  → ChromaDB 확인 중...${NC}"
+if ! poetry show chromadb &> /dev/null 2>&1; then
+    echo -e "${YELLOW}  ⚠️  ChromaDB 미설치. 설치 중...${NC}"
+    if poetry add chromadb --quiet 2>&1; then
+        echo -e "${GREEN}  ✅ ChromaDB 설치 완료${NC}"
+    else
+        echo -e "${YELLOW}  ⚠️  ChromaDB 설치 실패. 수동 설치: poetry add chromadb${NC}"
+    fi
+else
+    echo -e "${GREEN}  ✅ ChromaDB 설치됨${NC}"
+fi
+
+# OpenAI SDK 설치 확인 (선택사항)
+if ! poetry show openai &> /dev/null 2>&1; then
+    echo -e "${YELLOW}  ⚠️  OpenAI SDK 미설치. GPT 모델 사용 시: poetry add openai${NC}"
 fi
 
 echo ""
@@ -332,6 +410,9 @@ echo -e "${BLUE}   URL: http://localhost:8000${NC}"
 echo -e "${BLUE}   API Docs: http://localhost:8000/docs${NC}"
 echo -e "${YELLOW}   종료: Ctrl+C${NC}"
 echo ""
+
+# mcp_server 등 프로젝트 루트 모듈 로드를 위해 PYTHONPATH에 추가
+export PYTHONPATH="${PROJECT_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}:${PYTHONPATH:-}"
 
 # Poetry run을 사용하여 백엔드 실행
 cd "$SCRIPT_DIR"

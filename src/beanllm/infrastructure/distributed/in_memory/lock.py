@@ -29,15 +29,14 @@ class InMemoryLock(DistributedLockInterface):
             if key not in self._locks:
                 self._locks[key] = asyncio.Lock()
             lock = self._locks[key]
-        
+
         # 락 획득 (타임아웃 지원)
         try:
             await asyncio.wait_for(lock.acquire(), timeout=timeout)
         except asyncio.TimeoutError:
             raise TimeoutError(f"Failed to acquire lock for key: {key}")
-        
+
         try:
             yield
         finally:
             lock.release()
-

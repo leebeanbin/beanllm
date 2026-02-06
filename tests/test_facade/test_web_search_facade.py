@@ -1,12 +1,15 @@
 """
 Web Search Facade 테스트
 """
+
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.web_search_facade import WebSearch
     from beanllm.domain.web_search import SearchEngine, SearchResponse
+    from beanllm.facade.web_search_facade import WebSearch
+
     FACADE_AVAILABLE = True
 except ImportError:
     FACADE_AVAILABLE = False
@@ -22,10 +25,12 @@ class TestWebSearch:
                 query="test query",
                 results=[],
                 total_results=0,
-                engine=SearchEngine.DUCKDUCKGO.value
+                engine=SearchEngine.DUCKDUCKGO.value,
             )
+
             async def mock_handle_search(*args, **kwargs):
                 return mock_response
+
             mock_handler.handle_search = MagicMock(side_effect=mock_handle_search)
 
             mock_handler_factory = Mock()
@@ -50,5 +55,3 @@ class TestWebSearch:
         assert isinstance(result, SearchResponse)
         assert result.query == "test query"
         assert web_search._web_search_handler.handle_search.called
-
-

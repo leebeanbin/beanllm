@@ -76,7 +76,9 @@ def refactor_infrastructure_import(content: str, import_name: str, protocol_name
     """
     # Remove the infrastructure import line
     import_pattern = rf"from beanllm\.infrastructure.*import.*{import_name}"
-    content = re.sub(import_pattern, f"# {import_name} is now injected via {protocol_name}", content)
+    content = re.sub(
+        import_pattern, f"# {import_name} is now injected via {protocol_name}", content
+    )
 
     # Replace get_X() calls with self._X usage
     if import_name.startswith("get_"):
@@ -126,7 +128,7 @@ def main():
                 protocols_needed.add(protocol)
 
         if not protocols_needed:
-            print(f"  ✅ No infrastructure imports found")
+            print("  ✅ No infrastructure imports found")
             continue
 
         print(f"  📋 Protocols needed: {', '.join(protocols_needed)}")
@@ -135,8 +137,10 @@ def main():
         # This script provides a starting point
         # Manual review is recommended
 
-        print(f"  ⚠️  Manual refactoring recommended for this file")
-        print(f"     Add these protocols to __init__: {', '.join(f'{p.lower().replace('protocol', '')}' for p in protocols_needed)}")
+        print("  ⚠️  Manual refactoring recommended for this file")
+        print(
+            f"     Add these protocols to __init__: {', '.join(f'{p.lower().replace('protocol', '')}' for p in protocols_needed)}"
+        )
         print()
 
     print("=" * 60)

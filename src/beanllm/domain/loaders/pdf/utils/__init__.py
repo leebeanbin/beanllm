@@ -13,4 +13,3 @@ from .layout_analyzer import Block, LayoutAnalyzer
 from .markdown_converter import MarkdownConverter
 
 __all__ = ["MarkdownConverter", "LayoutAnalyzer", "Block"]
-

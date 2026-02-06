@@ -9,12 +9,12 @@ Google OAuth 2.0 인증 플로우 엔드포인트:
 """
 
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import RedirectResponse
-from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from database import get_mongodb_database
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import RedirectResponse
+from pydantic import BaseModel, Field
 from services.google_oauth_service import (
     GOOGLE_SCOPES,
     get_effective_google_oauth_service,
@@ -34,17 +34,20 @@ def get_db():
 # Request/Response Models
 # ===========================================
 
+
 class GoogleAuthStartRequest(BaseModel):
     """Google OAuth 시작 요청"""
+
     services: List[str] = Field(
         default=["drive", "docs"],
-        description="요청할 Google 서비스 목록 (drive, docs, gmail, calendar, sheets)"
+        description="요청할 Google 서비스 목록 (drive, docs, gmail, calendar, sheets)",
     )
     user_id: str = Field(default="default", description="사용자 ID")
 
 
 class GoogleAuthStartResponse(BaseModel):
     """Google OAuth 시작 응답"""
+
     auth_url: str = Field(..., description="Google 인증 URL")
     state: str = Field(..., description="CSRF 방지 state")
     scopes: List[str] = Field(..., description="요청된 스코프")
@@ -53,6 +56,7 @@ class GoogleAuthStartResponse(BaseModel):
 
 class GoogleAuthStatusResponse(BaseModel):
     """Google 인증 상태 응답"""
+
     is_authenticated: bool = Field(..., description="인증 여부")
     scopes: List[str] = Field(default_factory=list, description="승인된 스코프")
     expires_at: Optional[str] = Field(None, description="토큰 만료 시간")
@@ -61,6 +65,7 @@ class GoogleAuthStatusResponse(BaseModel):
 
 class GoogleAuthCallbackResponse(BaseModel):
     """OAuth 콜백 응답"""
+
     success: bool
     user_id: str
     scopes: List[str]
@@ -70,6 +75,7 @@ class GoogleAuthCallbackResponse(BaseModel):
 # ===========================================
 # Endpoints
 # ===========================================
+
 
 @router.get("/services")
 async def list_google_services(db=Depends(get_db)):
@@ -137,17 +143,12 @@ async def google_oauth_callback(
     if error:
         # 프론트엔드로 에러와 함께 리다이렉트
         frontend_url = "http://localhost:3000"
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?error={error}"
-        )
+        return RedirectResponse(url=f"{frontend_url}/settings?error={error}")
 
     try:
         db = get_mongodb_database()
         if db is None:
-            raise HTTPException(
-                status_code=503,
-                detail="MongoDB not configured"
-            )
+            raise HTTPException(status_code=503, detail="MongoDB not configured")
 
         service = await get_effective_google_oauth_service(db)
         result = await service.handle_callback(
@@ -164,15 +165,11 @@ async def google_oauth_callback(
 
     except ValueError as e:
         frontend_url = "http://localhost:3000"
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?error={str(e)}"
-        )
+        return RedirectResponse(url=f"{frontend_url}/settings?error={str(e)}")
     except Exception as e:
         logger.error(f"OAuth callback failed: {e}")
         frontend_url = "http://localhost:3000"
-        return RedirectResponse(
-            url=f"{frontend_url}/settings?error=callback_failed"
-        )
+        return RedirectResponse(url=f"{frontend_url}/settings?error=callback_failed")
 
 
 @router.get("/status", response_model=GoogleAuthStatusResponse)
@@ -219,10 +216,7 @@ async def google_logout(
     try:
         db = get_mongodb_database()
         if db is None:
-            raise HTTPException(
-                status_code=503,
-                detail="MongoDB not configured"
-            )
+            raise HTTPException(status_code=503, detail="MongoDB not configured")
 
         service = await get_effective_google_oauth_service(db)
         success = await service.revoke_token(
@@ -254,10 +248,7 @@ async def get_access_token(
     try:
         db = get_mongodb_database()
         if db is None:
-            raise HTTPException(
-                status_code=503,
-                detail="MongoDB not configured"
-            )
+            raise HTTPException(status_code=503, detail="MongoDB not configured")
 
         service = await get_effective_google_oauth_service(db)
         access_token = await service.get_valid_access_token(
@@ -266,10 +257,7 @@ async def get_access_token(
         )
 
         if not access_token:
-            raise HTTPException(
-                status_code=401,
-                detail="Not authenticated with Google"
-            )
+            raise HTTPException(status_code=401, detail="Not authenticated with Google")
 
         # 토큰은 마스킹하여 반환 (보안)
         masked_token = access_token[:10] + "..." + access_token[-4:]

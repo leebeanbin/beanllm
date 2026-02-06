@@ -5,8 +5,8 @@ RAG API 상세 테스트
 - 리랭킹 (Reranker)
 - Ollama 무료 모델 사용
 """
+
 import requests
-import json
 
 BACKEND_URL = "http://localhost:8000"
 OLLAMA_CHAT_MODEL = "qwen2.5:0.5b"
@@ -15,9 +15,9 @@ OLLAMA_EMBEDDING_MODEL = "nomic-embed-text:latest"
 
 def test_rag_with_text_documents():
     """Text 문서로 RAG 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("1. RAG - Text 문서 테스트")
-    print("="*60)
+    print("=" * 60)
 
     # Build
     response = requests.post(
@@ -28,12 +28,12 @@ def test_rag_with_text_documents():
                 "Python is a high-level programming language. It was created by Guido van Rossum.",
                 "Machine learning is a subset of artificial intelligence. It enables computers to learn from data.",
                 "The Great Wall of China is one of the Seven Wonders of the World.",
-                "Albert Einstein developed the theory of relativity. He won the Nobel Prize in Physics."
+                "Albert Einstein developed the theory of relativity. He won the Nobel Prize in Physics.",
             ],
             "collection_name": "text_docs",
             "model": OLLAMA_CHAT_MODEL,
-            "embedding_model": OLLAMA_EMBEDDING_MODEL
-        }
+            "embedding_model": OLLAMA_EMBEDDING_MODEL,
+        },
     )
 
     print(f"Build Status: {response.status_code}")
@@ -48,7 +48,7 @@ def test_rag_with_text_documents():
     queries = [
         "What is the capital of France?",
         "Who created Python?",
-        "What did Einstein develop?"
+        "What did Einstein develop?",
     ]
 
     for query in queries:
@@ -58,8 +58,8 @@ def test_rag_with_text_documents():
                 "query": query,
                 "collection_name": "text_docs",
                 "model": OLLAMA_CHAT_MODEL,
-                "top_k": 2
-            }
+                "top_k": 2,
+            },
         )
 
         if response.status_code == 200:
@@ -74,9 +74,9 @@ def test_rag_with_text_documents():
 
 def test_rag_with_structured_data():
     """CSV 구조화 데이터로 RAG 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("2. RAG - CSV 구조화 데이터 테스트")
-    print("="*60)
+    print("=" * 60)
 
     # CSV 형식 문서
     csv_documents = [
@@ -84,7 +84,7 @@ def test_rag_with_structured_data():
         "name: Bob, age: 25, city: Busan, occupation: Designer",
         "name: Charlie, age: 35, city: Incheon, occupation: Manager",
         "name: David, age: 28, city: Daegu, occupation: Developer",
-        "name: Eve, age: 32, city: Gwangju, occupation: Analyst"
+        "name: Eve, age: 32, city: Gwangju, occupation: Analyst",
     ]
 
     # Build
@@ -94,8 +94,8 @@ def test_rag_with_structured_data():
             "documents": csv_documents,
             "collection_name": "csv_data",
             "model": OLLAMA_CHAT_MODEL,
-            "embedding_model": OLLAMA_EMBEDDING_MODEL
-        }
+            "embedding_model": OLLAMA_EMBEDDING_MODEL,
+        },
     )
 
     print(f"Build Status: {response.status_code}")
@@ -106,11 +106,7 @@ def test_rag_with_structured_data():
     print(f"✅ Build 성공: {len(csv_documents)}개 레코드 인덱싱")
 
     # Query
-    queries = [
-        "Who works in Seoul?",
-        "What is Bob's occupation?",
-        "Who is the oldest person?"
-    ]
+    queries = ["Who works in Seoul?", "What is Bob's occupation?", "Who is the oldest person?"]
 
     for query in queries:
         response = requests.post(
@@ -119,8 +115,8 @@ def test_rag_with_structured_data():
                 "query": query,
                 "collection_name": "csv_data",
                 "model": OLLAMA_CHAT_MODEL,
-                "top_k": 3
-            }
+                "top_k": 3,
+            },
         )
 
         if response.status_code == 200:
@@ -135,29 +131,27 @@ def test_rag_with_structured_data():
 
 def test_rag_collections_management():
     """RAG 컬렉션 관리 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("3. RAG - 컬렉션 관리 테스트")
-    print("="*60)
+    print("=" * 60)
 
     # List collections
     response = requests.get(f"{BACKEND_URL}/api/rag/collections")
 
     if response.status_code == 200:
         data = response.json()
-        print(f"✅ 컬렉션 목록 조회 성공")
+        print("✅ 컬렉션 목록 조회 성공")
         print(f"   총 컬렉션 수: {data.get('total', 0)}")
-        for coll in data.get('collections', []):
+        for coll in data.get("collections", []):
             print(f"   - {coll['name']}: {coll.get('document_count', 0)}개 문서")
     else:
         print(f"❌ 실패: {response.text}")
         return False
 
     # Delete collection
-    if data.get('total', 0) > 0:
-        collection_to_delete = data['collections'][0]['name']
-        response = requests.delete(
-            f"{BACKEND_URL}/api/rag/collections/{collection_to_delete}"
-        )
+    if data.get("total", 0) > 0:
+        collection_to_delete = data["collections"][0]["name"]
+        response = requests.delete(f"{BACKEND_URL}/api/rag/collections/{collection_to_delete}")
 
         if response.status_code == 200:
             print(f"✅ 컬렉션 삭제 성공: {collection_to_delete}")
@@ -169,9 +163,9 @@ def test_rag_collections_management():
 
 def test_rag_with_complex_documents():
     """복잡한 문서로 RAG 테스트"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("4. RAG - 복잡한 문서 테스트")
-    print("="*60)
+    print("=" * 60)
 
     # 긴 문서
     long_documents = [
@@ -213,7 +207,7 @@ def test_rag_with_complex_documents():
         Solutions: Renewable energy, carbon capture, reforestation, sustainable practices.
 
         Paris Agreement: International treaty aiming to limit global warming to below 2°C.
-        """
+        """,
     ]
 
     # Build
@@ -223,8 +217,8 @@ def test_rag_with_complex_documents():
             "documents": long_documents,
             "collection_name": "complex_docs",
             "model": OLLAMA_CHAT_MODEL,
-            "embedding_model": OLLAMA_EMBEDDING_MODEL
-        }
+            "embedding_model": OLLAMA_EMBEDDING_MODEL,
+        },
     )
 
     print(f"Build Status: {response.status_code}")
@@ -238,7 +232,7 @@ def test_rag_with_complex_documents():
     queries = [
         "What are the applications of AI in healthcare?",
         "What are the pros and cons of Python?",
-        "What is the goal of the Paris Agreement?"
+        "What is the goal of the Paris Agreement?",
     ]
 
     for query in queries:
@@ -248,8 +242,8 @@ def test_rag_with_complex_documents():
                 "query": query,
                 "collection_name": "complex_docs",
                 "model": OLLAMA_CHAT_MODEL,
-                "top_k": 2
-            }
+                "top_k": 2,
+            },
         )
 
         if response.status_code == 200:
@@ -265,9 +259,9 @@ def test_rag_with_complex_documents():
 
 def main():
     """모든 RAG 테스트 실행"""
-    print("="*60)
+    print("=" * 60)
     print("RAG API 상세 테스트 (Ollama 무료 모델)")
-    print("="*60)
+    print("=" * 60)
 
     results = []
 
@@ -278,9 +272,9 @@ def main():
     results.append(("복잡한 문서 RAG", test_rag_with_complex_documents()))
 
     # 결과 요약
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("RAG API 테스트 결과 요약")
-    print("="*60)
+    print("=" * 60)
 
     success = sum(1 for _, result in results if result)
     total = len(results)
@@ -289,9 +283,9 @@ def main():
         status = "✅ PASS" if result else "❌ FAIL"
         print(f"{status} - {name}")
 
-    print("="*60)
+    print("=" * 60)
     print(f"총 {success}/{total} 테스트 통과")
-    print("="*60)
+    print("=" * 60)
 
 
 if __name__ == "__main__":

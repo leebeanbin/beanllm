@@ -48,9 +48,9 @@ class TestRAGFacade:
     def test_rag_import(self):
         """RAG import 테스트"""
         try:
-            from beanllm import RAGChain, RAG, RAGBuilder
+            from beanllm import RAG, RAGBuilder, RAGChain
         except ImportError:
-            from src.beanllm import RAGChain, RAG, RAGBuilder
+            from src.beanllm import RAG, RAGBuilder, RAGChain
 
         assert RAGChain is not None
         assert RAG is not None
@@ -165,23 +165,23 @@ class TestFacadeIntegration:
         """모든 Facade가 import 가능한지 확인"""
         try:
             from beanllm import (
-                Client,
-                RAGChain,
                 Agent,
+                Client,
                 Graph,
-                StateGraph,
                 MultiAgentCoordinator,
+                RAGChain,
+                StateGraph,
                 VisionRAG,
                 WebSearch,
             )
         except ImportError:
             from src.beanllm import (
-                Client,
-                RAGChain,
                 Agent,
+                Client,
                 Graph,
-                StateGraph,
                 MultiAgentCoordinator,
+                RAGChain,
+                StateGraph,
                 VisionRAG,
                 WebSearch,
             )
@@ -194,4 +194,3 @@ class TestFacadeIntegration:
         assert MultiAgentCoordinator is not None
         assert VisionRAG is not None
         assert WebSearch is not None
-

@@ -171,6 +171,8 @@ from .retrieval import (
     HybridRetriever,
     PositionEngineeringReranker,
     RerankResult,
+)
+from .retrieval import (
     SearchResult as RetrievalSearchResult,
 )
 

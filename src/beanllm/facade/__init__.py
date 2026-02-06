@@ -6,6 +6,14 @@ SOLID 원칙:
 """
 
 # Backward compatibility: Re-export from subdirectories
+# Advanced facades
+from .advanced.graph_facade import Graph
+from .advanced.knowledge_graph_facade import KnowledgeGraph
+from .advanced.multi_agent_facade import MultiAgentCoordinator as MultiAgent
+from .advanced.optimizer_facade import Optimizer
+from .advanced.orchestrator_facade import Orchestrator
+from .advanced.rag_debug_facade import RAGDebug
+from .advanced.state_graph_facade import StateGraph
 from .core.agent_facade import Agent
 from .core.chain_facade import (
     Chain,
@@ -19,20 +27,12 @@ from .core.chain_facade import (
 from .core.client_facade import Client
 from .core.rag_facade import RAG, RAGBuilder, RAGChain, create_rag
 
-# Advanced facades
-from .advanced.graph_facade import Graph
-from .advanced.knowledge_graph_facade import KnowledgeGraph
-from .advanced.multi_agent_facade import MultiAgentCoordinator as MultiAgent
-from .advanced.optimizer_facade import Optimizer
-from .advanced.orchestrator_facade import Orchestrator
-from .advanced.rag_debug_facade import RAGDebug
-from .advanced.state_graph_facade import StateGraph
-
 # ML facades
-from .ml.audio_facade import WhisperSTT, TextToSpeech as TTS, AudioRAG
+from .ml.audio_facade import AudioRAG, WhisperSTT
+from .ml.audio_facade import TextToSpeech as TTS
 from .ml.evaluation_facade import EvaluatorFacade
 from .ml.finetuning_facade import FineTuningManagerFacade
-from .ml.vision_rag_facade import VisionRAG, MultimodalRAG, create_vision_rag
+from .ml.vision_rag_facade import MultimodalRAG, VisionRAG, create_vision_rag
 from .ml.web_search_facade import WebSearch
 
 __all__ = [
