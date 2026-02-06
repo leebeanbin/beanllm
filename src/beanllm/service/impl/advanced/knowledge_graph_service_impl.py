@@ -164,9 +164,14 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             if request.entity_types:
                 entity_types = [EntityType(et) for et in request.entity_types]
 
+            # 텍스트 검증
+            text = request.text or ""
+            if not text:
+                raise ValueError("text is required for entity extraction")
+
             # 엔티티 추출
             entities = self._entity_extractor.extract_entities(
-                text=request.text,
+                text=text,
                 entity_types=entity_types,
             )
 
@@ -174,7 +179,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             if request.resolve_coreferences:
                 entities = self._entity_extractor.resolve_coreferences(
                     entities=entities,
-                    text=request.text,
+                    text=text,
                 )
 
             # 직렬화
@@ -232,6 +237,10 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         """
         try:
             # DTO → Domain Entity 변환
+            # 엔티티 검증
+            if not request.entities:
+                raise ValueError("entities is required for relation extraction")
+
             entities = [
                 Entity(
                     id=e.get("id", str(uuid.uuid4())),
@@ -246,16 +255,20 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                 for e in request.entities
             ]
 
+            # 텍스트 검증
+            text = request.text or ""
+            if not text:
+                raise ValueError("text is required for relation extraction")
+
             # 관계 타입 필터
-            relation_types = None
+            relation_types_list: Optional[List[RelationType]] = None
             if request.relation_types:
-                relation_types = [RelationType(rt) for rt in request.relation_types]
+                relation_types_list = [RelationType(rt) for rt in request.relation_types]
 
             # 관계 추출
             relations = self._relation_extractor.extract_relations(
                 entities=entities,
-                text=request.text,
-                relation_types=relation_types,
+                text=text,
             )
 
             # 암시적 관계 추론
@@ -315,9 +328,13 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             Dict with 'entities' and 'relations' keys
         """
         try:
+            # Generate a document ID
+            doc_id = str(uuid.uuid4())
+
             # 엔티티 추출
             entities_response = await self.extract_entities(
                 ExtractEntitiesRequest(
+                    document_id=doc_id,
                     text=doc,
                     entity_types=entity_types,
                     resolve_coreferences=True,
@@ -340,10 +357,11 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             ]
 
             # 관계 추출
-            relations = []
+            relations: List[Relation] = []
             if entities:
                 relations_response = await self.extract_relations(
                     ExtractRelationsRequest(
+                        document_id=doc_id,
                         text=doc,
                         entities=entities_response.entities,
                         relation_types=relation_types,
@@ -402,11 +420,16 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             all_entities: List[Entity] = []
             all_relations: List[Relation] = []
 
+            # 문서 리스트 검증
+            documents = request.documents or []
+            if not documents:
+                raise ValueError("documents is required for graph building")
+
             # 배치 처리 여부 결정 (5개 이상 문서면 병렬 처리)
-            use_batch = len(request.documents) >= 5
+            use_batch = len(documents) >= 5
 
             if use_batch:
-                logger.info(f"Using batch processing for {len(request.documents)} documents")
+                logger.info(f"Using batch processing for {len(documents)} documents")
 
                 # 각 문서에 대한 처리 함수 생성
                 async def process_doc_wrapper(doc: str) -> Dict[str, Any]:
@@ -418,9 +441,8 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
                 # 병렬 처리
                 results = await self._batch_processor.process_batch(
-                    items=request.documents,
+                    items=documents,
                     handler=process_doc_wrapper,
-                    max_concurrent=10,
                 )
 
                 # 결과 수집
@@ -431,10 +453,10 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                     elif isinstance(result, dict) and "error" in result:
                         logger.warning(f"Document processing error: {result['error']}")
             else:
-                logger.info(f"Using sequential processing for {len(request.documents)} documents")
+                logger.info(f"Using sequential processing for {len(documents)} documents")
 
                 # 순차 처리 (문서가 적을 때)
-                for doc in request.documents:
+                for doc in documents:
                     result = await self._process_single_document(
                         doc=doc,
                         entity_types=request.entity_types,
@@ -451,12 +473,12 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             # 기존 그래프와 병합
             if graph_id in self._graphs:
-                graph = self._graph_builder.merge_graphs([self._graphs[graph_id], graph])
+                graph = self._graph_builder.merge_graphs(self._graphs[graph_id], graph)
 
             # 상태 저장
             self._graphs[graph_id] = graph
             self._graph_metadata[graph_id] = {
-                "num_documents": len(request.documents),
+                "num_documents": len(documents),
                 "entity_types": request.entity_types or [],
                 "relation_types": request.relation_types or [],
             }
@@ -532,23 +554,26 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             # 쿼리 타입별 처리
             query_type = request.query_type or "cypher"
             results: List[Dict[str, Any]] = []
+            params = request.params or {}
 
             if query_type == "find_entities_by_type":
                 # 타입별 엔티티 검색
-                entity_type = request.params.get("entity_type")
+                entity_type = str(params.get("entity_type", ""))
                 results = querier.find_entities_by_type(entity_type=entity_type)
 
             elif query_type == "find_entities_by_name":
                 # 이름 기반 검색
-                name = request.params.get("name")
-                fuzzy = request.params.get("fuzzy", False)
+                name = str(params.get("name", ""))
+                fuzzy = bool(params.get("fuzzy", False))
                 results = querier.find_entities_by_name(name=name, fuzzy=fuzzy)
 
             elif query_type == "find_related_entities":
                 # 관계 기반 탐색
-                entity_id = request.params.get("entity_id")
-                relation_type = request.params.get("relation_type")
-                max_hops = request.params.get("max_hops", 1)
+                entity_id = str(params.get("entity_id", ""))
+                relation_type = (
+                    str(params.get("relation_type", "")) if params.get("relation_type") else None
+                )
+                max_hops = int(params.get("max_hops", 1))
                 results = querier.find_related_entities(
                     entity_id=entity_id,
                     relation_type=relation_type,
@@ -557,8 +582,8 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             elif query_type == "find_shortest_path":
                 # 최단 경로
-                source_id = request.params.get("source_id")
-                target_id = request.params.get("target_id")
+                source_id = str(params.get("source_id", ""))
+                target_id = str(params.get("target_id", ""))
                 path = querier.find_shortest_path(
                     source_id=source_id,
                     target_id=target_id,
@@ -567,7 +592,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             elif query_type == "get_entity_details":
                 # 엔티티 상세 정보
-                entity_id = request.params.get("entity_id")
+                entity_id = str(params.get("entity_id", ""))
                 details = querier.get_entity_details(entity_id=entity_id)
                 results = [details] if details else []
 
