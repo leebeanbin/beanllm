@@ -2,12 +2,13 @@
 Document Loaders 테스트 - 문서 로더 테스트
 """
 
-import pytest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import pytest
+
 from beanllm.domain.loaders import Document, DocumentLoader
-from beanllm.domain.loaders.loaders import TextLoader, CSVLoader, DirectoryLoader
+from beanllm.domain.loaders.loaders import CSVLoader, DirectoryLoader, TextLoader
 
 
 class TestTextLoader:
@@ -101,5 +102,3 @@ class TestDocumentLoader:
 
         assert loader is not None
         assert isinstance(loader, DirectoryLoader)
-
-

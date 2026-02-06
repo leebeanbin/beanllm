@@ -158,20 +158,20 @@ class Client:
 
     def _detect_provider(self, model: str) -> str:
         """모델 ID로 Provider 자동 감지
-        
+
         우선순위:
         1. Registry에서 모델 찾기 (가장 정확함 - 등록된 provider 사용)
         2. Ollama 모델 패턴 확인 (콜론 포함 모델)
         3. 패턴 기반 감지 (API provider)
         4. 기본값 (ollama)
-        
+
         참고: Registry에 등록된 모델은 그 provider를 우선 사용합니다.
         예: deepseek-chat은 Registry에 DEEPSEEK provider로 등록되어 있으므로
         처음부터 올바른 provider를 사용합니다.
         """
         registry = get_model_registry()
         model_lower = model.lower()
-        
+
         # 1. Registry에서 모델 찾기 (가장 우선)
         # Registry에 등록된 모델은 정확한 provider 정보를 가지고 있음
         try:
@@ -182,18 +182,18 @@ class Client:
                 return model_info.provider
         except Exception as e:
             logger.debug(f"Failed to get provider from registry (using fallback): {e}")
-        
+
         # 2. Ollama 모델 패턴 확인 (콜론 포함 모델)
         # 이미 Ollama로 등록된 모델들 (qwen, llama, phi 등)
         ollama_registered_patterns = ["qwen", "llama", "phi", "ax:"]
         is_ollama_pattern = (
-            ":" in model or  # Ollama 모델 형식 (예: llama3.3:70b)
-            any(pattern in model_lower for pattern in ollama_registered_patterns)
+            ":" in model  # Ollama 모델 형식 (예: llama3.3:70b)
+            or any(pattern in model_lower for pattern in ollama_registered_patterns)
         )
-        
+
         if is_ollama_pattern:
             return "ollama"
-        
+
         # 3. 패턴 기반 감지 (API provider)
         if any(x in model_lower for x in ["gpt", "o1", "o3", "o4"]):
             return "openai"

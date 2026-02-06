@@ -27,6 +27,7 @@ from .types import FineTuningConfig, FineTuningJob, FineTuningMetrics, TrainingE
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
@@ -123,10 +124,7 @@ class AxolotlProvider(BaseFineTuningProvider):
         try:
             import axolotl
         except ImportError:
-            logger.warning(
-                "axolotl not installed. "
-                "Install it with: pip install axolotl-core"
-            )
+            logger.warning("axolotl not installed. " "Install it with: pip install axolotl-core")
 
     def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
@@ -298,7 +296,6 @@ class AxolotlProvider(BaseFineTuningProvider):
             "base_model": config.model,
             "model_type": "AutoModelForCausalLM",
             "tokenizer_type": "AutoTokenizer",
-
             # Dataset
             "datasets": [
                 {
@@ -306,17 +303,15 @@ class AxolotlProvider(BaseFineTuningProvider):
                     "type": "alpaca",
                 }
             ],
-
             # Adapter
             "adapter": metadata.get("adapter", "lora"),
             "lora_r": metadata.get("lora_r", 16),
             "lora_alpha": metadata.get("lora_alpha", 32),
             "lora_dropout": metadata.get("lora_dropout", 0.05),
-            "lora_target_modules": metadata.get("lora_target_modules", [
-                "q_proj", "v_proj", "k_proj", "o_proj",
-                "gate_proj", "up_proj", "down_proj"
-            ]),
-
+            "lora_target_modules": metadata.get(
+                "lora_target_modules",
+                ["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+            ),
             # Training
             "sequence_len": metadata.get("max_seq_length", 2048),
             "num_epochs": config.n_epochs,
@@ -326,20 +321,16 @@ class AxolotlProvider(BaseFineTuningProvider):
             "warmup_steps": metadata.get("warmup_steps", 100),
             "save_steps": metadata.get("save_steps", 100),
             "logging_steps": metadata.get("logging_steps", 10),
-
             # Optimizer
             "optimizer": metadata.get("optimizer", "adamw_torch"),
             "lr_scheduler": metadata.get("lr_scheduler", "cosine"),
-
             # Performance
             "flash_attention": self.use_flash_attention,
             "device_map": self.device_map,
             "bf16": metadata.get("bf16", True),
             "fp16": metadata.get("fp16", False),
-
             # Output
             "output_dir": str(self.output_dir),
-
             # W&B (optional)
             "wandb_project": metadata.get("wandb_project"),
             "wandb_run_name": metadata.get("wandb_run_name"),
@@ -442,10 +433,7 @@ class AxolotlProvider(BaseFineTuningProvider):
         return result
 
     def __repr__(self) -> str:
-        return (
-            f"AxolotlProvider(base_model={self.base_model}, "
-            f"output_dir={self.output_dir})"
-        )
+        return f"AxolotlProvider(base_model={self.base_model}, " f"output_dir={self.output_dir})"
 
 
 class UnslothProvider(BaseFineTuningProvider):
@@ -526,10 +514,7 @@ class UnslothProvider(BaseFineTuningProvider):
         try:
             from unsloth import FastLanguageModel
         except ImportError:
-            logger.warning(
-                "unsloth not installed. "
-                "Install it with: pip install unsloth"
-            )
+            logger.warning("unsloth not installed. " "Install it with: pip install unsloth")
 
     def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
@@ -626,7 +611,4 @@ class UnslothProvider(BaseFineTuningProvider):
         return []
 
     def __repr__(self) -> str:
-        return (
-            f"UnslothProvider(model={self.model_name}, "
-            f"4bit={self.load_in_4bit})"
-        )
+        return f"UnslothProvider(model={self.model_name}, " f"4bit={self.load_in_4bit})"

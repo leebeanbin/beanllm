@@ -11,8 +11,9 @@ from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
 from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
-from beanllm.infrastructure.distributed.utils import check_redis_health, LockAcquisitionError
+from beanllm.infrastructure.distributed.utils import LockAcquisitionError, check_redis_health
 from beanllm.utils import sanitize_error_message
+
 from .client import get_redis_client
 
 try:
@@ -86,7 +87,9 @@ class RedisLock(DistributedLockInterface):
             )
 
             if not acquired:
-                raise LockAcquisitionError(f"Failed to acquire lock for key: {key} (lock already held)")
+                raise LockAcquisitionError(
+                    f"Failed to acquire lock for key: {key} (lock already held)"
+                )
 
             try:
                 yield
@@ -114,9 +117,6 @@ class RedisLock(DistributedLockInterface):
         except LockAcquisitionError:
             raise
         except Exception as e:
-            logger.error(
-                f"Redis lock error for key: {key}: {sanitize_error_message(str(e))}"
-            )
+            logger.error(f"Redis lock error for key: {key}: {sanitize_error_message(str(e))}")
             # 오류 시 락 없이 진행 (fallback)
             yield
-

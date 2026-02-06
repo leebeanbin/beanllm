@@ -23,6 +23,7 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
+
 from .base import BaseSTTEngine
 
 logger = logging.getLogger(__name__)
@@ -114,9 +115,7 @@ class DistilWhisperEngine(BaseSTTEngine):
 
         logger.info("Distil-Whisper model loaded successfully")
 
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], config: STTConfig
-    ) -> Dict:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], config: STTConfig) -> Dict:
         """
         Distil-Whisper로 텍스트 전사
 
@@ -163,9 +162,7 @@ class DistilWhisperEngine(BaseSTTEngine):
         # 결과 변환
         return self._convert_result(result, config, time.time() - start_time)
 
-    def _convert_result(
-        self, result: Dict, config: STTConfig, processing_time: float
-    ) -> Dict:
+    def _convert_result(self, result: Dict, config: STTConfig, processing_time: float) -> Dict:
         """Distil-Whisper 결과를 표준 형식으로 변환"""
         text = result.get("text", "")
 

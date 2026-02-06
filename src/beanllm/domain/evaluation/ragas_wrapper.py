@@ -705,9 +705,7 @@ class RAGASWrapper(BaseEvaluationFramework):
 
     # BaseEvaluationFramework 추상 메서드 구현
 
-    def evaluate(
-        self, metric: str, data: Union[Dict[str, Any], Any], **kwargs
-    ) -> Dict[str, Any]:
+    def evaluate(self, metric: str, data: Union[Dict[str, Any], Any], **kwargs) -> Dict[str, Any]:
         """
         평가 실행 (BaseEvaluationFramework 인터페이스)
 

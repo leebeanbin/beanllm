@@ -11,7 +11,7 @@ Requirements:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -20,11 +20,13 @@ from .base_task_model import BaseVisionTaskModel
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
 
 logger = get_logger(__name__)
+
 
 class SAMWrapper(BaseVisionTaskModel):
     """
@@ -104,6 +106,7 @@ class SAMWrapper(BaseVisionTaskModel):
         # Device 설정
         if device is None:
             import torch
+
             if torch.cuda.is_available():
                 self.device = "cuda"
             elif torch.backends.mps.is_available():
@@ -236,6 +239,7 @@ class SAMWrapper(BaseVisionTaskModel):
         # 이미지 로드
         if isinstance(image, (str, Path)):
             from PIL import Image
+
             image_pil = Image.open(image).convert("RGB")
             image = np.array(image_pil)
 
@@ -281,6 +285,7 @@ class SAMWrapper(BaseVisionTaskModel):
         # 이미지 로드
         if isinstance(image, (str, Path)):
             from PIL import Image
+
             image_pil = Image.open(image).convert("RGB")
             image = np.array(image_pil)
 
@@ -347,6 +352,7 @@ class SAMWrapper(BaseVisionTaskModel):
         # 이미지 로드
         if isinstance(image, (str, Path)):
             from PIL import Image
+
             image_pil = Image.open(image).convert("RGB")
             image = np.array(image_pil)
 
@@ -423,5 +429,3 @@ class SAMWrapper(BaseVisionTaskModel):
 
     def __repr__(self) -> str:
         return f"SAMWrapper(model_type={self.model_type}, device={self.device})"
-
-

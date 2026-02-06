@@ -32,8 +32,8 @@ def get_rate_limiter() -> RateLimiterInterface:
         RateLimiterInterface 인스턴스
     """
     if USE_DISTRIBUTED:
-        from .redis.rate_limiter import RedisRateLimiter
         from .redis.client import get_redis_client
+        from .redis.rate_limiter import RedisRateLimiter
 
         return RedisRateLimiter(get_redis_client())
     else:
@@ -75,8 +75,8 @@ def get_task_queue(topic: str) -> TaskQueueInterface:
         TaskQueueInterface 인스턴스
     """
     if USE_DISTRIBUTED:
-        from .kafka.queue import KafkaTaskQueue
         from .kafka.client import get_kafka_client
+        from .kafka.queue import KafkaTaskQueue
 
         return KafkaTaskQueue(get_kafka_client(), topic)
     else:
@@ -93,8 +93,8 @@ def get_event_bus() -> Tuple[EventProducerInterface, EventConsumerInterface]:
         (EventProducer, EventConsumer) 튜플
     """
     if USE_DISTRIBUTED:
-        from .kafka.events import KafkaEventProducer, KafkaEventConsumer
         from .kafka.client import get_kafka_client
+        from .kafka.events import KafkaEventConsumer, KafkaEventProducer
 
         kafka_client = get_kafka_client()
         return KafkaEventProducer(kafka_client), KafkaEventConsumer(kafka_client)
@@ -113,12 +113,11 @@ def get_distributed_lock() -> DistributedLockInterface:
         DistributedLockInterface 인스턴스
     """
     if USE_DISTRIBUTED:
-        from .redis.lock import RedisLock
         from .redis.client import get_redis_client
+        from .redis.lock import RedisLock
 
         return RedisLock(get_redis_client())
     else:
         from .in_memory.lock import InMemoryLock
 
         return InMemoryLock()
-

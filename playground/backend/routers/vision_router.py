@@ -5,18 +5,16 @@ Vision RAG endpoints for image-based retrieval augmented generation.
 Uses Python best practices: context managers, duck typing.
 """
 
-import logging
-import tempfile
-import shutil
 import base64
-from pathlib import Path
+import logging
+import shutil
+import tempfile
 from contextlib import asynccontextmanager
-from typing import Dict, List, Any, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
-
-from common import get_client
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +28,10 @@ _vision_rag: Optional[Any] = None
 # Request/Response Models
 # ============================================================================
 
+
 class VisionRAGBuildRequest(BaseModel):
     """Request to build Vision RAG index"""
+
     images: List[str] = Field(..., description="Base64 encoded images or URLs")
     texts: Optional[List[str]] = Field(None, description="Additional text documents")
     collection_name: Optional[str] = Field(default="default", description="Collection name")
@@ -41,6 +41,7 @@ class VisionRAGBuildRequest(BaseModel):
 
 class VisionRAGQueryRequest(BaseModel):
     """Request to query Vision RAG"""
+
     query: str = Field(..., description="Query text")
     image: Optional[str] = Field(None, description="Base64 encoded image for visual query")
     collection_name: Optional[str] = Field(default="default")
@@ -50,6 +51,7 @@ class VisionRAGQueryRequest(BaseModel):
 
 class VisionRAGBuildResponse(BaseModel):
     """Response from Vision RAG build"""
+
     collection_name: str
     num_images: int
     num_texts: int
@@ -58,6 +60,7 @@ class VisionRAGBuildResponse(BaseModel):
 
 class SourceResponse(BaseModel):
     """Source document in query response"""
+
     content: str
     score: float = 0.0
     type: str = "text"
@@ -65,6 +68,7 @@ class SourceResponse(BaseModel):
 
 class VisionRAGQueryResponse(BaseModel):
     """Response from Vision RAG query"""
+
     query: str
     answer: str
     sources: List[SourceResponse] = Field(default_factory=list)
@@ -74,6 +78,7 @@ class VisionRAGQueryResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 @asynccontextmanager
 async def temp_directory():
@@ -101,8 +106,9 @@ def _decode_base64_image(data: str, index: int, temp_dir: str) -> Optional[str]:
 async def _download_image(url: str, index: int, temp_dir: str) -> Optional[str]:
     """Download image from URL with security validation"""
     try:
-        from beanllm.domain.web_search.security import validate_url
         import httpx
+
+        from beanllm.domain.web_search.security import validate_url
 
         validated_url = validate_url(url)
 
@@ -167,6 +173,7 @@ def _extract_source_content(source: Any) -> Dict[str, Any]:
 # Endpoints
 # ============================================================================
 
+
 @router.post("/build", response_model=VisionRAGBuildResponse)
 async def vision_rag_build(request: VisionRAGBuildRequest) -> VisionRAGBuildResponse:
     """
@@ -177,8 +184,8 @@ async def vision_rag_build(request: VisionRAGBuildRequest) -> VisionRAGBuildResp
     global _vision_rag
 
     try:
-        from beanllm.facade.core.client_facade import Client
         from beanllm.facade.advanced.vision_rag_facade import VisionRAG
+        from beanllm.facade.core.client_facade import Client
 
         async with temp_directory() as temp_dir:
             image_paths = await _process_images(request.images, temp_dir)
@@ -228,8 +235,7 @@ async def vision_rag_query(request: VisionRAGQueryRequest) -> VisionRAGQueryResp
         )
 
         source_list = [
-            SourceResponse(**_extract_source_content(src))
-            for src in sources[:request.top_k]
+            SourceResponse(**_extract_source_content(src)) for src in sources[: request.top_k]
         ]
 
         return VisionRAGQueryResponse(

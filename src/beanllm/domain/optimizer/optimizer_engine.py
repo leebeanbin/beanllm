@@ -202,13 +202,9 @@ class OptimizerEngine:
                 param_spaces, objective_fn, n_trials, maximize, **kwargs
             )
         elif method == OptimizationMethod.GRID:
-            result = self._optimize_grid(
-                param_spaces, objective_fn, maximize, **kwargs
-            )
+            result = self._optimize_grid(param_spaces, objective_fn, maximize, **kwargs)
         elif method == OptimizationMethod.RANDOM:
-            result = self._optimize_random(
-                param_spaces, objective_fn, n_trials, maximize
-            )
+            result = self._optimize_random(param_spaces, objective_fn, n_trials, maximize)
         elif method == OptimizationMethod.GENETIC:
             result = self._optimize_genetic(
                 param_spaces, objective_fn, n_trials, maximize, **kwargs
@@ -243,9 +239,7 @@ class OptimizerEngine:
         try:
             from bayes_opt import BayesianOptimization
         except ImportError:
-            logger.warning(
-                "bayesian-optimization not installed. Falling back to random search."
-            )
+            logger.warning("bayesian-optimization not installed. Falling back to random search.")
             return self._optimize_random(param_spaces, objective_fn, n_trials, maximize)
 
         # Build parameter bounds for BayesianOptimization
@@ -358,9 +352,7 @@ class OptimizerEngine:
                 param_grids[space.name] = list(range(int(space.low), int(space.high) + 1, step))
             elif space.type == ParameterType.FLOAT:
                 step = (space.high - space.low) / grid_size
-                param_grids[space.name] = [
-                    space.low + i * step for i in range(grid_size + 1)
-                ]
+                param_grids[space.name] = [space.low + i * step for i in range(grid_size + 1)]
             elif space.type == ParameterType.CATEGORICAL:
                 param_grids[space.name] = space.categories
             elif space.type == ParameterType.BOOLEAN:
@@ -447,10 +439,7 @@ class OptimizerEngine:
                     best_score = score
                     best_params = params.copy()
 
-            logger.debug(
-                f"Trial {trial + 1}/{n_trials}: score={score:.4f}, "
-                f"params={params}"
-            )
+            logger.debug(f"Trial {trial + 1}/{n_trials}: score={score:.4f}, " f"params={params}")
 
         return OptimizationResult(
             best_params=best_params,
@@ -477,8 +466,7 @@ class OptimizerEngine:
 
         # Initialize population
         population = [
-            {space.name: space.sample() for space in param_spaces}
-            for _ in range(population_size)
+            {space.name: space.sample() for space in param_spaces} for _ in range(population_size)
         ]
 
         best_params = None

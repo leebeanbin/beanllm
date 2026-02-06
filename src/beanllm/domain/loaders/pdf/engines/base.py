@@ -130,4 +130,3 @@ class BasePDFEngine(ABC):
             "name": self.name,
             "class": self.__class__.__name__,
         }
-

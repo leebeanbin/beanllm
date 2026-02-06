@@ -380,9 +380,7 @@ class LayoutAnalyzer:
 
         return len(x_groups)
 
-    def remove_header_footer(
-        self, blocks: List[Block], page_height: float
-    ) -> List[Block]:
+    def remove_header_footer(self, blocks: List[Block], page_height: float) -> List[Block]:
         """
         헤더/푸터 제거
 

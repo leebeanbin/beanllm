@@ -234,8 +234,7 @@ class EngineBenchmark:
 
         # 표 헤더
         print(
-            f"{'Engine':<12} {'Time(s)':<10} {'Avg(s)':<10} "
-            f"{'Pages/s':<10} {'Memory(MB)':<12}"
+            f"{'Engine':<12} {'Time(s)':<10} {'Avg(s)':<10} " f"{'Pages/s':<10} {'Memory(MB)':<12}"
         )
         print("-" * 60)
 

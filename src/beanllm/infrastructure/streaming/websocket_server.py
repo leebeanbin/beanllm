@@ -14,13 +14,14 @@ SOLID:
 import asyncio
 import json
 import uuid
-from typing import Any, Callable, Dict, List, Optional, Set
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
 try:
     import websockets
     from websockets.server import WebSocketServerProtocol
+
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
@@ -30,6 +31,7 @@ try:
     from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
@@ -168,8 +170,7 @@ class WebSocketServer:
         """
         if not WEBSOCKETS_AVAILABLE:
             raise ImportError(
-                "websockets is required for streaming. "
-                "Install with: pip install websockets"
+                "websockets is required for streaming. " "Install with: pip install websockets"
             )
 
         self.host = host
@@ -334,11 +335,7 @@ class WebSocketServer:
 
     def get_active_sessions(self) -> List[str]:
         """활성 세션 ID 목록 반환"""
-        return [
-            session_id
-            for session_id, session in self.sessions.items()
-            if session.is_active
-        ]
+        return [session_id for session_id, session in self.sessions.items() if session.is_active]
 
     def get_stats(self) -> Dict[str, Any]:
         """서버 통계 반환"""

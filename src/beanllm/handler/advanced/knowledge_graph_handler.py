@@ -14,7 +14,7 @@ SOLID:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
@@ -66,9 +66,7 @@ class KnowledgeGraphHandler:
         self._service = service
         logger.info("KnowledgeGraphHandler initialized")
 
-    async def handle_extract_entities(
-        self, request: ExtractEntitiesRequest
-    ) -> EntitiesResponse:
+    async def handle_extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
         """
         엔티티 추출 핸들러
 
@@ -118,9 +116,7 @@ class KnowledgeGraphHandler:
             logger.error(f"Failed to extract entities: {e}", exc_info=True)
             raise RuntimeError(f"Failed to extract entities: {e}") from e
 
-    async def handle_extract_relations(
-        self, request: ExtractRelationsRequest
-    ) -> RelationsResponse:
+    async def handle_extract_relations(self, request: ExtractRelationsRequest) -> RelationsResponse:
         """
         관계 추출 핸들러
 
@@ -187,9 +183,7 @@ class KnowledgeGraphHandler:
             logger.error(f"Failed to extract relations: {e}", exc_info=True)
             raise RuntimeError(f"Failed to extract relations: {e}") from e
 
-    async def handle_build_graph(
-        self, request: BuildGraphRequest
-    ) -> BuildGraphResponse:
+    async def handle_build_graph(self, request: BuildGraphRequest) -> BuildGraphResponse:
         """
         그래프 구축 핸들러
 
@@ -272,9 +266,7 @@ class KnowledgeGraphHandler:
             logger.error(f"Failed to build graph: {e}", exc_info=True)
             raise RuntimeError(f"Failed to build graph: {e}") from e
 
-    async def handle_query_graph(
-        self, request: QueryGraphRequest
-    ) -> QueryGraphResponse:
+    async def handle_query_graph(self, request: QueryGraphRequest) -> QueryGraphResponse:
         """
         그래프 쿼리 핸들러
 
@@ -305,16 +297,13 @@ class KnowledgeGraphHandler:
 
         if query_type not in valid_query_types:
             raise ValueError(
-                f"Invalid query type: {query_type}. "
-                f"Valid types: {', '.join(valid_query_types)}"
+                f"Invalid query type: {query_type}. " f"Valid types: {', '.join(valid_query_types)}"
             )
 
         # 쿼리 타입별 파라미터 검증
         if query_type == "find_entities_by_type":
             if not request.params or "entity_type" not in request.params:
-                raise ValueError(
-                    "find_entities_by_type requires 'entity_type' parameter"
-                )
+                raise ValueError("find_entities_by_type requires 'entity_type' parameter")
 
         elif query_type == "find_entities_by_name":
             if not request.params or "name" not in request.params:
@@ -322,25 +311,17 @@ class KnowledgeGraphHandler:
 
         elif query_type == "find_related_entities":
             if not request.params or "entity_id" not in request.params:
-                raise ValueError(
-                    "find_related_entities requires 'entity_id' parameter"
-                )
+                raise ValueError("find_related_entities requires 'entity_id' parameter")
 
         elif query_type == "find_shortest_path":
             if not request.params or "source_id" not in request.params:
-                raise ValueError(
-                    "find_shortest_path requires 'source_id' parameter"
-                )
+                raise ValueError("find_shortest_path requires 'source_id' parameter")
             if "target_id" not in request.params:
-                raise ValueError(
-                    "find_shortest_path requires 'target_id' parameter"
-                )
+                raise ValueError("find_shortest_path requires 'target_id' parameter")
 
         elif query_type == "get_entity_details":
             if not request.params or "entity_id" not in request.params:
-                raise ValueError(
-                    "get_entity_details requires 'entity_id' parameter"
-                )
+                raise ValueError("get_entity_details requires 'entity_id' parameter")
 
         elif query_type == "cypher":
             if not request.query:
@@ -349,8 +330,7 @@ class KnowledgeGraphHandler:
         try:
             response = await self._service.query_graph(request)
             logger.info(
-                f"Graph query executed: {response.graph_id} "
-                f"({response.num_results} results)"
+                f"Graph query executed: {response.graph_id} " f"({response.num_results} results)"
             )
             return response
 
@@ -362,9 +342,7 @@ class KnowledgeGraphHandler:
             logger.error(f"Failed to query graph: {e}", exc_info=True)
             raise RuntimeError(f"Failed to query graph: {e}") from e
 
-    async def handle_graph_rag(
-        self, query: str, graph_id: str
-    ) -> GraphRAGResponse:
+    async def handle_graph_rag(self, query: str, graph_id: str) -> GraphRAGResponse:
         """
         그래프 기반 RAG 핸들러
 
@@ -392,8 +370,7 @@ class KnowledgeGraphHandler:
                 graph_id=graph_id,
             )
             logger.info(
-                f"Graph RAG executed: {response.graph_id} "
-                f"({response.num_results} results)"
+                f"Graph RAG executed: {response.graph_id} " f"({response.num_results} results)"
             )
             return response
 

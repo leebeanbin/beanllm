@@ -132,7 +132,7 @@ class GridSearchTuner:
             print("=" * 80)
 
         # 각 조합 테스트
-        results = []
+        results: List[Dict[str, Any]] = []
         for idx, params in enumerate(param_combinations, 1):
             if self.verbose:
                 print(f"\n[{idx}/{total_combinations}] Testing: {self._format_params(params)}")
@@ -176,11 +176,11 @@ class GridSearchTuner:
 
         # 결과 정렬
         if metric == "confidence":
-            results.sort(key=lambda x: x["confidence"], reverse=True)
+            results.sort(key=lambda x: float(x["confidence"]), reverse=True)
         elif metric == "speed":
-            results.sort(key=lambda x: x["processing_time"])
+            results.sort(key=lambda x: float(x["processing_time"]))
         elif metric == "text_length":
-            results.sort(key=lambda x: x["text_length"], reverse=True)
+            results.sort(key=lambda x: int(x["text_length"]), reverse=True)
 
         # Top N 결과 출력
         if self.verbose:
@@ -189,9 +189,10 @@ class GridSearchTuner:
             print("=" * 80)
 
             for idx, r in enumerate(results[:n_top], 1):
-                print(f"\n#{idx}: {self._format_params(r['params'])}")
-                print(f"   Confidence: {r['confidence']:.2%}")
-                print(f"   Time: {r['processing_time']:.2f}s")
+                params_dict = r["params"] if isinstance(r["params"], dict) else {}
+                print(f"\n#{idx}: {self._format_params(params_dict)}")
+                print(f"   Confidence: {float(r['confidence']):.2%}")
+                print(f"   Time: {float(r['processing_time']):.2f}s")
                 print(f"   Text Length: {r['text_length']}")
 
             print("\n" + "=" * 80)
@@ -199,10 +200,11 @@ class GridSearchTuner:
         # 최적 설정 반환
         best_config = results[0]["config"] if results else self.ocr.config
 
-        if self.verbose:
+        if self.verbose and results:
+            best_params = results[0]["params"] if isinstance(results[0]["params"], dict) else {}
             print("\n✅ Best configuration found!")
-            print(f"   {self._format_params(results[0]['params'])}")
-            print(f"   Confidence: {results[0]['confidence']:.2%}")
+            print(f"   {self._format_params(best_params)}")
+            print(f"   Confidence: {float(results[0]['confidence']):.2%}")
 
         return best_config, results
 
@@ -330,7 +332,9 @@ class GridSearchTuner:
         print(" " * 40 + "GRID SEARCH RESULTS")
         print("=" * 100)
 
-        header = f"{'Rank':<6} | {'Confidence':>11} | {'Time':>8} | {'Length':>8} | {'Parameters':<50}"
+        header = (
+            f"{'Rank':<6} | {'Confidence':>11} | {'Time':>8} | {'Length':>8} | {'Parameters':<50}"
+        )
         print(header)
         print("-" * 100)
 

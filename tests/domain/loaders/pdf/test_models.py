@@ -3,11 +3,12 @@
 """
 
 import pytest
+
 from src.beanllm.domain.loaders.pdf.models import (
     ImageData,
+    PageData,
     PDFLoadConfig,
     PDFLoadResult,
-    PageData,
     TableData,
 )
 
@@ -33,9 +34,7 @@ class TestPageData:
 
     def test_page_data_to_dict(self):
         """PageData to_dict 변환 테스트"""
-        page = PageData(
-            page=0, text="Test", width=595.0, height=842.0, metadata={"key": "val"}
-        )
+        page = PageData(page=0, text="Test", width=595.0, height=842.0, metadata={"key": "val"})
 
         data = page.to_dict()
 

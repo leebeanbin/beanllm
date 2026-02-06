@@ -147,23 +147,29 @@ class GraphQuerier:
         if isinstance(self.graph, nx.DiGraph):
             for target in self.graph.successors(entity_id):
                 edge_data = self.graph.edges[entity_id, target]
-                data["outgoing_relations"].append({
-                    "target": target,
-                    **edge_data,
-                })
+                data["outgoing_relations"].append(
+                    {
+                        "target": target,
+                        **edge_data,
+                    }
+                )
 
             for source in self.graph.predecessors(entity_id):
                 edge_data = self.graph.edges[source, entity_id]
-                data["incoming_relations"].append({
-                    "source": source,
-                    **edge_data,
-                })
+                data["incoming_relations"].append(
+                    {
+                        "source": source,
+                        **edge_data,
+                    }
+                )
         else:
             for neighbor in self.graph.neighbors(entity_id):
                 edge_data = self.graph.edges[entity_id, neighbor]
-                data["outgoing_relations"].append({
-                    "target": neighbor,
-                    **edge_data,
-                })
+                data["outgoing_relations"].append(
+                    {
+                        "target": neighbor,
+                        **edge_data,
+                    }
+                )
 
         return data

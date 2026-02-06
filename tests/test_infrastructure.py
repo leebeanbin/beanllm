@@ -7,16 +7,16 @@ import pytest
 try:
     from beanllm.infrastructure import (
         ModelRegistry,
-        get_model_registry,
         ParameterAdapter,
         adapt_parameters,
+        get_model_registry,
     )
 except ImportError:
     from src.beanllm.infrastructure import (
         ModelRegistry,
-        get_model_registry,
         ParameterAdapter,
         adapt_parameters,
+        get_model_registry,
     )
 
 
@@ -173,4 +173,3 @@ class TestInfrastructureIntegration:
             adapted = adapt_parameters(model.provider, model.model_name, params)
             assert isinstance(adapted, AdaptedParameters)
             assert "temperature" in adapted.params
-

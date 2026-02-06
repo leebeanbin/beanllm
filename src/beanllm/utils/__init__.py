@@ -3,10 +3,17 @@ Utilities - 독립적인 유틸리티 모듈
 """
 
 # Config
-from .config import Config, EnvConfig
-
 # CLI
 from .cli import main
+from .config import Config, EnvConfig
+
+# Core Utilities
+from .core import (
+    DIContainer,
+    EvaluationDashboard,
+    LRUCache,
+    get_container,
+)
 
 # Dependency Manager
 from .dependency import (
@@ -24,6 +31,27 @@ from .lazy_loading import (
     LazyLoader,
     LazyLoadMixin,
     lazy_property,
+)
+
+# Logging Utilities
+from .logging import (
+    LogLevel,
+    StructuredLogger,
+    get_logger,
+    get_structured_logger,
+)
+
+# Streaming Utilities
+from .streaming import (
+    BufferedStreamWrapper,
+    PausableStream,
+    StreamBuffer,
+    StreamResponse,
+    StreamStats,
+    pretty_stream,
+    stream_collect,
+    stream_print,
+    stream_response,
 )
 
 # Token Counter
@@ -47,35 +75,6 @@ from .tracer import (
     TraceSpan,
     enable_tracing,
     get_tracer,
-)
-
-# Core Utilities
-from .core import (
-    DIContainer,
-    EvaluationDashboard,
-    LRUCache,
-    get_container,
-)
-
-# Logging Utilities
-from .logging import (
-    LogLevel,
-    StructuredLogger,
-    get_logger,
-    get_structured_logger,
-)
-
-# Streaming Utilities
-from .streaming import (
-    BufferedStreamWrapper,
-    PausableStream,
-    StreamBuffer,
-    StreamResponse,
-    StreamStats,
-    pretty_stream,
-    stream_collect,
-    stream_print,
-    stream_response,
 )
 
 STREAMING_WRAPPER_AVAILABLE = True
@@ -304,6 +303,7 @@ __all__ = [
 # RAG Debug 지연 import (순환 참조 방지)
 def _lazy_import_rag_debug():
     """RAG Debug 모듈 지연 import"""
+    from .integration.rag_visualization import RAGPipelineVisualizer
     from .rag_debug import (
         EmbeddingInfo,
         RAGDebugger,
@@ -315,7 +315,6 @@ def _lazy_import_rag_debug():
         visualize_embeddings,
         visualize_embeddings_2d,
     )
-    from .integration.rag_visualization import RAGPipelineVisualizer
 
     return {
         "EmbeddingInfo": EmbeddingInfo,

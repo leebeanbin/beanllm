@@ -6,22 +6,22 @@ CSV 파일 로더
 
 import csv
 import logging
-import mmap
-import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import List, Optional, Union
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
-from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class CSVLoader(BaseDocumentLoader):
     """
@@ -71,9 +71,7 @@ class CSVLoader(BaseDocumentLoader):
         """
         if self.content_columns:
             content_parts = [
-                f"{col}: {row.get(col, '')}"
-                for col in self.content_columns
-                if col in row
+                f"{col}: {row.get(col, '')}" for col in self.content_columns if col in row
             ]
             return "\n".join(content_parts)
         else:
@@ -133,5 +131,3 @@ class CSVLoader(BaseDocumentLoader):
                 metadata = self._create_metadata_from_row(row, i)
 
                 yield Document(content=content, metadata=metadata)
-
-

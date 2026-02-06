@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from beanllm.domain.orchestrator import (
     NodeType,
@@ -30,9 +30,8 @@ from beanllm.dto.response.advanced.orchestrator_response import (
     ExecuteWorkflowResponse,
     MonitorWorkflowResponse,
 )
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.orchestrator_service import IOrchestratorService
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -61,9 +60,7 @@ class OrchestratorServiceImpl(IOrchestratorService):
 
         logger.info("OrchestratorService initialized")
 
-    async def create_workflow(
-        self, request: CreateWorkflowRequest
-    ) -> CreateWorkflowResponse:
+    async def create_workflow(self, request: CreateWorkflowRequest) -> CreateWorkflowResponse:
         """워크플로우 생성"""
         logger.info(f"Creating workflow: {request.workflow_name}")
 
@@ -156,9 +153,7 @@ class OrchestratorServiceImpl(IOrchestratorService):
 
         return workflow
 
-    async def execute_workflow(
-        self, request: ExecuteWorkflowRequest
-    ) -> ExecuteWorkflowResponse:
+    async def execute_workflow(self, request: ExecuteWorkflowRequest) -> ExecuteWorkflowResponse:
         """워크플로우 실행"""
         logger.info(f"Executing workflow: {request.workflow_id}")
 
@@ -226,9 +221,7 @@ class OrchestratorServiceImpl(IOrchestratorService):
                 metadata={},
             )
 
-    async def monitor_workflow(
-        self, request: MonitorWorkflowRequest
-    ) -> MonitorWorkflowResponse:
+    async def monitor_workflow(self, request: MonitorWorkflowRequest) -> MonitorWorkflowResponse:
         """워크플로우 실시간 모니터링"""
         logger.debug(f"Monitoring workflow execution: {request.execution_id}")
 

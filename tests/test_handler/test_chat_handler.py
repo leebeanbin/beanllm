@@ -2,17 +2,18 @@
 ChatHandler 테스트 - 채팅 핸들러 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
 
+import pytest
+
 try:
+    from beanllm.dto.response.chat_response import ChatResponse
     from beanllm.handler.chat_handler import ChatHandler
     from beanllm.service.chat_service import IChatService
-    from beanllm.dto.response.chat_response import ChatResponse
 except ImportError:
+    from src.beanllm.dto.response.chat_response import ChatResponse
     from src.beanllm.handler.chat_handler import ChatHandler
     from src.beanllm.service.chat_service import IChatService
-    from src.beanllm.dto.response.chat_response import ChatResponse
 
 
 class TestChatHandler:
@@ -27,11 +28,13 @@ class TestChatHandler:
                 content="Test response", model="gpt-4o-mini", provider="openai"
             )
         )
+
         # stream_chat은 async generator로 설정
         async def mock_stream_chat(*args, **kwargs):
             chunks = ["Hello", " ", "world", "!"]
             for chunk in chunks:
                 yield chunk
+
         service.stream_chat = mock_stream_chat
         return service
 
@@ -70,6 +73,7 @@ class TestChatHandler:
     @pytest.mark.asyncio
     async def test_handle_stream_chat(self, chat_handler):
         """스트리밍 채팅 처리 테스트"""
+
         # Mock 스트리밍 응답 - async generator로 설정
         async def mock_stream(*args, **kwargs):
             chunks = ["Hello", " ", "world", "!"]
@@ -247,4 +251,3 @@ class TestChatHandler:
         assert call_args.top_p == 0.9
         assert call_args.system == "You are helpful"
         assert call_args.extra_params.get("extra_param") == "value"
-

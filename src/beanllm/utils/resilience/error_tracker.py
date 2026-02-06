@@ -218,7 +218,7 @@ class ProductionErrorSanitizer:
         if not production:
             return message
 
-        sanitized = message
+        sanitized: str = message
 
         # API 키/토큰 마스킹
         sanitized = cls.PATTERNS["api_key"].sub(rf"\1={cls.MASK_STR}", sanitized)

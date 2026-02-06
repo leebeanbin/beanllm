@@ -4,9 +4,10 @@ MongoDB Database Connection
 Async MongoDB client using Motor for chat history storage.
 """
 
-import os
 import logging
+import os
 from typing import Optional
+
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,7 @@ async def ping_mongodb() -> bool:
 async def create_session_indexes():
     """
     세션 컬렉션 인덱스 생성
-    
+
     성능 최적화를 위한 인덱스:
     - session_id: unique (빠른 조회)
     - updated_at: 정렬 최적화 (목록 조회)
@@ -92,50 +93,60 @@ async def create_session_indexes():
     if db is None:
         logger.debug("MongoDB not available, skipping index creation")
         return
-    
+
     try:
         # session_id는 unique해야 함 (빠른 조회)
         await db.chat_sessions.create_index("session_id", unique=True, background=True)
         logger.info("✅ Created index: session_id (unique)")
-        
+
         # updated_at으로 정렬 (목록 조회 최적화)
         await db.chat_sessions.create_index("updated_at", background=True)
         logger.info("✅ Created index: updated_at")
-        
+
         # feature_mode 필터링
         await db.chat_sessions.create_index("feature_mode", background=True)
         logger.info("✅ Created index: feature_mode")
-        
+
         # 복합 인덱스 (feature_mode + updated_at) - 가장 자주 사용되는 쿼리
         await db.chat_sessions.create_index(
-            [("feature_mode", 1), ("updated_at", -1)],
-            background=True
+            [("feature_mode", 1), ("updated_at", -1)], background=True
         )
         logger.info("✅ Created compound index: feature_mode + updated_at")
-        
+
         # ✅ 고급 필터링을 위한 인덱스
         await db.chat_sessions.create_index("total_tokens", background=True)
         logger.info("✅ Created index: total_tokens")
-        
+
         await db.chat_sessions.create_index("message_count", background=True)
         logger.info("✅ Created index: message_count")
-        
+
         await db.chat_sessions.create_index("created_at", background=True)
         logger.info("✅ Created index: created_at")
-        
+
         # ✅ 텍스트 검색 인덱스 (제목 검색 최적화)
         await db.chat_sessions.create_index("title", background=True)
         logger.info("✅ Created index: title")
-        
+
         # ✅ 복합 인덱스 (날짜 범위 + 필터)
         await db.chat_sessions.create_index(
-            [("updated_at", -1), ("total_tokens", 1)],
-            background=True
+            [("updated_at", -1), ("total_tokens", 1)], background=True
         )
         logger.info("✅ Created compound index: updated_at + total_tokens")
-        
+
+        # ✅ 요약 관련 인덱스
+        await db.chat_sessions.create_index("summary_created_at", background=True)
+        logger.info("✅ Created index: summary_created_at")
+
+        # ✅ 요약 존재 여부 확인용 sparse 인덱스
+        await db.chat_sessions.create_index(
+            "summary",
+            background=True,
+            sparse=True,  # summary 필드가 있는 문서만 인덱싱
+        )
+        logger.info("✅ Created sparse index: summary")
+
         logger.info("✅ All session indexes created successfully")
-        
+
     except Exception as e:
         logger.error(f"❌ Failed to create session indexes: {e}")
         # 인덱스가 이미 존재하면 무시

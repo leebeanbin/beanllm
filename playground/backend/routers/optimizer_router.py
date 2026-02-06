@@ -6,12 +6,11 @@ Uses Python best practices: duck typing, tuple unpacking.
 """
 
 import logging
-from typing import Dict, Tuple, Any, Optional, List
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional, Tuple
 
 from common import get_optimizer
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +21,10 @@ router = APIRouter(prefix="/api/optimizer", tags=["Optimizer"])
 # Request/Response Models
 # ============================================================================
 
+
 class OptimizeRequest(BaseModel):
     """Request for hyperparameter optimization"""
+
     task_type: str = Field(default="rag", description="Task type: rag, agent, chain")
     config: Optional[Dict[str, Any]] = Field(None, description="Base configuration")
     top_k_range: Optional[Tuple[int, int]] = Field(None, description="Range for top_k (min, max)")
@@ -36,6 +37,7 @@ class OptimizeRequest(BaseModel):
 
 class OptimizeResponse(BaseModel):
     """Response from optimization"""
+
     task_type: str
     optimized_config: Dict[str, Any] = Field(default_factory=dict)
     improvements: Dict[str, str] = Field(default_factory=dict)
@@ -46,6 +48,7 @@ class OptimizeResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _safe_get(obj: Any, attr: str, default: Any = None) -> Any:
     """Safely get attribute using duck typing"""
@@ -69,6 +72,7 @@ def _parse_range(
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/optimize", response_model=OptimizeResponse)
 async def optimize(request: OptimizeRequest) -> OptimizeResponse:

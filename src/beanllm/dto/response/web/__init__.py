@@ -7,4 +7,3 @@ from .web_search_response import WebSearchResponse
 __all__ = [
     "WebSearchResponse",
 ]
-

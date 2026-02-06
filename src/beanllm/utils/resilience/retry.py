@@ -118,7 +118,9 @@ class RetryHandler:
                     raise
 
                 if attempt >= self.config.max_retries:
-                    logger.error(f"Failed after {self.config.max_retries} attempts: {func.__name__}")
+                    logger.error(
+                        f"Failed after {self.config.max_retries} attempts: {func.__name__}"
+                    )
                     raise MaxRetriesExceededError(
                         f"Max retries ({self.config.max_retries}) exceeded. Last error: {str(e)}"
                     ) from e
@@ -161,7 +163,9 @@ class RetryHandler:
                     raise
 
                 if attempt >= self.config.max_retries:
-                    logger.error(f"Failed after {self.config.max_retries} attempts: {func.__name__}")
+                    logger.error(
+                        f"Failed after {self.config.max_retries} attempts: {func.__name__}"
+                    )
                     raise MaxRetriesExceededError(
                         f"Max retries ({self.config.max_retries}) exceeded. Last error: {str(e)}"
                     ) from e
@@ -207,14 +211,18 @@ def retry(
         handler = RetryHandler(config)
 
         if asyncio.iscoroutinefunction(func):
+
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
                 return await handler.execute_async(func, *args, **kwargs)
+
             return async_wrapper
         else:
+
             @wraps(func)
             def sync_wrapper(*args, **kwargs):
                 return handler.execute(func, *args, **kwargs)
+
             return sync_wrapper
 
     return decorator

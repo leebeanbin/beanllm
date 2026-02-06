@@ -27,7 +27,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
-from beanllm.utils.exceptions import ProviderError
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -39,7 +38,7 @@ logger = get_logger(__name__)
 class PerplexityProvider(BaseLLMProvider):
     """Perplexity 제공자 (실시간 웹 검색 + LLM)"""
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: Optional[Dict] = None):
         super().__init__(config or {})
 
         if AsyncOpenAI is None:

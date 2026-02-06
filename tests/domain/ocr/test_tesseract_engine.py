@@ -18,9 +18,7 @@ try:
 except ImportError:
     HAS_TESSERACT = False
 
-skip_without_tesseract = pytest.mark.skipif(
-    not HAS_TESSERACT, reason="pytesseract not installed"
-)
+skip_without_tesseract = pytest.mark.skipif(not HAS_TESSERACT, reason="pytesseract not installed")
 
 
 class TestTesseractEngineImport:

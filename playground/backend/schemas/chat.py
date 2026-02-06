@@ -2,18 +2,21 @@
 Chat Request Schemas
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 
 class Message(BaseModel):
     """Single chat message"""
+
     role: str  # "user", "assistant", "system"
     content: str
 
 
 class ChatRequest(BaseModel):
     """Chat API request"""
+
     messages: List[Message]
     assistant_id: str = "chat"
     model: Optional[str] = None

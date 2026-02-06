@@ -6,13 +6,13 @@ Redis Lua Script를 사용하여 원자적 Rate Limiting 구현
 """
 
 import asyncio
-import json
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
-from beanllm.infrastructure.distributed.utils import check_redis_health, DistributedError
+from beanllm.infrastructure.distributed.utils import check_redis_health
 from beanllm.utils import sanitize_error_message
+
 from .client import get_redis_client
 
 try:
@@ -76,7 +76,9 @@ class RedisRateLimiter(RateLimiterInterface):
     여러 서버 간 Rate Limit 공유
     """
 
-    def __init__(self, redis_client=None, default_rate: float = 1.0, default_capacity: float = 20.0):
+    def __init__(
+        self, redis_client=None, default_rate: float = 1.0, default_capacity: float = 20.0
+    ):
         """
         Args:
             redis_client: Redis 클라이언트 (None이면 자동 생성)
@@ -182,7 +184,7 @@ class RedisRateLimiter(RateLimiterInterface):
     def get_status(self, key: str) -> Dict[str, Any]:
         """현재 상태 조회"""
         rate_limit_key = f"rate_limit:{key}"
-        
+
         # 동기적으로 조회 (비동기 클라이언트이므로 await 필요)
         # 여기서는 간단히 키 존재 여부만 확인
         return {
@@ -190,4 +192,3 @@ class RedisRateLimiter(RateLimiterInterface):
             "rate": self.default_rate,
             "capacity": self.default_capacity,
         }
-

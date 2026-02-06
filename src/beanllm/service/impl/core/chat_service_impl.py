@@ -70,15 +70,22 @@ class ChatServiceImpl(BaseService, IChatService):
             - if-else/try-catch 없음
         """
         # 0. 캐시 확인 (LLM 응답)
-        from beanllm.infrastructure.distributed.cache_helpers import get_llm_response_cache, set_llm_response_cache
+        from beanllm.infrastructure.distributed.cache_helpers import (
+            get_llm_response_cache,
+            set_llm_response_cache,
+        )
+
         cached_response = await get_llm_response_cache(
-            request.messages, request.model,
-            temperature=request.temperature, max_tokens=request.max_tokens, **request.extra_params
+            request.messages,
+            request.model,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+            **request.extra_params,
         )
         if cached_response is not None:
             # 캐시 히트 - 응답 재사용
             return cached_response
-        
+
         # 1. Provider 생성 (공통 로직 재사용)
         provider = self._create_provider(request.model, request.extra_params.get("provider"))
 
@@ -101,14 +108,20 @@ class ChatServiceImpl(BaseService, IChatService):
         )
 
         # 4. 응답 변환 (비즈니스 로직)
-        response = ChatResponse.from_provider_response(provider_response, request.model, provider.name)
-        
+        response = ChatResponse.from_provider_response(
+            provider_response, request.model, provider.name
+        )
+
         # 5. 캐시에 저장
         await set_llm_response_cache(
-            request.messages, request.model, response,
-            temperature=request.temperature, max_tokens=request.max_tokens, **request.extra_params
+            request.messages,
+            request.model,
+            response,
+            temperature=request.temperature,
+            max_tokens=request.max_tokens,
+            **request.extra_params,
         )
-        
+
         return response
 
     @log_service_call

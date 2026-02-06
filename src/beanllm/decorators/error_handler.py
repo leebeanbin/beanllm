@@ -5,7 +5,7 @@ Error Handler Decorators - 에러 처리 공통 기능
 
 import functools
 import inspect
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from beanllm.utils.logging import get_logger
 
@@ -15,9 +15,9 @@ logger = get_logger(__name__)
 
 
 def handle_errors(
-    error_message: str = None,
+    error_message: Optional[str] = None,
     reraise: bool = True,
-    default_return: Any = None,
+    default_return: Optional[Any] = None,
 ):
     """
     에러 처리 데코레이터

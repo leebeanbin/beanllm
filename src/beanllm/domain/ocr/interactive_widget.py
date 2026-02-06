@@ -20,7 +20,7 @@ Features:
 
 import logging
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 from PIL import Image
@@ -80,7 +80,6 @@ class OCRInteractiveWidget:
 
     def _create_widgets(self):
         """위젯 생성"""
-        from .models import OCRConfig
 
         # === Denoise ===
         self.denoise_enabled = widgets.Checkbox(
@@ -275,11 +274,21 @@ class OCRInteractiveWidget:
             print("=" * 60)
             print("📋 Current Configuration")
             print("=" * 60)
-            print(f"Denoise: {config.denoise_config.enabled} (strength={config.denoise_config.strength})")
-            print(f"Contrast: {config.contrast_config.enabled} (clip_limit={config.contrast_config.clip_limit})")
-            print(f"Binarize: {config.binarize_config.enabled} (method={config.binarize_config.method})")
-            print(f"Deskew: {config.deskew_config.enabled} (angle_threshold={config.deskew_config.angle_threshold})")
-            print(f"Sharpen: {config.sharpen_config.enabled} (strength={config.sharpen_config.strength})")
+            print(
+                f"Denoise: {config.denoise_config.enabled} (strength={config.denoise_config.strength})"
+            )
+            print(
+                f"Contrast: {config.contrast_config.enabled} (clip_limit={config.contrast_config.clip_limit})"
+            )
+            print(
+                f"Binarize: {config.binarize_config.enabled} (method={config.binarize_config.method})"
+            )
+            print(
+                f"Deskew: {config.deskew_config.enabled} (angle_threshold={config.deskew_config.angle_threshold})"
+            )
+            print(
+                f"Sharpen: {config.sharpen_config.enabled} (strength={config.sharpen_config.strength})"
+            )
             print("=" * 60)
             print("\n💡 Use `widget.get_config()` to get OCRConfig object")
 
@@ -299,7 +308,7 @@ class OCRInteractiveWidget:
         # 이미지 로드
         if isinstance(image, (str, Path)):
             self.image_path = str(image)
-            pil_image = Image.open(image)
+            pil_image: Image.Image = Image.open(image)
             if pil_image.mode != "RGB":
                 pil_image = pil_image.convert("RGB")
             self.image = np.array(pil_image)
@@ -328,9 +337,7 @@ class OCRInteractiveWidget:
         # 레이아웃
         denoise_box = widgets.VBox([self.denoise_enabled, self.denoise_strength])
         contrast_box = widgets.VBox([self.contrast_enabled, self.clip_limit])
-        binarize_box = widgets.VBox(
-            [self.binarize_enabled, self.binarize_method, self.threshold]
-        )
+        binarize_box = widgets.VBox([self.binarize_enabled, self.binarize_method, self.threshold])
         deskew_box = widgets.VBox([self.deskew_enabled, self.angle_threshold])
         sharpen_box = widgets.VBox([self.sharpen_enabled, self.sharpen_strength])
 

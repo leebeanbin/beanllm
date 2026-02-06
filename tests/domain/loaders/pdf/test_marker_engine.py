@@ -4,9 +4,10 @@ MarkerEngine 단위 테스트
 marker-pdf가 설치되지 않은 환경에서도 테스트 가능하도록 구성
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestMarkerEngineImport:

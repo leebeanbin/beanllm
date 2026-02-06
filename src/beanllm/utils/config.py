@@ -23,6 +23,7 @@ except ImportError:
 # SecureConfig 선택적 import (보안 강화)
 try:
     from beanllm.infrastructure.security import SecureConfig
+
     SECURE_CONFIG_AVAILABLE = True
 except ImportError:
     SecureConfig = None  # type: ignore

@@ -15,8 +15,8 @@ class RAGPipelineVisualizer:
         self,
         step_name: str,
         step_type: str,  # "load", "split", "embed", "store", "search", "llm"
-        input_data: Any = None,
-        output_data: Any = None,
+        input_data: Optional[Any] = None,
+        output_data: Optional[Any] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ):
         """

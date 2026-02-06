@@ -10,13 +10,10 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import (
     Any,
-    AsyncGenerator,
     Callable,
     Dict,
     List,
     Optional,
-    Type,
-    Union,
 )
 
 from services.intent_classifier import IntentType
@@ -26,15 +23,17 @@ logger = logging.getLogger(__name__)
 
 class ToolStatus(str, Enum):
     """도구 상태"""
-    AVAILABLE = "available"      # 사용 가능
+
+    AVAILABLE = "available"  # 사용 가능
     UNAVAILABLE = "unavailable"  # 의존성 없음
     REQUIRES_KEY = "requires_key"  # API 키 필요
-    ERROR = "error"              # 오류 상태
+    ERROR = "error"  # 오류 상태
 
 
 @dataclass
 class ToolRequirement:
     """도구 실행 요구사항"""
+
     api_keys: List[str] = field(default_factory=list)  # 필요한 API 키
     packages: List[str] = field(default_factory=list)  # 필요한 패키지
     services: List[str] = field(default_factory=list)  # 필요한 서비스 (mongo, redis 등)
@@ -43,15 +42,16 @@ class ToolRequirement:
 @dataclass
 class Tool:
     """도구 정의"""
-    name: str                           # 도구 이름 (고유)
-    description: str                    # 도구 설명
-    description_ko: str                 # 한국어 설명
-    intent_types: List[IntentType]      # 지원하는 의도 타입
-    requirements: ToolRequirement       # 실행 요구사항
+
+    name: str  # 도구 이름 (고유)
+    description: str  # 도구 설명
+    description_ko: str  # 한국어 설명
+    intent_types: List[IntentType]  # 지원하는 의도 타입
+    requirements: ToolRequirement  # 실행 요구사항
     facade_class: Optional[str] = None  # beanllm Facade 클래스 경로
     handler: Optional[Callable] = None  # 커스텀 핸들러 (없으면 Facade 사용)
-    is_streaming: bool = False          # 스트리밍 지원 여부
-    priority: int = 0                   # 우선순위 (높을수록 우선)
+    is_streaming: bool = False  # 스트리밍 지원 여부
+    priority: int = 0  # 우선순위 (높을수록 우선)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -72,6 +72,7 @@ class Tool:
 @dataclass
 class ToolCheckResult:
     """도구 사용 가능성 검사 결과"""
+
     tool: Tool
     status: ToolStatus
     missing_keys: List[str] = field(default_factory=list)
@@ -114,7 +115,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=True,
         priority=100,
     ),
-
     Tool(
         name="rag",
         description="Document retrieval and Q&A with RAG",
@@ -128,7 +128,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=True,
         priority=90,
     ),
-
     Tool(
         name="agent",
         description="Tool-using agent for automated tasks",
@@ -142,7 +141,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=True,
         priority=85,
     ),
-
     # ===== Advanced Tools =====
     Tool(
         name="multi_agent",
@@ -157,7 +155,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=True,
         priority=80,
     ),
-
     Tool(
         name="knowledge_graph",
         description="Knowledge graph operations with Neo4j",
@@ -172,7 +169,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=70,
     ),
-
     # ===== Web Search =====
     Tool(
         name="web_search",
@@ -187,7 +183,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=75,
     ),
-
     # ===== Google Services =====
     Tool(
         name="google_drive",
@@ -201,7 +196,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=60,
     ),
-
     Tool(
         name="google_docs",
         description="Google Docs document operations",
@@ -214,7 +208,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=60,
     ),
-
     Tool(
         name="google_gmail",
         description="Gmail email operations",
@@ -227,7 +220,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=60,
     ),
-
     Tool(
         name="google_calendar",
         description="Google Calendar event management",
@@ -240,7 +232,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=60,
     ),
-
     Tool(
         name="google_sheets",
         description="Google Sheets spreadsheet operations",
@@ -253,7 +244,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=60,
     ),
-
     # ===== Media Tools =====
     Tool(
         name="audio_transcribe",
@@ -268,7 +258,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=50,
     ),
-
     Tool(
         name="vision",
         description="Image analysis and understanding",
@@ -282,7 +271,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=50,
     ),
-
     Tool(
         name="ocr",
         description="Text extraction from images",
@@ -295,7 +283,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=False,
         priority=50,
     ),
-
     # ===== Code & Analysis =====
     Tool(
         name="code",
@@ -310,7 +297,6 @@ REGISTERED_TOOLS: List[Tool] = [
         is_streaming=True,
         priority=70,
     ),
-
     Tool(
         name="evaluation",
         description="Model and RAG evaluation",
@@ -500,9 +486,7 @@ class ToolRegistry:
         return results
 
     def get_best_tool_for_intent(
-        self,
-        intent_type: IntentType,
-        only_available: bool = True
+        self, intent_type: IntentType, only_available: bool = True
     ) -> Optional[ToolCheckResult]:
         """
         Intent에 가장 적합한 도구 선택

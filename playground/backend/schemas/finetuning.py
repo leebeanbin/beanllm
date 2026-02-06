@@ -2,12 +2,14 @@
 Fine-tuning Request Schemas
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel
 
 
 class FineTuningCreateRequest(BaseModel):
     """Request to create a fine-tuning job"""
+
     base_model: str
     training_data: List[Dict[str, Any]]
     job_name: Optional[str] = None
@@ -17,4 +19,5 @@ class FineTuningCreateRequest(BaseModel):
 
 class FineTuningStatusRequest(BaseModel):
     """Request to check fine-tuning status"""
+
     job_id: str

@@ -7,7 +7,6 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from beanllm.dto.request.ml.rag_debug_request import (
@@ -140,9 +139,7 @@ class RAGDebug:
         if not self.session_id:
             raise RuntimeError("Session not started. Call start() first.")
 
-        logger.info(
-            f"Analyzing embeddings: method={method}, n_clusters={n_clusters}"
-        )
+        logger.info(f"Analyzing embeddings: method={method}, n_clusters={n_clusters}")
 
         request = AnalyzeEmbeddingsRequest(
             session_id=self.session_id,

@@ -15,11 +15,12 @@ Requirements:
 """
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+
 from .base import BaseOCREngine
 
 logger = logging.getLogger(__name__)
@@ -158,9 +159,7 @@ class MiniCPMEngine(BaseOCREngine):
         # 결과 변환
         return self._convert_result(response, image, config)
 
-    def _convert_result(
-        self, text: str, image: np.ndarray, config: OCRConfig
-    ) -> Dict:
+    def _convert_result(self, text: str, image: np.ndarray, config: OCRConfig) -> Dict:
         """
         MiniCPM-o 결과를 표준 형식으로 변환
 

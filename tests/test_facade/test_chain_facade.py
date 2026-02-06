@@ -2,8 +2,9 @@
 Chain Facade 테스트 - Chain 인터페이스 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
     from beanllm.facade.chain_facade import Chain, ChainResult
@@ -60,5 +61,3 @@ class TestChainFacade:
         assert isinstance(result, ChainResult)
         assert result.output == "Chain output"
         assert chain._chain_handler.handle_run.called
-
-

@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from beanllm.domain.ocr import beanOCR, OCRConfig
+from beanllm.domain.ocr import OCRConfig, beanOCR
 from beanllm.domain.ocr.engines.base import BaseOCREngine
 from beanllm.domain.ocr.models import BoundingBox, OCRTextLine
 
@@ -47,6 +47,7 @@ class TestBeanOCRInitialization:
         # PaddleOCR가 설치되지 않았으면 ImportError 발생
         try:
             import paddleocr  # noqa: F401
+
             # paddleocr가 설치된 경우 정상 초기화
             ocr = beanOCR(config=config)
             assert ocr.config.engine == "paddleocr"
@@ -59,6 +60,7 @@ class TestBeanOCRInitialization:
         """kwargs로 초기화"""
         try:
             import paddleocr  # noqa: F401
+
             # paddleocr가 설치된 경우 정상 초기화
             ocr = beanOCR(engine="paddleocr", language="ko")
             assert ocr.config.engine == "paddleocr"

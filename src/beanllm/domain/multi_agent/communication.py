@@ -152,6 +152,7 @@ class CommunicationBus:
         if self.use_kafka and self.kafka_producer:
             try:
                 import json
+
                 message_data = {
                     "id": message.id,
                     "sender": message.sender,
@@ -161,10 +162,7 @@ class CommunicationBus:
                     "timestamp": message.timestamp.isoformat(),
                     "reply_to": message.reply_to,
                 }
-                await self.kafka_producer.publish(
-                    "multi_agent.messages",
-                    json.dumps(message_data)
-                )
+                await self.kafka_producer.publish("multi_agent.messages", json.dumps(message_data))
 
                 # 이벤트 로깅
                 if self.event_logger:
@@ -176,7 +174,7 @@ class CommunicationBus:
                             "receiver": message.receiver or "broadcast",
                             "message_type": message.message_type.value,
                         },
-                        level="info"
+                        level="info",
                     )
             except Exception as e:
                 logger.warning(f"Failed to publish message to Kafka: {e}")

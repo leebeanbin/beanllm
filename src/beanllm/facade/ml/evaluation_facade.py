@@ -78,7 +78,9 @@ class EvaluatorFacade(AsyncHelperMixin):
             else:
                 raise
 
-    async def evaluate_async(self, prediction: str, reference: str, **kwargs) -> BatchEvaluationResult:
+    async def evaluate_async(
+        self, prediction: str, reference: str, **kwargs
+    ) -> BatchEvaluationResult:
         """모든 메트릭으로 평가 (비동기)"""
         response = await self._evaluation_handler.handle_evaluate(
             prediction=prediction,

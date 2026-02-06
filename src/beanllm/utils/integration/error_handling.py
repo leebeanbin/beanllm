@@ -14,7 +14,6 @@ Note: 이 모듈은 backward compatibility를 위해 모든 클래스를 re-expo
 """
 
 import signal
-import threading
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
@@ -211,7 +210,6 @@ def timeout(seconds: float):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-
             def timeout_handler(signum, frame):
                 raise TimeoutError(f"Function timed out after {seconds}s")
 

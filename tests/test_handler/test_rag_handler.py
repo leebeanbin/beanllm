@@ -2,21 +2,22 @@
 RAGHandler 테스트 - RAG 핸들러 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
 
+import pytest
+
 try:
+    from beanllm.domain.loaders import Document
+    from beanllm.domain.vector_stores.base import VectorSearchResult
+    from beanllm.dto.response.rag_response import RAGResponse
     from beanllm.handler.rag_handler import RAGHandler
     from beanllm.service.rag_service import IRAGService
-    from beanllm.dto.response.rag_response import RAGResponse
-    from beanllm.domain.vector_stores.base import VectorSearchResult
-    from beanllm.domain.loaders import Document
 except ImportError:
+    from src.beanllm.domain.loaders import Document
+    from src.beanllm.domain.vector_stores.base import VectorSearchResult
+    from src.beanllm.dto.response.rag_response import RAGResponse
     from src.beanllm.handler.rag_handler import RAGHandler
     from src.beanllm.service.rag_service import IRAGService
-    from src.beanllm.dto.response.rag_response import RAGResponse
-    from src.beanllm.domain.vector_stores.base import VectorSearchResult
-    from src.beanllm.domain.loaders import Document
 
 
 class TestRAGHandler:
@@ -42,11 +43,13 @@ class TestRAGHandler:
             )
         )
         service.retrieve = AsyncMock(return_value=search_results)
+
         # stream_query는 async generator로 설정
         async def mock_stream_query(*args, **kwargs):
             chunks = ["Answer", " ", "based", " ", "on", " ", "context"]
             for chunk in chunks:
                 yield chunk
+
         service.stream_query = mock_stream_query
         return service
 
@@ -177,6 +180,7 @@ class TestRAGHandler:
     @pytest.mark.asyncio
     async def test_handle_stream_query(self, rag_handler):
         """스트리밍 RAG 질의 처리 테스트"""
+
         # async generator로 설정
         async def mock_stream(*args, **kwargs):
             chunks = ["Answer", " ", "based", " ", "on", " ", "context"]
@@ -249,4 +253,3 @@ class TestRAGHandler:
         assert response is not None
         call_args = rag_handler._rag_service.query.call_args[0][0]
         assert call_args.prompt_template == custom_template
-

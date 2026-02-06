@@ -118,9 +118,7 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # Connection Pool 또는 단일 연결
         if use_pool:
             # Connection Pool 생성 (성능 향상)
-            self.pool = pool.ThreadedConnectionPool(
-                pool_minconn, pool_maxconn, connection_string
-            )
+            self.pool = pool.ThreadedConnectionPool(pool_minconn, pool_maxconn, connection_string)
             self.conn = None  # Pool을 사용할 때는 conn을 None으로
         else:
             # 단일 연결
@@ -217,9 +215,7 @@ class PgvectorVectorStore(BaseVectorStore, AdvancedSearchMixin):
                     CREATE INDEX IF NOT EXISTS {}
                     ON {} USING ivfflat (embedding vector_cosine_ops)
                     WITH (lists = 100)
-                """).format(
-                    self.sql.Identifier(index_name), self.sql.Identifier(self.table_name)
-                )
+                """).format(self.sql.Identifier(index_name), self.sql.Identifier(self.table_name))
                 cur.execute(create_index_query)
 
                 conn.commit()

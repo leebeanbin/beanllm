@@ -7,14 +7,13 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
 
-from beanllm.ui.components import Badge, StatusIcon
+from beanllm.ui.components import StatusIcon
 from beanllm.ui.console import get_console
 
 
@@ -79,8 +78,7 @@ class EmbeddingVisualizer:
 
         # Ensure 2D coordinates
         coords_2d = [
-            (emb[0], emb[1]) if len(emb) >= 2 else (emb[0], 0.0)
-            for emb in reduced_embeddings
+            (emb[0], emb[1]) if len(emb) >= 2 else (emb[0], 0.0) for emb in reduced_embeddings
         ]
 
         # Normalize coordinates to fit in ASCII grid
@@ -138,9 +136,7 @@ class EmbeddingVisualizer:
         # Legend
         self._show_legend(labels, outliers)
 
-    def _show_legend(
-        self, labels: List[int], outliers: Optional[List[int]] = None
-    ) -> None:
+    def _show_legend(self, labels: List[int], outliers: Optional[List[int]] = None) -> None:
         """범례 표시"""
         unique_labels = sorted(set(labels))
         markers = ["●", "○", "■", "□", "▲", "△", "◆", "◇", "★", "☆"]
@@ -154,9 +150,7 @@ class EmbeddingVisualizer:
             else:
                 marker = markers[label % len(markers)]
                 count = labels.count(label)
-                self.console.print(
-                    f"  {marker} Cluster {label} ({count} points)"
-                )
+                self.console.print(f"  {marker} Cluster {label} ({count} points)")
 
         if outliers:
             self.console.print(f"  [red]X Outliers ({len(outliers)} points)[/red]")
@@ -244,9 +238,7 @@ class EmbeddingVisualizer:
             assessment = "Poor"
             icon = StatusIcon.error()
 
-        self.console.print(
-            f"  Silhouette Score: [{color}]{bar}[/{color}] {silhouette_score:.4f}"
-        )
+        self.console.print(f"  Silhouette Score: [{color}]{bar}[/{color}] {silhouette_score:.4f}")
         self.console.print(f"  Assessment: {icon} [{color}]{assessment}[/{color}]")
         self.console.print()
 
@@ -354,7 +346,7 @@ class EmbeddingVisualizer:
 
             # Label
             if cluster_id == -1:
-                label = f"[dim]Noise[/dim]"
+                label = "[dim]Noise[/dim]"
                 bar_color = "dim"
             else:
                 label = f"C{cluster_id}"
@@ -362,8 +354,6 @@ class EmbeddingVisualizer:
 
             bar = "█" * bar_length
 
-            self.console.print(
-                f"  {label:>6} [{bar_color}]{bar}[/{bar_color}] {size:,}"
-            )
+            self.console.print(f"  {label:>6} [{bar_color}]{bar}[/{bar_color}] {size:,}")
 
         self.console.print()

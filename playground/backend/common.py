@@ -5,27 +5,27 @@ Shared state, helper functions, and initialization logic.
 """
 
 import logging
-from typing import Dict, Optional
-from pathlib import Path
 import sys
+from pathlib import Path
+from typing import Dict, Optional
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from beanllm.facade.core import Client, RAGChain
 from beanllm.facade.advanced import (
     KnowledgeGraph,
     MultiAgent,
-    Orchestrator,
     Optimizer,
+    Orchestrator,
     RAGDebug,
 )
+from beanllm.facade.core import Client, RAGChain
 from beanllm.facade.ml import (
-    VisionRAG,
     AudioRAG,
-    WebSearch,
     EvaluatorFacade,
     FineTuningManagerFacade,
+    VisionRAG,
+    WebSearch,
 )
 
 logger = logging.getLogger(__name__)

@@ -6,12 +6,10 @@
 """
 
 import asyncio
-import json
-import time
 from typing import Any, Callable, Dict, List, Optional
 
 from .factory import get_task_queue
-from .messaging import MessageProducer, DistributedErrorHandler
+from .messaging import DistributedErrorHandler, MessageProducer
 from .utils import sanitize_error_message
 
 try:
@@ -232,9 +230,7 @@ class BatchProcessor:
             처리 결과 리스트
         """
         # 1. 모든 작업을 큐에 추가
-        task_ids = await self.task_processor.batch_enqueue(
-            task_name, tasks_data, priority=priority
-        )
+        task_ids = await self.task_processor.batch_enqueue(task_name, tasks_data, priority=priority)
 
         # 2. 병렬로 처리
         semaphore = asyncio.Semaphore(self.max_concurrent)
@@ -262,8 +258,7 @@ class BatchProcessor:
 
         # 3. 병렬 실행
         tasks = [
-            process_one(task_id, task_data)
-            for task_id, task_data in zip(task_ids, tasks_data)
+            process_one(task_id, task_data) for task_id, task_data in zip(task_ids, tasks_data)
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -283,7 +278,7 @@ class BatchProcessor:
 
         return final_results
 
-    async def process_batch(
+    async def process_items(
         self,
         items: List[Any],
         handler: Callable,
@@ -301,10 +296,10 @@ class BatchProcessor:
             처리 결과 리스트
         """
         max_concurrent = max_concurrent or self.max_concurrent
-        
+
         # 동시성 제어 (분산 또는 인메모리)
         semaphore = asyncio.Semaphore(max_concurrent)
-        
+
         async def process_one(item: Any):
             """단일 항목 처리"""
             async with semaphore:
@@ -324,11 +319,11 @@ class BatchProcessor:
                     else:
                         loop = asyncio.get_event_loop()
                         return await loop.run_in_executor(None, handler, item)
-        
+
         # 병렬 실행
         tasks = [process_one(item) for item in items]
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         # 결과 정리
         final_results = []
         for i, result in enumerate(results):
@@ -341,6 +336,5 @@ class BatchProcessor:
                 final_results.append(None)  # 에러 시 None 반환
             else:
                 final_results.append(result)
-        
-        return final_results
 
+        return final_results

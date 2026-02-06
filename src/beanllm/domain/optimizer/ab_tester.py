@@ -8,8 +8,8 @@ SOLID 원칙:
 from __future__ import annotations
 
 import statistics
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List
 
 from beanllm.utils.logging import get_logger
 
@@ -55,9 +55,7 @@ class ABTestResult:
         """자동 계산"""
         # Calculate lift
         if self.variant_a_mean > 0:
-            self.lift = (
-                (self.variant_b_mean - self.variant_a_mean) / self.variant_a_mean * 100
-            )
+            self.lift = (self.variant_b_mean - self.variant_a_mean) / self.variant_a_mean * 100
 
         # Determine winner
         if self.is_significant:
@@ -138,8 +136,7 @@ class ABTester:
             ABTestResult: A/B 테스트 결과
         """
         logger.info(
-            f"Running A/B test: {variant_a_name} vs {variant_b_name}, "
-            f"{len(queries)} queries"
+            f"Running A/B test: {variant_a_name} vs {variant_b_name}, " f"{len(queries)} queries"
         )
 
         scores_a = []
@@ -284,7 +281,10 @@ class ABTester:
         t = 1.0 / (1.0 + a * abs(x))
 
         erf = 1.0 - (
-            ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592)
+            (
+                (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
+                + 0.254829592
+            )
             * t
             * math.exp(-x * x)
         )

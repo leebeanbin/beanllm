@@ -6,18 +6,12 @@ Uses Python best practices with type hints and dataclasses.
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, List, Any, Optional
-from functools import lru_cache
+from typing import Any, Dict
 
+from common import get_kg
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-
-from common import get_kg, get_client
-from schemas.kg import BuildGraphRequest, QueryGraphRequest, GraphRAGRequest
+from schemas.kg import BuildGraphRequest, GraphRAGRequest, QueryGraphRequest
 from schemas.responses.kg import (
-    EntityResponse,
-    RelationResponse,
     BuildGraphResponse,
     QueryGraphResponse,
 )
@@ -31,6 +25,7 @@ router = APIRouter(prefix="/api/kg", tags=["Knowledge Graph"])
 # Helper Functions
 # ============================================================================
 
+
 def _extract_entity(entity: Any, index: int) -> Dict[str, Any]:
     """Extract entity data from various formats using duck typing"""
     if not isinstance(entity, dict):
@@ -42,21 +37,9 @@ def _extract_entity(entity: Any, index: int) -> Dict[str, Any]:
         }
 
     # Use getattr pattern for flexibility
-    entity_id = (
-        entity.get("id") or
-        entity.get("entity_id") or
-        f"entity-{index}"
-    )
-    name = (
-        entity.get("name") or
-        entity.get("text") or
-        str(entity)
-    )
-    entity_type = (
-        entity.get("type") or
-        entity.get("entity_type") or
-        "UNKNOWN"
-    )
+    entity_id = entity.get("id") or entity.get("entity_id") or f"entity-{index}"
+    name = entity.get("name") or entity.get("text") or str(entity)
+    entity_type = entity.get("type") or entity.get("entity_type") or "UNKNOWN"
 
     # Extract metadata (exclude known keys)
     known_keys = {"id", "name", "type", "text", "entity_id", "entity_type"}
@@ -92,6 +75,7 @@ def _extract_relation(relation: Any, index: int) -> Dict[str, Any]:
 # Endpoints
 # ============================================================================
 
+
 @router.post("/build", response_model=BuildGraphResponse)
 async def kg_build(request: BuildGraphRequest) -> BuildGraphResponse:
     """
@@ -100,8 +84,8 @@ async def kg_build(request: BuildGraphRequest) -> BuildGraphResponse:
     Uses beanllm's KnowledgeGraph facade with optional model selection.
     """
     try:
-        from beanllm.facade.core import Client
         from beanllm.facade.advanced import KnowledgeGraph
+        from beanllm.facade.core import Client
 
         # Create KG with requested model or use default (dependency injection pattern)
         if request.model:
@@ -162,15 +146,11 @@ async def kg_build(request: BuildGraphRequest) -> BuildGraphResponse:
 async def kg_query(request: QueryGraphRequest) -> QueryGraphResponse:
     """Query knowledge graph with Cypher or predefined query types."""
     try:
-        from beanllm.facade.core import Client
         from beanllm.facade.advanced import KnowledgeGraph
+        from beanllm.facade.core import Client
 
         # Create KG with requested model or use default
-        kg = (
-            KnowledgeGraph(client=Client(model=request.model))
-            if request.model
-            else get_kg()
-        )
+        kg = KnowledgeGraph(client=Client(model=request.model)) if request.model else get_kg()
 
         # Query based on parameters
         if not request.query:
@@ -205,15 +185,11 @@ async def kg_query(request: QueryGraphRequest) -> QueryGraphResponse:
 async def kg_graph_rag(request: GraphRAGRequest) -> Dict[str, Any]:
     """Graph-based RAG query - combines knowledge graph with LLM."""
     try:
-        from beanllm.facade.core import Client
         from beanllm.facade.advanced import KnowledgeGraph
+        from beanllm.facade.core import Client
 
         # Conditional initialization pattern
-        kg = (
-            KnowledgeGraph(client=Client(model=request.model))
-            if request.model
-            else get_kg()
-        )
+        kg = KnowledgeGraph(client=Client(model=request.model)) if request.model else get_kg()
 
         # Use ask method (simplified graph RAG)
         answer = await kg.ask(

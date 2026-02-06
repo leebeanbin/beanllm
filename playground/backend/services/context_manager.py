@@ -19,15 +19,11 @@ Usage:
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from beanllm.domain.memory import (
     BaseMemory,
-    BufferMemory,
-    ConversationMemory,
-    SummaryMemory,
-    TokenMemory,
-    WindowMemory,
     create_memory,
 )
 
@@ -116,9 +112,7 @@ class ContextManager:
         """
         memory = self._get_or_create_memory(session_id, memory_type)
         memory.add_message(role, content, **metadata)
-        logger.debug(
-            f"Added message to session {session_id}: role={role}, len={len(content)}"
-        )
+        logger.debug(f"Added message to session {session_id}: role={role}, len={len(content)}")
 
     def get_context(
         self,
@@ -231,7 +225,8 @@ class ContextManager:
         messages = memory.get_messages()
 
         total_tokens = sum(
-            len(msg.content.split()) * 1.3 for msg in messages  # 간단한 토큰 추정
+            len(msg.content.split()) * 1.3
+            for msg in messages  # 간단한 토큰 추정
         )
 
         return {
@@ -239,9 +234,7 @@ class ContextManager:
             "message_count": len(memory),
             "estimated_tokens": int(total_tokens),
             "memory_type": type(memory).__name__,
-            "has_summary": (
-                hasattr(memory, "summary") and memory.summary is not None
-            ),
+            "has_summary": (hasattr(memory, "summary") and memory.summary is not None),
         }
 
     def list_sessions(self) -> List[str]:
@@ -262,9 +255,7 @@ class ContextManager:
             return 0
 
         # 오래된 세션부터 삭제 (FIFO)
-        sessions_to_delete = list(self._sessions.keys())[
-            : len(self._sessions) - max_sessions
-        ]
+        sessions_to_delete = list(self._sessions.keys())[: len(self._sessions) - max_sessions]
 
         for session_id in sessions_to_delete:
             del self._sessions[session_id]
@@ -328,8 +319,8 @@ class ContextManager:
         if len(messages_to_summarize) < 5:
             return None
 
-        # 요약 생성
-        summary = await self._generate_summary(messages_to_summarize, model)
+        # 요약 생성 (PromptBuilder 활용, 세션 컨텍스트 포함)
+        summary = await self._generate_summary(messages_to_summarize, model, session_id)
 
         # 메모리에 저장
         if hasattr(memory, "summary"):
@@ -340,6 +331,13 @@ class ContextManager:
             self._session_summaries = getattr(self, "_session_summaries", {})
         self._session_summaries[session_id] = summary
 
+        # MongoDB에 요약 저장 (비동기)
+        await self._save_summary_to_mongodb(
+            session_id=session_id,
+            summary=summary,
+            message_count=len(messages_to_summarize),
+        )
+
         logger.info(f"Generated summary for session {session_id}: {len(summary)} chars")
         return summary
 
@@ -347,49 +345,58 @@ class ContextManager:
         self,
         messages: List[Any],
         model: str = "qwen2.5:0.5b",
+        session_id: Optional[str] = None,
     ) -> str:
         """
-        LLM을 사용하여 요약 생성
+        LLM을 사용하여 요약 생성 (PromptBuilder 활용)
 
         Args:
             messages: 요약할 메시지들
             model: 요약에 사용할 모델
+            session_id: 세션 ID (컨텍스트 정보용)
 
         Returns:
             생성된 요약
         """
         from beanllm.facade.core import Client
+        from services.prompt_builder import prompt_builder
 
         # 대화 내용 구성
-        conversation_text = "\n".join([
-            f"{msg.role}: {msg.content[:500]}"  # 메시지당 500자 제한
-            for msg in messages
-        ])
+        conversation_text = "\n".join(
+            [
+                f"{msg.role}: {msg.content[:500]}"  # 메시지당 500자 제한
+                for msg in messages
+            ]
+        )
 
-        # 요약 프롬프트
-        SUMMARIZATION_PROMPT = """다음 대화 내용을 요약해주세요. 다음 정보는 반드시 포함해야 합니다:
+        # 세션 컨텍스트 수집
+        session_context = None
+        previous_summaries = None
 
-1. 주요 주제 및 목적
-2. 중요한 결정 사항
-3. 사용자가 언급한 특별한 요구사항
-4. 해결된 문제와 해결 방법
-5. 미완료된 작업이나 다음 단계
+        if session_id:
+            # 이전 요약 가져오기
+            existing_summary = self.get_summary(session_id)
+            if existing_summary:
+                previous_summaries = [existing_summary]
 
-대화 내용:
-{conversation_history}
+            # 세션 컨텍스트 (확장 가능)
+            session_context = {
+                "uploaded_files": [],  # TODO: 파일 정보 가져오기
+                "tool_usage": [],  # TODO: 도구 사용 이력
+                "intent_history": [],  # TODO: 의도 변화 이력
+            }
 
-요약 (200-300자):"""
-
-        prompt = SUMMARIZATION_PROMPT.format(
-            conversation_history=conversation_text[:3000]  # 3000자 제한
+        # PromptBuilder로 프롬프트 동적 구성
+        prompt = prompt_builder.build_summarization_prompt(
+            conversation_history=conversation_text[:3000],  # 3000자 제한
+            session_context=session_context,
+            previous_summaries=previous_summaries,
         )
 
         try:
             # 요약 모델 사용 (경량 모델)
             summarizer = Client(model=model)
-            response = await summarizer.chat([
-                {"role": "user", "content": prompt}
-            ])
+            response = await summarizer.chat([{"role": "user", "content": prompt}])
             return response.content
         except Exception as e:
             logger.error(f"Summary generation failed: {e}")
@@ -416,13 +423,166 @@ class ContextManager:
         summaries = getattr(self, "_session_summaries", {})
         return summaries.get(session_id)
 
+    async def get_summary_async(self, session_id: str) -> Optional[str]:
+        """
+        세션 요약 가져오기 (Redis → 메모리 → MongoDB fallback)
+
+        Args:
+            session_id: 세션 ID
+
+        Returns:
+            요약 (없으면 None)
+        """
+        # 1. 메모리에서 먼저 확인
+        summary = self.get_summary(session_id)
+        if summary:
+            return summary
+
+        # 2. Redis 캐시에서 확인
+        try:
+            from services.session_cache import session_cache
+
+            summary = await session_cache.get_summary(session_id)
+            if summary:
+                # 메모리 캐시에도 저장
+                if not hasattr(self, "_session_summaries"):
+                    self._session_summaries = {}
+                self._session_summaries[session_id] = summary
+                logger.debug(f"Loaded summary from Redis for session {session_id}")
+                return summary
+        except Exception as e:
+            logger.debug(f"Redis cache not available: {e}")
+
+        # 3. MongoDB에서 조회
+        summary = await self._load_summary_from_mongodb(session_id)
+        if summary:
+            # 메모리 캐시에 저장
+            if not hasattr(self, "_session_summaries"):
+                self._session_summaries = {}
+            self._session_summaries[session_id] = summary
+
+            # Redis 캐시에도 저장
+            try:
+                from services.session_cache import session_cache
+
+                await session_cache.set_summary(session_id, summary)
+            except Exception:
+                pass
+
+        return summary
+
+    async def _save_summary_to_mongodb(
+        self,
+        session_id: str,
+        summary: str,
+        message_count: int,
+    ) -> bool:
+        """
+        MongoDB와 Redis에 요약 저장
+
+        Args:
+            session_id: 세션 ID
+            summary: 요약 내용
+            message_count: 요약된 메시지 수
+
+        Returns:
+            성공 여부
+        """
+        mongo_success = False
+        redis_success = False
+
+        # 1. Redis 캐시에 저장 (빠른 접근)
+        try:
+            from services.session_cache import session_cache
+
+            await session_cache.set_summary_with_metadata(
+                session_id=session_id,
+                summary=summary,
+                message_count=message_count,
+            )
+            redis_success = True
+            logger.debug(f"Saved summary to Redis for session {session_id}")
+        except Exception as e:
+            logger.debug(f"Redis cache not available: {e}")
+
+        # 2. MongoDB에 저장 (영구 저장)
+        try:
+            from database import get_mongodb_database
+
+            db = get_mongodb_database()
+            if db is None:
+                logger.debug("MongoDB not available, skipping summary save")
+                return redis_success  # Redis만 성공해도 부분 성공
+
+            now = datetime.now(timezone.utc)
+
+            # upsert로 세션 문서 업데이트
+            result = await db.chat_sessions.update_one(
+                {"session_id": session_id},
+                {
+                    "$set": {
+                        "summary": summary,
+                        "summary_created_at": now,
+                        "summary_message_count": message_count,
+                        "updated_at": now,
+                    },
+                    "$setOnInsert": {
+                        "created_at": now,
+                    },
+                },
+                upsert=True,
+            )
+
+            mongo_success = True
+            logger.info(
+                f"Saved summary to MongoDB for session {session_id}: "
+                f"modified={result.modified_count}, upserted={result.upserted_id is not None}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to save summary to MongoDB: {e}")
+
+        return mongo_success or redis_success
+
+    async def _load_summary_from_mongodb(self, session_id: str) -> Optional[str]:
+        """
+        MongoDB에서 요약 로드
+
+        Args:
+            session_id: 세션 ID
+
+        Returns:
+            요약 (없으면 None)
+        """
+        try:
+            from database import get_mongodb_database
+
+            db = get_mongodb_database()
+            if db is None:
+                return None
+
+            doc = await db.chat_sessions.find_one(
+                {"session_id": session_id},
+                {"summary": 1, "summary_created_at": 1},
+            )
+
+            if doc and doc.get("summary"):
+                logger.debug(f"Loaded summary from MongoDB for session {session_id}")
+                return doc["summary"]
+
+            return None
+
+        except Exception as e:
+            logger.error(f"Failed to load summary from MongoDB: {e}")
+            return None
+
     def get_context_with_summary(
         self,
         session_id: str,
         system_prompt: Optional[str] = None,
     ) -> List[Dict[str, str]]:
         """
-        요약이 포함된 LLM 컨텍스트 가져오기
+        요약이 포함된 LLM 컨텍스트 가져오기 (동기 버전)
 
         Args:
             session_id: 세션 ID
@@ -435,6 +595,40 @@ class ContextManager:
 
         # 1. 요약이 있으면 system 메시지로 추가
         summary = self.get_summary(session_id)
+        if summary:
+            summary_content = f"이전 대화 요약:\n{summary}\n\n최근 대화:"
+            if system_prompt:
+                summary_content = f"{system_prompt}\n\n{summary_content}"
+            messages.append({"role": "system", "content": summary_content})
+        elif system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+
+        # 2. 최근 메시지 추가
+        context = self.get_context(session_id, as_dict=True)
+        for msg in context:
+            messages.append({"role": msg["role"], "content": msg["content"]})
+
+        return messages
+
+    async def get_context_with_summary_async(
+        self,
+        session_id: str,
+        system_prompt: Optional[str] = None,
+    ) -> List[Dict[str, str]]:
+        """
+        요약이 포함된 LLM 컨텍스트 가져오기 (비동기 버전, MongoDB fallback)
+
+        Args:
+            session_id: 세션 ID
+            system_prompt: 추가 시스템 프롬프트
+
+        Returns:
+            LLM 호출용 메시지 리스트 (요약 포함)
+        """
+        messages = []
+
+        # 1. 요약이 있으면 system 메시지로 추가 (MongoDB fallback 포함)
+        summary = await self.get_summary_async(session_id)
         if summary:
             summary_content = f"이전 대화 요약:\n{summary}\n\n최근 대화:"
             if system_prompt:

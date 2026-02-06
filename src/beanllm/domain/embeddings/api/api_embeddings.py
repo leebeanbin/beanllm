@@ -13,7 +13,6 @@ API-Based Embeddings - API 기반 임베딩 Provider 구현체들
 Template Method Pattern을 사용하여 중복 코드 제거
 """
 
-import os
 from typing import List, Optional
 
 from beanllm.domain.embeddings.base import BaseAPIEmbedding
@@ -157,9 +156,7 @@ class GeminiEmbedding(BaseAPIEmbedding):
             # Try batch embedding first (Gemini API supports batch embed_content)
             try:
                 # Batch API: send all texts in one request
-                result = self.genai.embed_content(
-                    model=self.model, content=texts, **self.kwargs
-                )
+                result = self.genai.embed_content(model=self.model, content=texts, **self.kwargs)
 
                 # Extract embeddings from batch response
                 if isinstance(result, dict) and "embedding" in result:
@@ -175,13 +172,13 @@ class GeminiEmbedding(BaseAPIEmbedding):
 
             except (ValueError, TypeError, KeyError) as batch_error:
                 # Batch failed - fallback to sequential processing
-                logger.warning(f"Batch embedding failed ({batch_error}), falling back to sequential mode")
+                logger.warning(
+                    f"Batch embedding failed ({batch_error}), falling back to sequential mode"
+                )
 
                 embeddings = []
                 for text in texts:
-                    result = self.genai.embed_content(
-                        model=self.model, content=text, **self.kwargs
-                    )
+                    result = self.genai.embed_content(model=self.model, content=text, **self.kwargs)
                     embeddings.append(result["embedding"])
 
                 self._log_embed_success(len(texts), f"sequential mode, {len(texts)} API calls")
@@ -267,7 +264,9 @@ class OllamaEmbedding(BaseAPIEmbedding):
 
             except (AttributeError, ValueError, KeyError, TypeError) as batch_error:
                 # Batch failed - fallback to sequential processing
-                logger.warning(f"Batch embedding failed ({batch_error}), falling back to sequential mode")
+                logger.warning(
+                    f"Batch embedding failed ({batch_error}), falling back to sequential mode"
+                )
 
                 embeddings = []
                 for text in texts:
@@ -385,9 +384,7 @@ class JinaEmbedding(BaseAPIEmbedding):
         ```
     """
 
-    def __init__(
-        self, model: str = "jina-embeddings-v3", api_key: Optional[str] = None, **kwargs
-    ):
+    def __init__(self, model: str = "jina-embeddings-v3", api_key: Optional[str] = None, **kwargs):
         """
         Args:
             model: Jina AI 모델 (v3 시리즈)

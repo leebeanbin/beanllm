@@ -275,11 +275,11 @@ class TestCLIIntegration:
     def test_cli_main_with_show(self):
         """show 명령어로 main 호출 테스트"""
         try:
-            from beanllm.utils.cli.cli import main
             from beanllm.infrastructure.registry import get_model_registry as real_get_registry
+            from beanllm.utils.cli.cli import main
         except ImportError:
-            from src.beanllm.utils.cli.cli import main
             from src.beanllm.infrastructure.registry import get_model_registry as real_get_registry
+            from src.beanllm.utils.cli.cli import main
 
         original_argv = sys.argv.copy()
         try:
@@ -297,11 +297,11 @@ class TestCLIIntegration:
     def test_cli_main_with_providers(self):
         """providers 명령어로 main 호출 테스트"""
         try:
-            from beanllm.utils.cli.cli import main
             from beanllm.infrastructure.registry import get_model_registry as real_get_registry
+            from beanllm.utils.cli.cli import main
         except ImportError:
-            from src.beanllm.utils.cli.cli import main
             from src.beanllm.infrastructure.registry import get_model_registry as real_get_registry
+            from src.beanllm.utils.cli.cli import main
 
         original_argv = sys.argv.copy()
         try:
@@ -337,4 +337,3 @@ class TestCLIIntegration:
                 # 도움말이 출력되어야 함
         finally:
             sys.argv = original_argv
-

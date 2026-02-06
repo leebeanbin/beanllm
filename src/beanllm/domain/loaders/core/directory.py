@@ -5,25 +5,26 @@ Directory Loader
 """
 
 import logging
-import mmap
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import BatchProcessorProtocol
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
-from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class DirectoryLoader(BaseDocumentLoader):
     """
@@ -173,7 +174,7 @@ class DirectoryLoader(BaseDocumentLoader):
             should_exclude = False
 
             for pattern in self._compiled_exclude_patterns:
-                if hasattr(pattern, 'match'):
+                if hasattr(pattern, "match"):
                     # 컴파일된 regex 패턴 사용 (빠름)
                     if pattern.match(file_str):
                         should_exclude = True
@@ -296,5 +297,3 @@ class DirectoryLoader(BaseDocumentLoader):
                     yield from loader.lazy_load()
                 except Exception as e:
                     logger.error(f"Failed to load {file_path}: {e}")
-
-

@@ -3,7 +3,9 @@ Prompt Templates - 재사용 가능한 프롬프트 템플릿
 
 MCP Prompts는 자주 사용되는 프롬프트를 템플릿으로 저장하여 재사용할 수 있게 합니다.
 """
-from typing import Dict, Any, List
+
+from typing import Any, Dict, List
+
 from fastmcp import FastMCP
 
 # FastMCP 인스턴스
@@ -51,9 +53,7 @@ def rag_system_builder(
 
 
 @mcp.prompt()
-def multiagent_debate(
-    topic: str, agent_count: int = 3
-) -> List[Dict[str, str]]:
+def multiagent_debate(topic: str, agent_count: int = 3) -> List[Dict[str, str]]:
     """
     다중 에이전트 토론 워크플로우 프롬프트
 
@@ -93,9 +93,7 @@ def multiagent_debate(
 
 
 @mcp.prompt()
-def knowledge_graph_explorer(
-    documents_path: str, query: str
-) -> List[Dict[str, str]]:
+def knowledge_graph_explorer(documents_path: str, query: str) -> List[Dict[str, str]]:
     """
     지식 그래프 구축 및 탐색 프롬프트
 
@@ -174,9 +172,7 @@ def audio_transcription_batch(
 
 
 @mcp.prompt()
-def model_comparison(
-    models: List[str], test_prompt: str
-) -> List[Dict[str, str]]:
+def model_comparison(models: List[str], test_prompt: str) -> List[Dict[str, str]]:
     """
     모델 성능 비교 프롬프트
 
@@ -219,9 +215,7 @@ def model_comparison(
 
 
 @mcp.prompt()
-def google_workspace_exporter(
-    chat_content: str, export_type: str = "docs"
-) -> List[Dict[str, str]]:
+def google_workspace_exporter(chat_content: str, export_type: str = "docs") -> List[Dict[str, str]]:
     """
     Google Workspace 내보내기 프롬프트
 
@@ -260,9 +254,7 @@ def google_workspace_exporter(
 
 
 @mcp.prompt()
-def rag_optimization(
-    collection_name: str = "default"
-) -> List[Dict[str, str]]:
+def rag_optimization(collection_name: str = "default") -> List[Dict[str, str]]:
     """
     RAG 시스템 최적화 프롬프트
 

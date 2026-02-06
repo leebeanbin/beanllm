@@ -21,9 +21,8 @@ from beanllm.domain.audio import (
 )
 from beanllm.dto.request.ml.audio_request import AudioRequest
 from beanllm.dto.response.ml.audio_response import AudioResponse
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.audio_service import IAudioService
+from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
     from beanllm.domain.embeddings import BaseEmbedding
@@ -126,9 +125,10 @@ class AudioServiceImpl(IAudioService):
         """
         # Rate Limiting (분산 또는 인메모리)
         from beanllm.infrastructure.distributed.factory import get_rate_limiter
+
         rate_limiter = get_rate_limiter()
         await rate_limiter.wait(f"audio:transcribe:{self._whisper_model_name}", cost=1.0)
-        
+
         self._load_whisper_model()
 
         audio = request.audio
@@ -200,10 +200,15 @@ class AudioServiceImpl(IAudioService):
         """
         # Rate Limiting (분산 또는 인메모리)
         from beanllm.infrastructure.distributed.factory import get_rate_limiter
+
         rate_limiter = get_rate_limiter()
-        provider_key = self._tts_provider.value if hasattr(self._tts_provider, 'value') else str(self._tts_provider)
+        provider_key = (
+            self._tts_provider.value
+            if hasattr(self._tts_provider, "value")
+            else str(self._tts_provider)
+        )
         await rate_limiter.wait(f"audio:synthesize:{provider_key}", cost=1.0)
-        
+
         text = request.text
         voice = request.voice or self._tts_voice
         speed = request.speed

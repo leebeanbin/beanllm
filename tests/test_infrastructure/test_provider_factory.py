@@ -2,8 +2,9 @@
 ProviderFactory 테스트 - Provider 팩토리 테스트
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from beanllm.infrastructure.provider import ProviderFactory
 
@@ -91,5 +92,3 @@ class TestProviderFactory:
 
         # ollama가 기본으로 반환될 수 있으므로 None이거나 문자열
         assert default_provider is None or isinstance(default_provider, str)
-
-

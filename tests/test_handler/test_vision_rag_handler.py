@@ -2,8 +2,9 @@
 VisionRAGHandler 테스트 - Vision RAG Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.vision_rag_request import VisionRAGRequest
 from beanllm.dto.response.vision_rag_response import VisionRAGResponse
@@ -19,20 +20,10 @@ class TestVisionRAGHandler:
         from beanllm.service.vision_rag_service import IVisionRAGService
 
         service = Mock(spec=IVisionRAGService)
-        service.retrieve = AsyncMock(
-            return_value=VisionRAGResponse(
-                results=[]
-            )
-        )
-        service.query = AsyncMock(
-            return_value=VisionRAGResponse(
-                answer="Vision RAG answer"
-            )
-        )
+        service.retrieve = AsyncMock(return_value=VisionRAGResponse(results=[]))
+        service.query = AsyncMock(return_value=VisionRAGResponse(answer="Vision RAG answer"))
         service.batch_query = AsyncMock(
-            return_value=VisionRAGResponse(
-                answers=["Answer 1", "Answer 2"]
-            )
+            return_value=VisionRAGResponse(answers=["Answer 1", "Answer 2"])
         )
         return service
 
@@ -97,5 +88,3 @@ class TestVisionRAGHandler:
         except ValueError:
             # 검증 에러가 발생하면 통과
             pass
-
-

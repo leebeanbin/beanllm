@@ -98,6 +98,7 @@ class beanSTT:
         if engine_name == "whisper-v3-turbo":
             try:
                 from .engines.whisper_engine import WhisperEngine
+
                 return WhisperEngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -108,6 +109,7 @@ class beanSTT:
         elif engine_name == "distil-whisper":
             try:
                 from .engines.distil_whisper_engine import DistilWhisperEngine
+
                 return DistilWhisperEngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -118,6 +120,7 @@ class beanSTT:
         elif engine_name in ["parakeet", "parakeet-1.1b"]:
             try:
                 from .engines.parakeet_engine import ParakeetEngine
+
                 return ParakeetEngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -128,6 +131,7 @@ class beanSTT:
         elif engine_name in ["canary", "canary-1b"]:
             try:
                 from .engines.canary_engine import CanaryEngine
+
                 return CanaryEngine(model_variant="1b", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -138,6 +142,7 @@ class beanSTT:
         elif engine_name == "canary-flash":
             try:
                 from .engines.canary_engine import CanaryEngine
+
                 return CanaryEngine(model_variant="flash", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -148,6 +153,7 @@ class beanSTT:
         elif engine_name in ["moonshine", "moonshine-base"]:
             try:
                 from .engines.moonshine_engine import MoonshineEngine
+
                 return MoonshineEngine(model_size="base", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -158,6 +164,7 @@ class beanSTT:
         elif engine_name == "moonshine-tiny":
             try:
                 from .engines.moonshine_engine import MoonshineEngine
+
                 return MoonshineEngine(model_size="tiny", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -168,6 +175,7 @@ class beanSTT:
         elif engine_name in ["sensevoice", "sensevoice-small"]:
             try:
                 from .engines.sensevoice_engine import SenseVoiceEngine
+
                 return SenseVoiceEngine(model_size="small", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -178,6 +186,7 @@ class beanSTT:
         elif engine_name == "sensevoice-large":
             try:
                 from .engines.sensevoice_engine import SenseVoiceEngine
+
                 return SenseVoiceEngine(model_size="large", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -188,6 +197,7 @@ class beanSTT:
         elif engine_name in ["granite", "granite-8b", "granite-speech"]:
             try:
                 from .engines.granite_engine import GraniteEngine
+
                 return GraniteEngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -202,9 +212,7 @@ class beanSTT:
             f"canary, canary-flash, moonshine-tiny, moonshine-base, sensevoice, granite"
         )
 
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], **kwargs
-    ) -> TranscriptionResult:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], **kwargs) -> TranscriptionResult:
         """
         오디오 전사 (음성 → 텍스트)
 

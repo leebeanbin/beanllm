@@ -7,7 +7,7 @@ beanOCR - Main OCR Facade
 import hashlib
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import (
@@ -25,7 +25,7 @@ from beanllm.utils.async_helpers import AsyncHelperMixin
 from beanllm.utils.logging import get_logger
 
 from .engines.base import BaseOCREngine
-from .models import BoundingBox, OCRConfig, OCRResult, OCRTextLine
+from .models import OCRConfig, OCRResult
 
 logger = get_logger(__name__)
 
@@ -77,7 +77,7 @@ class beanOCR(AsyncHelperMixin):
         rate_limiter: Optional["RateLimiterProtocol"] = None,
         event_logger: Optional["EventLoggerProtocol"] = None,
         lock_manager: Optional["LockManagerProtocol"] = None,
-        **kwargs
+        **kwargs,
     ):
         """
         Args:
@@ -109,8 +109,8 @@ class beanOCR(AsyncHelperMixin):
         """
         self.config = config or OCRConfig(**kwargs)
         self._engine: Optional[BaseOCREngine] = None
-        self._preprocessor = None
-        self._postprocessor = None
+        self._preprocessor: Optional[Any] = None  # ImagePreprocessor (lazy import)
+        self._postprocessor: Optional[Any] = None  # LLMPostprocessor (lazy import)
 
         # 분산 시스템 설정 및 프로토콜 저장
         self._distributed_config = distributed_config
@@ -120,6 +120,7 @@ class beanOCR(AsyncHelperMixin):
         self._lock_manager = lock_manager
 
         self._init_components()
+
     def _init_components(self) -> None:
         """컴포넌트 초기화"""
         # 엔진 초기화
@@ -132,12 +133,10 @@ class beanOCR(AsyncHelperMixin):
             self._preprocessor = ImagePreprocessor()
 
         # 후처리기
-        if self.config.enable_llm_postprocessing:
+        if self.config.enable_llm_postprocessing and self.config.llm_model:
             from .postprocessing import LLMPostprocessor
 
-            self._postprocessor = LLMPostprocessor(
-                model=self.config.llm_model
-            )
+            self._postprocessor = LLMPostprocessor(model=self.config.llm_model)
 
     def _create_engine(self, engine_name: str) -> BaseOCREngine:
         """
@@ -156,6 +155,7 @@ class beanOCR(AsyncHelperMixin):
         if engine_name == "paddleocr":
             try:
                 from .engines.paddleocr_engine import PaddleOCREngine
+
                 return PaddleOCREngine()
             except ImportError as e:
                 raise ImportError(
@@ -166,6 +166,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "easyocr":
             try:
                 from .engines.easyocr_engine import EasyOCREngine
+
                 return EasyOCREngine()
             except ImportError as e:
                 raise ImportError(
@@ -176,6 +177,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "tesseract":
             try:
                 from .engines.tesseract_engine import TesseractEngine
+
                 return TesseractEngine()
             except ImportError as e:
                 raise ImportError(
@@ -187,6 +189,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "trocr":
             try:
                 from .engines.trocr_engine import TrOCREngine
+
                 return TrOCREngine()
             except ImportError as e:
                 raise ImportError(
@@ -197,6 +200,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "nougat":
             try:
                 from .engines.nougat_engine import NougatEngine
+
                 return NougatEngine()
             except ImportError as e:
                 raise ImportError(
@@ -207,6 +211,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "surya":
             try:
                 from .engines.surya_engine import SuryaEngine
+
                 return SuryaEngine()
             except ImportError as e:
                 raise ImportError(
@@ -217,6 +222,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "cloud-google":
             try:
                 from .engines.cloud_engine import CloudOCREngine
+
                 return CloudOCREngine(provider="google")
             except ImportError as e:
                 raise ImportError(
@@ -227,6 +233,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "cloud-aws":
             try:
                 from .engines.cloud_engine import CloudOCREngine
+
                 return CloudOCREngine(provider="aws")
             except ImportError as e:
                 raise ImportError(
@@ -237,6 +244,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name in ["qwen2vl", "qwen2vl-2b"]:
             try:
                 from .engines.qwen2vl_engine import Qwen2VLEngine
+
                 return Qwen2VLEngine(model_size="2b", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -247,6 +255,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "qwen2vl-7b":
             try:
                 from .engines.qwen2vl_engine import Qwen2VLEngine
+
                 return Qwen2VLEngine(model_size="7b", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -257,6 +266,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "qwen2vl-72b":
             try:
                 from .engines.qwen2vl_engine import Qwen2VLEngine
+
                 return Qwen2VLEngine(model_size="72b", use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -267,6 +277,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "minicpm":
             try:
                 from .engines.minicpm_engine import MiniCPMEngine
+
                 return MiniCPMEngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -277,6 +288,7 @@ class beanOCR(AsyncHelperMixin):
         elif engine_name == "deepseek-ocr":
             try:
                 from .engines.deepseek_ocr_engine import DeepSeekOCREngine
+
                 return DeepSeekOCREngine(use_gpu=self.config.use_gpu)
             except ImportError as e:
                 raise ImportError(
@@ -322,7 +334,7 @@ class beanOCR(AsyncHelperMixin):
             raise FileNotFoundError(f"Image file not found: {path}")
 
         # PIL로 이미지 로드
-        img = Image.open(path)
+        img: Image.Image = Image.open(path)
 
         # RGB로 변환 (RGBA, 그레이스케일 등 처리)
         if img.mode != "RGB":
@@ -330,7 +342,9 @@ class beanOCR(AsyncHelperMixin):
 
         return np.array(img)
 
-    def recognize(self, image_or_path: Union[str, Path, np.ndarray, Image.Image], **kwargs) -> OCRResult:
+    def recognize(
+        self, image_or_path: Union[str, Path, np.ndarray, Image.Image], **kwargs
+    ) -> OCRResult:
         """
         이미지 OCR 인식 (분산 시스템 지원)
 
@@ -412,7 +426,7 @@ class beanOCR(AsyncHelperMixin):
                         "ocr.recognize.cache_hit",
                         {"cache_key": cache_key, "engine": self.config.engine},
                     )
-                    return cached_result
+                    return cast(OCRResult, cached_result)
             except Exception as e:
                 logger.debug(f"Cache retrieval failed (continuing without cache): {e}")
 
@@ -430,18 +444,18 @@ class beanOCR(AsyncHelperMixin):
                     # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
                     return self._recognize_impl(image_or_path, start_time, cache_key, **kwargs)
                 else:
-                    return loop.run_until_complete(_recognize_with_lock())
+                    return cast(OCRResult, loop.run_until_complete(_recognize_with_lock()))
             except RuntimeError:
-                return asyncio.run(_recognize_with_lock())
+                return cast(OCRResult, asyncio.run(_recognize_with_lock()))
         else:
             return self._recognize_impl(image_or_path, start_time, cache_key, **kwargs)
-    
+
     def _recognize_impl(
         self,
         image_or_path: Union[str, Path, np.ndarray, Image.Image],
         start_time: float,
         cache_key: str,
-        **kwargs
+        **kwargs,
     ) -> OCRResult:
         """OCR 인식 실제 구현 (분산 시스템 적용)"""
         import asyncio
@@ -463,11 +477,12 @@ class beanOCR(AsyncHelperMixin):
             asyncio.run(
                 self._event_logger.log_event(
                     "ocr.recognize.image_loaded",
-                {
-                    "engine": self.config.engine,
-                    "image_shape": str(image.shape) if hasattr(image, 'shape') else "unknown",
-                }
-            ))
+                    {
+                        "engine": self.config.engine,
+                        "image_shape": str(image.shape) if hasattr(image, "shape") else "unknown",
+                    },
+                )
+            )
 
         # 2. 전처리
         if self._preprocessor:
@@ -486,8 +501,8 @@ class beanOCR(AsyncHelperMixin):
             asyncio.run(
                 self._rate_limiter.acquire(
                     key=f"ocr:cloud:{self.config.engine}",
-                    tokens=1,
-                    rate=10,  # Default rate limit
+                    max_requests=10,
+                    window=60,
                 )
             )
 
@@ -596,8 +611,7 @@ class beanOCR(AsyncHelperMixin):
             import fitz  # PyMuPDF
         except ImportError:
             raise ImportError(
-                "PyMuPDF is required for PDF processing. "
-                "Install it with: pip install pymupdf"
+                "PyMuPDF is required for PDF processing. " "Install it with: pip install pymupdf"
             )
 
         pdf_path = Path(pdf_path)
@@ -611,8 +625,7 @@ class beanOCR(AsyncHelperMixin):
         if page_num < 0 or page_num >= len(doc):
             doc.close()
             raise IndexError(
-                f"Invalid page number: {page_num}. "
-                f"PDF has {len(doc)} pages (0-{len(doc)-1})"
+                f"Invalid page number: {page_num}. " f"PDF has {len(doc)} pages (0-{len(doc)-1})"
             )
 
         # 페이지를 이미지로 변환
@@ -620,9 +633,7 @@ class beanOCR(AsyncHelperMixin):
         pix = page.get_pixmap(dpi=dpi)
 
         # numpy array로 변환
-        image = np.frombuffer(pix.samples, dtype=np.uint8).reshape(
-            pix.height, pix.width, pix.n
-        )
+        image = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width, pix.n)
 
         # RGB로 변환 (PyMuPDF는 RGB 또는 RGBA 반환)
         if pix.n == 4:  # RGBA

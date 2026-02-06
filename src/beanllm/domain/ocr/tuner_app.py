@@ -18,12 +18,9 @@ try:
     import streamlit as st
 except ImportError:
     raise ImportError(
-        "Streamlit is required for OCR Tuner App. "
-        "Install it with: pip install streamlit"
+        "Streamlit is required for OCR Tuner App. " "Install it with: pip install streamlit"
     )
 
-import io
-from pathlib import Path
 
 import numpy as np
 from PIL import Image

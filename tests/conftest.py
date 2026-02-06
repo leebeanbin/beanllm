@@ -79,6 +79,7 @@ def mock_env(monkeypatch):
 def skip_if_no_provider():
     """Provider가 없으면 테스트 스킵"""
     import pytest
+
     from beanllm._source_providers import OpenAIProvider
 
     try:
@@ -93,6 +94,7 @@ def skip_if_no_provider():
 def mock_client():
     """Mock Client for testing"""
     from unittest.mock import MagicMock
+
     from beanllm.facade.client_facade import Client
 
     mock = MagicMock(spec=Client)

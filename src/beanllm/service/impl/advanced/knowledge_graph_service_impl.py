@@ -117,15 +117,12 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
         # BatchProcessor for parallel document processing
         self._batch_processor = BatchProcessor(
-            task_type="knowledge_graph.extract",
-            max_concurrent=10
+            task_type="knowledge_graph.extract", max_concurrent=10
         )
 
         logger.info("KnowledgeGraphServiceImpl initialized")
 
-    def set_neo4j_adapter(
-        self, uri: str, user: str, password: str
-    ) -> None:
+    def set_neo4j_adapter(self, uri: str, user: str, password: str) -> None:
         """
         Neo4j Adapter 설정 (영구 저장소)
 
@@ -151,9 +148,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         rate_limit_key="kg:llm_extraction",
         event_type="kg.extract_entities",
     )
-    async def extract_entities(
-        self, request: ExtractEntitiesRequest
-    ) -> EntitiesResponse:
+    async def extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
         """
         문서에서 엔티티 추출 (LLM-based NER)
 
@@ -167,9 +162,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             # 엔티티 타입 필터
             entity_types = None
             if request.entity_types:
-                entity_types = [
-                    EntityType(et) for et in request.entity_types
-                ]
+                entity_types = [EntityType(et) for et in request.entity_types]
 
             # 엔티티 추출
             entities = self._entity_extractor.extract_entities(
@@ -201,9 +194,17 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             logger.info(f"Extracted {len(entities)} entities from text")
 
+            # Count by type
+            entity_counts_by_type: Dict[str, int] = {}
+            for entity in entities:
+                etype = entity.type.value
+                entity_counts_by_type[etype] = entity_counts_by_type.get(etype, 0) + 1
+
             return EntitiesResponse(
+                document_id=request.document_id,
                 entities=entities_list,
                 num_entities=len(entities),
+                entity_counts_by_type=entity_counts_by_type,
             )
 
         except Exception as e:
@@ -219,9 +220,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         rate_limit_key="kg:llm_extraction",
         event_type="kg.extract_relations",
     )
-    async def extract_relations(
-        self, request: ExtractRelationsRequest
-    ) -> RelationsResponse:
+    async def extract_relations(self, request: ExtractRelationsRequest) -> RelationsResponse:
         """
         엔티티 간 관계 추출
 
@@ -250,9 +249,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             # 관계 타입 필터
             relation_types = None
             if request.relation_types:
-                relation_types = [
-                    RelationType(rt) for rt in request.relation_types
-                ]
+                relation_types = [RelationType(rt) for rt in request.relation_types]
 
             # 관계 추출
             relations = self._relation_extractor.extract_relations(
@@ -283,9 +280,17 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             logger.info(f"Extracted {len(relations)} relations from text")
 
+            # Count by type
+            relation_counts_by_type: Dict[str, int] = {}
+            for relation in relations:
+                rtype = relation.type.value
+                relation_counts_by_type[rtype] = relation_counts_by_type.get(rtype, 0) + 1
+
             return RelationsResponse(
+                document_id=request.document_id,
                 relations=relations_list,
                 num_relations=len(relations),
+                relation_counts_by_type=relation_counts_by_type,
             )
 
         except Exception as e:
@@ -401,9 +406,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             use_batch = len(request.documents) >= 5
 
             if use_batch:
-                logger.info(
-                    f"Using batch processing for {len(request.documents)} documents"
-                )
+                logger.info(f"Using batch processing for {len(request.documents)} documents")
 
                 # 각 문서에 대한 처리 함수 생성
                 async def process_doc_wrapper(doc: str) -> Dict[str, Any]:
@@ -428,9 +431,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                     elif isinstance(result, dict) and "error" in result:
                         logger.warning(f"Document processing error: {result['error']}")
             else:
-                logger.info(
-                    f"Using sequential processing for {len(request.documents)} documents"
-                )
+                logger.info(f"Using sequential processing for {len(request.documents)} documents")
 
                 # 순차 처리 (문서가 적을 때)
                 for doc in request.documents:
@@ -450,9 +451,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
 
             # 기존 그래프와 병합
             if graph_id in self._graphs:
-                graph = self._graph_builder.merge_graphs(
-                    [self._graphs[graph_id], graph]
-                )
+                graph = self._graph_builder.merge_graphs([self._graphs[graph_id], graph])
 
             # 상태 저장
             self._graphs[graph_id] = graph
@@ -585,14 +584,14 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             else:
                 raise ValueError(f"Unknown query type: {query_type}")
 
-            logger.info(
-                f"Graph query executed: {graph_id} ({len(results)} results)"
-            )
+            logger.info(f"Graph query executed: {graph_id} ({len(results)} results)")
 
             return QueryGraphResponse(
                 graph_id=graph_id,
+                query=request.query,
                 results=results,
                 num_results=len(results),
+                execution_time=0.0,  # TODO: Add timing
             )
 
         except Exception as e:
@@ -646,17 +645,29 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                 top_k=5,
             )
 
-            logger.info(
-                f"Graph RAG executed: {graph_id} ({len(hybrid_results)} results)"
+            logger.info(f"Graph RAG executed: {graph_id} ({len(hybrid_results)} results)")
+
+            # Extract entity names used
+            entities_used = [e.get("name", e.get("id", "")) for e in entity_results]
+
+            # Extract reasoning paths
+            reasoning_paths = [p.get("path", []) for p in path_results]
+
+            # Build graph context
+            graph_context = (
+                f"Graph {graph_id}: {len(entity_results)} entities, {len(path_results)} paths"
             )
 
             return GraphRAGResponse(
-                query=query,
+                answer=f"Found {len(hybrid_results)} results for query: {query}",
+                entities_used=entities_used,
+                reasoning_paths=reasoning_paths,
+                graph_context=graph_context,
                 graph_id=graph_id,
+                num_results=len(hybrid_results),
                 entity_results=entity_results,
                 path_results=path_results,
                 hybrid_results=hybrid_results,
-                num_results=len(hybrid_results),
             )
 
         except Exception as e:
@@ -691,9 +702,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             lines.append("-" * 50)
 
             # 노드 (최대 20개)
-            for i, (node_id, node_data) in enumerate(
-                list(graph.nodes(data=True))[:20]
-            ):
+            for i, (node_id, node_data) in enumerate(list(graph.nodes(data=True))[:20]):
                 name = node_data.get("name", node_id)
                 entity_type = node_data.get("type", "UNKNOWN")
                 lines.append(f"  [{entity_type}] {name} (id: {node_id})")
@@ -706,9 +715,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             lines.append("-" * 50)
 
             # 엣지 (최대 20개)
-            for i, (source, target, edge_data) in enumerate(
-                list(graph.edges(data=True))[:20]
-            ):
+            for i, (source, target, edge_data) in enumerate(list(graph.edges(data=True))[:20]):
                 source_name = graph.nodes[source].get("name", source)
                 target_name = graph.nodes[target].get("name", target)
                 relation_type = edge_data.get("type", "UNKNOWN")
@@ -758,18 +765,14 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             entity_type_counts: Dict[str, int] = {}
             for node_id, node_data in graph.nodes(data=True):
                 entity_type = node_data.get("type", "UNKNOWN")
-                entity_type_counts[entity_type] = (
-                    entity_type_counts.get(entity_type, 0) + 1
-                )
+                entity_type_counts[entity_type] = entity_type_counts.get(entity_type, 0) + 1
             stats["entity_type_counts"] = entity_type_counts
 
             # 관계 타입별 개수
             relation_type_counts: Dict[str, int] = {}
             for source, target, edge_data in graph.edges(data=True):
                 relation_type = edge_data.get("type", "UNKNOWN")
-                relation_type_counts[relation_type] = (
-                    relation_type_counts.get(relation_type, 0) + 1
-                )
+                relation_type_counts[relation_type] = relation_type_counts.get(relation_type, 0) + 1
             stats["relation_type_counts"] = relation_type_counts
 
             logger.info(f"Graph stats calculated: {graph_id}")
@@ -799,14 +802,26 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             raise ValueError(f"Graph not found: {graph_id}")
         return self._graphs[graph_id]
 
-    def list_graphs(self) -> List[str]:
+    async def list_graphs(self) -> List[Dict[str, Any]]:
         """
-        모든 그래프 ID 목록
+        모든 그래프 목록 조회
 
         Returns:
-            List[str]: 그래프 ID 목록
+            List[Dict]: 그래프 목록 [{id, name, num_nodes, num_edges, ...}]
         """
-        return list(self._graphs.keys())
+        graphs: List[Dict[str, Any]] = []
+        for graph_id, graph in self._graphs.items():
+            metadata = self._graph_metadata.get(graph_id, {})
+            graphs.append(
+                {
+                    "id": graph_id,
+                    "name": metadata.get("name", graph_id),
+                    "num_nodes": graph.number_of_nodes(),
+                    "num_edges": graph.number_of_edges(),
+                    "metadata": metadata,
+                }
+            )
+        return graphs
 
     def delete_graph(self, graph_id: str) -> None:
         """

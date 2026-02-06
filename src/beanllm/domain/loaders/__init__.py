@@ -1,10 +1,51 @@
 """
 Loaders Domain - 문서 로더 도메인
+
+기본 로더:
+- TextLoader: 텍스트 파일 (mmap 최적화)
+- PDFLoader: PDF 파일 (pypdf 기반)
+- CSVLoader: CSV 파일
+- HTMLLoader: HTML 파일/URL
+- DirectoryLoader: 디렉토리 (병렬 처리)
+- JupyterLoader: Jupyter Notebook
+
+고급 로더:
+- DoclingLoader: IBM 문서 파서 (PDF, DOCX, XLSX 등)
+- beanPDFLoader: 고급 PDF (5개 엔진, 테이블/이미지 추출)
+
+데이터베이스 로더:
+- PostgreSQLLoader: PostgreSQL 데이터베이스
+- MongoDBLoader: MongoDB 데이터베이스
+- SQLiteLoader: SQLite 데이터베이스 (의존성 없음)
+
+Example:
+    ```python
+    from beanllm.domain.loaders import PostgreSQLLoader, MongoDBLoader, SQLiteLoader
+
+    # PostgreSQL에서 문서 로드
+    loader = PostgreSQLLoader(
+        connection_string="postgresql://user:pass@localhost:5432/db",
+        query="SELECT title, content FROM articles",
+        content_columns=["title", "content"]
+    )
+    docs = loader.load()
+
+    # MongoDB에서 문서 로드
+    loader = MongoDBLoader(
+        connection_string="mongodb://localhost:27017",
+        database="mydb",
+        collection="documents",
+        query={"status": "active"}
+    )
+
+    # SQLite에서 문서 로드 (의존성 없음)
+    loader = SQLiteLoader(db_path="data.db", table="articles")
+    ```
 """
 
-from .base import BaseDocumentLoader
-from .factory import DocumentLoader, load_documents
-from .core import (
+from beanllm.domain.loaders.advanced import DoclingLoader
+from beanllm.domain.loaders.base import BaseDocumentLoader
+from beanllm.domain.loaders.core import (
     CSVLoader,
     DirectoryLoader,
     HTMLLoader,
@@ -12,27 +53,44 @@ from .core import (
     PDFLoader,
     TextLoader,
 )
-from .advanced import DoclingLoader
-from .types import Document
+from beanllm.domain.loaders.factory import DocumentLoader, load_documents
+from beanllm.domain.loaders.types import Document
 
 # beanPDFLoader (고급 PDF 로더)
 try:
-    from .pdf import PDFLoadConfig, beanPDFLoader
+    from beanllm.domain.loaders.pdf import PDFLoadConfig, beanPDFLoader
 except ImportError:
     # 의존성이 없을 수 있음
     beanPDFLoader = None  # type: ignore
     PDFLoadConfig = None  # type: ignore
 
+# Database Loaders (의존성이 없을 수 있음)
+try:
+    from beanllm.domain.loaders.database import (
+        MongoDBLoader,
+        PostgreSQLLoader,
+        SQLiteLoader,
+    )
+except ImportError:
+    PostgreSQLLoader = None  # type: ignore
+    MongoDBLoader = None  # type: ignore
+    SQLiteLoader = None  # type: ignore
+
 __all__ = [
+    # Types
     "Document",
+    # Base
     "BaseDocumentLoader",
+    # Core Loaders
     "TextLoader",
     "PDFLoader",
     "CSVLoader",
     "DirectoryLoader",
     "HTMLLoader",
     "JupyterLoader",
+    # Advanced Loaders
     "DoclingLoader",
+    # Factory
     "DocumentLoader",
     "load_documents",
 ]
@@ -41,6 +99,10 @@ __all__ = [
 if beanPDFLoader is not None:
     __all__.extend(["beanPDFLoader", "PDFLoadConfig"])
 
+# Database Loaders 추가 (있는 경우)
+if PostgreSQLLoader is not None:
+    __all__.extend(["PostgreSQLLoader", "MongoDBLoader", "SQLiteLoader"])
+
 
 # 편의 함수: beanPDFLoader 직접 사용
 def load_pdf(
@@ -48,7 +110,7 @@ def load_pdf(
     extract_tables: bool = True,
     extract_images: bool = False,
     strategy: str = "auto",
-    **kwargs
+    **kwargs,
 ):
     """
     PDF 로딩 편의 함수 (beanPDFLoader 자동 사용)
@@ -86,7 +148,7 @@ def load_pdf(
             extract_tables=extract_tables,
             extract_images=extract_images,
             strategy=strategy,
-            **kwargs
+            **kwargs,
         )
         return loader.load()
     else:

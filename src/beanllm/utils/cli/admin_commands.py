@@ -16,26 +16,26 @@ import asyncio
 import json
 import os
 import sys
-from datetime import datetime
-from typing import Any, Dict, List, Optional
 
 try:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.table import Table
     from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.syntax import Syntax
+    from rich.table import Table
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
 
 # beanllm imports
 try:
+    from beanllm.facade.core.client_facade import Client
     from beanllm.infrastructure.distributed.google_events import (
         get_google_export_stats,
-        get_security_events
+        get_security_events,
     )
-    from beanllm.facade.core.client_facade import Client
+
     BEANLLM_AVAILABLE = True
 except ImportError:
     BEANLLM_AVAILABLE = False
@@ -94,7 +94,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
-                console=console
+                console=console,
             ) as progress:
                 task = progress.add_task("Loading Google export statistics...", total=None)
                 stats = await get_google_export_stats(hours=hours)
@@ -146,9 +146,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
 
         # Gemini 호출 (유료 결제한 API 키 사용 - 추가 비용 없음)
         client = Client(model="gemini-2.0-flash-exp", provider="google")
-        response = await client.chat([
-            {"role": "user", "content": prompt}
-        ])
+        response = await client.chat([{"role": "user", "content": prompt}])
 
         # 3. 결과 출력
         if RICH_AVAILABLE:
@@ -157,7 +155,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
             table.add_column("Service", style="cyan")
             table.add_column("Count", style="magenta", justify="right")
 
-            for service, count in stats['by_service'].items():
+            for service, count in stats["by_service"].items():
                 table.add_row(service.capitalize(), str(count))
 
             console.print(table)
@@ -165,10 +163,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
 
             # Gemini 분석 결과
             panel = Panel(
-                response.content,
-                title="🤖 Gemini Analysis",
-                border_style="green",
-                padding=(1, 2)
+                response.content, title="🤖 Gemini Analysis", border_style="green", padding=(1, 2)
             )
             console.print(panel)
         else:
@@ -176,7 +171,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
             print("\n" + "=" * 60)
             print(f"Google Export Statistics (Last {hours} hours)")
             print("=" * 60)
-            for service, count in stats['by_service'].items():
+            for service, count in stats["by_service"].items():
                 print(f"{service.capitalize()}: {count}")
             print("\n" + "=" * 60)
             print("Gemini Analysis")
@@ -187,6 +182,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
     except Exception as e:
         print_error(f"Analysis failed: {e}")
         import traceback
+
         traceback.print_exc()
 
 
@@ -207,7 +203,7 @@ async def show_stats(hours: int = 24) -> None:
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
-                console=console
+                console=console,
             ) as progress:
                 task = progress.add_task("Loading statistics...", total=None)
                 stats = await get_google_export_stats(hours=hours)
@@ -224,8 +220,10 @@ async def show_stats(hours: int = 24) -> None:
             service_table.add_column("Exports", style="magenta", justify="right")
             service_table.add_column("Percentage", style="green", justify="right")
 
-            total = stats['total_exports']
-            for service, count in sorted(stats['by_service'].items(), key=lambda x: x[1], reverse=True):
+            total = stats["total_exports"]
+            for service, count in sorted(
+                stats["by_service"].items(), key=lambda x: x[1], reverse=True
+            ):
                 percentage = f"{(count / total * 100):.1f}%" if total > 0 else "0%"
                 service_table.add_row(service.capitalize(), str(count), percentage)
 
@@ -233,13 +231,13 @@ async def show_stats(hours: int = 24) -> None:
             console.print(service_table)
 
             # 상위 사용자
-            if stats['top_users']:
+            if stats["top_users"]:
                 user_table = Table(title=f"\n👥 Top Users (Last {hours} hours)")
                 user_table.add_column("Rank", style="yellow", justify="right")
                 user_table.add_column("User ID", style="cyan")
                 user_table.add_column("Export Count", style="magenta", justify="right")
 
-                for i, (user_id, count) in enumerate(stats['top_users'], 1):
+                for i, (user_id, count) in enumerate(stats["top_users"], 1):
                     user_table.add_row(str(i), user_id, str(count))
 
                 console.print()
@@ -252,7 +250,7 @@ async def show_stats(hours: int = 24) -> None:
                 f"[bold]Active Users:[/bold] {len(stats['top_users'])}\n"
                 f"[bold]Most Popular:[/bold] {max(stats['by_service'], key=stats['by_service'].get) if stats['by_service'] else 'N/A'}",
                 title="📈 Summary",
-                border_style="blue"
+                border_style="blue",
             )
             console.print(summary_panel)
         else:
@@ -260,15 +258,17 @@ async def show_stats(hours: int = 24) -> None:
             print("\n" + "=" * 60)
             print(f"Google Service Usage (Last {hours} hours)")
             print("=" * 60)
-            total = stats['total_exports']
-            for service, count in sorted(stats['by_service'].items(), key=lambda x: x[1], reverse=True):
+            total = stats["total_exports"]
+            for service, count in sorted(
+                stats["by_service"].items(), key=lambda x: x[1], reverse=True
+            ):
                 percentage = f"{(count / total * 100):.1f}%" if total > 0 else "0%"
                 print(f"{service.capitalize()}: {count} ({percentage})")
 
             print("\n" + "=" * 60)
             print(f"Top Users (Last {hours} hours)")
             print("=" * 60)
-            for i, (user_id, count) in enumerate(stats['top_users'], 1):
+            for i, (user_id, count) in enumerate(stats["top_users"], 1):
                 print(f"{i}. {user_id}: {count} exports")
 
             print("\n" + "=" * 60)
@@ -300,7 +300,9 @@ async def optimize_with_gemini() -> None:
         stats_7d = await get_google_export_stats(hours=24 * 7)
 
         if RICH_AVAILABLE:
-            console.print("\n[bold cyan]💰 Generating cost optimization recommendations with Gemini...[/bold cyan]\n")
+            console.print(
+                "\n[bold cyan]💰 Generating cost optimization recommendations with Gemini...[/bold cyan]\n"
+            )
         else:
             print("\n💰 Generating cost optimization recommendations with Gemini...\n")
 
@@ -335,7 +337,7 @@ async def optimize_with_gemini() -> None:
                 response.content,
                 title="💰 Cost Optimization Recommendations",
                 border_style="yellow",
-                padding=(1, 2)
+                padding=(1, 2),
             )
             console.print(panel)
         else:
@@ -366,7 +368,7 @@ async def check_security(hours: int = 24) -> None:
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
-                console=console
+                console=console,
             ) as progress:
                 task = progress.add_task("Loading security events...", total=None)
                 events = await get_security_events(hours=hours, severity="high")
@@ -413,7 +415,9 @@ async def check_security(hours: int = 24) -> None:
         gemini_key = os.getenv("GEMINI_API_KEY")
         if gemini_key and events:
             if RICH_AVAILABLE:
-                console.print("\n[bold cyan]🤖 Analyzing security events with Gemini...[/bold cyan]\n")
+                console.print(
+                    "\n[bold cyan]🤖 Analyzing security events with Gemini...[/bold cyan]\n"
+                )
             else:
                 print("\n🤖 Analyzing security events with Gemini...\n")
 
@@ -439,7 +443,7 @@ async def check_security(hours: int = 24) -> None:
                     response.content,
                     title="🛡️ Security Analysis",
                     border_style="red",
-                    padding=(1, 2)
+                    padding=(1, 2),
                 )
                 console.print(panel)
             else:
@@ -461,11 +465,7 @@ def launch_dashboard() -> None:
         import subprocess
 
         # Streamlit이 설치되어 있는지 확인
-        result = subprocess.run(
-            ["streamlit", "--version"],
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(["streamlit", "--version"], capture_output=True, text=True)
 
         if result.returncode != 0:
             print_error("Streamlit is not installed")
@@ -475,8 +475,12 @@ def launch_dashboard() -> None:
         # 대시보드 파일 경로
         dashboard_path = os.path.join(
             os.path.dirname(__file__),
-            "..", "..", "..", "..",  # Go up to project root
-            "admin", "dashboard.py"
+            "..",
+            "..",
+            "..",
+            "..",  # Go up to project root
+            "admin",
+            "dashboard.py",
         )
 
         if not os.path.exists(dashboard_path):
@@ -488,11 +492,9 @@ def launch_dashboard() -> None:
         print_info("Dashboard will open in your browser...")
 
         # Streamlit 실행
-        subprocess.run([
-            "streamlit", "run", dashboard_path,
-            "--server.port=8501",
-            "--server.headless=true"
-        ])
+        subprocess.run(
+            ["streamlit", "run", dashboard_path, "--server.port=8501", "--server.headless=true"]
+        )
 
     except Exception as e:
         print_error(f"Failed to launch dashboard: {e}")

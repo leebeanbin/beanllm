@@ -2,13 +2,14 @@
 VisionRAGService 테스트 - Vision RAG 서비스 구현체 테스트
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock, patch
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 
 from beanllm.dto.request.vision_rag_request import VisionRAGRequest
-from beanllm.dto.response.vision_rag_response import VisionRAGResponse
 from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.dto.response.vision_rag_response import VisionRAGResponse
 from beanllm.service.impl.vision_rag_service_impl import VisionRAGServiceImpl
 
 
@@ -234,5 +235,3 @@ class TestVisionRAGService:
             except (ImportError, ModuleNotFoundError, AttributeError):
                 # vision_loaders가 없으면 스킵
                 pytest.skip("vision_loaders module not available")
-
-

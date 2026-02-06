@@ -5,11 +5,11 @@ LLM fine-tuning endpoints.
 Uses Python best practices: context managers, duck typing.
 """
 
+import json
 import logging
 import tempfile
-import json
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -23,10 +23,14 @@ router = APIRouter(prefix="/api/finetuning", tags=["Fine-tuning"])
 # Request/Response Models
 # ============================================================================
 
+
 class FineTuningCreateRequest(BaseModel):
     """Request to create fine-tuning job"""
+
     base_model: str = Field(..., description="Base model to fine-tune")
-    training_data: List[Dict[str, Any]] = Field(..., description="Training examples in JSONL format")
+    training_data: List[Dict[str, Any]] = Field(
+        ..., description="Training examples in JSONL format"
+    )
     validation_data: Optional[List[Dict[str, Any]]] = Field(None, description="Validation examples")
     hyperparameters: Optional[Dict[str, Any]] = Field(None, description="Training hyperparameters")
     suffix: Optional[str] = Field(None, description="Model suffix for naming")
@@ -34,6 +38,7 @@ class FineTuningCreateRequest(BaseModel):
 
 class FineTuningJobResponse(BaseModel):
     """Response from fine-tuning job creation"""
+
     job_id: str
     status: str
     base_model: str
@@ -42,6 +47,7 @@ class FineTuningJobResponse(BaseModel):
 
 class FineTuningStatusResponse(BaseModel):
     """Response from fine-tuning status check"""
+
     job_id: str
     status: str
     progress: float = 0.0
@@ -55,11 +61,12 @@ class FineTuningStatusResponse(BaseModel):
 # Helper Functions
 # ============================================================================
 
+
 def _get_finetuning_manager():
     """Get or create fine-tuning manager"""
     from beanllm.facade.ml.finetuning_facade import (
-        create_finetuning_provider,
         FineTuningManagerFacade,
+        create_finetuning_provider,
     )
 
     provider = create_finetuning_provider(provider="openai")
@@ -79,6 +86,7 @@ def _safe_get(obj: Any, attr: str, default: Any = None) -> Any:
 # Endpoints
 # ============================================================================
 
+
 @router.post("/create", response_model=FineTuningJobResponse)
 async def finetuning_create(request: FineTuningCreateRequest) -> FineTuningJobResponse:
     """
@@ -91,9 +99,7 @@ async def finetuning_create(request: FineTuningCreateRequest) -> FineTuningJobRe
         finetuning = _get_finetuning_manager()
 
         # Create temp file for training data
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".jsonl", delete=False
-        ) as temp_file:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as temp_file:
             for example in request.training_data:
                 json.dump(example, temp_file)
                 temp_file.write("\n")

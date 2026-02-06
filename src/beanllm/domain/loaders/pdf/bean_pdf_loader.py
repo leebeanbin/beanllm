@@ -15,9 +15,10 @@ beanPDFLoader - 고급 PDF 로더
 from pathlib import Path
 from typing import List, Optional, Union
 
-from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.advanced.security import validate_file_path
+from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
+
 from .models import PDFLoadConfig
 
 try:
@@ -207,8 +208,7 @@ class beanPDFLoader(BaseDocumentLoader):
 
         if not self._engines:
             raise ImportError(
-                "No PDF engines available. "
-                "Install at least one: pip install PyMuPDF pdfplumber"
+                "No PDF engines available. " "Install at least one: pip install PyMuPDF pdfplumber"
             )
 
     def _check_dependencies(self) -> None:
@@ -216,8 +216,7 @@ class beanPDFLoader(BaseDocumentLoader):
         # 엔진이 하나라도 있으면 OK
         if not self._engines:
             raise ImportError(
-                "No PDF engines available. "
-                "Install at least one: pip install PyMuPDF pdfplumber"
+                "No PDF engines available. " "Install at least one: pip install PyMuPDF pdfplumber"
             )
 
     def load(self) -> List[Document]:
@@ -303,7 +302,7 @@ class beanPDFLoader(BaseDocumentLoader):
         config_dict = self.config.to_dict()
 
         # 엔진이 스트리밍을 지원하는지 확인
-        if hasattr(engine, 'extract_streaming'):
+        if hasattr(engine, "extract_streaming"):
             # 스트리밍 지원 엔진
             for page_result in engine.extract_streaming(self.file_path, config_dict):
                 # 페이지별 Document 생성
@@ -358,8 +357,7 @@ class beanPDFLoader(BaseDocumentLoader):
         else:
             # 스트리밍 미지원 엔진 - lazy_load로 fallback
             logger.warning(
-                f"Engine '{strategy}' does not support streaming, "
-                f"falling back to lazy_load"
+                f"Engine '{strategy}' does not support streaming, " f"falling back to lazy_load"
             )
             yield from self.lazy_load()
 
@@ -376,8 +374,7 @@ class beanPDFLoader(BaseDocumentLoader):
                 return self.config.strategy
             else:
                 logger.warning(
-                    f"Strategy '{self.config.strategy}' not available, "
-                    f"falling back to auto"
+                    f"Strategy '{self.config.strategy}' not available, " f"falling back to auto"
                 )
 
         # 자동 선택 로직
@@ -472,9 +469,7 @@ class beanPDFLoader(BaseDocumentLoader):
             # 테이블 정보 추가 (해당 페이지의 테이블)
             page_num = page_data["page"]
             page_tables = [
-                table
-                for table in result.get("tables", [])
-                if table.get("page") == page_num
+                table for table in result.get("tables", []) if table.get("page") == page_num
             ]
             if page_tables:
                 metadata["tables"] = [
@@ -491,11 +486,7 @@ class beanPDFLoader(BaseDocumentLoader):
                 ]
 
             # 이미지 정보 추가 (해당 페이지의 이미지)
-            page_images = [
-                img
-                for img in result.get("images", [])
-                if img.get("page") == page_num
-            ]
+            page_images = [img for img in result.get("images", []) if img.get("page") == page_num]
             if page_images:
                 metadata["images"] = [
                     {
@@ -534,4 +525,3 @@ class beanPDFLoader(BaseDocumentLoader):
         markdown_text = converter.convert_to_markdown(result)
 
         return markdown_text
-

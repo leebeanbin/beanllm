@@ -5,7 +5,7 @@ Validation Decorators - 입력 검증 공통 기능
 
 import functools
 import inspect
-from typing import Callable, Dict, List, TypeVar
+from typing import Callable, Dict, List, Optional, TypeVar
 
 try:
     from .validation_utils import _get_bound_args, _validate_parameters
@@ -51,9 +51,9 @@ T = TypeVar("T")
 
 
 def validate_input(
-    required_params: List[str] = None,
-    param_types: Dict[str, type] = None,
-    param_ranges: Dict[str, tuple] = None,
+    required_params: Optional[List[str]] = None,
+    param_types: Optional[Dict[str, type]] = None,
+    param_ranges: Optional[Dict[str, tuple]] = None,
 ):
     """
     입력 검증 데코레이터

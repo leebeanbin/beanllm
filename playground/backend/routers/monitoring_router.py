@@ -13,7 +13,7 @@ CACHE_AND_METRICS_POLICY §3 — “모니터링은 챗에 대한 것만 제대�
 import logging
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Union
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -27,8 +27,10 @@ router = APIRouter(prefix="/api/monitoring", tags=["Monitoring"])
 # Response Models
 # ===========================================
 
+
 class MetricsSummary(BaseModel):
     """Overall metrics summary"""
+
     total_requests: int = Field(default=0, description="Total requests in the last hour")
     total_errors: int = Field(default=0, description="Total errors in the last hour")
     error_rate: float = Field(default=0.0, description="Error rate percentage")
@@ -43,6 +45,7 @@ class MetricsSummary(BaseModel):
 
 class RequestTrend(BaseModel):
     """Request trend data point"""
+
     minute: int = Field(..., description="Unix timestamp (minute)")
     requests: int = Field(default=0, description="Request count")
     errors: int = Field(default=0, description="Error count")
@@ -50,6 +53,7 @@ class RequestTrend(BaseModel):
 
 class EndpointStats(BaseModel):
     """Per-endpoint statistics"""
+
     endpoint: str = Field(..., description="Endpoint path")
     method: str = Field(..., description="HTTP method")
     count: int = Field(default=0, description="Total request count")
@@ -60,6 +64,7 @@ class EndpointStats(BaseModel):
 
 class TokenUsage(BaseModel):
     """Token usage per model"""
+
     model: str = Field(..., description="Model name")
     input_tokens: int = Field(default=0, description="Total input tokens")
     output_tokens: int = Field(default=0, description="Total output tokens")
@@ -70,6 +75,7 @@ class TokenUsage(BaseModel):
 
 class SystemHealth(BaseModel):
     """System health status"""
+
     status: str = Field(default="healthy", description="Overall health status")
     redis_connected: bool = Field(default=False, description="Redis connection status")
     kafka_connected: bool = Field(default=False, description="Kafka connection status")
@@ -79,6 +85,7 @@ class SystemHealth(BaseModel):
 
 class ChatHistoryItem(BaseModel):
     """챗 1회 단위 상세 이력 (CHAT_HISTORY_METRICS.md)"""
+
     request_id: str = Field(..., description="요청 식별자")
     model: str = Field(default="", description="사용 모델")
     at_ts: int = Field(default=0, description="완료 시각(Unix sec)")
@@ -93,6 +100,7 @@ class ChatHistoryItem(BaseModel):
 
 class MonitoringDashboard(BaseModel):
     """Complete monitoring dashboard data"""
+
     summary: MetricsSummary
     request_trend: List[RequestTrend]
     top_endpoints: List[EndpointStats]
@@ -112,6 +120,7 @@ def _get_redis_client():
     """Get Redis client if available"""
     try:
         from beanllm.infrastructure.distributed.messaging import RequestMonitor
+
         monitor = RequestMonitor()
         if monitor and monitor.redis:
             return monitor.redis
@@ -189,11 +198,13 @@ async def _get_request_trend(redis, minutes: int = 60) -> List[RequestTrend]:
             req_count = await redis.get(f"metrics:requests:{minute_key}")
             err_count = await redis.get(f"metrics:errors:{minute_key}")
 
-            trend.append(RequestTrend(
-                minute=minute_key * 60,
-                requests=int(req_count) if req_count else 0,
-                errors=int(err_count) if err_count else 0,
-            ))
+            trend.append(
+                RequestTrend(
+                    minute=minute_key * 60,
+                    requests=int(req_count) if req_count else 0,
+                    errors=int(err_count) if err_count else 0,
+                )
+            )
 
         return trend
     except Exception as e:
@@ -243,7 +254,9 @@ async def _get_endpoint_stats(redis, limit: int = 10) -> List[EndpointStats]:
                 data = await redis.hgetall(key)
                 if data:
                     # Key may be bytes (decode_responses=False)
-                    key_str = key.decode("utf-8", errors="replace") if isinstance(key, bytes) else key
+                    key_str = (
+                        key.decode("utf-8", errors="replace") if isinstance(key, bytes) else key
+                    )
                     parts = key_str.split(":", 3)
                     if len(parts) >= 4:
                         method = parts[2]
@@ -256,14 +269,16 @@ async def _get_endpoint_stats(redis, limit: int = 10) -> List[EndpointStats]:
                         avg_time = total_time / count if count > 0 else 0.0
                         error_rate = (errors / count * 100) if count > 0 else 0.0
 
-                        endpoints.append(EndpointStats(
-                            endpoint=path,
-                            method=method,
-                            count=count,
-                            errors=errors,
-                            avg_time_ms=round(avg_time, 2),
-                            error_rate=round(error_rate, 2),
-                        ))
+                        endpoints.append(
+                            EndpointStats(
+                                endpoint=path,
+                                method=method,
+                                count=count,
+                                errors=errors,
+                                avg_time_ms=round(avg_time, 2),
+                                error_rate=round(error_rate, 2),
+                            )
+                        )
 
             if cursor == 0:
                 break
@@ -289,7 +304,9 @@ async def _get_token_usage(redis) -> List[TokenUsage]:
             for key in keys:
                 data = await redis.hgetall(key)
                 if data:
-                    key_str = key.decode("utf-8", errors="replace") if isinstance(key, bytes) else key
+                    key_str = (
+                        key.decode("utf-8", errors="replace") if isinstance(key, bytes) else key
+                    )
                     parts = key_str.split(":", 2)
                     model = parts[2] if len(parts) > 2 else "unknown"
 
@@ -300,14 +317,16 @@ async def _get_token_usage(redis) -> List[TokenUsage]:
 
                     avg_tokens = total_tokens / request_count if request_count > 0 else 0.0
 
-                    usage.append(TokenUsage(
-                        model=model,
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                        total_tokens=total_tokens,
-                        request_count=request_count,
-                        avg_tokens_per_request=round(avg_tokens, 2),
-                    ))
+                    usage.append(
+                        TokenUsage(
+                            model=model,
+                            input_tokens=input_tokens,
+                            output_tokens=output_tokens,
+                            total_tokens=total_tokens,
+                            request_count=request_count,
+                            avg_tokens_per_request=round(avg_tokens, 2),
+                        )
+                    )
 
             if cursor == 0:
                 break
@@ -326,6 +345,7 @@ def _get_system_health(redis_connected: bool) -> SystemHealth:
     kafka_connected = False
     try:
         from beanllm.infrastructure.distributed import get_event_logger
+
         event_logger = get_event_logger()
         kafka_connected = event_logger is not None
     except Exception:
@@ -353,6 +373,7 @@ def _get_system_health(redis_connected: bool) -> SystemHealth:
 # ===========================================
 # Endpoints
 # ===========================================
+
 
 @router.get("/health", response_model=SystemHealth)
 async def get_health():

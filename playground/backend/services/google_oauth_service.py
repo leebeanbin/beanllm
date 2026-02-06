@@ -10,8 +10,8 @@ Google 서비스 인증을 위한 OAuth 2.0 플로우 관리:
 
 import logging
 import os
-from datetime import datetime, timezone, timedelta
-from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
 
 from services.encryption_service import encryption_service
 
@@ -20,27 +20,29 @@ logger = logging.getLogger(__name__)
 # Google OAuth 설정
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
-GOOGLE_REDIRECT_URI = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback")
+GOOGLE_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:8000/api/auth/google/callback"
+)
 
 # Google OAuth 스코프 (각 서비스별)
 GOOGLE_SCOPES = {
     "drive": [
-        "https://www.googleapis.com/auth/drive.file",       # 앱이 생성한 파일만
-        "https://www.googleapis.com/auth/drive.readonly",   # 읽기 전용
+        "https://www.googleapis.com/auth/drive.file",  # 앱이 생성한 파일만
+        "https://www.googleapis.com/auth/drive.readonly",  # 읽기 전용
     ],
     "docs": [
-        "https://www.googleapis.com/auth/documents",        # Docs 읽기/쓰기
+        "https://www.googleapis.com/auth/documents",  # Docs 읽기/쓰기
     ],
     "gmail": [
-        "https://www.googleapis.com/auth/gmail.send",       # 이메일 전송
-        "https://www.googleapis.com/auth/gmail.readonly",   # 이메일 읽기
+        "https://www.googleapis.com/auth/gmail.send",  # 이메일 전송
+        "https://www.googleapis.com/auth/gmail.readonly",  # 이메일 읽기
     ],
     "calendar": [
-        "https://www.googleapis.com/auth/calendar",         # 캘린더 읽기/쓰기
+        "https://www.googleapis.com/auth/calendar",  # 캘린더 읽기/쓰기
         "https://www.googleapis.com/auth/calendar.events",  # 이벤트 관리
     ],
     "sheets": [
-        "https://www.googleapis.com/auth/spreadsheets",     # Sheets 읽기/쓰기
+        "https://www.googleapis.com/auth/spreadsheets",  # Sheets 읽기/쓰기
     ],
 }
 
@@ -104,7 +106,9 @@ class GoogleOAuthService:
             {"auth_url": "...", "state": "..."}
         """
         if not self.is_configured:
-            raise ValueError("Google OAuth is not configured. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET.")
+            raise ValueError(
+                "Google OAuth is not configured. Set GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET."
+            )
 
         # 스코프 수집
         scopes = list(DEFAULT_SCOPES)
@@ -122,17 +126,19 @@ class GoogleOAuthService:
 
         # State 생성 (CSRF 방지 + 사용자 ID)
         import secrets
+
         state = f"{user_id}:{secrets.token_urlsafe(16)}"
 
         # URL 생성
         import urllib.parse
+
         params = {
             "client_id": self._client_id,
             "redirect_uri": self._redirect_uri,
             "response_type": "code",
             "scope": " ".join(scopes),
             "access_type": "offline",  # refresh_token 받기 위해
-            "prompt": "consent",       # 항상 동의 화면 표시 (refresh_token 보장)
+            "prompt": "consent",  # 항상 동의 화면 표시 (refresh_token 보장)
             "state": state,
         }
 
@@ -203,7 +209,9 @@ class GoogleOAuthService:
 
             # 토큰 암호화
             access_token_encrypted = encryption_service.encrypt(access_token)
-            refresh_token_encrypted = encryption_service.encrypt(refresh_token) if refresh_token else None
+            refresh_token_encrypted = (
+                encryption_service.encrypt(refresh_token) if refresh_token else None
+            )
 
             # MongoDB에 저장 (upsert)
             now = datetime.now(timezone.utc)
@@ -277,7 +285,9 @@ class GoogleOAuthService:
                         logger.error(f"Token refresh failed: {e}")
                         return None
                 else:
-                    logger.warning(f"Token expired and no refresh token available for user: {user_id}")
+                    logger.warning(
+                        f"Token expired and no refresh token available for user: {user_id}"
+                    )
                     return None
 
             # 복호화하여 반환
@@ -427,6 +437,7 @@ class GoogleOAuthService:
 
                     # Google에 토큰 취소 요청
                     import httpx
+
                     async with httpx.AsyncClient() as client:
                         await client.post(
                             "https://oauth2.googleapis.com/revoke",

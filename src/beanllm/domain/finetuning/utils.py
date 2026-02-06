@@ -258,25 +258,24 @@ class FineTuningManager:
         elif provider == "axolotl":
             try:
                 from .local_providers import AxolotlProvider
+
                 provider_instance = AxolotlProvider(**kwargs)
             except ImportError:
                 raise ImportError(
-                    "AxolotlProvider requires axolotl. "
-                    "Install with: pip install axolotl-ai"
+                    "AxolotlProvider requires axolotl. " "Install with: pip install axolotl-ai"
                 )
         elif provider == "unsloth":
             try:
                 from .local_providers import UnslothProvider
+
                 provider_instance = UnslothProvider(**kwargs)
             except ImportError:
                 raise ImportError(
-                    "UnslothProvider requires unsloth. "
-                    "Install with: pip install unsloth"
+                    "UnslothProvider requires unsloth. " "Install with: pip install unsloth"
                 )
         else:
             raise ValueError(
-                f"Unknown provider: {provider}. "
-                f"Available: openai, axolotl, unsloth"
+                f"Unknown provider: {provider}. " f"Available: openai, axolotl, unsloth"
             )
 
         return FineTuningManager(provider_instance)

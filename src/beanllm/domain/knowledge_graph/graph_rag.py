@@ -83,9 +83,7 @@ class GraphRAG:
             entity_id = entity["id"]
 
             if self.querier:
-                neighbors = self.querier.find_related_entities(
-                    entity_id, max_hops=max_hops
-                )
+                neighbors = self.querier.find_related_entities(entity_id, max_hops=max_hops)
                 for neighbor in neighbors:
                     expanded_entities.add(neighbor["id"])
 
@@ -94,13 +92,15 @@ class GraphRAG:
         for entity_id in list(expanded_entities)[:top_k]:
             if entity_id in self.graph:
                 node_data = self.graph.nodes[entity_id]
-                results.append({
-                    "id": entity_id,
-                    "name": node_data.get("name"),
-                    "type": node_data.get("type"),
-                    "description": node_data.get("description", ""),
-                    "score": 1.0,  # Placeholder scoring
-                })
+                results.append(
+                    {
+                        "id": entity_id,
+                        "name": node_data.get("name"),
+                        "type": node_data.get("type"),
+                        "description": node_data.get("description", ""),
+                        "score": 1.0,  # Placeholder scoring
+                    }
+                )
 
         return results
 
@@ -127,8 +127,12 @@ class GraphRAG:
         results = []
         for source, target in entity_pairs:
             # Find source and target in graph
-            source_matches = self.querier.find_entities_by_name(source, fuzzy=True) if self.querier else []
-            target_matches = self.querier.find_entities_by_name(target, fuzzy=True) if self.querier else []
+            source_matches = (
+                self.querier.find_entities_by_name(source, fuzzy=True) if self.querier else []
+            )
+            target_matches = (
+                self.querier.find_entities_by_name(target, fuzzy=True) if self.querier else []
+            )
 
             for source_entity in source_matches[:1]:
                 for target_entity in target_matches[:1]:
@@ -136,19 +140,25 @@ class GraphRAG:
                     target_id = target_entity["id"]
 
                     # Find path
-                    path = self.querier.find_shortest_path(source_id, target_id) if self.querier else None
+                    path = (
+                        self.querier.find_shortest_path(source_id, target_id)
+                        if self.querier
+                        else None
+                    )
 
                     if path and len(path) <= max_path_length + 1:
                         # Build path description
                         path_desc = self._describe_path(path)
 
-                        results.append({
-                            "source": source,
-                            "target": target,
-                            "path": path,
-                            "path_length": len(path) - 1,
-                            "description": path_desc,
-                        })
+                        results.append(
+                            {
+                                "source": source,
+                                "target": target,
+                                "path": path,
+                                "path_length": len(path) - 1,
+                                "description": path_desc,
+                            }
+                        )
 
         return results
 

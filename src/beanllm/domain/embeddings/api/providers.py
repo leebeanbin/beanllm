@@ -21,6 +21,14 @@ Embeddings Providers - 임베딩 Provider 구현체들 (Re-export Module)
 # Re-export all providers for backward compatibility
 
 # API-based embeddings (7개)
+# Local-based embeddings (4개)
+from beanllm.domain.embeddings.local.local_embeddings import (
+    CodeEmbedding,
+    HuggingFaceEmbedding,
+    NVEmbedEmbedding,
+    Qwen3Embedding,
+)
+
 from .api_embeddings import (
     CohereEmbedding,
     GeminiEmbedding,
@@ -29,14 +37,6 @@ from .api_embeddings import (
     OllamaEmbedding,
     OpenAIEmbedding,
     VoyageEmbedding,
-)
-
-# Local-based embeddings (4개)
-from beanllm.domain.embeddings.local.local_embeddings import (
-    CodeEmbedding,
-    HuggingFaceEmbedding,
-    NVEmbedEmbedding,
-    Qwen3Embedding,
 )
 
 # Explicit __all__ for better IDE support

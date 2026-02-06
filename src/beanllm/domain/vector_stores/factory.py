@@ -6,7 +6,7 @@ import os
 from typing import TYPE_CHECKING, List, Optional
 
 from .base import BaseVectorStore
-from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
+from .cloud import PineconeVectorStore, WeaviateVectorStore
 from .local import (
     ChromaVectorStore,
     FAISSVectorStore,
@@ -214,7 +214,7 @@ def from_documents(
     embedding_function,
     provider: Optional[str] = None,
     event_logger: Optional["EventLoggerProtocol"] = None,
-    **kwargs
+    **kwargs,
 ) -> BaseVectorStore:
     """
     문서에서 직접 vector store 생성
@@ -242,25 +242,27 @@ def from_documents(
         import asyncio
 
         try:
-            asyncio.run(event_logger.log_event(
-                "rag.indexing.started",
-                {
-                    "provider": provider or "auto",
-                    "document_count": len(documents),
-                    "embedding_function": str(embedding_function)[:100],
-                }
-            ))
+            asyncio.run(
+                event_logger.log_event(
+                    "rag.indexing.started",
+                    {
+                        "provider": provider or "auto",
+                        "document_count": len(documents),
+                        "embedding_function": str(embedding_function)[:100],
+                    },
+                )
+            )
         except RuntimeError:
             # Event loop already running, skip logging
             pass
-    
+
     try:
         # Pass event_logger to the vector store
         store = create_vector_store(
             provider=provider,
             embedding_function=embedding_function,
             event_logger=event_logger,
-            **kwargs
+            **kwargs,
         )
         store.add_documents(documents)
 
@@ -269,14 +271,16 @@ def from_documents(
             import asyncio
 
             try:
-                asyncio.run(event_logger.log_event(
-                    "rag.indexing.completed",
-                    {
-                        "provider": provider or "auto",
-                        "document_count": len(documents),
-                        "vector_store_id": str(id(store)),
-                    }
-                ))
+                asyncio.run(
+                    event_logger.log_event(
+                        "rag.indexing.completed",
+                        {
+                            "provider": provider or "auto",
+                            "document_count": len(documents),
+                            "vector_store_id": str(id(store)),
+                        },
+                    )
+                )
             except RuntimeError:
                 # Event loop already running, skip logging
                 pass
@@ -288,14 +292,16 @@ def from_documents(
             import asyncio
 
             try:
-                asyncio.run(event_logger.log_event(
-                    "rag.indexing.error",
-                    {
-                        "provider": provider or "auto",
-                        "document_count": len(documents),
-                        "error": str(e)[:500],
-                    }
-                ))
+                asyncio.run(
+                    event_logger.log_event(
+                        "rag.indexing.error",
+                        {
+                            "provider": provider or "auto",
+                            "document_count": len(documents),
+                            "error": str(e)[:500],
+                        },
+                    )
+                )
             except RuntimeError:
                 # Event loop already running, skip logging
                 pass

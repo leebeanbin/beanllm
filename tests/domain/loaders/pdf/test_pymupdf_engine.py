@@ -2,10 +2,11 @@
 PyMuPDFEngine 테스트
 """
 
-import pytest
 from pathlib import Path
-from src.beanllm.domain.loaders.pdf.engines.pymupdf_engine import PyMuPDFEngine
 
+import pytest
+
+from src.beanllm.domain.loaders.pdf.engines.pymupdf_engine import PyMuPDFEngine
 
 # 테스트 픽스처 경로
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures" / "pdf"

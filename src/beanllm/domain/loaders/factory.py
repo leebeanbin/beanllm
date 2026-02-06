@@ -71,6 +71,7 @@ class DocumentLoader:
         """beanPDFLoader 가져오기 (선택적)"""
         try:
             from .pdf import beanPDFLoader
+
             return beanPDFLoader
         except ImportError:
             return None

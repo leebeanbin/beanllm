@@ -6,7 +6,7 @@ Redis 클라이언트 관리
 """
 
 import os
-from typing import Optional, Any
+from typing import Any, Optional
 
 try:
     import redis.asyncio as redis
@@ -49,8 +49,7 @@ def get_redis_client():
 
     if redis is None:
         raise ImportError(
-            "redis package is required for distributed mode. "
-            "Install it with: pip install redis"
+            "redis package is required for distributed mode. " "Install it with: pip install redis"
         )
 
     if _redis_client is None:
@@ -99,4 +98,3 @@ def close_redis_client():
             logger.error(f"Error closing Redis client: {e}")
         finally:
             _redis_client = None
-

@@ -5,7 +5,6 @@ Embeddings Factory - 임베딩 팩토리
 import os
 from typing import List, Optional, Union
 
-from .base import BaseEmbedding
 from .api.providers import (
     CohereEmbedding,
     GeminiEmbedding,
@@ -15,6 +14,7 @@ from .api.providers import (
     OpenAIEmbedding,
     VoyageEmbedding,
 )
+from .base import BaseEmbedding
 
 try:
     from beanllm.utils.logging import get_logger

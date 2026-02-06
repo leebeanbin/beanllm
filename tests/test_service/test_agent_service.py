@@ -2,8 +2,9 @@
 AgentService 테스트 - 에이전트 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.agent_request import AgentRequest
 from beanllm.dto.response.agent_response import AgentResponse
@@ -438,4 +439,3 @@ Final Answer: The answer is 4.
         assert response.total_steps == 3
         # 두 도구가 모두 실행되었는지 확인
         assert agent_service._tool_registry.execute.call_count == 2
-

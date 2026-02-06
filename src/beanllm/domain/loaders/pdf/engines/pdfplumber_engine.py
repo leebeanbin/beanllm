@@ -9,9 +9,12 @@ pdfplumber를 사용한 정확한 PDF 파싱 엔진
 
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
 
 from .base import BasePDFEngine
+
+if TYPE_CHECKING:
+    import pdfplumber
 
 try:
     from beanllm.utils.logging import get_logger
@@ -122,13 +125,12 @@ class PDFPlumberEngine(BasePDFEngine):
                     page = pdf.pages[page_num]
 
                     # 텍스트 추출 옵션
-                    layout_preserve = (
-                        config.get("pdfplumber_layout", False) or 
-                        config.get("layout_analysis", False)
+                    layout_preserve = config.get("pdfplumber_layout", False) or config.get(
+                        "layout_analysis", False
                     )
                     x_tolerance = config.get("pdfplumber_x_tolerance", 3.0)
                     y_tolerance = config.get("pdfplumber_y_tolerance", 3.0)
-                    
+
                     if layout_preserve:
                         # 레이아웃 보존 텍스트 추출
                         text = page.extract_text(
@@ -144,15 +146,13 @@ class PDFPlumberEngine(BasePDFEngine):
                         )
 
                     # 고급: 문자/단어 단위 정보
-                    extract_chars = (
-                        config.get("pdfplumber_extract_chars", False) or 
-                        config.get("layout_analysis", False)
+                    extract_chars = config.get("pdfplumber_extract_chars", False) or config.get(
+                        "layout_analysis", False
                     )
-                    extract_words = (
-                        config.get("pdfplumber_extract_words", False) or 
-                        config.get("layout_analysis", False)
+                    extract_words = config.get("pdfplumber_extract_words", False) or config.get(
+                        "layout_analysis", False
                     )
-                    
+
                     chars_info = None
                     words_info = None
                     if extract_chars or extract_words:
@@ -191,10 +191,9 @@ class PDFPlumberEngine(BasePDFEngine):
                     }
 
                     # 고급: 하이퍼링크 추출
-                    extract_hyperlinks = (
-                        config.get("pdfplumber_extract_hyperlinks", False) or 
-                        config.get("layout_analysis", False)
-                    )
+                    extract_hyperlinks = config.get(
+                        "pdfplumber_extract_hyperlinks", False
+                    ) or config.get("layout_analysis", False)
                     if extract_hyperlinks:
                         try:
                             hyperlinks = page.hyperlinks
@@ -307,7 +306,9 @@ class PDFPlumberEngine(BasePDFEngine):
                     bbox = None
 
                 # 테이블 데이터 정리 (빈 행/열 제거)
-                cleaned_table = [row for row in table if any(cell and str(cell).strip() for cell in row)]
+                cleaned_table = [
+                    row for row in table if any(cell and str(cell).strip() for cell in row)
+                ]
 
                 if not cleaned_table:
                     continue
@@ -322,7 +323,10 @@ class PDFPlumberEngine(BasePDFEngine):
 
                     # 첫 번째 행을 헤더로 사용
                     if len(cleaned_table) > 1:
-                        headers = [str(cell) if cell else f"Column_{i}" for i, cell in enumerate(cleaned_table[0])]
+                        headers = [
+                            str(cell) if cell else f"Column_{i}"
+                            for i, cell in enumerate(cleaned_table[0])
+                        ]
                         data_rows = cleaned_table[1:]
                         dataframe = pd.DataFrame(data_rows, columns=headers)
 
@@ -333,7 +337,10 @@ class PDFPlumberEngine(BasePDFEngine):
                         csv_str = dataframe.to_csv(index=False)
                     else:
                         # 헤더만 있는 경우
-                        headers = [str(cell) if cell else f"Column_{i}" for i, cell in enumerate(cleaned_table[0])]
+                        headers = [
+                            str(cell) if cell else f"Column_{i}"
+                            for i, cell in enumerate(cleaned_table[0])
+                        ]
                         dataframe = pd.DataFrame(columns=headers)
                         markdown = "| " + " | ".join(headers) + " |\n"
                         markdown += "| " + " | ".join(["---"] * len(headers)) + " |"
@@ -417,4 +424,3 @@ class PDFPlumberEngine(BasePDFEngine):
             score -= 0.2
 
         return max(0.0, min(1.0, score))
-

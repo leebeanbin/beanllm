@@ -5,10 +5,11 @@ Provides secure encryption/decryption for API keys stored in MongoDB.
 Uses Fernet symmetric encryption (AES-128-CBC with HMAC).
 """
 
-import os
 import base64
+import os
 import secrets
 from typing import Optional
+
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC

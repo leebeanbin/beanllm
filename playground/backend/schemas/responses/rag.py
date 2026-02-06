@@ -2,12 +2,14 @@
 RAG Response Schemas
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class RAGBuildResponse(BaseModel):
     """Response from building RAG index"""
+
     collection_name: str
     num_documents: int
     status: str = "success"
@@ -15,6 +17,7 @@ class RAGBuildResponse(BaseModel):
 
 class RAGQueryResponse(BaseModel):
     """Response from RAG query"""
+
     query: str
     answer: str
     sources: List[Dict[str, Any]] = Field(default_factory=list)
@@ -23,6 +26,7 @@ class RAGQueryResponse(BaseModel):
 
 class CollectionInfo(BaseModel):
     """Information about a RAG collection"""
+
     name: str
     document_count: int
     created_at: Optional[str] = None
@@ -30,5 +34,6 @@ class CollectionInfo(BaseModel):
 
 class CollectionListResponse(BaseModel):
     """Response for listing collections"""
+
     collections: List[CollectionInfo]
     total: int

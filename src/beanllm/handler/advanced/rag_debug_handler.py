@@ -50,9 +50,7 @@ class RAGDebugHandler:
         """
         self._service = service
 
-    async def handle_start_session(
-        self, request: StartDebugSessionRequest
-    ) -> DebugSessionResponse:
+    async def handle_start_session(self, request: StartDebugSessionRequest) -> DebugSessionResponse:
         """
         디버그 세션 시작 처리
 

@@ -117,7 +117,9 @@ class TaskQueueInterface(ABC):
         pass
 
     @abstractmethod
-    async def dequeue(self, task_type: str, timeout: Optional[float] = None) -> Optional[Dict[str, Any]]:
+    async def dequeue(
+        self, task_type: str, timeout: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
         """
         작업 큐에서 가져오기
 
@@ -201,4 +203,3 @@ class DistributedLockInterface(ABC):
             ```
         """
         pass
-

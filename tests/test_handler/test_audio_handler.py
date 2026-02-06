@@ -2,9 +2,10 @@
 AudioHandler 테스트 - Audio Handler 테스트
 """
 
-import pytest
-from unittest.mock import AsyncMock, Mock
 from pathlib import Path
+from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.audio_request import AudioRequest
 from beanllm.dto.response.audio_response import AudioResponse
@@ -17,7 +18,7 @@ class TestAudioHandler:
     @pytest.fixture
     def mock_audio_service(self):
         """Mock AudioService"""
-        from beanllm.domain.audio import TranscriptionResult, TranscriptionSegment, AudioSegment
+        from beanllm.domain.audio import AudioSegment, TranscriptionResult, TranscriptionSegment
         from beanllm.service.audio_service import IAudioService
 
         service = Mock(spec=IAudioService)
@@ -52,11 +53,7 @@ class TestAudioHandler:
                 )
             )
         )
-        service.search_audio = AsyncMock(
-            return_value=AudioResponse(
-                search_results=[]
-            )
-        )
+        service.search_audio = AsyncMock(return_value=AudioResponse(search_results=[]))
         service.get_transcription = AsyncMock(
             return_value=AudioResponse(
                 transcription=TranscriptionResult(
@@ -69,9 +66,7 @@ class TestAudioHandler:
             )
         )
         service.list_audios = AsyncMock(
-            return_value=AudioResponse(
-                audio_ids=["audio_1", "audio_2"]
-            )
+            return_value=AudioResponse(audio_ids=["audio_1", "audio_2"])
         )
         return service
 
@@ -183,5 +178,3 @@ class TestAudioHandler:
         assert result.audio_ids is not None
         assert isinstance(result.audio_ids, list)
         assert len(result.audio_ids) == 2
-
-

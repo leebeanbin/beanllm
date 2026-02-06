@@ -4,7 +4,7 @@ Validation Utils - 검증 공통 로직 (DRY 원칙)
 """
 
 import inspect
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 def _get_bound_args(func: Any, *args: Any, **kwargs: Any) -> inspect.BoundArguments:
@@ -27,9 +27,9 @@ def _get_bound_args(func: Any, *args: Any, **kwargs: Any) -> inspect.BoundArgume
 
 def _validate_parameters(
     bound_args: inspect.BoundArguments,
-    required_params: List[str] = None,
-    param_types: Dict[str, type] = None,
-    param_ranges: Dict[str, tuple] = None,
+    required_params: Optional[List[str]] = None,
+    param_types: Optional[Dict[str, type]] = None,
+    param_ranges: Optional[Dict[str, tuple]] = None,
 ) -> None:
     """
     파라미터 검증 공통 로직 (DRY)

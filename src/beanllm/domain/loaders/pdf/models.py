@@ -7,8 +7,11 @@ PDF 로딩 및 추출 결과를 표현하는 데이터 클래스들
 """
 
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Union
+
+if TYPE_CHECKING:
+    import pandas
+    import PIL.Image
 
 
 @dataclass
@@ -141,12 +144,12 @@ class PDFLoadConfig:
         layout_analysis: 레이아웃 분석 여부
         max_pages: 최대 처리 페이지 수 (None이면 전체)
         page_range: 처리할 페이지 범위 (start, end) (None이면 전체)
-        
+
         # PyMuPDF 고급 옵션
         pymupdf_text_mode: str = "text"  # "text", "dict", "rawdict", "html", "xml", "json"
         pymupdf_extract_fonts: bool = False  # 폰트 정보 추출
         pymupdf_extract_links: bool = False  # 링크 추출
-        
+
         # pdfplumber 고급 옵션
         pdfplumber_layout: bool = False  # 레이아웃 보존 텍스트
         pdfplumber_extract_chars: bool = False  # 문자 단위 정보
@@ -164,12 +167,12 @@ class PDFLoadConfig:
     layout_analysis: bool = False
     max_pages: Optional[int] = None
     page_range: Optional[tuple[int, int]] = None
-    
+
     # PyMuPDF 고급 옵션
     pymupdf_text_mode: str = "text"
     pymupdf_extract_fonts: bool = False
     pymupdf_extract_links: bool = False
-    
+
     # pdfplumber 고급 옵션
     pdfplumber_layout: bool = False
     pdfplumber_extract_chars: bool = False
@@ -241,4 +244,3 @@ class PDFLoadResult:
             "markdown": self.markdown,
             "metadata": self.metadata,
         }
-

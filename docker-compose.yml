@@ -1,11 +1,13 @@
 # beanllm Playground Infrastructure
-# MongoDB + Redis + Kafka + Zookeeper
+# MongoDB + Redis + Kafka + Zookeeper (+ 선택: Ollama)
 #
 # Usage:
-#   docker-compose up -d          # Start all services
-#   docker-compose down           # Stop all services
-#   docker-compose logs -f        # View logs
-#   docker-compose ps             # Check status
+#   docker-compose up -d              # 인프라 + Ollama (한 번에 실행·추적)
+#   docker-compose --profile ui up -d # 인프라 + Ollama + Kafka/Mongo/Redis UI
+#   docker-compose down
+#   docker-compose logs -f [ollama]   # ollama 로그만: docker-compose logs -f ollama
+#
+# 백엔드: OLLAMA_HOST=http://localhost:11434 (호스트에서 접근)
 
 services:
   # ===========================================
@@ -178,6 +180,21 @@ services:
     profiles:
       - ui
 
+  # ===========================================
+  # Ollama - 로컬 LLM 서버 (기본 실행에 포함, docker-compose로 추적)
+  # ===========================================
+  # GPU 사용 시: deploy.resources.reservations.devices 추가 (nvidia)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: beanllm-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - beanllm-network
+
 # ===========================================
 # Networks
 # ===========================================
@@ -200,3 +217,5 @@ volumes:
     name: beanllm-zookeeper-log
   kafka_data:
     name: beanllm-kafka-data
+  ollama_data:
+    name: beanllm-ollama-data

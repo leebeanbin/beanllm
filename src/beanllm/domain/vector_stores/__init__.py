@@ -3,8 +3,8 @@ Vector Stores Domain - 벡터 스토어 도메인
 """
 
 from .base import BaseVectorStore, VectorSearchResult
-from .factory import VectorStore, VectorStoreBuilder, create_vector_store, from_documents
 from .cloud import MilvusVectorStore, PineconeVectorStore, WeaviateVectorStore
+from .factory import VectorStore, VectorStoreBuilder, create_vector_store, from_documents
 from .local import (
     ChromaVectorStore,
     FAISSVectorStore,

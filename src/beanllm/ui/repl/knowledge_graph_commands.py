@@ -4,7 +4,6 @@ KnowledgeGraphCommands - Rich CLI interface for Knowledge Graph Builder
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Dict, List, Optional
 
 from rich.console import Console
@@ -17,7 +16,6 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.table import Table
-from rich.tree import Tree
 
 from beanllm.facade.advanced.knowledge_graph_facade import KnowledgeGraph
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
@@ -133,18 +131,11 @@ class KnowledgeGraphCommands:
 
         config_table.add_row("Documents", str(len(documents)))
         config_table.add_row("Graph ID", graph_id or "(auto-generated)")
+        config_table.add_row("Entity Types", ", ".join(entity_types) if entity_types else "All")
         config_table.add_row(
-            "Entity Types",
-            ", ".join(entity_types) if entity_types else "All"
+            "Relation Types", ", ".join(relation_types) if relation_types else "All"
         )
-        config_table.add_row(
-            "Relation Types",
-            ", ".join(relation_types) if relation_types else "All"
-        )
-        config_table.add_row(
-            "Persist to Neo4j",
-            "✅ Yes" if persist_to_neo4j else "❌ No"
-        )
+        config_table.add_row("Persist to Neo4j", "✅ Yes" if persist_to_neo4j else "❌ No")
 
         self.console.print(config_table)
         self.console.print()
@@ -157,9 +148,7 @@ class KnowledgeGraphCommands:
             TimeElapsedColumn(),
             console=self.console,
         ) as progress:
-            task = progress.add_task(
-                "Building knowledge graph...", total=len(documents)
-            )
+            task = progress.add_task("Building knowledge graph...", total=len(documents))
 
             try:
                 response = await self._kg.build_graph(
@@ -183,10 +172,7 @@ class KnowledgeGraphCommands:
                 result_table.add_row("Nodes", f"{response.num_nodes:,}")
                 result_table.add_row("Edges", f"{response.num_edges:,}")
                 result_table.add_row("Density", f"{response.density:.4f}")
-                result_table.add_row(
-                    "Connected Components",
-                    str(response.num_connected_components)
-                )
+                result_table.add_row("Connected Components", str(response.num_connected_components))
 
                 self.console.print(result_table)
                 self.console.print()
@@ -315,7 +301,7 @@ class KnowledgeGraphCommands:
                     )
 
             # Display results
-            self.console.print(f"\n[bold green]✅ Query Completed![/bold green]")
+            self.console.print("\n[bold green]✅ Query Completed![/bold green]")
             self.console.print(f"[cyan]Results: {response.num_results}[/cyan]\n")
 
             if response.results:
@@ -394,14 +380,8 @@ class KnowledgeGraphCommands:
             stats_table.add_row("Nodes", f"{stats['num_nodes']:,}")
             stats_table.add_row("Edges", f"{stats['num_edges']:,}")
             stats_table.add_row("Density", f"{stats['density']:.4f}")
-            stats_table.add_row(
-                "Average Degree",
-                f"{stats['average_degree']:.2f}"
-            )
-            stats_table.add_row(
-                "Connected Components",
-                str(stats["num_connected_components"])
-            )
+            stats_table.add_row("Average Degree", f"{stats['average_degree']:.2f}")
+            stats_table.add_row("Connected Components", str(stats["num_connected_components"]))
 
             self.console.print(stats_table)
             self.console.print()
@@ -421,14 +401,8 @@ class KnowledgeGraphCommands:
                     reverse=True,
                 ):
                     percentage = (count / total_entities) * 100
-                    bar = self._visualizer._create_bar(
-                        count, total_entities, 30, "cyan"
-                    )
-                    entity_table.add_row(
-                        entity_type,
-                        f"{count:,}",
-                        f"{bar} {percentage:.1f}%"
-                    )
+                    bar = self._visualizer._create_bar(count, total_entities, 30, "cyan")
+                    entity_table.add_row(entity_type, f"{count:,}", f"{bar} {percentage:.1f}%")
 
                 self.console.print(entity_table)
                 self.console.print()
@@ -448,14 +422,8 @@ class KnowledgeGraphCommands:
                     reverse=True,
                 ):
                     percentage = (count / total_relations) * 100
-                    bar = self._visualizer._create_bar(
-                        count, total_relations, 30, "green"
-                    )
-                    relation_table.add_row(
-                        relation_type,
-                        f"{count:,}",
-                        f"{bar} {percentage:.1f}%"
-                    )
+                    bar = self._visualizer._create_bar(count, total_relations, 30, "green")
+                    relation_table.add_row(relation_type, f"{count:,}", f"{bar} {percentage:.1f}%")
 
                 self.console.print(relation_table)
                 self.console.print()
@@ -486,7 +454,7 @@ class KnowledgeGraphCommands:
             )
             ```
         """
-        self.console.print(f"\n[bold cyan]🤖 Graph RAG Query[/bold cyan]")
+        self.console.print("\n[bold cyan]🤖 Graph RAG Query[/bold cyan]")
         self.console.print(f"[dim]Query: {query}[/dim]")
         self.console.print(f"[dim]Graph: {graph_id}[/dim]\n")
 
@@ -518,9 +486,12 @@ class KnowledgeGraphCommands:
 
             # Show details
             if show_details:
-                self.console.print(f"[cyan]Entity Results: {len(response.entity_results)}[/cyan]")
-                self.console.print(f"[cyan]Path Results: {len(response.path_results)}[/cyan]")
-                self.console.print(f"[cyan]Hybrid Results: {len(response.hybrid_results)}[/cyan]\n")
+                entity_count = len(response.entity_results) if response.entity_results else 0
+                path_count = len(response.path_results) if response.path_results else 0
+                hybrid_count = len(response.hybrid_results) if response.hybrid_results else 0
+                self.console.print(f"[cyan]Entity Results: {entity_count}[/cyan]")
+                self.console.print(f"[cyan]Path Results: {path_count}[/cyan]")
+                self.console.print(f"[cyan]Hybrid Results: {hybrid_count}[/cyan]\n")
 
                 # Show top hybrid results
                 if response.hybrid_results:
@@ -536,12 +507,7 @@ class KnowledgeGraphCommands:
                         entity_type = entity.get("type", "UNKNOWN")
                         score = result.get("score", 0.0)
 
-                        results_table.add_row(
-                            str(i),
-                            name,
-                            entity_type,
-                            f"{score:.3f}"
-                        )
+                        results_table.add_row(str(i), name, entity_type, f"{score:.3f}")
 
                     self.console.print(results_table)
                     self.console.print()
@@ -563,24 +529,30 @@ class KnowledgeGraphCommands:
 
         try:
             # Get service to access list_graphs
-            from beanllm.service.impl.advanced.knowledge_graph_service_impl import (
-                KnowledgeGraphServiceImpl,
-            )
 
             # Access internal service (temporary workaround)
-            service = self._kg._handler._service
-            graph_ids = service.list_graphs()
+            import asyncio
 
-            if not graph_ids:
+            service = self._kg._handler._service
+            graphs = asyncio.run(service.list_graphs())
+
+            if not graphs:
                 self.console.print("[yellow]No graphs found[/yellow]")
                 return
 
-            graphs_table = Table(title=f"Total Graphs: {len(graph_ids)}")
+            graphs_table = Table(title=f"Total Graphs: {len(graphs)}")
             graphs_table.add_column("Index", style="cyan")
             graphs_table.add_column("Graph ID", style="yellow")
+            graphs_table.add_column("Nodes", style="green")
+            graphs_table.add_column("Edges", style="blue")
 
-            for i, graph_id in enumerate(graph_ids, 1):
-                graphs_table.add_row(str(i), graph_id)
+            for i, graph_info in enumerate(graphs, 1):
+                graphs_table.add_row(
+                    str(i),
+                    str(graph_info.get("id", "")),
+                    str(graph_info.get("num_nodes", 0)),
+                    str(graph_info.get("num_edges", 0)),
+                )
 
             self.console.print(graphs_table)
             self.console.print()
@@ -606,11 +578,7 @@ class KnowledgeGraphCommands:
             table.add_column("Type", style="magenta")
 
             for result in results[:20]:  # Show first 20
-                table.add_row(
-                    result.get("id", ""),
-                    result.get("name", ""),
-                    result.get("type", "")
-                )
+                table.add_row(result.get("id", ""), result.get("name", ""), result.get("type", ""))
 
             self.console.print(table)
 
@@ -630,7 +598,7 @@ class KnowledgeGraphCommands:
                     result.get("id", ""),
                     result.get("name", ""),
                     result.get("type", ""),
-                    result.get("relation_type", "")
+                    result.get("relation_type", ""),
                 )
 
             self.console.print(table)
@@ -658,12 +626,10 @@ class KnowledgeGraphCommands:
                 details_table.add_row("Name", details.get("name", ""))
                 details_table.add_row("Type", details.get("type", ""))
                 details_table.add_row(
-                    "Outgoing Relations",
-                    str(len(details.get("outgoing_relations", [])))
+                    "Outgoing Relations", str(len(details.get("outgoing_relations", [])))
                 )
                 details_table.add_row(
-                    "Incoming Relations",
-                    str(len(details.get("incoming_relations", [])))
+                    "Incoming Relations", str(len(details.get("incoming_relations", [])))
                 )
 
                 self.console.print(details_table)

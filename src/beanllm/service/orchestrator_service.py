@@ -37,9 +37,7 @@ class IOrchestratorService(ABC):
     """
 
     @abstractmethod
-    async def create_workflow(
-        self, request: CreateWorkflowRequest
-    ) -> CreateWorkflowResponse:
+    async def create_workflow(self, request: CreateWorkflowRequest) -> CreateWorkflowResponse:
         """
         워크플로우 생성
 
@@ -52,9 +50,7 @@ class IOrchestratorService(ABC):
         pass
 
     @abstractmethod
-    async def execute_workflow(
-        self, request: ExecuteWorkflowRequest
-    ) -> ExecuteWorkflowResponse:
+    async def execute_workflow(self, request: ExecuteWorkflowRequest) -> ExecuteWorkflowResponse:
         """
         워크플로우 실행
 
@@ -67,9 +63,7 @@ class IOrchestratorService(ABC):
         pass
 
     @abstractmethod
-    async def monitor_workflow(
-        self, request: MonitorWorkflowRequest
-    ) -> MonitorWorkflowResponse:
+    async def monitor_workflow(self, request: MonitorWorkflowRequest) -> MonitorWorkflowResponse:
         """
         워크플로우 실시간 모니터링
 

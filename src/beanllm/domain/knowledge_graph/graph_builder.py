@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
 
@@ -79,9 +79,7 @@ class GraphBuilder:
         Returns:
             nx.Graph: NetworkX 그래프
         """
-        logger.info(
-            f"Building graph: {len(entities)} entities, {len(relations)} relations"
-        )
+        logger.info(f"Building graph: {len(entities)} entities, {len(relations)} relations")
 
         # Create graph
         if self.directed:
@@ -112,8 +110,7 @@ class GraphBuilder:
             )
 
         logger.info(
-            f"Graph built: {graph.number_of_nodes()} nodes, "
-            f"{graph.number_of_edges()} edges"
+            f"Graph built: {graph.number_of_nodes()} nodes, " f"{graph.number_of_edges()} edges"
         )
 
         return graph
@@ -145,12 +142,14 @@ class GraphBuilder:
                 )
             else:
                 # Update existing node
-                graph.nodes[entity.id].update({
-                    "name": entity.name,
-                    "description": entity.description,
-                    "properties": entity.properties,
-                    "confidence": entity.confidence,
-                })
+                graph.nodes[entity.id].update(
+                    {
+                        "name": entity.name,
+                        "description": entity.description,
+                        "properties": entity.properties,
+                        "confidence": entity.confidence,
+                    }
+                )
 
         return graph
 
@@ -174,19 +173,25 @@ class GraphBuilder:
                 graph.add_edge(
                     relation.source_id,
                     relation.target_id,
-                    type=relation.type.value if hasattr(relation.type, "value") else str(relation.type),
+                    type=relation.type.value
+                    if hasattr(relation.type, "value")
+                    else str(relation.type),
                     description=relation.description,
                     properties=relation.properties,
                     confidence=relation.confidence,
                 )
             else:
                 # Update existing edge
-                graph.edges[relation.source_id, relation.target_id].update({
-                    "type": relation.type.value if hasattr(relation.type, "value") else str(relation.type),
-                    "description": relation.description,
-                    "properties": relation.properties,
-                    "confidence": relation.confidence,
-                })
+                graph.edges[relation.source_id, relation.target_id].update(
+                    {
+                        "type": relation.type.value
+                        if hasattr(relation.type, "value")
+                        else str(relation.type),
+                        "description": relation.description,
+                        "properties": relation.properties,
+                        "confidence": relation.confidence,
+                    }
+                )
 
         return graph
 
@@ -233,8 +238,7 @@ class GraphBuilder:
                 merged.add_edge(u, v, **data)
 
         logger.info(
-            f"Merged graph: {merged.number_of_nodes()} nodes, "
-            f"{merged.number_of_edges()} edges"
+            f"Merged graph: {merged.number_of_nodes()} nodes, " f"{merged.number_of_edges()} edges"
         )
 
         return merged
@@ -290,9 +294,7 @@ class GraphBuilder:
 
                 # Add neighbors to queue
                 if self.directed:
-                    next_nodes = set(graph.predecessors(current)) | set(
-                        graph.successors(current)
-                    )
+                    next_nodes = set(graph.predecessors(current)) | set(graph.successors(current))
                 else:
                     next_nodes = set(graph.neighbors(current))
 
@@ -326,13 +328,9 @@ class GraphBuilder:
 
         try:
             if self.directed:
-                path = nx.shortest_path(
-                    graph, source_id, target_id, weight=None
-                )
+                path = nx.shortest_path(graph, source_id, target_id, weight=None)
             else:
-                path = nx.shortest_path(
-                    graph, source_id, target_id, weight=None
-                )
+                path = nx.shortest_path(graph, source_id, target_id, weight=None)
 
             if len(path) <= max_length + 1:  # +1 for nodes count
                 return path
@@ -412,9 +410,7 @@ class GraphBuilder:
 
         # Connected components
         if self.directed:
-            stats["num_weakly_connected_components"] = nx.number_weakly_connected_components(
-                graph
-            )
+            stats["num_weakly_connected_components"] = nx.number_weakly_connected_components(graph)
             stats["num_strongly_connected_components"] = nx.number_strongly_connected_components(
                 graph
             )
@@ -444,13 +440,8 @@ class GraphBuilder:
             Dict[str, Any]: 그래프 데이터
         """
         return {
-            "nodes": [
-                {"id": node, **data} for node, data in graph.nodes(data=True)
-            ],
-            "edges": [
-                {"source": u, "target": v, **data}
-                for u, v, data in graph.edges(data=True)
-            ],
+            "nodes": [{"id": node, **data} for node, data in graph.nodes(data=True)],
+            "edges": [{"source": u, "target": v, **data} for u, v, data in graph.edges(data=True)],
             "directed": self.directed,
         }
 

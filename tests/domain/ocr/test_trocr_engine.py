@@ -12,8 +12,8 @@ from beanllm.domain.ocr.models import OCRConfig
 
 # transformers 설치 여부 체크
 try:
-    import transformers  # noqa: F401
     import torch  # noqa: F401
+    import transformers  # noqa: F401
 
     HAS_TROCR = True
 except ImportError:

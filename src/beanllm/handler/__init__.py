@@ -1,13 +1,5 @@
 """Handlers - Controller 역할 (모든 if-else/try-catch 처리)"""
 
-from .base_handler import BaseHandler
-
-# Backward compatibility: Re-export from subdirectories
-from .core.agent_handler import AgentHandler
-from .core.chain_handler import ChainHandler
-from .core.chat_handler import ChatHandler
-from .core.rag_handler import RAGHandler
-
 # Advanced handlers
 from .advanced.graph_handler import GraphHandler
 from .advanced.knowledge_graph_handler import KnowledgeGraphHandler
@@ -16,6 +8,13 @@ from .advanced.optimizer_handler import OptimizerHandler
 from .advanced.orchestrator_handler import OrchestratorHandler
 from .advanced.rag_debug_handler import RAGDebugHandler
 from .advanced.state_graph_handler import StateGraphHandler
+from .base_handler import BaseHandler
+
+# Backward compatibility: Re-export from subdirectories
+from .core.agent_handler import AgentHandler
+from .core.chain_handler import ChainHandler
+from .core.chat_handler import ChatHandler
+from .core.rag_handler import RAGHandler
 
 # ML handlers
 from .ml.audio_handler import AudioHandler

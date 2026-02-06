@@ -204,9 +204,7 @@ class ModelRouter:
         eligible_models = self._filter_by_capabilities(request, exclude_models)
 
         if not eligible_models:
-            raise ValueError(
-                "No eligible models found matching the required capabilities"
-            )
+            raise ValueError("No eligible models found matching the required capabilities")
 
         # Score models based on strategy
         scored_models = self._score_models(eligible_models, request)
@@ -381,18 +379,22 @@ class ModelRouter:
     def _score_capability_match(self, model: ModelInfo, request: RequestCharacteristics) -> float:
         """기능 매칭 점수 (필요한 기능만 지원)"""
         # Count required capabilities
-        required_caps = sum([
-            request.requires_vision,
-            request.requires_function_calling,
-            request.requires_json_mode,
-        ])
+        required_caps = sum(
+            [
+                request.requires_vision,
+                request.requires_function_calling,
+                request.requires_json_mode,
+            ]
+        )
 
         # Count model capabilities
-        model_caps = sum([
-            model.supports_vision,
-            model.supports_function_calling,
-            model.supports_json_mode,
-        ])
+        model_caps = sum(
+            [
+                model.supports_vision,
+                model.supports_function_calling,
+                model.supports_json_mode,
+            ]
+        )
 
         # Penalize over-qualified models (more expensive than needed)
         if model_caps > required_caps:
@@ -502,9 +504,7 @@ class ModelRouter:
         if latency is not None:
             # Update average latency (exponential moving average)
             alpha = 0.3
-            stats["avg_latency"] = (
-                alpha * latency + (1 - alpha) * stats["avg_latency"]
-            )
+            stats["avg_latency"] = alpha * latency + (1 - alpha) * stats["avg_latency"]
 
     def get_stats(self) -> Dict[str, Any]:
         """라우터 통계 반환"""

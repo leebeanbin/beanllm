@@ -23,7 +23,7 @@ References:
 
 import heapq
 import logging
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List
 
 from .types import SearchResult
 
@@ -117,8 +117,7 @@ class HybridRetriever:
         valid_methods = ["rrf", "weighted_sum", "distribution_based"]
         if self.fusion_method not in valid_methods:
             raise ValueError(
-                f"Invalid fusion_method: {self.fusion_method}. "
-                f"Available: {valid_methods}"
+                f"Invalid fusion_method: {self.fusion_method}. " f"Available: {valid_methods}"
             )
 
         # BM25 초기화
@@ -202,11 +201,7 @@ class HybridRetriever:
 
         # 4. Top-k 선택 (heapq.nlargest 최적화: O(n log n) → O(n log k))
         # 전체 정렬 대신 상위 k개만 선택하여 성능 향상 (k << n일 때 효과적)
-        top_results = heapq.nlargest(
-            top_k,
-            final_scores.items(),
-            key=lambda x: x[1]
-        )
+        top_results = heapq.nlargest(top_k, final_scores.items(), key=lambda x: x[1])
 
         # SearchResult 생성
         results = [
@@ -369,9 +364,7 @@ class HybridRetriever:
             bm25_score = bm25_normalized.get(idx, 0.0)
             dense_score = dense_normalized.get(idx, 0.0)
 
-            weighted_scores[idx] = (
-                self.bm25_weight * bm25_score + self.dense_weight * dense_score
-            )
+            weighted_scores[idx] = self.bm25_weight * bm25_score + self.dense_weight * dense_score
 
         return weighted_scores
 
@@ -404,12 +397,10 @@ class HybridRetriever:
 
         # Z-score 정규화
         bm25_normalized = {
-            idx: (score - bm25_mean) / (bm25_std + 1e-10)
-            for idx, score in bm25_scores.items()
+            idx: (score - bm25_mean) / (bm25_std + 1e-10) for idx, score in bm25_scores.items()
         }
         dense_normalized = {
-            idx: (score - dense_mean) / (dense_std + 1e-10)
-            for idx, score in dense_scores.items()
+            idx: (score - dense_mean) / (dense_std + 1e-10) for idx, score in dense_scores.items()
         }
 
         # 모든 문서 인덱스
@@ -421,9 +412,7 @@ class HybridRetriever:
             bm25_z = bm25_normalized.get(idx, 0.0)
             dense_z = dense_normalized.get(idx, 0.0)
 
-            combined_scores[idx] = (
-                self.bm25_weight * bm25_z + self.dense_weight * dense_z
-            )
+            combined_scores[idx] = self.bm25_weight * bm25_z + self.dense_weight * dense_z
 
         return combined_scores
 
@@ -450,8 +439,7 @@ class HybridRetriever:
 
         # Min-Max 정규화
         normalized = {
-            idx: (score - min_score) / (max_score - min_score)
-            for idx, score in scores.items()
+            idx: (score - min_score) / (max_score - min_score) for idx, score in scores.items()
         }
 
         return normalized

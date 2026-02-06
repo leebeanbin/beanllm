@@ -18,6 +18,12 @@ try:
 except ImportError:
     HAS_CV2 = False
 
+# ImagePreprocessor import (HAS_CV2가 True일 때만)
+if HAS_CV2:
+    from beanllm.domain.ocr.preprocessing import ImagePreprocessor
+else:
+    ImagePreprocessor = None  # type: ignore
+
 skip_without_cv2 = pytest.mark.skipif(not HAS_CV2, reason="opencv-python not installed")
 
 

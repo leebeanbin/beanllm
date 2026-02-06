@@ -6,17 +6,16 @@ Uses Python best practices: duck typing, type hints, comprehensions.
 """
 
 import logging
-from typing import Dict, List, Any
-
-from fastapi import APIRouter, HTTPException
+from typing import Any, Dict, List
 
 from common import get_orchestrator
+from fastapi import APIRouter, HTTPException
 from schemas.agent import AgentRequest, MultiAgentRequest, WorkflowRequest
 from schemas.responses.agent import (
+    AgentOutputResponse,
     AgentRunResponse,
     AgentStepResponse,
     MultiAgentRunResponse,
-    AgentOutputResponse,
     WorkflowRunResponse,
 )
 
@@ -28,6 +27,7 @@ router = APIRouter(prefix="/api", tags=["Agent"])
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _extract_step(step: Any, index: int) -> Dict[str, Any]:
     """Extract step data using duck typing"""
@@ -77,6 +77,7 @@ def _safe_get(obj: Any, key: str, default: Any = None) -> Any:
 # Single Agent Endpoints
 # ============================================================================
 
+
 @router.post("/agent/run", response_model=AgentRunResponse)
 async def agent_run(request: AgentRequest) -> AgentRunResponse:
     """
@@ -118,6 +119,7 @@ async def agent_run(request: AgentRequest) -> AgentRunResponse:
 # Multi-Agent Endpoints
 # ============================================================================
 
+
 @router.post("/multi_agent/run", response_model=MultiAgentRunResponse)
 async def multi_agent_run(request: MultiAgentRequest) -> MultiAgentRunResponse:
     """
@@ -130,8 +132,8 @@ async def multi_agent_run(request: MultiAgentRequest) -> MultiAgentRunResponse:
     - debate: Agents debate to reach consensus
     """
     try:
-        from beanllm.facade.core.agent_facade import Agent
         from beanllm.facade.advanced.multi_agent_facade import MultiAgentCoordinator
+        from beanllm.facade.core.agent_facade import Agent
 
         model = request.model or "gpt-4o-mini"
         agents: Dict[str, Agent] = {}
@@ -199,17 +201,14 @@ async def _execute_parallel(
     coordinator: Any, task: str, agent_ids: List[str]
 ) -> MultiAgentRunResponse:
     """Execute agents in parallel"""
-    result = await coordinator.execute_parallel(
-        task=task, agent_ids=agent_ids, aggregation="vote"
-    )
+    result = await coordinator.execute_parallel(task=task, agent_ids=agent_ids, aggregation="vote")
 
     return MultiAgentRunResponse(
         task=task,
         strategy="parallel",
         final_result=_safe_get(result, "final_result", ""),
         agent_outputs=[
-            AgentOutputResponse(agent_id=aid, output=f"Completed task: {task}")
-            for aid in agent_ids
+            AgentOutputResponse(agent_id=aid, output=f"Completed task: {task}") for aid in agent_ids
         ],
     )
 
@@ -219,9 +218,7 @@ async def _execute_hierarchical(
 ) -> MultiAgentRunResponse:
     """Execute with hierarchical (manager-worker) pattern"""
     if len(agent_ids) < 2:
-        raise HTTPException(
-            400, "Hierarchical strategy requires at least 2 agents"
-        )
+        raise HTTPException(400, "Hierarchical strategy requires at least 2 agents")
 
     manager_id, *worker_ids = agent_ids  # Unpacking for cleaner code
     result = await coordinator.execute_hierarchical(
@@ -233,7 +230,9 @@ async def _execute_hierarchical(
         strategy="hierarchical",
         final_result=_safe_get(result, "final_result", ""),
         agent_outputs=[
-            AgentOutputResponse(agent_id=manager_id, output="Coordinated all tasks", role="manager"),
+            AgentOutputResponse(
+                agent_id=manager_id, output="Coordinated all tasks", role="manager"
+            ),
             *[
                 AgentOutputResponse(agent_id=wid, output="Completed subtask", role="worker")
                 for wid in worker_ids
@@ -274,6 +273,7 @@ def _get_intermediate_output(intermediate_results: List[Any], index: int) -> str
 # Orchestrator Endpoints
 # ============================================================================
 
+
 @router.post("/orchestrator/run", response_model=WorkflowRunResponse)
 async def orchestrator_run(request: WorkflowRequest) -> WorkflowRunResponse:
     """
@@ -285,8 +285,6 @@ async def orchestrator_run(request: WorkflowRequest) -> WorkflowRunResponse:
     - debate: Multi-round debate pattern
     """
     try:
-        from beanllm.facade.core.agent_facade import Agent
-
         orchestrator = get_orchestrator()
         model = request.model or "gpt-4o-mini"
 
@@ -296,9 +294,7 @@ async def orchestrator_run(request: WorkflowRequest) -> WorkflowRunResponse:
             "parallel_consensus": lambda: _run_parallel_consensus(
                 orchestrator, model, request.task, request.num_agents
             ),
-            "debate": lambda: _run_debate(
-                orchestrator, model, request.task, request.num_agents
-            ),
+            "debate": lambda: _run_debate(orchestrator, model, request.task, request.num_agents),
         }
 
         handler = workflow_handlers.get(request.workflow_type)
@@ -334,21 +330,15 @@ async def _run_research_write(orchestrator: Any, model: str, task: str) -> Any:
     )
 
 
-async def _run_parallel_consensus(
-    orchestrator: Any, model: str, task: str, num_agents: int
-) -> Any:
+async def _run_parallel_consensus(orchestrator: Any, model: str, task: str, num_agents: int) -> Any:
     """Run parallel consensus workflow"""
     from beanllm.facade.core.agent_facade import Agent
 
     agents = [Agent(model=model, max_iterations=10) for _ in range(num_agents)]
-    return await orchestrator.quick_parallel_consensus(
-        agents=agents, task=task, aggregation="vote"
-    )
+    return await orchestrator.quick_parallel_consensus(agents=agents, task=task, aggregation="vote")
 
 
-async def _run_debate(
-    orchestrator: Any, model: str, task: str, num_agents: int
-) -> Any:
+async def _run_debate(orchestrator: Any, model: str, task: str, num_agents: int) -> Any:
     """Run debate workflow"""
     from beanllm.facade.core.agent_facade import Agent
 

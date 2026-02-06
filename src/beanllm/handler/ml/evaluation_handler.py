@@ -19,8 +19,8 @@ from beanllm.dto.response.ml.evaluation_response import (
     BatchEvaluationResponse,
     EvaluationResponse,
 )
-from beanllm.service.evaluation_service import IEvaluationService
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.service.evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
     from beanllm.domain.evaluation.base_metric import BaseMetric

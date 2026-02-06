@@ -5,22 +5,22 @@ HTML 파일 로더 (BeautifulSoup)
 """
 
 import logging
-import mmap
-import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import List, Optional, Union
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
-from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class HTMLLoader(BaseDocumentLoader):
     """
@@ -178,9 +178,7 @@ class HTMLLoader(BaseDocumentLoader):
         try:
             import trafilatura
         except ImportError:
-            raise ImportError(
-                "trafilatura is required. Install: pip install trafilatura"
-            )
+            raise ImportError("trafilatura is required. Install: pip install trafilatura")
 
         text = trafilatura.extract(
             html_content,
@@ -214,9 +212,7 @@ class HTMLLoader(BaseDocumentLoader):
         try:
             from bs4 import BeautifulSoup
         except ImportError:
-            raise ImportError(
-                "beautifulsoup4 required. Install: pip install beautifulsoup4"
-            )
+            raise ImportError("beautifulsoup4 required. Install: pip install beautifulsoup4")
 
         soup = BeautifulSoup(html_content, "html.parser")
 
@@ -249,5 +245,3 @@ class HTMLLoader(BaseDocumentLoader):
             logger.warning(f"Failed to extract metadata: {e}")
 
         return {}
-
-

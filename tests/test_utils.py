@@ -5,9 +5,9 @@ Utils Layer 테스트 - 유틸리티 함수 테스트
 import pytest
 
 try:
-    from beanllm.utils import Config, EnvConfig, retry, get_logger
+    from beanllm.utils import Config, EnvConfig, get_logger, retry
 except ImportError:
-    from src.beanllm.utils import Config, EnvConfig, retry, get_logger
+    from src.beanllm.utils import Config, EnvConfig, get_logger, retry
 
 
 class TestConfig:
@@ -136,4 +136,3 @@ class TestStreaming:
             from src.beanllm.utils.streaming import StreamStats
 
         assert StreamStats is not None
-

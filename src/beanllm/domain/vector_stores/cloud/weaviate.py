@@ -5,7 +5,6 @@ Cloud-native vector search engine
 """
 
 import os
-import uuid
 from typing import TYPE_CHECKING, Any, List, Optional
 
 if TYPE_CHECKING:
@@ -186,5 +185,3 @@ class WeaviateVectorStore(BaseVectorStore, AdvancedSearchMixin):
         for id_ in ids:
             self.client.data_object.delete(uuid=id_, class_name=self.class_name)
         return True
-
-

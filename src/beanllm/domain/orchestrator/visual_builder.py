@@ -7,9 +7,9 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-from .workflow_graph import NodeType, WorkflowEdge, WorkflowGraph, WorkflowNode
+from .workflow_graph import NodeType, WorkflowGraph, WorkflowNode
 
 
 class VisualBuilder:
@@ -119,9 +119,7 @@ class VisualBuilder:
         if not start_nodes:
             # No explicit start, use nodes with no incoming edges
             start_nodes = [
-                nid
-                for nid in self.workflow.nodes
-                if not self.workflow.reverse_adjacency.get(nid)
+                nid for nid in self.workflow.nodes if not self.workflow.reverse_adjacency.get(nid)
             ]
 
         # BFS to assign layers
@@ -208,7 +206,9 @@ class VisualBuilder:
             )
 
         # Bottom border
-        bottom = f"{self.BOX_BOTTOM_LEFT}{self.BOX_HORIZONTAL * (box_width - 2)}{self.BOX_BOTTOM_RIGHT}"
+        bottom = (
+            f"{self.BOX_BOTTOM_LEFT}{self.BOX_HORIZONTAL * (box_width - 2)}{self.BOX_BOTTOM_RIGHT}"
+        )
         lines.append(self._center_text(bottom, 20))
 
         return lines
@@ -330,8 +330,8 @@ class VisualBuilder:
         lines = []
         lines.append("from beanllm.domain.orchestrator import WorkflowGraph, NodeType")
         lines.append("")
-        lines.append(f"# Create workflow")
-        lines.append(f"workflow = WorkflowGraph(name=\"{self.workflow.name}\")")
+        lines.append("# Create workflow")
+        lines.append(f'workflow = WorkflowGraph(name="{self.workflow.name}")')
         lines.append("")
 
         # Add nodes
@@ -341,7 +341,7 @@ class VisualBuilder:
             lines.append(
                 f"{node_id} = workflow.add_node("
                 f"NodeType.{node.node_type.name}, "
-                f"\"{node.name}\", "
+                f'"{node.name}", '
                 f"config={config_str})"
             )
 

@@ -5,6 +5,7 @@ beanllm.utils.exceptions - Custom Exception Classes
 이 모듈은 beanllm에서 사용하는 모든 커스텀 예외를 정의합니다.
 """
 
+from typing import Optional
 
 # ===== Base Exceptions =====
 
@@ -27,7 +28,7 @@ class LLMKitError(Exception):
 class ProviderError(LLMManagerError):
     """Provider 관련 에러"""
 
-    def __init__(self, message: str, provider: str = None):
+    def __init__(self, message: str, provider: Optional[str] = None):
         self.provider = provider
         super().__init__(message)
 
@@ -52,7 +53,12 @@ class AuthenticationError(ProviderError):
 class RateLimitError(ProviderError):
     """Rate limit 에러"""
 
-    def __init__(self, message: str = None, provider: str = None, retry_after: int = None):
+    def __init__(
+        self,
+        message: Optional[str] = None,
+        provider: Optional[str] = None,
+        retry_after: Optional[int] = None,
+    ):
         self.retry_after = retry_after
         # Support both old and new usage patterns
         if message is None:

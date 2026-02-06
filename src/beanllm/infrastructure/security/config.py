@@ -110,7 +110,7 @@ class SecureConfig:
 
         return False
 
-    def get(self, key: str, default: Any = None) -> Any:
+    def get(self, key: str, default: Optional[Any] = None) -> Any:
         """
         안전한 값 가져오기 (마스킹된 값 반환)
 
@@ -128,7 +128,7 @@ class SecureConfig:
 
         return value
 
-    def get_secret(self, key: str, default: Any = None) -> Any:
+    def get_secret(self, key: str, default: Optional[Any] = None) -> Any:
         """
         실제 비밀 값 가져오기 (마스킹 없음)
 
@@ -175,9 +175,7 @@ class SecureConfig:
             if key in self._config:
                 self._sensitive_keys.add(key)
 
-    def to_dict(
-        self, mask_secrets: bool = True, include_only_safe: bool = False
-    ) -> Dict[str, Any]:
+    def to_dict(self, mask_secrets: bool = True, include_only_safe: bool = False) -> Dict[str, Any]:
         """
         딕셔너리로 변환
 
@@ -268,4 +266,3 @@ def load_from_env(prefix: str = "BEANLLM_") -> SecureConfig:
             config_dict[config_key] = value
 
     return SecureConfig(**config_dict)
-

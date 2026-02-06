@@ -5,8 +5,9 @@ Simple script to test MongoDB integration and session APIs.
 """
 
 import asyncio
-import httpx
 from datetime import datetime
+
+import httpx
 
 API_URL = "http://localhost:8000"
 
@@ -99,7 +100,7 @@ async def test_list_sessions():
 
             if data["sessions"]:
                 session = data["sessions"][0]
-                print(f"\nFirst session:")
+                print("\nFirst session:")
                 print(f"  - Title: {session['title']}")
                 print(f"  - Messages: {session.get('message_count', 0)}")
                 print(f"  - Tokens: {session.get('total_tokens', 0)}")
@@ -160,7 +161,7 @@ async def test_delete_session(session_id: str):
         print(f"Status: {response.status_code}")
 
         if response.status_code == 200:
-            print(f"✅ Session deleted")
+            print("✅ Session deleted")
             return True
         else:
             print(f"❌ Failed: {response.text}")

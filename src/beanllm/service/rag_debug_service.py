@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from beanllm.dto.request.ml.rag_debug_request import (
     AnalyzeEmbeddingsRequest,
@@ -38,9 +38,7 @@ class IRAGDebugService(ABC):
     """
 
     @abstractmethod
-    async def start_session(
-        self, request: StartDebugSessionRequest
-    ) -> DebugSessionResponse:
+    async def start_session(self, request: StartDebugSessionRequest) -> DebugSessionResponse:
         """
         디버그 세션 시작
 
@@ -68,9 +66,7 @@ class IRAGDebugService(ABC):
         pass
 
     @abstractmethod
-    async def validate_chunks(
-        self, request: ValidateChunksRequest
-    ) -> ValidateChunksResponse:
+    async def validate_chunks(self, request: ValidateChunksRequest) -> ValidateChunksResponse:
         """
         청크 검증 (크기, 중복, 메타데이터)
 
@@ -83,9 +79,7 @@ class IRAGDebugService(ABC):
         pass
 
     @abstractmethod
-    async def tune_parameters(
-        self, request: TuneParametersRequest
-    ) -> TuneParametersResponse:
+    async def tune_parameters(self, request: TuneParametersRequest) -> TuneParametersResponse:
         """
         파라미터 실시간 튜닝
 

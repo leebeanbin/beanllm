@@ -5,7 +5,6 @@ Validates API keys by using beanllm's existing provider infrastructure.
 Leverages the health_check() method from each provider.
 """
 
-import asyncio
 import logging
 import os
 from typing import List, Optional
@@ -42,7 +41,15 @@ class KeyValidator:
         """
         try:
             # Use beanllm's existing providers when possible
-            if provider in ["openai", "anthropic", "google", "gemini", "deepseek", "perplexity", "ollama"]:
+            if provider in [
+                "openai",
+                "anthropic",
+                "google",
+                "gemini",
+                "deepseek",
+                "perplexity",
+                "ollama",
+            ]:
                 return await self._validate_with_beanllm_provider(provider, api_key)
             else:
                 # For other providers, use custom validation
@@ -78,11 +85,23 @@ class KeyValidator:
         # Map provider names to their environment variables and classes
         provider_map = {
             "openai": ("OPENAI_API_KEY", "beanllm.providers.openai_provider", "OpenAIProvider"),
-            "anthropic": ("ANTHROPIC_API_KEY", "beanllm.providers.claude_provider", "ClaudeProvider"),
+            "anthropic": (
+                "ANTHROPIC_API_KEY",
+                "beanllm.providers.claude_provider",
+                "ClaudeProvider",
+            ),
             "google": ("GEMINI_API_KEY", "beanllm.providers.gemini_provider", "GeminiProvider"),
             "gemini": ("GEMINI_API_KEY", "beanllm.providers.gemini_provider", "GeminiProvider"),
-            "deepseek": ("DEEPSEEK_API_KEY", "beanllm.providers.deepseek_provider", "DeepSeekProvider"),
-            "perplexity": ("PERPLEXITY_API_KEY", "beanllm.providers.perplexity_provider", "PerplexityProvider"),
+            "deepseek": (
+                "DEEPSEEK_API_KEY",
+                "beanllm.providers.deepseek_provider",
+                "DeepSeekProvider",
+            ),
+            "perplexity": (
+                "PERPLEXITY_API_KEY",
+                "beanllm.providers.perplexity_provider",
+                "PerplexityProvider",
+            ),
             "ollama": ("OLLAMA_HOST", "beanllm.providers.ollama_provider", "OllamaProvider"),
         }
 
@@ -108,10 +127,15 @@ class KeyValidator:
                 os.environ[env_var] = api_key
 
             # Reload EnvConfig to pick up new value
-            setattr(EnvConfig, env_var.replace("_API_KEY", "_API_KEY").replace("ANTHROPIC", "ANTHROPIC"), api_key)
+            setattr(
+                EnvConfig,
+                env_var.replace("_API_KEY", "_API_KEY").replace("ANTHROPIC", "ANTHROPIC"),
+                api_key,
+            )
 
             # Dynamically import the provider class
             import importlib
+
             module = importlib.import_module(module_path)
             provider_class = getattr(module, class_name)
 
@@ -173,7 +197,11 @@ class KeyValidator:
             elif provider == "openai":
                 return ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1", "o1-mini"]
             elif provider == "anthropic":
-                return ["claude-sonnet-4-20250514", "claude-opus-4-20250514", "claude-haiku-4-20250514"]
+                return [
+                    "claude-sonnet-4-20250514",
+                    "claude-opus-4-20250514",
+                    "claude-haiku-4-20250514",
+                ]
             elif provider in ["google", "gemini"]:
                 return ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-1.5-pro"]
             elif provider == "deepseek":

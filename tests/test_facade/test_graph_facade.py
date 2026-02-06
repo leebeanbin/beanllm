@@ -2,12 +2,13 @@
 Graph Facade 테스트 - Graph 인터페이스 테스트
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 
 try:
-    from beanllm.facade.graph_facade import Graph
     from beanllm.domain.graph import GraphState
+    from beanllm.facade.graph_facade import Graph
 
     FACADE_AVAILABLE = True
 except ImportError:
@@ -52,5 +53,3 @@ class TestGraphFacade:
         assert isinstance(result, GraphState)
         assert result.data["result"] == "Graph result"
         assert graph._graph_handler.handle_run.called
-
-

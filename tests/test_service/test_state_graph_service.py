@@ -2,13 +2,14 @@
 StateGraphService 테스트 - StateGraph 서비스 구현체 테스트
 """
 
-import pytest
-from unittest.mock import Mock
 from pathlib import Path
+from unittest.mock import Mock
 
+import pytest
+
+from beanllm.domain.state_graph import END
 from beanllm.dto.request.state_graph_request import StateGraphRequest
 from beanllm.dto.response.state_graph_response import StateGraphResponse
-from beanllm.domain.state_graph import END
 from beanllm.service.impl.state_graph_service_impl import StateGraphServiceImpl
 
 
@@ -248,5 +249,3 @@ class TestStateGraphService:
 
         assert response is not None
         assert response.final_state["value"] == 1
-
-

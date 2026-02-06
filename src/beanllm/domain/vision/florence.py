@@ -5,7 +5,7 @@ Microsoft의 Florence-2 통합 비전-언어 모델 래퍼.
 
 Features:
 - Object Detection & Captioning
-- Visual Question Answering (VQA)  
+- Visual Question Answering (VQA)
 - OCR & Text Recognition
 - Dense Captioning
 
@@ -15,7 +15,7 @@ Requirements:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -24,11 +24,13 @@ from .base_task_model import BaseVisionTaskModel
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
 
 logger = get_logger(__name__)
+
 
 class Florence2Wrapper(BaseVisionTaskModel):
     """
@@ -83,6 +85,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
         # Device 설정
         if device is None:
             import torch
+
             if torch.cuda.is_available():
                 self.device = "cuda"
             else:
@@ -117,10 +120,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
                 trust_remote_code=True,
             ).to(self.device)
 
-            self._processor = AutoProcessor.from_pretrained(
-                model_name,
-                trust_remote_code=True
-            )
+            self._processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
 
             logger.info("Florence-2 loaded successfully")
 
@@ -149,6 +149,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
         # 이미지 로드
         if isinstance(image, (str, Path)):
             from PIL import Image
+
             image = Image.open(image).convert("RGB")
 
         # 입력 준비
@@ -172,9 +173,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
 
         # 파싱
         parsed = self._processor.post_process_generation(
-            generated_text,
-            task=task,
-            image_size=(image.width, image.height)
+            generated_text, task=task, image_size=(image.width, image.height)
         )
 
         return parsed
@@ -281,12 +280,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
                 raise ValueError("VQA task requires 'question' parameter")
             return self.vqa(image, kwargs["question"])
         else:
-            raise ValueError(
-                f"Unknown task: {task}. "
-                f"Available: caption, detect, vqa"
-            )
+            raise ValueError(f"Unknown task: {task}. " f"Available: caption, detect, vqa")
 
     def __repr__(self) -> str:
         return f"Florence2Wrapper(model_size={self.model_size}, device={self.device})"
-
-

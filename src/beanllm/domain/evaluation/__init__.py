@@ -35,6 +35,18 @@ try:
 except ImportError:
     TruLensWrapper = None  # type: ignore
 
+# Unified Evaluator (Human-in-the-Loop + Automatic)
+try:
+    from .unified_evaluator import (
+        EvalRecord,
+        ImprovementSuggestion,
+        UnifiedEvaluator,
+    )
+except ImportError:
+    UnifiedEvaluator = None  # type: ignore
+    EvalRecord = None  # type: ignore
+    ImprovementSuggestion = None  # type: ignore
+
 from .drift_detection import DriftAlert, DriftDetector
 from .enums import MetricType
 from .evaluator import Evaluator
@@ -116,4 +128,8 @@ __all__ = [
     "TruLensWrapper",
     "create_evaluation_framework",
     "list_available_frameworks",
+    # Unified Evaluator (Human-in-the-Loop + Automatic)
+    "UnifiedEvaluator",
+    "EvalRecord",
+    "ImprovementSuggestion",
 ]

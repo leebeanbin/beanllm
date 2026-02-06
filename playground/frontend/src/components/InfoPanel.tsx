@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { LayoutGrid, Box, PanelTop, FileText, SlidersHorizontal, ChevronRight, Sparkles, Settings, Download, Upload, Trash2, RefreshCw, CheckCircle2, Brain, KeyRound, Github } from "lucide-react";
+import { LayoutGrid, Box, PanelTop, FileText, SlidersHorizontal, ChevronRight, Sparkles, Settings, Download, Upload, Trash2, RefreshCw, CheckCircle2, Brain, KeyRound, Github, MessageSquare, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -55,6 +55,14 @@ interface InfoPanelProps {
   // Document preview
   documentPreviewContent?: string;
   documentPreviewTitle?: string;
+  // Session summary
+  sessionId?: string;
+  sessionSummary?: string;
+  sessionSummaryLoading?: boolean;
+  onRefreshSummary?: () => void;
+  // Chat history (load past session / new chat)
+  onLoadSession?: (sessionId: string) => void;
+  onNewChat?: () => void;
   // Actions
   onExport?: () => void;
   onImport?: () => void;
@@ -94,6 +102,12 @@ export function InfoPanel({
   messages,
   documentPreviewContent,
   documentPreviewTitle,
+  sessionId,
+  sessionSummary,
+  sessionSummaryLoading,
+  onRefreshSummary,
+  onLoadSession,
+  onNewChat,
   onExport,
   onImport,
   onClear,
@@ -106,9 +120,28 @@ export function InfoPanel({
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
   const isCollapsed = isCollapsedProp !== undefined ? isCollapsedProp : isCollapsedLocal;
 
+  // Chat history (past sessions) — fetch when session tab is active
+  const [historySessions, setHistorySessions] = useState<Array<{ session_id: string; title: string; updated_at: string; message_count: number }>>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   useEffect(() => {
     if (resolvedTab) setActiveTab(resolvedTab);
   }, [resolvedTab]);
+
+  useEffect(() => {
+    if (activeTab !== "session" && !sessionId) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    fetch(`${apiUrl}/api/chat/sessions?limit=20&sort_by=updated_at`)
+      .then((res) => (res.ok ? res.json() : { sessions: [] }))
+      .then((data) => {
+        if (!cancelled) setHistorySessions(data.sessions || []);
+      })
+      .catch(() => { if (!cancelled) setHistorySessions([]); })
+      .finally(() => { if (!cancelled) setHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, [activeTab, apiUrl, onLoadSession, sessionId]);
 
   // Always render, but control visibility with width
 
@@ -117,44 +150,51 @@ export function InfoPanel({
   }
 
   return (
-    <div className={cn(
-      "bg-background flex flex-col flex-shrink-0 transition-all overflow-hidden",
-      isCollapsed ? "w-0" : "w-64"
-    )}>
-      {/* Toggle lives in the top tab bar (headerTrailing). When collapsed, panel is w-0. */}
-      {/* Tabs - Hidden when collapsed */}
-      {!isCollapsed && (
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-2 mt-2 grid w-auto grid-cols-4 gap-0.5 p-0.5 h-auto bg-muted/20 border border-border/40 rounded-lg">
-            <TabsTrigger value="quickstart" className="size-8 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md" title="Get started">
+    <>
+      {isOpen && !isCollapsed && (
+        <div
+          className="fixed inset-0 z-[18] bg-black/30 md:hidden"
+          aria-hidden
+          onClick={onClose}
+        />
+      )}
+      <div className={cn(
+        "bg-background flex flex-col flex-shrink-0 transition-all overflow-hidden",
+        isCollapsed ? "w-0" : "w-64",
+        isOpen && !isCollapsed && "max-md:fixed max-md:right-0 max-md:top-14 max-md:bottom-0 max-md:z-[19] max-md:shadow-xl"
+      )}>
+        {!isCollapsed && (
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="mx-2 mt-2 grid w-auto grid-cols-4 gap-0.5 p-0.5 h-auto bg-muted/20 border border-border/40 rounded-lg">
+              <TabsTrigger value="quickstart" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Start">
               <LayoutGrid className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
-            <TabsTrigger value="models" className="size-8 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md" title="Model & mode">
+            <TabsTrigger value="models" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Model">
               <Box className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
-            <TabsTrigger value="session" className="size-8 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md" title="Session">
+            <TabsTrigger value="session" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="History">
               <PanelTop className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
-            <TabsTrigger value="settings" className="size-8 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md" title="Settings">
+            <TabsTrigger value="settings" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Settings">
               <SlidersHorizontal className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
           </TabsList>
 
-          {/* Start — Get started 3-step + What you can do (타이포 정리) */}
+          {/* Start — single entry layer: header = New chat, panel = guide */}
           <TabsContent value="quickstart" className="flex-1 flex flex-col min-h-0 mt-0 overflow-y-auto antialiased">
             <div className="p-4 space-y-4">
               <div>
-                <h4 className="text-[13px] font-semibold text-foreground tracking-tight mb-0.5">Get started</h4>
+                <h4 className="text-[13px] font-semibold text-foreground tracking-tight mb-0.5">Start</h4>
                 <p className="text-[12px] text-muted-foreground leading-relaxed tracking-tight">
-                  Three steps to run your first chat.
+                  Type below to chat. New chat: History tab → Start new chat.
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 {[
                   { step: 1, text: "Pick model & mode", tab: "models" as const },
-                  { step: 2, text: "Send a message in the input below" },
-                  { step: 3, text: "See answers & sources here", tab: "session" as const },
+                  { step: 2, text: "Type a message in the input below" },
+                  { step: 3, text: "Answers & history here", tab: "session" as const },
                 ].map(({ step, text, tab }) => (
                   <button
                     key={step}
@@ -183,6 +223,13 @@ export function InfoPanel({
                   <li>Google — Drive, Docs, Gmail, Calendar</li>
                   <li>Code — generate & run code</li>
                 </ul>
+              </div>
+
+              <div className="rounded-lg border border-border/40 bg-muted/5 p-3 space-y-1.5">
+                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Layer</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed tracking-tight">
+                  Top: Chat | Monitoring | Settings. Here: Start | Model | History | Settings.
+                </p>
               </div>
             </div>
           </TabsContent>
@@ -276,12 +323,73 @@ export function InfoPanel({
             </div>
           </TabsContent>
 
-          {/* Session — stats + doc preview (Documents + Monitor 통합) */}
+          {/* Session — chat history + stats + summary + doc preview */}
           <TabsContent value="session" className="flex-1 flex flex-col min-h-0 mt-0 overflow-y-auto">
             <div className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
+              {/* Chat history — list past sessions, load or new chat */}
+              {(onLoadSession || onNewChat) && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-[13px] font-semibold text-foreground tracking-tight">Chat history</h4>
+                    {onNewChat && (
+                      <button
+                        type="button"
+                        onClick={onNewChat}
+                        className="text-[11px] font-medium text-primary hover:underline touch-manipulation"
+                      >
+                        Start new chat
+                      </button>
+                    )}
+                  </div>
+                  {historyLoading ? (
+                    <div className="rounded-lg border border-border/40 bg-muted/5 p-3 text-center text-xs text-muted-foreground">
+                      Loading…
+                    </div>
+                  ) : historySessions.length === 0 ? (
+                    <div className="rounded-lg border border-border/40 bg-muted/5 p-3 text-center text-xs text-muted-foreground">
+                      <MessageSquare className="h-6 w-6 mx-auto mb-1 opacity-50" strokeWidth={1.5} />
+                      No past chats
+                    </div>
+                  ) : (
+                    <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-border/40 bg-muted/5 p-1.5">
+                      {historySessions.map((s) => {
+                        const updated = s.updated_at ? new Date(s.updated_at) : null;
+                        const dateLabel = updated
+                          ? updated.toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                          : "";
+                        return (
+                          <button
+                            key={s.session_id}
+                            type="button"
+                            onClick={() => onLoadSession?.(s.session_id)}
+                            className={cn(
+                              "w-full text-left rounded-md px-2.5 py-2 border border-transparent hover:bg-muted/30 hover:border-border/40 transition-colors",
+                              sessionId === s.session_id && "bg-muted/30 border-border/40"
+                            )}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <MessageSquare className="h-3.5 w-3.5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+                              <span className="text-xs font-medium text-foreground truncate flex-1">
+                                {s.title?.trim() || "New chat"}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
+                              {dateLabel && <span className="flex items-center gap-0.5"><Clock className="h-3 w-3" strokeWidth={1.5} />{dateLabel}</span>}
+                              {typeof s.message_count === "number" && <span>{s.message_count} msgs</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <h4 className="text-sm font-medium text-foreground mb-1">Session</h4>
-                <p className="text-xs text-muted-foreground">This chat&apos;s stats and sources.</p>
+                <p className="text-xs text-muted-foreground">
+                  {sessionId ? `ID: ${sessionId.slice(0, 8)}...` : "This chat's stats and sources."}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 rounded-md border border-border/40 bg-muted/10">
@@ -309,6 +417,56 @@ export function InfoPanel({
                       </div>
                     </div>
                   </>
+                )}
+              </div>
+
+              {/* Session Summary */}
+              <div className="pt-2 border-t border-border/40">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Summary</p>
+                  {sessionSummary && onRefreshSummary && (
+                    <button
+                      onClick={onRefreshSummary}
+                      disabled={sessionSummaryLoading}
+                      className="p-1 rounded hover:bg-muted/20 transition-colors disabled:opacity-50"
+                      title="Refresh summary"
+                    >
+                      <RefreshCw className={cn("h-3 w-3 text-muted-foreground", sessionSummaryLoading && "animate-spin")} strokeWidth={1.5} />
+                    </button>
+                  )}
+                </div>
+                {sessionSummaryLoading ? (
+                  <div className="rounded-md border border-border/40 bg-muted/10 p-2.5">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <RefreshCw className="h-3 w-3 animate-spin" strokeWidth={1.5} />
+                      Generating summary...
+                    </div>
+                  </div>
+                ) : sessionSummary ? (
+                  <div className="rounded-md border border-border/40 bg-gradient-to-br from-muted/10 to-muted/5 p-2.5">
+                    <p className="text-xs text-foreground leading-relaxed">{sessionSummary}</p>
+                  </div>
+                ) : messages.length >= 10 && onRefreshSummary ? (
+                  <div className="rounded-md border border-border/40 bg-muted/10 p-2.5 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Generate an AI summary of this conversation.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onRefreshSummary}
+                      className="w-full h-7 text-xs"
+                    >
+                      <Brain className="h-3 w-3 mr-1.5" strokeWidth={1.5} />
+                      Generate Summary
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="rounded-md border border-border/40 bg-muted/10 p-2.5">
+                    <p className="text-xs text-muted-foreground">
+                      Summary available after 10 messages ({messages.length}/10)
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -462,6 +620,7 @@ export function InfoPanel({
           </TabsContent>
         </Tabs>
       )}
-    </div>
+      </div>
+    </>
   );
 }

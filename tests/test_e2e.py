@@ -12,42 +12,42 @@ class TestE2EBasic:
         """모든 주요 모듈 import 테스트"""
         try:
             # Facade
-            from beanllm import Client, RAGChain, Agent, Graph, StateGraph
+            from beanllm import Agent, Client, Graph, RAGChain, StateGraph
 
             # Domain
             from beanllm.domain import (
+                BaseMemory,
                 Document,
                 Embedding,
                 TextSplitter,
-                VectorStore,
                 Tool,
-                BaseMemory,
+                VectorStore,
             )
 
             # Infrastructure
             from beanllm.infrastructure import ModelRegistry, ParameterAdapter
 
             # Utils
-            from beanllm.utils import Config, retry, get_logger
+            from beanllm.utils import Config, get_logger, retry
         except ImportError:
             # Facade
-            from src.beanllm import Client, RAGChain, Agent, Graph, StateGraph
+            from src.beanllm import Agent, Client, Graph, RAGChain, StateGraph
 
             # Domain
             from src.beanllm.domain import (
+                BaseMemory,
                 Document,
                 Embedding,
                 TextSplitter,
-                VectorStore,
                 Tool,
-                BaseMemory,
+                VectorStore,
             )
 
             # Infrastructure
             from src.beanllm.infrastructure import ModelRegistry, ParameterAdapter
 
             # Utils
-            from src.beanllm.utils import Config, retry, get_logger
+            from src.beanllm.utils import Config, get_logger, retry
 
         assert all(
             [
@@ -75,27 +75,27 @@ class TestE2EBasic:
         # 최상위에서 모든 것을 import
         try:
             from beanllm import (
-                Client,
-                Embedding,
-                Document,
                 Agent,
-                RAGChain,
+                Client,
+                Document,
+                Embedding,
                 Graph,
-                StateGraph,
                 MultiAgentCoordinator,
+                RAGChain,
+                StateGraph,
                 VisionRAG,
                 WebSearch,
             )
         except ImportError:
             from src.beanllm import (
-                Client,
-                Embedding,
-                Document,
                 Agent,
-                RAGChain,
+                Client,
+                Document,
+                Embedding,
                 Graph,
-                StateGraph,
                 MultiAgentCoordinator,
+                RAGChain,
+                StateGraph,
                 VisionRAG,
                 WebSearch,
             )
@@ -152,9 +152,9 @@ class TestE2ERAG:
     def test_rag_full_pipeline(self, temp_dir):
         """RAG 전체 파이프라인 테스트"""
         try:
-            from beanllm import DocumentLoader, TextSplitter, RAGChain
+            from beanllm import DocumentLoader, RAGChain, TextSplitter
         except ImportError:
-            from src.beanllm import DocumentLoader, TextSplitter, RAGChain
+            from src.beanllm import DocumentLoader, RAGChain, TextSplitter
 
         # 테스트 문서 생성
         test_file = temp_dir / "test.txt"
@@ -192,4 +192,3 @@ class TestE2EAgent:
             assert agent is not None
         except (ValueError, ImportError, TypeError):
             pytest.skip("Agent E2E skipped (provider not available)")
-

@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from beanllm.domain.multi_agent.strategies import (
     DebateStrategy,
@@ -19,9 +19,8 @@ from beanllm.domain.multi_agent.strategies import (
 from beanllm.dto.request.advanced.multi_agent_request import MultiAgentRequest
 from beanllm.dto.response.advanced.multi_agent_response import MultiAgentResponse
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
-from beanllm.utils.logging import get_logger
-
 from beanllm.service.multi_agent_service import IMultiAgentService
+from beanllm.utils.logging import get_logger
 
 # 환경변수로 분산 모드 활성화 여부 확인
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
@@ -58,7 +57,9 @@ class MultiAgentServiceImpl(IMultiAgentService):
         enable_distributed_lock=True,
         cache_key_prefix="multi_agent:sequential",
         rate_limit_key="multi_agent:execute",
-        lock_key=lambda self, args, kwargs: f"multi_agent:sequential:{hash(args[0].task.encode()) if args and hasattr(args[0], 'task') else 'default'}",
+        lock_key=lambda self,
+        args,
+        kwargs: f"multi_agent:sequential:{hash(args[0].task.encode()) if args and hasattr(args[0], 'task') else 'default'}",
         event_type="multi_agent.sequential",
     )
     async def execute_sequential(self, request: MultiAgentRequest) -> MultiAgentResponse:
@@ -113,7 +114,7 @@ class MultiAgentServiceImpl(IMultiAgentService):
                     async with concurrency_controller.with_concurrency_control(
                         "multi_agent.parallel",
                         max_concurrent=10,
-                        rate_limit_key="multi_agent:execute"
+                        rate_limit_key="multi_agent:execute",
                     ):
                         return await agent.run(task)
 
@@ -123,14 +124,15 @@ class MultiAgentServiceImpl(IMultiAgentService):
                     items=request.agents or [],
                     item_to_task_data=lambda agent: {"agent": agent, "task": request.task},
                     handler=lambda task_data: process_agent(task_data["agent"], task_data["task"]),
-                    priority=0
+                    priority=0,
                 )
 
                 # 결과 집계
                 strategy = ParallelStrategy(aggregation=request.aggregation)
-                answers = [r.answer if hasattr(r, 'answer') else str(r) for r in results]
+                answers = [r.answer if hasattr(r, "answer") else str(r) for r in results]
                 if request.aggregation == "vote":
                     from collections import Counter
+
                     vote_counts = Counter(answers)
                     final_answer = vote_counts.most_common(1)[0][0]
                     result = {
@@ -155,7 +157,11 @@ class MultiAgentServiceImpl(IMultiAgentService):
                             "strategy": "parallel-consensus",
                         }
                 else:  # "all"
-                    result = {"final_result": answers, "all_results": results, "strategy": "parallel-all"}
+                    result = {
+                        "final_result": answers,
+                        "all_results": results,
+                        "strategy": "parallel-all",
+                    }
 
                 return MultiAgentResponse(
                     final_result=result.get("final_result"),
@@ -163,7 +169,9 @@ class MultiAgentServiceImpl(IMultiAgentService):
                     metadata=result,
                 )
             except Exception as e:
-                logger.warning(f"Distributed parallel execution failed: {e}, falling back to sequential")
+                logger.warning(
+                    f"Distributed parallel execution failed: {e}, falling back to sequential"
+                )
                 # Fallback to sequential
 
         # 기존 multi_agent.py의 ParallelStrategy.execute() 로직 정확히 마이그레이션

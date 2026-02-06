@@ -57,5 +57,3 @@ class TestTextSplitter:
             assert len(chunks) > 0
         except ImportError:
             pytest.skip("TextSplitter not available")
-
-

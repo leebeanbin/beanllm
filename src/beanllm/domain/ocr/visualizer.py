@@ -148,7 +148,9 @@ class OCRVisualizer:
         # 1. Resize
         if config.resize_config.enabled and config.resize_config.max_size:
             current = preprocessor._resize(current, config.resize_config)
-            steps.append(cv2.cvtColor(current, cv2.COLOR_GRAY2RGB) if len(current.shape) == 2 else current)
+            steps.append(
+                cv2.cvtColor(current, cv2.COLOR_GRAY2RGB) if len(current.shape) == 2 else current
+            )
             titles.append(f"Resized ({config.resize_config.max_size}px)")
 
         # 2. Denoise

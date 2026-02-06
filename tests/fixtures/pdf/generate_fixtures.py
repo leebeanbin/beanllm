@@ -4,8 +4,9 @@
 이 스크립트는 beanPDFLoader 테스트에 필요한 PDF 파일들을 자동으로 생성합니다.
 """
 
-import fitz  # PyMuPDF
 from pathlib import Path
+
+import fitz  # PyMuPDF
 
 
 def generate_simple_pdf():
@@ -152,8 +153,15 @@ def generate_images_pdf():
     center = fitz.Point(150, 400)
     page.draw_circle(center, 50, color=(0, 0, 1), fill=(0, 0, 1))
 
-    page.insert_text((50, 480), "This document contains graphical elements.", fontsize=11, fontname="helv")
-    page.insert_text((50, 500), "beanPDFLoader should be able to extract metadata about these elements.", fontsize=11, fontname="helv")
+    page.insert_text(
+        (50, 480), "This document contains graphical elements.", fontsize=11, fontname="helv"
+    )
+    page.insert_text(
+        (50, 500),
+        "beanPDFLoader should be able to extract metadata about these elements.",
+        fontsize=11,
+        fontname="helv",
+    )
 
     output_path = Path(__file__).parent / "images.pdf"
     doc.save(output_path)

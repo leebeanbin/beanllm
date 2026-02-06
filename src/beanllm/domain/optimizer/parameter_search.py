@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List
 
 from beanllm.utils.logging import get_logger
 
@@ -145,8 +145,7 @@ class ParameterSearch:
             MultiObjectiveResult: 다목적 최적화 결과
         """
         logger.info(
-            f"Starting multi-objective search: {len(objectives)} objectives, "
-            f"{n_trials} trials"
+            f"Starting multi-objective search: {len(objectives)} objectives, " f"{n_trials} trials"
         )
 
         results: List[SearchResult] = []
@@ -225,9 +224,7 @@ class ParameterSearch:
 
         return result
 
-    def _sample_random(
-        self, param_spaces: List[Any], n_trials: int
-    ) -> List[Dict[str, Any]]:
+    def _sample_random(self, param_spaces: List[Any], n_trials: int) -> List[Dict[str, Any]]:
         """랜덤 샘플링"""
         combinations = []
 
@@ -248,15 +245,11 @@ class ParameterSearch:
             if space.type.value == "integer":
                 grid_size = min(5, space.high - space.low + 1)
                 step = max(1, (space.high - space.low) // grid_size)
-                param_grids[space.name] = list(
-                    range(int(space.low), int(space.high) + 1, step)
-                )
+                param_grids[space.name] = list(range(int(space.low), int(space.high) + 1, step))
             elif space.type.value == "float":
                 grid_size = 5
                 step = (space.high - space.low) / grid_size
-                param_grids[space.name] = [
-                    space.low + i * step for i in range(grid_size + 1)
-                ]
+                param_grids[space.name] = [space.low + i * step for i in range(grid_size + 1)]
             elif space.type.value == "categorical":
                 param_grids[space.name] = space.categories
             elif space.type.value == "boolean":
@@ -328,7 +321,6 @@ class ParameterSearch:
     ) -> Dict[str, Any]:
         """Trade-off 분석"""
         # Calculate correlation between objectives
-        import statistics
 
         trade_offs = {}
 
@@ -356,9 +348,7 @@ class ParameterSearch:
 
         return trade_offs
 
-    def _calculate_correlation(
-        self, scores1: List[float], scores2: List[float]
-    ) -> float:
+    def _calculate_correlation(self, scores1: List[float], scores2: List[float]) -> float:
         """Pearson correlation 계산"""
         import statistics
 
@@ -378,9 +368,7 @@ class ParameterSearch:
 
         return numerator / (denom1 * denom2)
 
-    def _interpret_correlation(
-        self, correlation: float, maximize1: bool, maximize2: bool
-    ) -> str:
+    def _interpret_correlation(self, correlation: float, maximize1: bool, maximize2: bool) -> str:
         """Correlation 해석"""
         abs_corr = abs(correlation)
 
@@ -429,13 +417,9 @@ def find_balanced_solution(
 
     for objective in objectives:
         if objective.maximize:
-            best_scores[objective.name] = max(
-                r.scores[objective.name] for r in result.results
-            )
+            best_scores[objective.name] = max(r.scores[objective.name] for r in result.results)
         else:
-            best_scores[objective.name] = min(
-                r.scores[objective.name] for r in result.results
-            )
+            best_scores[objective.name] = min(r.scores[objective.name] for r in result.results)
 
     # Calculate distance from ideal point for each Pareto optimal solution
     min_distance = float("inf")
@@ -457,7 +441,7 @@ def find_balanced_solution(
             # Distance from ideal (1.0)
             distance += (1.0 - normalized) ** 2
 
-        distance = distance ** 0.5
+        distance = distance**0.5
 
         if distance < min_distance:
             min_distance = distance

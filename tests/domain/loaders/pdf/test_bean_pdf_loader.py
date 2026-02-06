@@ -2,11 +2,12 @@
 beanPDFLoader 통합 테스트
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from src.beanllm.domain.loaders.pdf import beanPDFLoader
 from src.beanllm.domain.loaders.types import Document
-
 
 # 테스트 픽스처 경로
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures" / "pdf"
@@ -194,7 +195,10 @@ class TestBeanPDFLoader:
 
         assert len(documents) > 0
         # PyMuPDF 엔진 사용 확인
-        assert "PyMuPDF" in documents[0].metadata["engine"] or "fast" in documents[0].metadata["strategy"]
+        assert (
+            "PyMuPDF" in documents[0].metadata["engine"]
+            or "fast" in documents[0].metadata["strategy"]
+        )
 
     def test_accurate_engine_directly(self):
         """Accurate 엔진 직접 사용 테스트"""
@@ -206,7 +210,10 @@ class TestBeanPDFLoader:
 
         assert len(documents) > 0
         # PDFPlumber 엔진 사용 확인
-        assert "PDFPlumber" in documents[0].metadata["engine"] or "accurate" in documents[0].metadata["strategy"]
+        assert (
+            "PDFPlumber" in documents[0].metadata["engine"]
+            or "accurate" in documents[0].metadata["strategy"]
+        )
 
     def test_config_options(self):
         """고급 설정 옵션 테스트"""

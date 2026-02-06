@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -152,6 +152,10 @@ export default function ChatPage() {
   const [documentPreviewContent, setDocumentPreviewContent] = useState<string | undefined>();
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   const [googleModalOpen, setGoogleModalOpen] = useState(false);
+  // Session state
+  const [sessionId, setSessionId] = useState<string>("");
+  const [sessionSummary, setSessionSummary] = useState<string>("");
+  const [sessionSummaryLoading, setSessionSummaryLoading] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -241,6 +245,123 @@ export default function ChatPage() {
     }
   }, [messages.length]);
 
+  // Generate session ID on mount
+  useEffect(() => {
+    if (!sessionId) {
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+      setSessionId(newSessionId);
+    }
+  }, [sessionId]);
+
+  // Load session summary when session has enough messages
+  const loadSessionSummary = async () => {
+    if (!sessionId || messages.length < 10) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    setSessionSummaryLoading(true);
+
+    try {
+      const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}/summary`, {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.summary) {
+          setSessionSummary(data.summary);
+        }
+      }
+    } catch (error) {
+      console.debug("Failed to load session summary:", error);
+    } finally {
+      setSessionSummaryLoading(false);
+    }
+  };
+
+  // Auto-load summary when messages reach threshold
+  useEffect(() => {
+    if (messages.length === 10 || messages.length === 20) {
+      loadSessionSummary();
+    }
+  }, [messages.length]);
+
+  // Load a past session from chat history (panel)
+  const loadSession = useCallback(async (sid: string) => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    try {
+      const response = await fetch(`${apiUrl}/api/chat/sessions/${sid}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      const session = data.session;
+      if (!session) return;
+      const rawMessages = session.messages || [];
+      const mapped: Message[] = rawMessages.map((m: { role?: string; content?: string; content_preview?: string; timestamp?: string; model?: string; usage?: Record<string, number> }, idx: number) => ({
+        id: (m as { message_id?: string }).message_id || `msg-${idx}`,
+        role: m.role || "user",
+        content: typeof m.content === "string" ? m.content : (m.content_preview || ""),
+        timestamp: m.timestamp ? new Date(m.timestamp) : undefined,
+        model: m.model,
+        usage: m.usage,
+      }));
+      setMessages(mapped);
+      setSessionId(session.session_id);
+      setSessionSummary(session.summary ?? undefined);
+    } catch (e) {
+      console.debug("Failed to load session:", e);
+    }
+  }, []);
+
+  // New chat — 10개 미만이면 "저장할까요?" 물어보고, 저장 시 백엔드에 세션+메시지 저장 후 비우기
+  const handleNewChat = useCallback(async () => {
+    const apiUrlForNew = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const effectiveFeature = mode === "auto" ? "agentic" : selectedFeature;
+
+    if (messages.length > 0 && messages.length < 10) {
+      const save = window.confirm("이 대화를 저장한 뒤 새 채팅을 시작할까요?");
+      if (save) {
+        try {
+          const firstContent = messages.find((m) => m.role === "user")?.content ?? "";
+          const createRes = await fetch(`${apiUrlForNew}/api/chat/sessions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: firstContent.slice(0, 50).trim() || "New chat",
+              feature_mode: effectiveFeature,
+              model,
+              feature_options: {},
+            }),
+          });
+          if (createRes.ok) {
+            const data = await createRes.json();
+            const sid = data.session?.session_id;
+            if (sid) {
+              for (const m of messages) {
+                if (m.role !== "user" && m.role !== "assistant") continue;
+                await fetch(`${apiUrlForNew}/api/chat/sessions/${sid}/messages`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    role: m.role,
+                    content: m.content,
+                    model: m.model ?? model,
+                    usage: m.usage ? { total_tokens: m.usage.total_tokens } : undefined,
+                  }),
+                });
+              }
+              toast.success("대화가 저장되었습니다. 새 채팅을 시작합니다.");
+            }
+          }
+        } catch (e) {
+          console.debug("Save before new chat failed:", e);
+        }
+      }
+    }
+
+    setMessages([]);
+    setSessionSummary("");
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`);
+  }, [messages, mode, selectedFeature, model]);
+
   const adjustTextareaHeight = () => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -269,25 +390,67 @@ export default function ChatPage() {
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file) => {
+    const fileArray = Array.from(files);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+    // Add files to UI state (for display in chat)
+    for (const file of fileArray) {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
+      reader.onload = (readerEvent) => {
+        const result = readerEvent.target?.result as string;
         setAttachedFiles((prev) => [
           ...prev,
-          {
-            name: file.name,
-            type: file.type,
-            data: result,
-          },
+          { name: file.name, type: file.type, data: result },
         ]);
       };
       reader.readAsDataURL(file);
-    });
+    }
+
+    // Upload to session RAG for auto-indexing (if session exists)
+    if (sessionId) {
+      const formData = new FormData();
+      for (const file of fileArray) {
+        formData.append("files", file);
+      }
+
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/rag/session/${sessionId}/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.added_documents > 0) {
+            toast.success(
+              `${data.added_documents} document(s) indexed for RAG`,
+              { description: `Total: ${data.total_documents} documents in session` }
+            );
+          }
+          if (data.failed_files?.length > 0) {
+            toast.warning(
+              `${data.failed_files.length} file(s) failed to process`,
+              { description: data.failed_files.map((f: { filename: string }) => f.filename).join(", ") }
+            );
+          }
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || "Upload failed");
+        }
+      } catch (error) {
+        console.error("RAG upload error:", error);
+        toast.error("Failed to index documents for RAG", {
+          description: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
 
     if (e.target) {
       e.target.value = "";
@@ -305,6 +468,7 @@ export default function ChatPage() {
   const processFiles = async (files: FileList) => {
     const imageFiles: string[] = [];
     const otherFiles: Array<{ name: string; type: string; data: string }> = [];
+    const ragFiles: File[] = [];
 
     for (const file of Array.from(files)) {
       if (file.type.startsWith("image/")) {
@@ -326,6 +490,7 @@ export default function ChatPage() {
           type: file.type,
           data,
         });
+        ragFiles.push(file);
       }
     }
 
@@ -334,6 +499,43 @@ export default function ChatPage() {
     }
     if (otherFiles.length > 0) {
       setAttachedFiles((prev) => [...prev, ...otherFiles]);
+    }
+
+    // Upload non-image files to session RAG for auto-indexing
+    if (ragFiles.length > 0 && sessionId) {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const formData = new FormData();
+      for (const file of ragFiles) {
+        formData.append("files", file);
+      }
+
+      try {
+        const response = await fetch(
+          `${apiUrl}/api/rag/session/${sessionId}/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.added_documents > 0) {
+            toast.success(
+              `${data.added_documents} document(s) indexed for RAG`,
+              { description: `Total: ${data.total_documents} documents in session` }
+            );
+          }
+          if (data.failed_files?.length > 0) {
+            toast.warning(
+              `${data.failed_files.length} file(s) failed to process`
+            );
+          }
+        }
+      } catch (error) {
+        console.error("RAG upload error (drag-drop):", error);
+        toast.error("Failed to index documents for RAG");
+      }
     }
   };
 
@@ -411,6 +613,34 @@ export default function ChatPage() {
     };
     
     const forceIntent = featureToIntentMap[effectiveFeature];
+
+    // 첫 메시지면 세션 생성 → 히스토리에 제목으로 바로 표시
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    let sidForSave: string | null = messages.length === 0 ? null : sessionId;
+    if (messages.length === 0) {
+      try {
+        const createRes = await fetch(`${apiUrl}/api/chat/sessions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: (userMessage.content || "New chat").slice(0, 50).trim() || "New chat",
+            feature_mode: effectiveFeature,
+            model,
+            feature_options: {},
+          }),
+        });
+        if (createRes.ok) {
+          const data = await createRes.json();
+          sidForSave = data.session?.session_id ?? null;
+          if (sidForSave) {
+            setSessionId(sidForSave);
+            toast.success("새 채팅이 저장되었습니다. 히스토리에서 확인할 수 있습니다.");
+          }
+        }
+      } catch (e) {
+        console.debug("Create session failed:", e);
+      }
+    }
 
     try {
       setReasoningPhaseIndex(0);
@@ -623,6 +853,29 @@ export default function ChatPage() {
         return newMessages;
       });
 
+      // 세션에 user/assistant 메시지 저장 → 히스토리에서 불러올 수 있게
+      if (sidForSave && userMessage.content) {
+        try {
+          await fetch(`${apiUrl}/api/chat/sessions/${sidForSave}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role: "user", content: userMessage.content, model }),
+          });
+          await fetch(`${apiUrl}/api/chat/sessions/${sidForSave}/messages`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              role: "assistant",
+              content: assistantContent,
+              model: responseModel ?? model,
+              usage: usage ? { total_tokens: usage.total_tokens } : undefined,
+            }),
+          });
+        } catch (e) {
+          console.debug("Save messages to session failed:", e);
+        }
+      }
+
       setActiveToolCalls([]);
       setReasoningPhaseIndex(0);
     } catch (error: any) {
@@ -742,7 +995,7 @@ export default function ChatPage() {
             variant="ghost"
             size="sm"
             onClick={() => setIsInfoPanelCollapsed((c) => !c)}
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className="min-h-[44px] min-w-[44px] h-9 w-9 sm:h-8 sm:w-8 p-0 text-muted-foreground hover:text-foreground hover:bg-muted/50 touch-manipulation"
             aria-label={isInfoPanelCollapsed ? "Expand panel" : "Collapse panel"}
           >
             {isInfoPanelCollapsed ? (
@@ -751,7 +1004,7 @@ export default function ChatPage() {
               <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
             )}
           </Button>
-        ) : undefined
+        ) : null
       }
     >
       {/* Provider SDK 경고 */}
@@ -783,6 +1036,9 @@ export default function ChatPage() {
                     <h2 className="text-lg font-semibold text-foreground">
                       How can I help you today?
                     </h2>
+                    <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                      Open panel (→) → History → Start new chat. Model & settings in the panel.
+                    </p>
                   </div>
 
                   {/* Quick Actions - border만, 그라데이션·shadow 없음 */}
@@ -1113,95 +1369,110 @@ export default function ChatPage() {
               </div>
             )}
 
-            {/* Human-in-the-loop: [Run][Cancel][Change tool] */}
+            {/* Human-in-the-loop — 심플: 한 줄 문구 + Run / Cancel / Change */}
             {humanApproval && loading && (
-              <div className="mt-4 max-w-2xl rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 space-y-2">
-                <div className="text-xs font-medium text-muted-foreground">
-                  Approve running <strong>{humanApproval.tool}</strong>? {humanApproval.query_snippet && `"${humanApproval.query_snippet}"`}
-                </div>
-                <div className="flex gap-2 flex-wrap">
+              <div className="mt-4 max-w-2xl rounded-lg border border-border/50 bg-muted/5 px-3 py-2.5 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  Run <span className="font-medium text-foreground">{humanApproval.tool}</span>
+                  {humanApproval.query_snippet ? ` · "${humanApproval.query_snippet}"` : ""}
+                </span>
+                <div className="flex gap-1.5 ml-auto">
                   <Button
                     size="sm"
+                    variant="default"
+                    className="h-7 text-xs rounded-md"
                     onClick={async () => {
-                      if (humanApproval.run_id) {
-                        const runId = humanApproval.run_id;
+                      if (!humanApproval.run_id) {
                         setHumanApproval(null);
-                        streamAbortRef.current = new AbortController();
-                        setLoading(true);
-                        try {
-                          await streamMCPChat(
-                            {
-                              messages: messages.map((m) => ({ role: m.role, content: m.content })),
-                              model,
-                              temperature,
-                              max_tokens: maxTokens,
-                              force_intent: forceIntent,
-                              approval_response: { run_id: runId, action: "run" },
-                            },
-                            (event) => {
-                              if (event.type === "text") {
-                                setMessages((prev) => {
-                                  const next = [...prev];
-                                  const last = next[next.length - 1];
-                                  const content = (event.data.content as string) || "";
-                                  if (last?.role === "assistant") {
-                                    last.content = (last.content || "") + content;
-                                    last.isPlaceholder = false;
-                                  } else {
-                                    next.push({
-                                      role: "assistant",
-                                      content,
-                                      timestamp: new Date(),
-                                      id: `msg-${Date.now()}`,
-                                      isPlaceholder: false,
-                                    });
-                                  }
-                                  return next;
-                                });
-                              } else if (event.type === "done") {
-                                setStreamingMessageId(null);
-                                setDecisionBlock(null);
-                                setLastProposal(null);
-                              } else if (event.type === "error") {
-                                toast.error((event.data.message as string) || "Error");
-                              }
-                            },
-                            streamAbortRef.current?.signal
-                          );
-                        } finally {
-                          setLoading(false);
-                        }
-                      } else {
-                        setHumanApproval(null);
+                        return;
+                      }
+                      const runId = humanApproval.run_id;
+                      const effectiveFeature = mode === "auto" ? "agentic" : selectedFeature;
+                      const featureToIntentMap: Record<string, string | undefined> = {
+                        agentic: undefined,
+                        chat: "chat",
+                        rag: "rag",
+                        "multi-agent": "multi_agent",
+                        "knowledge-graph": "kg",
+                        audio: "audio",
+                        ocr: "ocr",
+                        "web-search": "web_search",
+                        google: undefined,
+                      };
+                      const forceIntent = featureToIntentMap[effectiveFeature];
+                      setHumanApproval(null);
+                      streamAbortRef.current = new AbortController();
+                      setLoading(true);
+                      try {
+                        await streamMCPChat(
+                          {
+                            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+                            model,
+                            temperature,
+                            max_tokens: maxTokens,
+                            force_intent: forceIntent,
+                            approval_response: { run_id: runId, action: "run" },
+                          },
+                          (event) => {
+                            if (event.type === "text") {
+                              setMessages((prev) => {
+                                const next = [...prev];
+                                const last = next[next.length - 1];
+                                const content = (event.data.content as string) || "";
+                                if (last?.role === "assistant") {
+                                  last.content = (last.content || "") + content;
+                                  last.isPlaceholder = false;
+                                } else {
+                                  next.push({
+                                    role: "assistant",
+                                    content,
+                                    timestamp: new Date(),
+                                    id: `msg-${Date.now()}`,
+                                    isPlaceholder: false,
+                                  });
+                                }
+                                return next;
+                              });
+                            } else if (event.type === "done") {
+                              setStreamingMessageId(null);
+                              setDecisionBlock(null);
+                              setLastProposal(null);
+                            } else if (event.type === "error") {
+                              toast.error((event.data.message as string) || "Error");
+                            }
+                          },
+                          streamAbortRef.current?.signal
+                        );
+                      } finally {
+                        setLoading(false);
                       }
                     }}
-                    className="text-xs"
                   >
                     Run
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
+                    className="h-7 text-xs rounded-md border-border/40"
                     onClick={() => {
                       streamAbortRef.current?.abort();
                       setHumanApproval(null);
                       setLoading(false);
-                      toast.info("Run cancelled.");
+                      toast.info("Cancelled");
                     }}
-                    className="text-xs"
                   >
                     Cancel
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
+                    className="h-7 text-xs rounded-md text-muted-foreground hover:text-foreground"
                     onClick={() => {
-                      toast.info("Change tool: send a new message with the tool you want.");
                       setHumanApproval(null);
+                      toast.info("Send a new message to pick another tool.");
                     }}
-                    className="text-xs"
                   >
-                    Change tool
+                    Change
                   </Button>
                 </div>
               </div>
@@ -1496,6 +1767,12 @@ export default function ChatPage() {
           }))}
           documentPreviewContent={documentPreviewContent}
           documentPreviewTitle="Document Preview"
+          sessionId={sessionId}
+          sessionSummary={sessionSummary}
+          sessionSummaryLoading={sessionSummaryLoading}
+          onRefreshSummary={loadSessionSummary}
+          onLoadSession={loadSession}
+          onNewChat={handleNewChat}
           onExport={handleExport}
           onImport={handleImport}
           onClear={handleClear}

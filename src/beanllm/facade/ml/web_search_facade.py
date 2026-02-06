@@ -86,7 +86,6 @@ class WebSearch(AsyncHelperMixin):
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
         # 기존 web_search.py는 동기였지만, 새로운 구조에서는 비동기 사용
-        import asyncio
 
         response = run_async_in_sync(
             self._web_search_handler.handle_search(
@@ -129,7 +128,7 @@ class WebSearch(AsyncHelperMixin):
             SearchResponse
         """
         # Extract max_results from kwargs if provided, otherwise use default
-        max_results = kwargs.pop('max_results', self.max_results)
+        max_results = kwargs.pop("max_results", self.max_results)
 
         # Handler를 통한 처리
         response = await self._web_search_handler.handle_search(
@@ -169,7 +168,6 @@ class WebSearch(AsyncHelperMixin):
             스크래핑된 콘텐츠 리스트
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
-        import asyncio
 
         return run_async_in_sync(
             self._web_search_handler.handle_search_and_scrape(

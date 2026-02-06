@@ -5,6 +5,7 @@ Embeddings Advanced - 고급 임베딩 기법들
 from typing import List, Optional
 
 from beanllm.domain.embeddings.base import BaseEmbedding
+
 from .utils import batch_cosine_similarity
 
 try:

@@ -260,9 +260,7 @@ class Orchestrator:
             print(f"Pending: {len(status.nodes_pending)} nodes")
             ```
         """
-        logger.debug(
-            f"Monitoring workflow: {workflow_id}, execution={execution_id}"
-        )
+        logger.debug(f"Monitoring workflow: {workflow_id}, execution={execution_id}")
 
         request = MonitorWorkflowRequest(
             workflow_id=workflow_id,
@@ -587,9 +585,7 @@ class Orchestrator:
             )
             ```
         """
-        agents_dict = {
-            f"debater{i}": agent for i, agent in enumerate(debater_agents)
-        }
+        agents_dict = {f"debater{i}": agent for i, agent in enumerate(debater_agents)}
         agents_dict["judge"] = judge_agent
 
         debater_ids = [f"debater{i}" for i in range(len(debater_agents))]

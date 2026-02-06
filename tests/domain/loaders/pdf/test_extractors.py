@@ -2,11 +2,12 @@
 메타데이터 추출기 테스트 (TableExtractor, ImageExtractor)
 """
 
-import pytest
 from pathlib import Path
-from src.beanllm.domain.loaders.pdf import beanPDFLoader
-from src.beanllm.domain.loaders.pdf.extractors import TableExtractor, ImageExtractor
 
+import pytest
+
+from src.beanllm.domain.loaders.pdf import beanPDFLoader
+from src.beanllm.domain.loaders.pdf.extractors import ImageExtractor, TableExtractor
 
 # 테스트 픽스처 경로
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures" / "pdf"
@@ -214,10 +215,7 @@ class TestImageExtractor:
 
         assert isinstance(large_images, list)
         # 모든 이미지가 조건을 만족해야 함
-        assert all(
-            img["width"] >= 50 and img["height"] >= 50
-            for img in large_images
-        )
+        assert all(img["width"] >= 50 and img["height"] >= 50 for img in large_images)
 
     def test_get_large_images(self):
         """큰 이미지 필터링 테스트"""
@@ -232,10 +230,7 @@ class TestImageExtractor:
 
         assert isinstance(large, list)
         # 모든 이미지의 width 또는 height가 100 이상이어야 함
-        assert all(
-            img["width"] >= 100 or img["height"] >= 100
-            for img in large
-        )
+        assert all(img["width"] >= 100 or img["height"] >= 100 for img in large)
 
     def test_get_summary(self):
         """요약 정보 테스트"""

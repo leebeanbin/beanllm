@@ -99,7 +99,9 @@ class Neo4jAdapter:
         if not self._driver:
             self.connect()
 
-        logger.info(f"Exporting graph to Neo4j: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
+        logger.info(
+            f"Exporting graph to Neo4j: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
+        )
 
         with self._driver.session() as session:
             # Clear existing data
@@ -197,7 +199,9 @@ class Neo4jAdapter:
 
                 graph.add_edge(source, target, **rel_properties)
 
-        logger.info(f"Imported graph: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges")
+        logger.info(
+            f"Imported graph: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
+        )
 
         return graph
 

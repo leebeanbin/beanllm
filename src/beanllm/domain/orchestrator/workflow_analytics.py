@@ -8,9 +8,9 @@ SOLID 원칙:
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from beanllm.utils.logging import get_logger
 
@@ -191,7 +191,9 @@ class WorkflowAnalytics:
             recommendation = ""
             if is_bottleneck:
                 if percentage > 50:
-                    recommendation = "Critical bottleneck. Consider parallelization or optimization."
+                    recommendation = (
+                        "Critical bottleneck. Consider parallelization or optimization."
+                    )
                 elif percentage > 30:
                     recommendation = "Major bottleneck. Review implementation efficiency."
                 else:
@@ -400,9 +402,7 @@ class WorkflowAnalytics:
 
         # Check for parallelization opportunities
         node_states = self.executions[workflow_id]["node_states"]
-        sequential_count = sum(
-            1 for s in node_states.values() if s.status == NodeStatus.COMPLETED
-        )
+        sequential_count = sum(1 for s in node_states.values() if s.status == NodeStatus.COMPLETED)
 
         if sequential_count > 3:
             recommendations.append(
@@ -412,9 +412,7 @@ class WorkflowAnalytics:
         # Agent utilization
         utilization = self.analyze_agent_utilization()
         underutilized = [
-            agent_id
-            for agent_id, stats in utilization.items()
-            if stats.total_executions < 2
+            agent_id for agent_id, stats in utilization.items() if stats.total_executions < 2
         ]
 
         if underutilized:
@@ -566,9 +564,7 @@ class WorkflowAnalytics:
             )
             all_durations.append(duration)
 
-            success_count = sum(
-                1 for s in node_states.values() if s.status == NodeStatus.COMPLETED
-            )
+            success_count = sum(1 for s in node_states.values() if s.status == NodeStatus.COMPLETED)
             total_count = len(node_states)
             success_rate = success_count / total_count if total_count > 0 else 0.0
             all_success_rates.append(success_rate)

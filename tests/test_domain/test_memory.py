@@ -6,11 +6,11 @@ import pytest
 
 from beanllm.domain.memory import (
     BufferMemory,
-    WindowMemory,
-    TokenMemory,
-    SummaryMemory,
     ConversationMemory,
     Message,
+    SummaryMemory,
+    TokenMemory,
+    WindowMemory,
 )
 
 
@@ -152,5 +152,3 @@ class TestSummaryMemory:
         # 요약이 생성되었는지 확인
         messages = memory.get_messages()
         assert len(messages) >= 0
-
-

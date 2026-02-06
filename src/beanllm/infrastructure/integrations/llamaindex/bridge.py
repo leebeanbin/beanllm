@@ -5,7 +5,7 @@ beanLLM의 Document, Embeddings를 LlamaIndex 형식으로 변환합니다.
 """
 
 import logging
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable, List
 
 try:
     from beanllm.utils.logging import get_logger
@@ -88,7 +88,7 @@ class LlamaIndexBridge:
 
             llama_docs.append(llama_doc)
 
-        logger.info(f"Converted {len(bean_docs)} beanLLM documents to LlamaIndex format")
+        logger.info(f"Converted {len(bean_documents)} beanLLM documents to LlamaIndex format")
 
         return llama_docs
 
@@ -120,7 +120,7 @@ class LlamaIndexBridge:
 
             bean_docs.append(bean_doc)
 
-        logger.info(f"Converted {len(llama_docs)} LlamaIndex documents to beanLLM format")
+        logger.info(f"Converted {len(llama_documents)} LlamaIndex documents to beanLLM format")
 
         return bean_docs
 
@@ -182,9 +182,7 @@ class LlamaIndexBridge:
                 """비동기 텍스트 임베딩"""
                 return self._get_text_embedding(text)
 
-        wrapper = BeanLLMEmbeddingWrapper(
-            embedding_fn=embedding_function, model=model_name
-        )
+        wrapper = BeanLLMEmbeddingWrapper(embedding_fn=embedding_function, model=model_name)
 
         logger.info(f"Wrapped beanLLM embedding function for LlamaIndex: {model_name}")
 

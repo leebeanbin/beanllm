@@ -104,9 +104,7 @@ class IOptimizerService(ABC):
         pass
 
     @abstractmethod
-    async def compare_configs(
-        self, config_ids: List[str]
-    ) -> Dict[str, Any]:
+    async def compare_configs(self, config_ids: List[str]) -> Dict[str, Any]:
         """
         여러 설정 비교
 

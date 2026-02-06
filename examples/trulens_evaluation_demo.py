@@ -39,16 +39,14 @@ def demo_rag_triad():
 
     print(f"\n질문: {question}")
     print(f"답변: {answer}")
-    print(f"컨텍스트:")
+    print("컨텍스트:")
     for i, ctx in enumerate(contexts, 1):
         print(f"  {i}. {ctx}")
 
     # RAG Triad 평가
-    result = evaluator.evaluate_rag_triad(
-        question=question, answer=answer, contexts=contexts
-    )
+    result = evaluator.evaluate_rag_triad(question=question, answer=answer, contexts=contexts)
 
-    print(f"\nRAG Triad 결과:")
+    print("\nRAG Triad 결과:")
     print(f"  Context Relevance: {result['context_relevance']:.3f}")
     print(f"  Groundedness: {result['groundedness']:.3f}")
     print(f"  Answer Relevance: {result['answer_relevance']:.3f}")
@@ -197,16 +195,12 @@ def demo_batch_evaluation():
         {
             "question": "What is machine learning?",
             "answer": "Machine learning is a subset of AI.",
-            "contexts": [
-                "Machine learning is a subset of AI that learns from data."
-            ],
+            "contexts": ["Machine learning is a subset of AI that learns from data."],
         },
         {
             "question": "Who wrote Romeo and Juliet?",
             "answer": "William Shakespeare wrote Romeo and Juliet.",
-            "contexts": [
-                "Romeo and Juliet is a tragedy written by William Shakespeare."
-            ],
+            "contexts": ["Romeo and Juliet is a tragedy written by William Shakespeare."],
         },
     ]
 
@@ -226,16 +220,18 @@ def demo_batch_evaluation():
 
         results.append(result)
 
-        print(f"   CR: {result['context_relevance']:.3f}, "
-              f"G: {result['groundedness']:.3f}, "
-              f"AR: {result['answer_relevance']:.3f}")
+        print(
+            f"   CR: {result['context_relevance']:.3f}, "
+            f"G: {result['groundedness']:.3f}, "
+            f"AR: {result['answer_relevance']:.3f}"
+        )
 
     # 평균 점수
     avg_context_relevance = sum(r["context_relevance"] for r in results) / len(results)
     avg_groundedness = sum(r["groundedness"] for r in results) / len(results)
     avg_answer_relevance = sum(r["answer_relevance"] for r in results) / len(results)
 
-    print(f"\n평균 점수:")
+    print("\n평균 점수:")
     print(f"  Context Relevance: {avg_context_relevance:.3f}")
     print(f"  Groundedness: {avg_groundedness:.3f}")
     print(f"  Answer Relevance: {avg_answer_relevance:.3f}")
@@ -267,9 +263,7 @@ def demo_comparison_ragas_vs_trulens():
     # TruLens 평가
     print("1. TruLens 평가:")
     trulens = TruLensWrapper(provider="openai", model="gpt-4o-mini")
-    trulens_result = trulens.evaluate_rag_triad(
-        question=question, answer=answer, contexts=contexts
-    )
+    trulens_result = trulens.evaluate_rag_triad(question=question, answer=answer, contexts=contexts)
 
     print(f"   Context Relevance: {trulens_result['context_relevance']:.3f}")
     print(f"   Groundedness: {trulens_result['groundedness']:.3f}")

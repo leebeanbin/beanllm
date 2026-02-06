@@ -191,9 +191,7 @@ class BGEReranker(BaseReranker):
             if top_k is not None:
                 results = results[:top_k]
 
-            logger.info(
-                f"Reranked {len(documents)} documents, top score: {results[0].score:.4f}"
-            )
+            logger.info(f"Reranked {len(documents)} documents, top score: {results[0].score:.4f}")
 
             return results
 
@@ -517,8 +515,7 @@ class PositionEngineeringReranker(BaseReranker):
         valid_strategies = ["head", "tail", "head_tail", "side"]
         if self.strategy not in valid_strategies:
             raise ValueError(
-                f"Invalid strategy: {self.strategy}. "
-                f"Available: {valid_strategies}"
+                f"Invalid strategy: {self.strategy}. " f"Available: {valid_strategies}"
             )
 
     def rerank(
@@ -579,15 +576,12 @@ class PositionEngineeringReranker(BaseReranker):
         reordered = self._apply_position_engineering(ranked_results)
 
         logger.info(
-            f"Position Engineering applied: strategy={self.strategy}, "
-            f"count={len(reordered)}"
+            f"Position Engineering applied: strategy={self.strategy}, " f"count={len(reordered)}"
         )
 
         return reordered
 
-    def _apply_position_engineering(
-        self, results: List[RerankResult]
-    ) -> List[RerankResult]:
+    def _apply_position_engineering(self, results: List[RerankResult]) -> List[RerankResult]:
         """
         Position Engineering 전략 적용
 
@@ -656,12 +650,5 @@ class PositionEngineeringReranker(BaseReranker):
             return results
 
     def __repr__(self) -> str:
-        base_name = (
-            self.base_reranker.__class__.__name__
-            if self.base_reranker
-            else "None"
-        )
-        return (
-            f"PositionEngineeringReranker("
-            f"base={base_name}, strategy={self.strategy})"
-        )
+        base_name = self.base_reranker.__class__.__name__ if self.base_reranker else "None"
+        return f"PositionEngineeringReranker(" f"base={base_name}, strategy={self.strategy})"

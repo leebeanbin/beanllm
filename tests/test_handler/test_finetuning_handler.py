@@ -2,18 +2,19 @@
 FinetuningHandler 테스트 - Finetuning Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
 
+import pytest
+
 from beanllm.dto.request.finetuning_request import (
-    PrepareDataRequest,
     CreateJobRequest,
     GetJobRequest,
+    PrepareDataRequest,
 )
 from beanllm.dto.response.finetuning_response import (
-    PrepareDataResponse,
     CreateJobResponse,
     GetJobResponse,
+    PrepareDataResponse,
 )
 from beanllm.handler.finetuning_handler import FinetuningHandler
 
@@ -25,15 +26,9 @@ class TestFinetuningHandler:
     def mock_finetuning_service(self):
         """Mock FinetuningService"""
         service = Mock()
-        service.prepare_data = AsyncMock(
-            return_value=PrepareDataResponse(file_id="file_123")
-        )
-        service.create_job = AsyncMock(
-            return_value=CreateJobResponse(job=Mock(job_id="job_123"))
-        )
-        service.get_job = AsyncMock(
-            return_value=GetJobResponse(job=Mock(job_id="job_123"))
-        )
+        service.prepare_data = AsyncMock(return_value=PrepareDataResponse(file_id="file_123"))
+        service.create_job = AsyncMock(return_value=CreateJobResponse(job=Mock(job_id="job_123")))
+        service.get_job = AsyncMock(return_value=GetJobResponse(job=Mock(job_id="job_123")))
         return service
 
     @pytest.fixture
@@ -96,5 +91,3 @@ class TestFinetuningHandler:
             assert isinstance(response, GetJobResponse)
         except TypeError:
             pytest.skip("Decorator issue")
-
-

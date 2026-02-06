@@ -116,8 +116,7 @@ class OptimizerHandler:
         valid_methods = ["bayesian", "grid", "random", "genetic"]
         if request.method.lower() not in valid_methods:
             raise ValueError(
-                f"Invalid optimization method: {request.method}. "
-                f"Must be one of {valid_methods}"
+                f"Invalid optimization method: {request.method}. " f"Must be one of {valid_methods}"
             )
 
         # Validate parameters
@@ -130,20 +129,14 @@ class OptimizerHandler:
 
             param_type = param["type"].lower()
             if param_type not in ["integer", "float", "categorical", "boolean"]:
-                raise ValueError(
-                    f"Invalid parameter type: {param_type} for {param['name']}"
-                )
+                raise ValueError(f"Invalid parameter type: {param_type} for {param['name']}")
 
             # Type-specific validation
             if param_type in ["integer", "float"]:
                 if "low" not in param or "high" not in param:
-                    raise ValueError(
-                        f"Parameter {param['name']} must have 'low' and 'high' fields"
-                    )
+                    raise ValueError(f"Parameter {param['name']} must have 'low' and 'high' fields")
                 if param["low"] >= param["high"]:
-                    raise ValueError(
-                        f"Parameter {param['name']}: low must be less than high"
-                    )
+                    raise ValueError(f"Parameter {param['name']}: low must be less than high")
 
             elif param_type == "categorical":
                 if "categories" not in param or not param["categories"]:
@@ -154,9 +147,7 @@ class OptimizerHandler:
         # Validate multi-objective
         if request.multi_objective:
             if not request.objectives or len(request.objectives) < 2:
-                raise ValueError(
-                    "multi_objective requires at least 2 objectives"
-                )
+                raise ValueError("multi_objective requires at least 2 objectives")
 
             for obj in request.objectives:
                 if "name" not in obj:
@@ -258,9 +249,7 @@ class OptimizerHandler:
             logger.error(f"Error running A/B test: {e}")
             raise RuntimeError(f"Failed to run A/B test: {e}") from e
 
-    async def handle_get_recommendations(
-        self, profile_id: str
-    ) -> RecommendationResponse:
+    async def handle_get_recommendations(self, profile_id: str) -> RecommendationResponse:
         """
         권장사항 조회
 

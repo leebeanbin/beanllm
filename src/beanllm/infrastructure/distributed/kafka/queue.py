@@ -9,10 +9,11 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 from beanllm.infrastructure.distributed.interfaces import TaskQueueInterface
 from beanllm.utils import check_kafka_health, sanitize_error_message
+
 from .client import get_kafka_client
 
 try:
@@ -122,7 +123,9 @@ class KafkaTaskQueue(TaskQueueInterface):
             }
             return task_id
 
-    async def dequeue(self, task_type: str, timeout: Optional[float] = None) -> Optional[Dict[str, Any]]:
+    async def dequeue(
+        self, task_type: str, timeout: Optional[float] = None
+    ) -> Optional[Dict[str, Any]]:
         """작업 큐에서 가져오기"""
         # Topic 구독
         self.consumer.subscribe([self.topic])
@@ -136,15 +139,13 @@ class KafkaTaskQueue(TaskQueueInterface):
                 return None
 
             # Kafka에서 메시지 가져오기
-            message_pack = await asyncio.to_thread(
-                self.consumer.poll, timeout_ms=1000
-            )
+            message_pack = await asyncio.to_thread(self.consumer.poll, timeout_ms=1000)
 
             if message_pack:
                 for topic_partition, messages in message_pack.items():
                     for message in messages:
                         task = json.loads(message.value)
-                        
+
                         # 작업 타입 필터링
                         if task.get("task_type") == task_type:
                             # 작업 상태 업데이트
@@ -152,7 +153,7 @@ class KafkaTaskQueue(TaskQueueInterface):
                             if task_id in self._task_status:
                                 self._task_status[task_id]["status"] = "processing"
                                 self._task_status[task_id]["started_at"] = time.time()
-                            
+
                             return task
 
             await asyncio.sleep(0.1)  # 짧은 대기
@@ -160,4 +161,3 @@ class KafkaTaskQueue(TaskQueueInterface):
     async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """작업 상태 조회"""
         return self._task_status.get(task_id)
-

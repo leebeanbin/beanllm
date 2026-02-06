@@ -5,12 +5,14 @@ Request models for Agent, Multi-Agent, and Orchestrator APIs.
 Uses Python best practices: type hints, Field descriptions, validators.
 """
 
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from pydantic import BaseModel, Field
 
 
 class AgentRequest(BaseModel):
     """Request to run a single agent task"""
+
     task: str = Field(..., description="Task description for the agent")
     tools: Optional[List[str]] = Field(None, description="List of tool names to use")
     max_iterations: int = Field(default=10, ge=1, le=50, description="Maximum iterations")
@@ -19,11 +21,12 @@ class AgentRequest(BaseModel):
 
 class MultiAgentRequest(BaseModel):
     """Request for multi-agent coordination"""
+
     task: str = Field(..., description="Task for agents to work on")
     num_agents: int = Field(default=3, ge=2, le=10, description="Number of agents")
     strategy: str = Field(
         default="sequential",
-        description="Execution strategy: sequential, parallel, hierarchical, debate"
+        description="Execution strategy: sequential, parallel, hierarchical, debate",
     )
     model: Optional[str] = Field(None, description="Default LLM model for all agents")
     agent_configs: Optional[List[Dict[str, Any]]] = Field(
@@ -38,6 +41,7 @@ class MultiAgentRequest(BaseModel):
 
 class WorkflowRequest(BaseModel):
     """Request for orchestrator workflow execution"""
+
     workflow_type: str = Field(
         ..., description="Workflow type: research_write, parallel_consensus, debate"
     )

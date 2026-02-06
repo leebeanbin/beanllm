@@ -5,22 +5,22 @@ Jupyter Notebook 로더
 """
 
 import logging
-import mmap
-import re
 from pathlib import Path
-from typing import Iterator, List, Optional, Union
+from typing import List, Optional, Union
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
-from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str):
         return logging.getLogger(name)
 
+
 logger = get_logger(__name__)
+
 
 class JupyterLoader(BaseDocumentLoader):
     """
@@ -114,7 +114,7 @@ class JupyterLoader(BaseDocumentLoader):
                     if cell_content:
                         content_parts.append(cell_content)
 
-                combined_content = ("\n\n" + "="*80 + "\n\n").join(content_parts)
+                combined_content = ("\n\n" + "=" * 80 + "\n\n").join(content_parts)
 
                 return [Document(content=combined_content, metadata=nb_metadata)]
 
@@ -129,11 +129,13 @@ class JupyterLoader(BaseDocumentLoader):
                     cell_content = self._format_cell(cell, idx)
                     if cell_content:
                         cell_metadata = nb_metadata.copy()
-                        cell_metadata.update({
-                            "cell_index": idx,
-                            "cell_type": cell.cell_type,
-                            "execution_count": cell.get("execution_count"),
-                        })
+                        cell_metadata.update(
+                            {
+                                "cell_index": idx,
+                                "cell_type": cell.cell_type,
+                                "execution_count": cell.get("execution_count"),
+                            }
+                        )
 
                         documents.append(Document(content=cell_content, metadata=cell_metadata))
 
@@ -226,5 +228,3 @@ class JupyterLoader(BaseDocumentLoader):
             return "\n".join(error_parts)
 
         return ""
-
-

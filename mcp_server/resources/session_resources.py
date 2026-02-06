@@ -4,9 +4,11 @@ Session Resources - 세션 데이터 및 통계를 MCP Resource로 노출
 MCP Resources는 Claude가 읽을 수 있는 데이터입니다.
 Tools는 실행 가능한 함수, Resources는 데이터 소스입니다.
 """
-from typing import Dict, Any, Optional, List
-from fastmcp import FastMCP
+
 import json
+from typing import Any, Dict, List, Optional
+
+from fastmcp import FastMCP
 
 # 기존 beanllm 인프라 import
 from beanllm.infrastructure.distributed.google_events import (

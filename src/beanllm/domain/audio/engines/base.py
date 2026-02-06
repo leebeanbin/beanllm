@@ -11,7 +11,6 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
-from beanllm.domain.audio.types import TranscriptionResult
 
 
 class BaseSTTEngine(ABC):
@@ -34,9 +33,7 @@ class BaseSTTEngine(ABC):
     """
 
     @abstractmethod
-    def transcribe(
-        self, audio_path: Union[str, Path, np.ndarray], config: STTConfig
-    ) -> Dict:
+    def transcribe(self, audio_path: Union[str, Path, np.ndarray], config: STTConfig) -> Dict:
         """
         오디오 전사 (음성 → 텍스트)
 

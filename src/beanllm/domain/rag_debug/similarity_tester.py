@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from beanllm.utils.logging import get_logger
 
@@ -83,9 +83,7 @@ class SimilarityTester:
             try:
                 # Check if vector_store supports MMR
                 if hasattr(self.vector_store, "max_marginal_relevance_search"):
-                    mmr_results = self.vector_store.max_marginal_relevance_search(
-                        query, k=k
-                    )
+                    mmr_results = self.vector_store.max_marginal_relevance_search(query, k=k)
                     results["mmr"] = {
                         "results": [
                             {
@@ -125,9 +123,7 @@ class SimilarityTester:
                         "num_results": len(hybrid_results),
                     }
                 else:
-                    results["hybrid"] = {
-                        "error": "Hybrid search not supported by this VectorStore"
-                    }
+                    results["hybrid"] = {"error": "Hybrid search not supported by this VectorStore"}
             except Exception as e:
                 logger.error(f"Hybrid search failed: {e}")
                 results["hybrid"] = {"error": str(e)}
@@ -135,9 +131,7 @@ class SimilarityTester:
         logger.info(f"Query test completed: {len(results)} strategies tested")
         return results
 
-    def batch_test(
-        self, queries: List[str], k: int = 4
-    ) -> List[Dict[str, Any]]:
+    def batch_test(self, queries: List[str], k: int = 4) -> List[Dict[str, Any]]:
         """
         배치 쿼리 테스트
 
@@ -157,9 +151,7 @@ class SimilarityTester:
 
         return results
 
-    def compare_strategies(
-        self, query: str, k: int = 4
-    ) -> Dict[str, Any]:
+    def compare_strategies(self, query: str, k: int = 4) -> Dict[str, Any]:
         """
         검색 전략 비교 분석
 
@@ -193,9 +185,7 @@ class SimilarityTester:
             "recommendations": recommendations,
         }
 
-    def _analyze_overlap(
-        self, strategy_results: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _analyze_overlap(self, strategy_results: Dict[str, Any]) -> Dict[str, Any]:
         """
         전략 간 결과 중복 분석
 
@@ -253,9 +243,7 @@ class SimilarityTester:
         recommendations = []
 
         # Check which strategies are available
-        available_strategies = [
-            s for s, r in strategy_results.items() if "error" not in r
-        ]
+        available_strategies = [s for s, r in strategy_results.items() if "error" not in r]
 
         if len(available_strategies) == 0:
             recommendations.append("⚠️  No search strategies available")

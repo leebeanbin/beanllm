@@ -7,8 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from beanllm.utils.logging import get_logger
 
@@ -43,9 +42,7 @@ class ChunkValidator:
         self.max_chunk_size = max_chunk_size
         self.overlap_threshold = overlap_threshold
 
-    def validate_size(
-        self, documents: List[Any]
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
+    def validate_size(self, documents: List[Any]) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:
         """
         청크 크기 검증
 
@@ -141,8 +138,7 @@ class ChunkValidator:
         """
         threshold = threshold or self.overlap_threshold
         logger.info(
-            f"Detecting duplicates in {len(documents)} documents "
-            f"(threshold={threshold})"
+            f"Detecting duplicates in {len(documents)} documents " f"(threshold={threshold})"
         )
 
         duplicates = []
@@ -245,9 +241,7 @@ class ChunkValidator:
         logger.info(f"Metadata validation completed: {len(issues)} issues found")
         return issues
 
-    def check_overlap(
-        self, documents: List[Any]
-    ) -> Optional[Dict[str, Any]]:
+    def check_overlap(self, documents: List[Any]) -> Optional[Dict[str, Any]]:
         """
         청크 간 overlap 통계
 

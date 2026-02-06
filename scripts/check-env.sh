@@ -248,7 +248,9 @@ fi
 if [ "$HAS_LLM_KEY" = false ]; then
     echo -e "${RED}✗${NC} No LLM provider configured!"
     echo "  Set at least one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY"
-    echo "  Or start Ollama for local models: ollama serve"
+    echo "  Or start Ollama:"
+    echo "    - 로컬: ollama serve"
+    echo "    - Docker: docker-compose up -d (Ollama 포함)"
     ERRORS=$((ERRORS + 1))
 fi
 

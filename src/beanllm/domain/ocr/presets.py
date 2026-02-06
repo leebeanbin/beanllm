@@ -202,10 +202,7 @@ class ConfigPresets:
         if preset_path.exists():
             return self.load(preset_name)
 
-        raise ValueError(
-            f"Preset '{preset_name}' not found. "
-            f"Available presets: {self.list()}"
-        )
+        raise ValueError(f"Preset '{preset_name}' not found. " f"Available presets: {self.list()}")
 
     def save(self, preset_name: str, config: OCRConfig) -> None:
         """
@@ -255,9 +252,7 @@ class ConfigPresets:
         preset_path = self.presets_dir / f"{preset_name}.json"
 
         if not preset_path.exists():
-            raise FileNotFoundError(
-                f"Preset '{preset_name}' not found at {preset_path}"
-            )
+            raise FileNotFoundError(f"Preset '{preset_name}' not found at {preset_path}")
 
         with open(preset_path, "r", encoding="utf-8") as f:
             config_dict = json.load(f)
@@ -282,10 +277,7 @@ class ConfigPresets:
         builtin = list(self._builtin_presets.keys())
 
         # 커스텀 프리셋
-        custom = [
-            p.stem
-            for p in self.presets_dir.glob("*.json")
-        ]
+        custom = [p.stem for p in self.presets_dir.glob("*.json")]
 
         return sorted(set(builtin + custom))
 
@@ -306,16 +298,12 @@ class ConfigPresets:
             ```
         """
         if preset_name in self._builtin_presets:
-            raise ValueError(
-                f"Cannot delete builtin preset '{preset_name}'"
-            )
+            raise ValueError(f"Cannot delete builtin preset '{preset_name}'")
 
         preset_path = self.presets_dir / f"{preset_name}.json"
 
         if not preset_path.exists():
-            raise FileNotFoundError(
-                f"Preset '{preset_name}' not found at {preset_path}"
-            )
+            raise FileNotFoundError(f"Preset '{preset_name}' not found at {preset_path}")
 
         preset_path.unlink()
         logger.info(f"Preset '{preset_name}' deleted")

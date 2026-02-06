@@ -85,3 +85,6 @@ lerna-debug.log*
 playground/frontend/.next/
 playground/frontend/node_modules/
 playground/frontend/.pnpm-store/
+
+# Local run (Ollama background PID)
+.ollama-serve.pid

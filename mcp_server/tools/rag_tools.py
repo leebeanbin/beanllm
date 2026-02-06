@@ -3,16 +3,19 @@ RAG Tools - 기존 beanllm RAG 기능을 MCP tool로 wrapping
 
 🎯 핵심: 새로운 코드를 만들지 않고 기존 코드를 함수화!
 """
+
 import asyncio
-from typing import List, Dict, Any, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 from fastmcp import FastMCP
+
+from beanllm.domain.embeddings import OllamaEmbedding  # LocalEmbeddings was renamed
+from beanllm.domain.loaders import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
+from beanllm.domain.vector_stores.local import ChromaVectorStore
 
 # 기존 beanllm 코드 import (wrapping 대상)
 from beanllm.facade.core import RAGChain
-from beanllm.domain.loaders import DirectoryLoader, PDFLoader, TextLoader, CSVLoader
-from beanllm.domain.embeddings import LocalEmbeddings
-from beanllm.domain.vector_stores.local import ChromaVectorStore
 from mcp_server.config import MCPServerConfig
 
 # FastMCP 인스턴스 생성
@@ -20,6 +23,7 @@ mcp = FastMCP("RAG Tools")
 
 # ✅ 세션 기반 인스턴스 관리
 from mcp_server.services.session_manager import get_session_manager
+
 session_manager = get_session_manager()
 
 # 하위 호환성을 위한 전역 캐시 (deprecated, session_manager 사용 권장)
@@ -142,11 +146,11 @@ async def query_rag_system(
         rag = None
         if session_id:
             rag = session_manager.get_rag_instance(session_id, collection_name)
-        
+
         if rag is None:
             # 하위 호환성: 전역 캐시 확인
             rag = _rag_instances.get(collection_name)
-        
+
         if rag is None:
             return {
                 "success": False,
@@ -273,9 +277,7 @@ async def delete_rag_system(collection_name: str) -> dict:
         del _rag_instances[collection_name]
 
         # 벡터 스토어 삭제 (Chroma의 경우)
-        vector_store_path = (
-            MCPServerConfig.VECTOR_STORE_DIR / f"chroma_{collection_name}"
-        )
+        vector_store_path = MCPServerConfig.VECTOR_STORE_DIR / f"chroma_{collection_name}"
         if vector_store_path.exists():
             import shutil
 

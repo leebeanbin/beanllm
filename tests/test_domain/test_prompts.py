@@ -2,8 +2,9 @@
 Prompts 테스트 - 프롬프트 시스템 테스트
 """
 
-import pytest
 from unittest.mock import Mock
+
+import pytest
 
 
 class TestPromptComposer:

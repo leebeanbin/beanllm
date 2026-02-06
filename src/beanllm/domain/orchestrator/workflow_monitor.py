@@ -287,7 +287,7 @@ class WorkflowMonitor:
     async def node_completed(
         self,
         node_id: str,
-        output: Any = None,
+        output: Optional[Any] = None,
         metadata: Optional[Dict[str, Any]] = None,
     ) -> None:
         """

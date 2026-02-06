@@ -5,7 +5,7 @@
 기존 최적화 패턴 참고: Helper 메서드, 에러 처리
 """
 
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict
 
 from .factory import get_event_bus
 from .messaging import MessageProducer
@@ -43,20 +43,23 @@ def with_event_publishing(event_type: str, include_result: bool = True):
     """
 
     def decorator(func: Callable) -> Callable:
-        import functools
         import asyncio
+        import functools
 
         producer, _ = get_event_bus()
 
         @functools.wraps(func)
         async def async_wrapper(*args, **kwargs):
             # 시작 이벤트 발행
-            await producer.publish("llm.events", {
-                "event_type": f"{event_type}.started",
-                "function": func.__name__,
-                "args": str(args)[:100],  # 처음 100자만
-                "kwargs": {k: str(v)[:100] for k, v in kwargs.items()},
-            })
+            await producer.publish(
+                "llm.events",
+                {
+                    "event_type": f"{event_type}.started",
+                    "function": func.__name__,
+                    "args": str(args)[:100],  # 처음 100자만
+                    "kwargs": {k: str(v)[:100] for k, v in kwargs.items()},
+                },
+            )
 
             try:
                 result = await func(*args, **kwargs)
@@ -73,11 +76,14 @@ def with_event_publishing(event_type: str, include_result: bool = True):
                 return result
             except Exception as e:
                 # 오류 이벤트 발행
-                await producer.publish("llm.events", {
-                    "event_type": f"{event_type}.error",
-                    "function": func.__name__,
-                    "error": sanitize_error_message(str(e)),
-                })
+                await producer.publish(
+                    "llm.events",
+                    {
+                        "event_type": f"{event_type}.error",
+                        "function": func.__name__,
+                        "error": sanitize_error_message(str(e)),
+                    },
+                )
                 raise
 
         @functools.wraps(func)
@@ -142,7 +148,9 @@ class EventLogger:
             await self.message_producer.publish_event(event_type, event_data)
         except Exception as e:
             # 이벤트 발행 실패 시 로깅만 (fallback)
-            logger.warning(f"Failed to publish event {event_type}: {sanitize_error_message(str(e))}")
+            logger.warning(
+                f"Failed to publish event {event_type}: {sanitize_error_message(str(e))}"
+            )
 
     def log_document_loaded(self, document_path: str, document_type: str):
         """문서 로드 이벤트"""
@@ -194,4 +202,3 @@ _global_event_logger = EventLogger()
 def get_event_logger() -> EventLogger:
     """전역 이벤트 로거 반환"""
     return _global_event_logger
-

@@ -4,7 +4,6 @@ OptimizerCommands - Rich CLI interface for Auto-Optimizer
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Dict, List, Optional
 
 from rich.console import Console
@@ -174,9 +173,7 @@ class OptimizerCommands:
                     for i, query in enumerate(result.queries[:10], 1):
                         self.console.print(f"  {i}. {query}")
                     if len(result.queries) > 10:
-                        self.console.print(
-                            f"  ... and {len(result.queries) - 10} more"
-                        )
+                        self.console.print(f"  ... and {len(result.queries) - 10} more")
 
             except Exception as e:
                 progress.update(task, completed=True)
@@ -275,13 +272,15 @@ class OptimizerCommands:
                 self.console.print("\n[bold green]✅ Optimization Complete![/bold green]\n")
 
                 # Best parameters
-                self.console.print(Panel(
-                    f"[bold yellow]Optimization ID:[/bold yellow] {result.optimization_id}\n"
-                    f"[bold yellow]Best Score:[/bold yellow] {result.best_score:.4f}\n"
-                    f"[bold yellow]Trials:[/bold yellow] {result.n_trials}",
-                    title="📈 Results",
-                    border_style="green",
-                ))
+                self.console.print(
+                    Panel(
+                        f"[bold yellow]Optimization ID:[/bold yellow] {result.optimization_id}\n"
+                        f"[bold yellow]Best Score:[/bold yellow] {result.best_score:.4f}\n"
+                        f"[bold yellow]Trials:[/bold yellow] {result.n_trials}",
+                        title="📈 Results",
+                        border_style="green",
+                    )
+                )
 
                 # Best parameters table
                 best_table = Table(title="🏆 Best Parameters")
@@ -348,15 +347,17 @@ class OptimizerCommands:
                 self.console.print("\n[bold green]✅ Profiling Complete![/bold green]\n")
 
                 # Summary
-                self.console.print(Panel(
-                    f"[bold yellow]Profile ID:[/bold yellow] {result.profile_id}\n"
-                    f"[bold yellow]Total Duration:[/bold yellow] {result.total_duration_ms:.1f}ms\n"
-                    f"[bold yellow]Total Tokens:[/bold yellow] {result.total_tokens}\n"
-                    f"[bold yellow]Total Cost:[/bold yellow] ${result.total_cost:.4f}\n"
-                    f"[bold yellow]Bottleneck:[/bold yellow] {result.bottleneck}",
-                    title="⚡ Profile Summary",
-                    border_style="cyan",
-                ))
+                self.console.print(
+                    Panel(
+                        f"[bold yellow]Profile ID:[/bold yellow] {result.profile_id}\n"
+                        f"[bold yellow]Total Duration:[/bold yellow] {result.total_duration_ms:.1f}ms\n"
+                        f"[bold yellow]Total Tokens:[/bold yellow] {result.total_tokens}\n"
+                        f"[bold yellow]Total Cost:[/bold yellow] ${result.total_cost:.4f}\n"
+                        f"[bold yellow]Bottleneck:[/bold yellow] {result.bottleneck}",
+                        title="⚡ Profile Summary",
+                        border_style="cyan",
+                    )
+                )
 
                 # Component breakdown
                 if result.components:
@@ -456,15 +457,17 @@ class OptimizerCommands:
                     else "[bold yellow]Tie (no significant difference)[/bold yellow]"
                 )
 
-                self.console.print(Panel(
-                    f"{winner_emoji} [bold]Winner:[/bold] {winner_text}\n\n"
-                    f"[bold yellow]Lift:[/bold yellow] {result.lift:+.1f}%\n"
-                    f"[bold yellow]P-value:[/bold yellow] {result.p_value:.4f}\n"
-                    f"[bold yellow]Significant:[/bold yellow] {'Yes ✅' if result.is_significant else 'No ❌'}\n"
-                    f"[bold yellow]Confidence:[/bold yellow] {result.confidence_level * 100:.0f}%",
-                    title="🧪 A/B Test Results",
-                    border_style="green" if result.is_significant else "yellow",
-                ))
+                self.console.print(
+                    Panel(
+                        f"{winner_emoji} [bold]Winner:[/bold] {winner_text}\n\n"
+                        f"[bold yellow]Lift:[/bold yellow] {result.lift:+.1f}%\n"
+                        f"[bold yellow]P-value:[/bold yellow] {result.p_value:.4f}\n"
+                        f"[bold yellow]Significant:[/bold yellow] {'Yes ✅' if result.is_significant else 'No ❌'}\n"
+                        f"[bold yellow]Confidence:[/bold yellow] {result.confidence_level * 100:.0f}%",
+                        title="🧪 A/B Test Results",
+                        border_style="green" if result.is_significant else "yellow",
+                    )
+                )
 
                 # Comparison table
                 comp_table = Table(title="📊 Variant Comparison")
@@ -472,8 +475,14 @@ class OptimizerCommands:
                 comp_table.add_column(f"Variant A ({variant_a_name})", style="yellow")
                 comp_table.add_column(f"Variant B ({variant_b_name})", style="green")
 
-                comp_table.add_row("Mean Score", f"{result.variant_a_mean:.4f}", f"{result.variant_b_mean:.4f}")
-                comp_table.add_row("Winner", "✅" if result.winner == "A" else "", "✅" if result.winner == "B" else "")
+                comp_table.add_row(
+                    "Mean Score", f"{result.variant_a_mean:.4f}", f"{result.variant_b_mean:.4f}"
+                )
+                comp_table.add_row(
+                    "Winner",
+                    "✅" if result.winner == "A" else "",
+                    "✅" if result.winner == "B" else "",
+                )
 
                 self.console.print(comp_table)
 
@@ -531,30 +540,30 @@ class OptimizerCommands:
             recommendations = result.recommendations
 
             if priority:
-                recommendations = [
-                    r for r in recommendations if r["priority"] == priority.lower()
-                ]
+                recommendations = [r for r in recommendations if r["priority"] == priority.lower()]
 
             if category:
-                recommendations = [
-                    r for r in recommendations if r["category"] == category.lower()
-                ]
+                recommendations = [r for r in recommendations if r["category"] == category.lower()]
 
             recommendations = recommendations[:max_items]
 
             # Display
-            self.console.print(f"[bold green]✅ Found {len(result.recommendations)} recommendations[/bold green]\n")
+            self.console.print(
+                f"[bold green]✅ Found {len(result.recommendations)} recommendations[/bold green]\n"
+            )
 
             # Summary
-            self.console.print(Panel(
-                f"[bold yellow]Profile ID:[/bold yellow] {profile_id}\n"
-                f"[bold red]Critical:[/bold red] {result.summary['critical']}\n"
-                f"[bold yellow]High:[/bold yellow] {result.summary['high']}\n"
-                f"[bold cyan]Medium:[/bold cyan] {result.summary['medium']}\n"
-                f"[bold]Low:[/bold] {result.summary['low']}",
-                title="📊 Recommendation Summary",
-                border_style="cyan",
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold yellow]Profile ID:[/bold yellow] {profile_id}\n"
+                    f"[bold red]Critical:[/bold red] {result.summary['critical']}\n"
+                    f"[bold yellow]High:[/bold yellow] {result.summary['high']}\n"
+                    f"[bold cyan]Medium:[/bold cyan] {result.summary['medium']}\n"
+                    f"[bold]Low:[/bold] {result.summary['low']}",
+                    title="📊 Recommendation Summary",
+                    border_style="cyan",
+                )
+            )
 
             # Recommendations
             self._show_recommendations_panel(recommendations)
@@ -591,12 +600,14 @@ class OptimizerCommands:
             self.console.print(f"[bold green]✅ Compared {len(config_ids)} configs[/bold green]\n")
 
             # Summary
-            self.console.print(Panel(
-                f"[bold yellow]Total Configs:[/bold yellow] {result['summary']['total_configs']}\n"
-                f"[bold yellow]Found:[/bold yellow] {result['summary']['found']}",
-                title="📊 Comparison Summary",
-                border_style="cyan",
-            ))
+            self.console.print(
+                Panel(
+                    f"[bold yellow]Total Configs:[/bold yellow] {result['summary']['total_configs']}\n"
+                    f"[bold yellow]Found:[/bold yellow] {result['summary']['found']}",
+                    title="📊 Comparison Summary",
+                    border_style="cyan",
+                )
+            )
 
             # Comparison table
             comp_table = Table(title="⚖️  Configuration Comparison")
@@ -661,9 +672,7 @@ class OptimizerCommands:
             }.get(priority, "⚪")
 
             # Create branch
-            branch = tree.add(
-                f"{priority_emoji} [{i}] [bold]{title}[/bold] ([{priority.upper()}])"
-            )
+            branch = tree.add(f"{priority_emoji} [{i}] [bold]{title}[/bold] ([{priority.upper()}])")
             branch.add(f"[dim]{description}[/dim]")
             if action:
                 branch.add(f"[cyan]Action:[/cyan] {action}")

@@ -7,8 +7,6 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from rich import box
@@ -16,10 +14,9 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
-from rich.text import Text
 
 from beanllm.facade.advanced.rag_debug_facade import RAGDebug
-from beanllm.ui.components import Badge, Divider, OutputBlock, StatusIcon
+from beanllm.ui.components import Badge, Divider, StatusIcon
 from beanllm.ui.console import get_console
 from beanllm.utils.logging import get_logger
 
@@ -56,7 +53,7 @@ class RAGDebugCommands:
 
     def __init__(
         self,
-        vector_store: Any = None,
+        vector_store: Optional[Any] = None,
         console: Optional[Console] = None,
     ) -> None:
         """
@@ -75,7 +72,7 @@ class RAGDebugCommands:
 
     async def cmd_start(
         self,
-        vector_store: Any = None,
+        vector_store: Optional[Any] = None,
         session_name: Optional[str] = None,
     ) -> None:
         """
@@ -206,9 +203,7 @@ class RAGDebugCommands:
             self.console.print(
                 f"{StatusIcon.error()} [red]고급 기능을 사용하려면 추가 패키지가 필요합니다:[/red]"
             )
-            self.console.print(
-                f"  [yellow]pip install beanllm[advanced][/yellow]"
-            )
+            self.console.print("  [yellow]pip install beanllm[advanced][/yellow]")
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]분석 실패: {e}[/red]")
             logger.error(f"Embedding analysis failed: {e}")
@@ -390,9 +385,7 @@ class RAGDebugCommands:
         if not self._check_session():
             return
 
-        self.console.print(
-            f"\n{StatusIcon.LOADING} [cyan]파라미터 튜닝 중... {parameters}[/cyan]"
-        )
+        self.console.print(f"\n{StatusIcon.LOADING} [cyan]파라미터 튜닝 중... {parameters}[/cyan]")
 
         try:
             # Run tuning

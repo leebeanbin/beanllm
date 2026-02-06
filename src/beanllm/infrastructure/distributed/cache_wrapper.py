@@ -137,4 +137,3 @@ def get_distributed_cache(max_size: int = 1000, ttl: Optional[int] = None) -> Sy
         SyncCacheWrapper 인스턴스
     """
     return SyncCacheWrapper(max_size=max_size, ttl=ttl)
-

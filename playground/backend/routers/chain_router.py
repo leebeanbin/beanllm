@@ -6,12 +6,11 @@ Uses Python best practices: factory pattern, duck typing.
 """
 
 import logging
-from typing import Dict, Any, Optional
-
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from typing import Any, Dict, Optional
 
 from common import get_client
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +24,10 @@ _chains: Dict[str, Any] = {}
 # Request/Response Models
 # ============================================================================
 
+
 class ChainRequest(BaseModel):
     """Request to run or build a chain"""
+
     input: str = Field(..., description="Input text for the chain")
     chain_id: Optional[str] = Field(None, description="Chain ID to use or create")
     chain_type: str = Field(default="basic", description="Chain type: basic, prompt")
@@ -36,6 +37,7 @@ class ChainRequest(BaseModel):
 
 class ChainRunResponse(BaseModel):
     """Response from chain execution"""
+
     chain_id: str
     input: str
     output: str
@@ -46,6 +48,7 @@ class ChainRunResponse(BaseModel):
 
 class ChainBuildResponse(BaseModel):
     """Response from chain building"""
+
     chain_id: str
     chain_type: str
     status: str = "success"
@@ -55,11 +58,9 @@ class ChainBuildResponse(BaseModel):
 # Helper Functions
 # ============================================================================
 
+
 def _get_or_create_chain(
-    chain_id: str,
-    chain_type: str,
-    template: Optional[str],
-    client: Any
+    chain_id: str, chain_type: str, template: Optional[str], client: Any
 ) -> Any:
     """Get existing chain or create new one using factory pattern"""
     from beanllm.facade.core.chain_facade import Chain, PromptChain
@@ -69,7 +70,9 @@ def _get_or_create_chain(
 
     # Factory pattern for chain creation
     chain_factories = {
-        "prompt": lambda: PromptChain(client=client, template=template) if template else Chain(client=client),
+        "prompt": lambda: PromptChain(client=client, template=template)
+        if template
+        else Chain(client=client),
         "basic": lambda: Chain(client=client),
     }
 
@@ -93,6 +96,7 @@ def _extract_chain_result(result: Any) -> Dict[str, Any]:
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/run", response_model=ChainRunResponse)
 async def chain_run(request: ChainRequest) -> ChainRunResponse:
@@ -136,8 +140,8 @@ async def chain_build(request: ChainRequest) -> ChainBuildResponse:
     Stores the chain for later use with chain_run.
     """
     try:
-        from beanllm.facade.core.client_facade import Client
         from beanllm.facade.core.chain_facade import ChainBuilder
+        from beanllm.facade.core.client_facade import Client
 
         client = Client(model=request.model) if request.model else get_client()
 

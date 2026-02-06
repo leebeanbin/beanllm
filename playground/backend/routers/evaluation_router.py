@@ -6,7 +6,7 @@ Uses Python best practices: duck typing, comprehensions.
 """
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -20,8 +20,10 @@ router = APIRouter(prefix="/api/evaluation", tags=["Evaluation"])
 # Request/Response Models
 # ============================================================================
 
+
 class EvaluationRequest(BaseModel):
     """Request for evaluation"""
+
     task_type: str = Field(..., description="Evaluation type: rag, agent, chain")
     queries: List[str] = Field(..., description="Queries or predictions to evaluate")
     ground_truth: Optional[List[str]] = Field(None, description="Reference answers")
@@ -31,6 +33,7 @@ class EvaluationRequest(BaseModel):
 
 class EvaluationResultItem(BaseModel):
     """Single evaluation result"""
+
     prediction: str
     reference: str
     metrics: Dict[str, float] = Field(default_factory=dict)
@@ -38,6 +41,7 @@ class EvaluationResultItem(BaseModel):
 
 class EvaluationResponse(BaseModel):
     """Response from evaluation"""
+
     task_type: str
     num_queries: int
     metrics: Dict[str, float] = Field(default_factory=dict)
@@ -48,6 +52,7 @@ class EvaluationResponse(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def _extract_metrics(result: Any) -> Dict[str, float]:
     """Extract metrics using duck typing"""
@@ -74,16 +79,13 @@ def _aggregate_metrics(results: List[Any]) -> Dict[str, List[float]]:
 
 def _calculate_summary(all_metrics: Dict[str, List[float]]) -> Dict[str, float]:
     """Calculate summary statistics (averages)"""
-    return {
-        key: sum(values) / len(values)
-        for key, values in all_metrics.items()
-        if values
-    }
+    return {key: sum(values) / len(values) for key, values in all_metrics.items() if values}
 
 
 # ============================================================================
 # Endpoints
 # ============================================================================
+
 
 @router.post("/evaluate", response_model=EvaluationResponse)
 async def evaluation_evaluate(request: EvaluationRequest) -> EvaluationResponse:

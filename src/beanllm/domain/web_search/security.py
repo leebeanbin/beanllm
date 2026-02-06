@@ -86,8 +86,7 @@ def validate_url(
         # 스키마 검증
         if parsed.scheme not in allowed_schemes:
             raise ValueError(
-                f"URL scheme '{parsed.scheme}' not allowed. "
-                f"Allowed schemes: {allowed_schemes}"
+                f"URL scheme '{parsed.scheme}' not allowed. " f"Allowed schemes: {allowed_schemes}"
             )
 
         # 호스트명 추출
@@ -97,9 +96,7 @@ def validate_url(
 
         # 호스트명 차단 리스트 확인
         if hostname.lower() in BLOCKED_HOSTNAMES:
-            raise ValueError(
-                f"Access denied: hostname '{hostname}' is blocked (SSRF protection)"
-            )
+            raise ValueError(f"Access denied: hostname '{hostname}' is blocked (SSRF protection)")
 
         # Private IP 차단
         if block_private_ips:

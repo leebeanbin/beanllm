@@ -10,9 +10,9 @@ try:
     from beanllm.utils.core.cache import LRUCache
 except ImportError:
     # Fallback if not available
-    from collections import OrderedDict
     import threading
     import time
+    from collections import OrderedDict
 
     class LRUCache:
         def __init__(self, max_size: int = 1000, ttl: Optional[int] = None):
@@ -85,4 +85,3 @@ class InMemoryCache(CacheInterface[K, V], Generic[K, V]):
     async def clear(self):
         """모든 캐시 삭제"""
         self._cache.clear()
-

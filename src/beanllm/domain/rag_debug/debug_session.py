@@ -97,9 +97,7 @@ class DebugSession:
 
                 documents = [
                     Document(page_content=text, metadata=meta or {})
-                    for text, meta in zip(
-                        result.get("documents", []), result.get("metadatas", [])
-                    )
+                    for text, meta in zip(result.get("documents", []), result.get("metadatas", []))
                 ]
             else:
                 logger.error(f"Cannot extract documents from {type(self.vector_store)}")
@@ -144,9 +142,7 @@ class DebugSession:
             elif hasattr(self.vector_store, "index"):
                 # FAISS index.reconstruct(i) for each vector
                 n = self.vector_store.index.ntotal
-                embeddings = [
-                    self.vector_store.index.reconstruct(i).tolist() for i in range(n)
-                ]
+                embeddings = [self.vector_store.index.reconstruct(i).tolist() for i in range(n)]
             else:
                 logger.error(f"Cannot extract embeddings from {type(self.vector_store)}")
                 embeddings = []

@@ -5,8 +5,8 @@ Kafka + Redis + 실시간 대시보드를 활용한 분산 모니터링
 """
 
 from monitoring.middleware import (
-    MonitoringMiddleware,
     ChatMonitoringMixin,
+    MonitoringMiddleware,
 )
 
 __all__ = [

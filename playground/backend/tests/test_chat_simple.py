@@ -1,8 +1,11 @@
 """
 Simple test for Chat API with Ollama
 """
+
 import asyncio
+
 import httpx
+
 
 async def test_chat():
     """Test Chat API"""
@@ -15,8 +18,8 @@ async def test_chat():
             f"{base_url}/api/chat",
             json={
                 "messages": [{"role": "user", "content": "Hello! What is 2+2?"}],
-                "model": "qwen2.5:0.5b"
-            }
+                "model": "qwen2.5:0.5b",
+            },
         )
         print(f"Status: {response.status_code}")
         if response.status_code == 200:
@@ -24,6 +27,7 @@ async def test_chat():
             print(f"Response: {result.get('content', 'No content')[:200]}")
         else:
             print(f"Error: {response.text}")
+
 
 if __name__ == "__main__":
     asyncio.run(test_chat())

@@ -7,11 +7,12 @@ beanllm의 Vector Store 기능을 활용하여 의미 기반 검색 제공
 보안: 사용자 입력 query는 $regex 사용 전 re.escape()로 이스케이프하여
 ReDoS 및 정규식 메타문자 인젝션 방지.
 """
+
 import logging
 import os
 import re
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +42,14 @@ try:
         try:
             from beanllm.domain.embeddings import HuggingFaceEmbedding
 
-            hf_model = os.getenv("HUGGINGFACE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+            hf_model = os.getenv(
+                "HUGGINGFACE_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+            )
             _embedding_function = HuggingFaceEmbedding(
                 model=hf_model,
                 use_gpu=os.getenv("USE_GPU", "false").lower() == "true",
                 normalize=True,
-                batch_size=32
+                batch_size=32,
             )
             embedding_func = _embedding_function.embed_sync
             logger.info(f"✅ Session search using HuggingFace embedding: {hf_model}")
@@ -59,7 +62,7 @@ try:
         _vector_store = ChromaVectorStore(
             collection_name="chat_sessions",
             embedding_function=embedding_func,
-            persist_directory="./.chroma_sessions"  # 세션 검색 전용
+            persist_directory="./.chroma_sessions",  # 세션 검색 전용
         )
         logger.info("✅ Session search vector store initialized")
     else:
@@ -72,7 +75,7 @@ except Exception as e:
 
 class SessionSearchService:
     """세션 검색 서비스"""
-    
+
     @staticmethod
     async def search_sessions(
         query: str,
@@ -91,7 +94,7 @@ class SessionSearchService:
     ) -> Dict[str, Any]:
         """
         세션 검색 (하이브리드: MongoDB + Vector DB)
-        
+
         Args:
             query: 검색 쿼리
             db: MongoDB 데이터베이스
@@ -106,16 +109,16 @@ class SessionSearchService:
             max_messages: 최대 메시지 수
             sort_by: 정렬 기준 ("relevance", "updated_at", "created_at", "total_tokens")
             use_vector_search: Vector DB 사용 여부
-            
+
         Returns:
             {"sessions": [...], "total": ..., "search_type": "vector" | "keyword"}
         """
         # 1. MongoDB 기본 필터
         mongo_query = {}
-        
+
         if feature_mode:
             mongo_query["feature_mode"] = feature_mode
-        
+
         if date_from or date_to:
             date_filter = {}
             if date_from:
@@ -123,7 +126,7 @@ class SessionSearchService:
             if date_to:
                 date_filter["$lte"] = date_to
             mongo_query["updated_at"] = date_filter
-        
+
         if min_tokens is not None or max_tokens is not None:
             token_filter = {}
             if min_tokens is not None:
@@ -131,7 +134,7 @@ class SessionSearchService:
             if max_tokens is not None:
                 token_filter["$lte"] = max_tokens
             mongo_query["total_tokens"] = token_filter
-        
+
         if min_messages is not None or max_messages is not None:
             message_filter = {}
             if min_messages is not None:
@@ -139,21 +142,21 @@ class SessionSearchService:
             if max_messages is not None:
                 message_filter["$lte"] = max_messages
             mongo_query["message_count"] = message_filter
-        
+
         # 2. Vector DB 검색 (의미 기반) - 메시지 내용 검색
         if use_vector_search and query:
             try:
                 # ✅ 메시지 Vector DB에서 검색
                 from services.message_vector_store import message_vector_store
-                
+
                 # 메시지 검색 (의미 기반)
                 message_results = await message_vector_store.search_messages(
                     query=query,
                     session_id=None,  # 모든 세션에서 검색
                     role=None,
-                    k=limit * 3  # 더 많이 가져와서 세션별로 그룹화
+                    k=limit * 3,  # 더 많이 가져와서 세션별로 그룹화
                 )
-                
+
                 if message_results:
                     # session_id로 그룹화하고 최고 점수 사용
                     session_scores = {}
@@ -162,20 +165,21 @@ class SessionSearchService:
                         if msg_session_id:
                             score = msg.get("relevance_score", 0)
                             # 최고 점수만 유지
-                            if msg_session_id not in session_scores or score > session_scores[msg_session_id]:
+                            if (
+                                msg_session_id not in session_scores
+                                or score > session_scores[msg_session_id]
+                            ):
                                 session_scores[msg_session_id] = score
-                    
+
                     # 점수 순으로 정렬된 session_id 리스트
                     sorted_session_ids = sorted(
-                        session_scores.keys(),
-                        key=lambda sid: session_scores[sid],
-                        reverse=True
+                        session_scores.keys(), key=lambda sid: session_scores[sid], reverse=True
                     )
-                    
+
                     # MongoDB에서 해당 세션들 조회
                     if sorted_session_ids:
                         mongo_query["session_id"] = {"$in": sorted_session_ids}
-                        
+
                         # MongoDB에서 세션 메타데이터 가져오기
                         sessions = []
                         async for doc in db.chat_sessions.find(mongo_query):
@@ -184,25 +188,27 @@ class SessionSearchService:
                             doc["relevance_score"] = session_scores.get(doc["session_id"], 0)
                             doc.pop("messages", None)  # 목록에서는 제외
                             sessions.append(doc)
-                        
+
                         # 점수 순으로 정렬
                         sessions.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
-                        
+
                         # 페이지네이션
                         total = len(sessions)
-                        sessions = sessions[skip:skip + limit]
-                        
-                        logger.info(f"✅ Vector search: {len(sessions)} sessions found from message search")
+                        sessions = sessions[skip : skip + limit]
+
+                        logger.info(
+                            f"✅ Vector search: {len(sessions)} sessions found from message search"
+                        )
                         return {
                             "sessions": sessions,
                             "total": total,
                             "search_type": "vector",
-                            "query": query
+                            "query": query,
                         }
-                    
+
             except Exception as e:
                 logger.warning(f"Vector search failed, falling back to keyword: {e}")
-        
+
         # 3. MongoDB 키워드 검색 (Fallback)
         # 제목 또는 메시지 내용에서 검색.
         # 사용자 입력 query는 반드시 이스케이프하여 ReDoS·정규식 인젝션 방지.
@@ -211,11 +217,11 @@ class SessionSearchService:
             title_query = {"title": {"$regex": safe_pattern, "$options": "i"}}
             message_query = {"messages.content": {"$regex": safe_pattern, "$options": "i"}}
             mongo_query["$or"] = [title_query, message_query]
-        
+
         # 정렬
         sort_field = "updated_at"
         sort_direction = -1
-        
+
         if sort_by == "created_at":
             sort_field = "created_at"
         elif sort_by == "total_tokens":
@@ -224,61 +230,65 @@ class SessionSearchService:
         elif sort_by == "message_count":
             sort_field = "message_count"
             sort_direction = -1
-        
+
         # MongoDB 조회
         total = await db.chat_sessions.count_documents(mongo_query)
-        cursor = db.chat_sessions.find(mongo_query).sort(sort_field, sort_direction).skip(skip).limit(limit)
-        
+        cursor = (
+            db.chat_sessions.find(mongo_query)
+            .sort(sort_field, sort_direction)
+            .skip(skip)
+            .limit(limit)
+        )
+
         sessions = []
         async for doc in cursor:
             doc["_id"] = str(doc["_id"])
             doc.pop("messages", None)  # 목록에서는 제외
             sessions.append(doc)
-        
+
         logger.info(f"✅ Keyword search: {len(sessions)} sessions found")
-        return {
-            "sessions": sessions,
-            "total": total,
-            "search_type": "keyword",
-            "query": query
-        }
-    
+        return {"sessions": sessions, "total": total, "search_type": "keyword", "query": query}
+
     @staticmethod
     async def index_session(session_id: str, session_data: Dict[str, Any]):
         """
         세션을 Vector DB에 인덱싱 (검색 최적화)
-        
+
         세션의 제목과 메시지 내용을 임베딩하여 Vector DB에 저장
         """
         if not _vector_store:
             return
-        
+
         try:
             # 세션 텍스트 생성 (제목 + 최근 메시지)
             messages = session_data.get("messages", [])
             recent_messages = messages[-10:] if len(messages) > 10 else messages
-            
+
             # 검색 가능한 텍스트 생성
             searchable_text = f"{session_data.get('title', '')}\n"
             for msg in recent_messages:
                 searchable_text += f"{msg.get('content', '')}\n"
-            
+
             # Vector DB에 문서 추가
             # Chroma collection에 직접 추가하여 session_id를 ID로 사용
             texts = [searchable_text]
-            metadatas = [{
-                "session_id": session_id,
-                "title": session_data.get("title", ""),
-                "feature_mode": session_data.get("feature_mode", ""),
-                "updated_at": session_data.get("updated_at", datetime.now(timezone.utc)).isoformat(),
-            }]
-            
+            metadatas = [
+                {
+                    "session_id": session_id,
+                    "title": session_data.get("title", ""),
+                    "feature_mode": session_data.get("feature_mode", ""),
+                    "updated_at": session_data.get(
+                        "updated_at", datetime.now(timezone.utc)
+                    ).isoformat(),
+                }
+            ]
+
             # 임베딩 생성
             if _vector_store.embedding_function:
                 embeddings = _vector_store.embedding_function(texts)
             else:
                 embeddings = None
-            
+
             # Chroma collection에 추가 (session_id를 ID로 사용)
             # 기존 문서가 있으면 업데이트 (upsert)
             if embeddings:
@@ -286,20 +296,18 @@ class SessionSearchService:
                     documents=texts,
                     metadatas=metadatas,
                     ids=[session_id],  # session_id를 ID로 사용
-                    embeddings=embeddings
+                    embeddings=embeddings,
                 )
             else:
                 _vector_store.collection.upsert(
-                    documents=texts,
-                    metadatas=metadatas,
-                    ids=[session_id]
+                    documents=texts, metadatas=metadatas, ids=[session_id]
                 )
-            
+
             logger.debug(f"✅ Indexed session: {session_id}")
-            
+
         except Exception as e:
             logger.warning(f"Failed to index session: {e}")
-    
+
     @staticmethod
     async def remove_session_index(session_id: str):
         """세션 인덱스 제거 (더 이상 필요 없음 - 메시지가 개별적으로 관리됨)"""

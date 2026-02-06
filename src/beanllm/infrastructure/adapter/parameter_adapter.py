@@ -158,17 +158,17 @@ class ParameterAdapter:
         # Provider 이름 정규화 (클래스 이름 → 소문자)
         # 예: "DeepSeekProvider" → "deepseek", "PerplexityProvider" → "perplexity"
         normalized_provider = self._normalize_provider_name(provider)
-        
+
         provider_mapping = self.PARAM_MAPPING.get(normalized_provider)
         if not provider_mapping:
             return param_name  # 알 수 없는 provider
 
         return provider_mapping.get(param_name, param_name)
-    
+
     def _normalize_provider_name(self, provider: str) -> str:
         """
         Provider 이름 정규화
-        
+
         클래스 이름을 소문자 provider 이름으로 변환:
         - "DeepSeekProvider" → "deepseek"
         - "PerplexityProvider" → "perplexity"
@@ -178,7 +178,7 @@ class ParameterAdapter:
         - "OllamaProvider" → "ollama"
         """
         provider_lower = provider.lower()
-        
+
         # Provider 클래스 이름 매핑
         if "deepseek" in provider_lower:
             return "deepseek"
@@ -192,7 +192,7 @@ class ParameterAdapter:
             return "anthropic"
         elif "ollama" in provider_lower:
             return "ollama"
-        
+
         # 이미 정규화된 이름이면 그대로 반환
         return provider_lower
 

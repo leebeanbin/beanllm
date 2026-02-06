@@ -609,9 +609,7 @@ class KnowledgeGraph:
                 entity_type = entity.get("type", "UNKNOWN")
                 score = result.get("score", 0.0)
 
-                answer_parts.append(
-                    f"- {name} ({entity_type}): {score:.2f}"
-                )
+                answer_parts.append(f"- {name} ({entity_type}): {score:.2f}")
 
             return "Based on the knowledge graph:\n" + "\n".join(answer_parts)
 

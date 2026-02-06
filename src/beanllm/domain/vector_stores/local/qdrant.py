@@ -169,5 +169,3 @@ class QdrantVectorStore(BaseVectorStore, AdvancedSearchMixin):
         """문서 삭제"""
         self.client.delete(collection_name=self.collection_name, points_selector=ids)
         return True
-
-

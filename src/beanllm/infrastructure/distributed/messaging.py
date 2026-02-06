@@ -11,7 +11,7 @@ import traceback
 import uuid
 from typing import Any, AsyncIterator, Dict, Optional
 
-from .factory import get_event_bus, get_rate_limiter, get_cache, get_distributed_lock
+from .factory import get_distributed_lock, get_event_bus, get_rate_limiter
 from .utils import sanitize_error_message
 
 try:
@@ -80,27 +80,35 @@ class MessageProducer:
                     await self.redis.setex(
                         f"request:status:{request_id}",
                         3600,  # 1시간 TTL
-                        json.dumps({
-                            "status": "pending",
-                            "request_type": request_type,
-                            "created_at": message["timestamp"],
-                        }).encode('utf-8'),
+                        json.dumps(
+                            {
+                                "status": "pending",
+                                "request_type": request_type,
+                                "created_at": message["timestamp"],
+                            }
+                        ).encode("utf-8"),
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to save request status to Redis: {sanitize_error_message(str(e))}")
+                    logger.warning(
+                        f"Failed to save request status to Redis: {sanitize_error_message(str(e))}"
+                    )
 
             # Redis에 요청 큐 추가 (빠른 처리용)
             if self.redis:
                 try:
                     await self.redis.lpush(
                         f"queue:{request_type}",
-                        json.dumps({
-                            "request_id": request_id,
-                            "data": request_data,
-                        }).encode('utf-8'),
+                        json.dumps(
+                            {
+                                "request_id": request_id,
+                                "data": request_data,
+                            }
+                        ).encode("utf-8"),
                     )
                 except Exception as e:
-                    logger.warning(f"Failed to add request to Redis queue: {sanitize_error_message(str(e))}")
+                    logger.warning(
+                        f"Failed to add request to Redis queue: {sanitize_error_message(str(e))}"
+                    )
 
         except Exception as e:
             logger.error(
@@ -182,9 +190,7 @@ class ConcurrencyController:
 
             return new_count <= max_concurrent
         except Exception as e:
-            logger.warning(
-                f"Failed to acquire concurrency slot: {sanitize_error_message(str(e))}"
-            )
+            logger.warning(f"Failed to acquire concurrency slot: {sanitize_error_message(str(e))}")
             return True  # 오류 시 허용 (fallback)
 
     async def release_slot(self, resource_type: str):
@@ -196,9 +202,7 @@ class ConcurrencyController:
             key = f"concurrency:{resource_type}"
             await self.redis.decr(key)
         except Exception as e:
-            logger.warning(
-                f"Failed to release concurrency slot: {sanitize_error_message(str(e))}"
-            )
+            logger.warning(f"Failed to release concurrency slot: {sanitize_error_message(str(e))}")
 
     async def with_concurrency_control(
         self,
@@ -304,7 +308,7 @@ class DistributedErrorHandler:
                 await self.redis.setex(
                     f"error:{request_id}",
                     86400,  # 24시간 TTL
-                    json.dumps(error_data).encode('utf-8'),
+                    json.dumps(error_data).encode("utf-8"),
                 )
 
                 # 오류 통계 업데이트
@@ -315,11 +319,13 @@ class DistributedErrorHandler:
                 await self.redis.setex(
                     f"request:status:{request_id}",
                     3600,
-                    json.dumps({
-                        "status": "error",
-                        "error": error_data,
-                        "updated_at": time.time(),
-                    }).encode('utf-8'),
+                    json.dumps(
+                        {
+                            "status": "error",
+                            "error": error_data,
+                            "updated_at": time.time(),
+                        }
+                    ).encode("utf-8"),
                 )
             except Exception as e:
                 logger.warning(f"Failed to save error to Redis: {sanitize_error_message(str(e))}")
@@ -333,7 +339,7 @@ class DistributedErrorHandler:
             error_data = await self.redis.get(f"error:{request_id}")
             if error_data:
                 if isinstance(error_data, bytes):
-                    error_data = error_data.decode('utf-8')
+                    error_data = error_data.decode("utf-8")
                 return json.loads(error_data)
         except Exception as e:
             logger.warning(f"Failed to get error log: {sanitize_error_message(str(e))}")
@@ -382,7 +388,9 @@ class RequestMonitor:
         try:
             _, self.consumer = get_event_bus()
         except Exception as e:
-            logger.debug(f"RequestMonitor: Kafka consumer not available (continuing without Kafka): {e}")
+            logger.debug(
+                f"RequestMonitor: Kafka consumer not available (continuing without Kafka): {e}"
+            )
 
     async def get_request_status(self, request_id: str) -> Optional[Dict[str, Any]]:
         """요청 상태 조회 (Redis - 빠른 조회)"""
@@ -393,7 +401,7 @@ class RequestMonitor:
             status = await self.redis.get(f"request:status:{request_id}")
             if status:
                 if isinstance(status, bytes):
-                    status = status.decode('utf-8')
+                    status = status.decode("utf-8")
                 return json.loads(status)
         except Exception as e:
             logger.warning(f"Failed to get request status: {sanitize_error_message(str(e))}")
@@ -420,10 +428,9 @@ class RequestMonitor:
             error_data = await self.redis.get(f"error:{request_id}")
             if error_data:
                 if isinstance(error_data, bytes):
-                    error_data = error_data.decode('utf-8')
+                    error_data = error_data.decode("utf-8")
                 return json.loads(error_data)
         except Exception as e:
             logger.warning(f"Failed to get error log: {sanitize_error_message(str(e))}")
 
         return None
-

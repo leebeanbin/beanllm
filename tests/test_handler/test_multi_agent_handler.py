@@ -2,8 +2,9 @@
 MultiAgentHandler 테스트 - Multi-Agent Handler 테스트
 """
 
-import pytest
 from unittest.mock import AsyncMock, Mock
+
+import pytest
 
 from beanllm.dto.request.multi_agent_request import MultiAgentRequest
 from beanllm.dto.response.multi_agent_response import MultiAgentResponse
@@ -27,7 +28,9 @@ class TestMultiAgentHandler:
             elif request.strategy == "parallel":
                 return MultiAgentResponse(final_result="Parallel result", strategy="parallel")
             elif request.strategy == "hierarchical":
-                return MultiAgentResponse(final_result="Hierarchical result", strategy="hierarchical")
+                return MultiAgentResponse(
+                    final_result="Hierarchical result", strategy="hierarchical"
+                )
             elif request.strategy == "debate":
                 return MultiAgentResponse(final_result="Debate result", strategy="debate")
             else:
@@ -147,5 +150,3 @@ class TestMultiAgentHandler:
         # extra_params가 DTO에 포함되었는지 확인
         call_args = multi_agent_handler._multi_agent_service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params
-
-

@@ -2,18 +2,19 @@
 EvaluationService 테스트 - Evaluation 서비스 구현체 테스트
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
+from beanllm.domain.evaluation.metrics import BLEUMetric, F1ScoreMetric, ROUGEMetric
 from beanllm.dto.request.evaluation_request import (
-    EvaluationRequest,
     BatchEvaluationRequest,
-    TextEvaluationRequest,
-    RAGEvaluationRequest,
     CreateEvaluatorRequest,
+    EvaluationRequest,
+    RAGEvaluationRequest,
+    TextEvaluationRequest,
 )
-from beanllm.dto.response.evaluation_response import EvaluationResponse, BatchEvaluationResponse
-from beanllm.domain.evaluation.metrics import BLEUMetric, ROUGEMetric, F1ScoreMetric
+from beanllm.dto.response.evaluation_response import BatchEvaluationResponse, EvaluationResponse
 from beanllm.service.impl.evaluation_service_impl import EvaluationServiceImpl
 
 
@@ -198,5 +199,3 @@ class TestEvaluationService:
 
         assert response is not None
         assert response.result is not None
-
-

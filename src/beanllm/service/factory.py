@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from beanllm.infrastructure.adapter import ParameterAdapter
+
 from .agent_service import IAgentService
 from .audio_service import IAudioService
 from .chain_service import IChainService

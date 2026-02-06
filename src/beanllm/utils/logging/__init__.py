@@ -15,4 +15,3 @@ __all__ = [
     "LogLevel",
     "get_structured_logger",
 ]
-
