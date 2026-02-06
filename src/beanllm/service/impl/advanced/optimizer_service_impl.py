@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from beanllm.domain.optimizer import (
     ABTester,
@@ -189,8 +189,9 @@ class OptimizerServiceImpl(IOptimizerService):
 
         try:
             # Build parameter spaces
-            param_spaces = []
-            for param in request.parameters:
+            param_spaces: List[ParameterSpace] = []
+            parameters = request.parameters or []
+            for param in parameters:
                 param_type = ParameterType[param["type"].upper()]
 
                 if param_type == ParameterType.INTEGER:
@@ -222,12 +223,18 @@ class OptimizerServiceImpl(IOptimizerService):
                 param_spaces.append(space)
 
             # Determine optimization method
-            if request.multi_objective and len(request.objectives or []) > 1:
-                # Multi-objective optimization
+            n_trials = request.n_trials or 50
+            objectives = request.objectives or []
+
+            if request.multi_objective and len(objectives) > 1:
+                # Multi-objective optimization - convert objectives to dicts if needed
+                objective_dicts = [
+                    {"name": obj} if isinstance(obj, str) else obj for obj in objectives
+                ]
                 result = await self._optimize_multi_objective(
                     param_spaces=param_spaces,
-                    objectives=request.objectives or [],
-                    n_trials=request.n_trials or 50,
+                    objectives=objective_dicts,
+                    n_trials=n_trials,
                 )
 
                 # Get best balanced solution
@@ -246,21 +253,24 @@ class OptimizerServiceImpl(IOptimizerService):
                 optimization_result = OptimizationResult(
                     best_params=best_params,
                     best_score=best_score,
+                    total_trials=len(history),
                     history=history,
-                    convergence_data={"pareto_size": len(result.pareto_frontier)},
+                    metadata={"pareto_size": len(result.pareto_frontier)},
                 )
 
             else:
                 # Single-objective optimization
-                method = OptimizationMethod[request.method.upper()]
+                method_str = request.method or "random"
+                method = OptimizationMethod[method_str.upper()]
 
                 # Note: objective_fn should be provided by caller
                 # For now, we'll create a placeholder
                 optimization_result = OptimizationResult(
                     best_params={space.name: space.sample() for space in param_spaces},
                     best_score=0.0,
+                    total_trials=0,
                     history=[],
-                    convergence_data={},
+                    method=method.value,
                 )
 
             # Store optimization
@@ -273,12 +283,15 @@ class OptimizerServiceImpl(IOptimizerService):
 
             return OptimizeResponse(
                 optimization_id=optimization_id,
+                system_id=request.system_id or "default",
+                optimal_parameters=optimization_result.best_params,
+                improvement_metrics={},
+                num_trials=optimization_result.total_trials,
                 best_params=optimization_result.best_params,
                 best_score=optimization_result.best_score,
-                n_trials=len(optimization_result.history),
-                convergence_data=optimization_result.convergence_data,
+                n_trials=optimization_result.total_trials,
                 metadata={
-                    "method": request.method,
+                    "method": request.method or "random",
                     "multi_objective": request.multi_objective,
                 },
             )
@@ -324,32 +337,41 @@ class OptimizerServiceImpl(IOptimizerService):
                 f"Profiling completed: {profile_id}, " f"{len(recommendations)} recommendations"
             )
 
+            # Build component breakdown
+            component_breakdown: Dict[str, Dict[str, float]] = {
+                name: {
+                    "duration_ms": metrics.duration_ms,
+                    "token_count": float(metrics.token_count),
+                    "estimated_cost": metrics.estimated_cost,
+                }
+                for name, metrics in result.components.items()
+            }
+
+            # Calculate cost breakdown
+            cost_breakdown: Dict[str, float] = {
+                name: metrics.estimated_cost for name, metrics in result.components.items()
+            }
+
+            # Get bottleneck as string
+            bottleneck_str: Optional[str] = result.bottleneck.value if result.bottleneck else None
+
+            # Build recommendations as list of strings
+            recommendation_strs: List[str] = [
+                f"[{rec.priority.value}] {rec.title}: {rec.action}" for rec in recommendations
+            ]
+
             return ProfileResponse(
                 profile_id=profile_id,
-                total_duration_ms=result.total_duration_ms,
-                total_tokens=result.total_tokens,
+                system_id=request.system_id or "default",
+                duration=result.total_duration_ms / 1000.0,
+                component_breakdown=component_breakdown,
+                total_latency=result.total_duration_ms / 1000.0,
                 total_cost=result.total_cost,
-                components={
-                    name: {
-                        "duration_ms": metrics.duration_ms,
-                        "tokens": metrics.tokens,
-                        "cost": metrics.cost,
-                    }
-                    for name, metrics in result.components.items()
-                },
-                bottleneck=result.bottleneck,
-                breakdown=result.get_breakdown(),
-                recommendations=[
-                    {
-                        "category": rec.category.value,
-                        "priority": rec.priority.value,
-                        "title": rec.title,
-                        "description": rec.description,
-                        "action": rec.action,
-                        "expected_impact": rec.expected_impact,
-                    }
-                    for rec in recommendations
-                ],
+                bottlenecks=[{"component": bottleneck_str}] if bottleneck_str else [],
+                cost_breakdown=cost_breakdown,
+                total_duration_ms=result.total_duration_ms,
+                bottleneck=bottleneck_str,
+                recommendations=recommendation_strs,
                 metadata={
                     "components_profiled": request.components or [],
                 },
@@ -407,15 +429,20 @@ class OptimizerServiceImpl(IOptimizerService):
 
             return ABTestResponse(
                 test_id=test_id,
+                config_a_id=request.variant_a_name or "variant_a",
+                config_b_id=request.variant_b_name or "variant_b",
+                num_queries=request.num_queries or 50,
+                results_a={"mean": result.variant_a_mean, "std": result.variant_a_std},
+                results_b={"mean": result.variant_b_mean, "std": result.variant_b_std},
+                statistical_significance={
+                    "p_value": result.p_value,
+                    "significant": result.is_significant,
+                    "confidence_level": result.confidence_level,
+                },
                 variant_a_name=result.variant_a_name,
                 variant_b_name=result.variant_b_name,
-                variant_a_mean=result.variant_a_mean,
-                variant_b_mean=result.variant_b_mean,
-                p_value=result.p_value,
-                is_significant=result.is_significant,
                 winner=result.winner,
-                lift=result.lift,
-                confidence_level=result.confidence_level,
+                effect_size={"lift": result.lift} if result.lift != 0.0 else None,
                 metadata={
                     "num_queries": request.num_queries,
                 },
@@ -459,25 +486,51 @@ class OptimizerServiceImpl(IOptimizerService):
 
         logger.info(f"Generated {len(recommendations)} recommendations")
 
+        # Build recommendations list
+        rec_list = [
+            {
+                "category": rec.category.value,
+                "priority": rec.priority.value,
+                "title": rec.title,
+                "description": rec.description,
+                "rationale": rec.rationale,
+                "action": rec.action,
+                "expected_impact": rec.expected_impact,
+            }
+            for rec in recommendations
+        ]
+
+        # Extract priority order (unique titles in priority-sorted order)
+        rec_priority_order: List[str] = [rec.title for rec in recommendations]
+
+        # Build implementation difficulty from recommendations
+        implementation_difficulty: Dict[str, str] = {
+            rec.title: rec.category.value for rec in recommendations
+        }
+
+        # Build estimated improvements from expected_impact
+        estimated_improvements: Dict[str, float] = {
+            rec.title: float(rec.expected_impact.get("latency_reduction", 0.0))
+            if isinstance(rec.expected_impact, dict)
+            else 0.0
+            for rec in recommendations
+        }
+
         return RecommendationResponse(
             profile_id=profile_id,
-            recommendations=[
-                {
-                    "category": rec.category.value,
-                    "priority": rec.priority.value,
-                    "title": rec.title,
-                    "description": rec.description,
-                    "rationale": rec.rationale,
-                    "action": rec.action,
-                    "expected_impact": rec.expected_impact,
+            recommendations=rec_list,
+            estimated_improvements=estimated_improvements,
+            implementation_difficulty=implementation_difficulty,
+            priority_order=rec_priority_order,
+            metadata={
+                "summary": {
+                    "critical": len(
+                        [r for r in recommendations if r.priority == Priority.CRITICAL]
+                    ),
+                    "high": len([r for r in recommendations if r.priority == Priority.HIGH]),
+                    "medium": len([r for r in recommendations if r.priority == Priority.MEDIUM]),
+                    "low": len([r for r in recommendations if r.priority == Priority.LOW]),
                 }
-                for rec in recommendations
-            ],
-            summary={
-                "critical": len([r for r in recommendations if r.priority == Priority.CRITICAL]),
-                "high": len([r for r in recommendations if r.priority == Priority.HIGH]),
-                "medium": len([r for r in recommendations if r.priority == Priority.MEDIUM]),
-                "low": len([r for r in recommendations if r.priority == Priority.LOW]),
             },
         )
 
