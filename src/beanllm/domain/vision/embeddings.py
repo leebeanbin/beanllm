@@ -5,7 +5,7 @@ Vision Embeddings - 이미지 임베딩 및 멀티모달 임베딩
 import hashlib
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol, EventLoggerProtocol, RateLimiterProtocol
@@ -53,8 +53,8 @@ class CLIPEmbedding(BaseEmbedding):
         """
         super().__init__(model=model)
         self.device = device or "cpu"
-        self._model = None
-        self._processor = None
+        self._model: Optional[Any] = None
+        self._processor: Optional[Any] = None
         self._cache = cache
         self._rate_limiter = rate_limiter
         self._event_logger = event_logger
@@ -103,6 +103,10 @@ class CLIPEmbedding(BaseEmbedding):
 
         import torch
 
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
+
         # 입력 처리
         inputs = self._processor(text=texts, return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -114,22 +118,22 @@ class CLIPEmbedding(BaseEmbedding):
         # Normalize
         text_features = text_features / text_features.norm(dim=-1, keepdim=True)
 
-        return text_features.cpu().numpy().tolist()
+        return cast(List[List[float]], text_features.cpu().numpy().tolist())
 
     async def _embed_async(self, texts: List[str]) -> List[List[float]]:
         """비동기 임베딩 메서드 (Rate Limiting + Caching)"""
         # 캐싱: 텍스트 해시 기반 임베딩 캐싱 (옵션)
-        cached_result = None
+        cache_key = ""
         if self._cache is not None:
             text_hash = hashlib.md5("|".join(texts).encode()).hexdigest()
             cache_key = f"vision_embedding:clip:text:{text_hash}"
             cached_result = await self._cache.get(cache_key)
             if cached_result is not None:
-                return cached_result
+                return cast(List[List[float]], cached_result)
 
         # Rate Limiting: Vision 임베딩 모델 호출 (옵션)
         if self._rate_limiter is not None:
-            await self._rate_limiter.wait("vision:embedding", cost=1.0)
+            await self._rate_limiter.acquire("vision:embedding")
 
         # 임베딩 생성
         result = self._embed_sync_internal(texts)
@@ -143,7 +147,6 @@ class CLIPEmbedding(BaseEmbedding):
             await self._event_logger.log_event(
                 "vision_embedding.clip.text",
                 {"text_count": len(texts), "model": self.model},
-                level="info",
             )
 
         return result
@@ -152,7 +155,7 @@ class CLIPEmbedding(BaseEmbedding):
         """비동기 텍스트 임베딩"""
         return self.embed_sync(texts)
 
-    def embed_images(self, images: List[Union[str, Path]], **kwargs) -> List[List[float]]:
+    def embed_images(self, images: List[Union[str, Path]], **kwargs: Any) -> List[List[float]]:
         """
         이미지 임베딩
 
@@ -173,6 +176,10 @@ class CLIPEmbedding(BaseEmbedding):
         except ImportError:
             raise ImportError("Pillow 필요:\npip install pillow")
 
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
+
         # 이미지 로드
         pil_images = [Image.open(img) for img in images]
 
@@ -187,7 +194,7 @@ class CLIPEmbedding(BaseEmbedding):
         # Normalize
         image_features = image_features / image_features.norm(dim=-1, keepdim=True)
 
-        return image_features.cpu().numpy().tolist()
+        return cast(List[List[float]], image_features.cpu().numpy().tolist())
 
     def similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """
@@ -250,10 +257,10 @@ class SigLIPEmbedding(BaseEmbedding):
         """
         super().__init__(model=model)
         self.device = device or "cpu"
-        self._model = None
-        self._processor = None
+        self._model: Optional[Any] = None
+        self._processor: Optional[Any] = None
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """모델 로드 (lazy loading)"""
         if self._model is None:
             try:
@@ -279,6 +286,10 @@ class SigLIPEmbedding(BaseEmbedding):
 
         import torch
 
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
+
         # 입력 처리
         inputs = self._processor(text=texts, return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -290,13 +301,13 @@ class SigLIPEmbedding(BaseEmbedding):
         # Normalize
         outputs = outputs / outputs.norm(dim=-1, keepdim=True)
 
-        return outputs.cpu().numpy().tolist()
+        return cast(List[List[float]], outputs.cpu().numpy().tolist())
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """비동기 텍스트 임베딩"""
         return self.embed_sync(texts)
 
-    def embed_images(self, images: List[Union[str, Path]], **kwargs) -> List[List[float]]:
+    def embed_images(self, images: List[Union[str, Path]], **kwargs: Any) -> List[List[float]]:
         """
         이미지 임베딩
 
@@ -314,6 +325,10 @@ class SigLIPEmbedding(BaseEmbedding):
         except ImportError:
             raise ImportError("Pillow 필요:\npip install pillow")
 
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
+
         # 이미지 로드
         pil_images = [Image.open(img) for img in images]
 
@@ -328,7 +343,7 @@ class SigLIPEmbedding(BaseEmbedding):
         # Normalize
         outputs = outputs / outputs.norm(dim=-1, keepdim=True)
 
-        return outputs.cpu().numpy().tolist()
+        return cast(List[List[float]], outputs.cpu().numpy().tolist())
 
     def similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """코사인 유사도"""
@@ -383,10 +398,10 @@ class MobileCLIPEmbedding(BaseEmbedding):
         super().__init__(model=model_name)
         self.model_size = model_size
         self.device = device or "cpu"
-        self._model = None
-        self._processor = None
+        self._model: Optional[Any] = None
+        self._processor: Optional[Any] = None
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         """모델 로드 (lazy loading)"""
         if self._model is None:
             try:
@@ -404,6 +419,10 @@ class MobileCLIPEmbedding(BaseEmbedding):
 
         import torch
 
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
+
         inputs = self._processor(text=texts, return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
@@ -411,13 +430,13 @@ class MobileCLIPEmbedding(BaseEmbedding):
             outputs = self._model.get_text_features(**inputs)
 
         outputs = outputs / outputs.norm(dim=-1, keepdim=True)
-        return outputs.cpu().numpy().tolist()
+        return cast(List[List[float]], outputs.cpu().numpy().tolist())
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """비동기 텍스트 임베딩"""
         return self.embed_sync(texts)
 
-    def embed_images(self, images: List[Union[str, Path]], **kwargs) -> List[List[float]]:
+    def embed_images(self, images: List[Union[str, Path]], **kwargs: Any) -> List[List[float]]:
         """이미지 임베딩 (모바일 최적화)"""
         self._load_model()
 
@@ -426,6 +445,10 @@ class MobileCLIPEmbedding(BaseEmbedding):
             from PIL import Image
         except ImportError:
             raise ImportError("Pillow 필요:\npip install pillow")
+
+        # Type assertions after load
+        assert self._processor is not None
+        assert self._model is not None
 
         pil_images = [Image.open(img) for img in images]
 
@@ -436,7 +459,7 @@ class MobileCLIPEmbedding(BaseEmbedding):
             outputs = self._model.get_image_features(**inputs)
 
         outputs = outputs / outputs.norm(dim=-1, keepdim=True)
-        return outputs.cpu().numpy().tolist()
+        return cast(List[List[float]], outputs.cpu().numpy().tolist())
 
     def similarity(self, vec1: List[float], vec2: List[float]) -> float:
         """코사인 유사도"""
@@ -482,18 +505,15 @@ class MultimodalEmbedding(BaseEmbedding):
             fusion_method: 융합 방법 (concat, average, weighted)
         """
         super().__init__(model=text_model)
-        try:
-            from beanllm.domain.embeddings import Embedding  # 이미 위에서 import됨
-        except ImportError:
-            from beanllm.domain.embeddings import Embedding
+        from beanllm.domain.embeddings import Embedding
 
-        self.text_embedder = Embedding(model=text_model)
+        self.text_embedder: BaseEmbedding = cast(BaseEmbedding, Embedding(model=text_model))
         self.vision_embedder = CLIPEmbedding(model=vision_model)
         self.fusion_method = fusion_method
 
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트만 임베딩"""
-        return self.text_embedder.embed_sync(texts)
+        return cast(List[List[float]], self.text_embedder.embed_sync(texts))
 
     async def embed(self, texts: List[str]) -> List[List[float]]:
         """비동기 텍스트 임베딩"""
@@ -519,11 +539,11 @@ class MultimodalEmbedding(BaseEmbedding):
         if not text and not image:
             raise ValueError("At least one of text or image must be provided")
 
-        vectors = []
+        vectors: List[tuple[str, List[float]]] = []
 
         # 텍스트 임베딩
         if text:
-            text_vec = self.text_embedder.embed_sync([text])[0]
+            text_vec = cast(List[float], self.text_embedder.embed_sync([text])[0])
             vectors.append(("text", text_vec))
 
         # 이미지 임베딩
@@ -537,7 +557,9 @@ class MultimodalEmbedding(BaseEmbedding):
 
         return self._fuse_vectors(vectors, text_weight)
 
-    def _fuse_vectors(self, vectors: List[tuple], text_weight: float) -> List[float]:
+    def _fuse_vectors(
+        self, vectors: List[tuple[str, List[float]]], text_weight: float
+    ) -> List[float]:
         """
         벡터 융합
 
@@ -564,18 +586,18 @@ class MultimodalEmbedding(BaseEmbedding):
         elif self.fusion_method == "average":
             # 평균
             arrays = [np.array(vec) for _, vec in vectors]
-            return np.mean(arrays, axis=0).tolist()
+            return cast(List[float], np.mean(arrays, axis=0).tolist())
 
         elif self.fusion_method == "weighted":
             # 가중 평균
-            text_vecs = [vec for type, vec in vectors if type == "text"]
-            vision_vecs = [vec for type, vec in vectors if type == "vision"]
+            text_vecs = [vec for vec_type, vec in vectors if vec_type == "text"]
+            vision_vecs = [vec for vec_type, vec in vectors if vec_type == "vision"]
 
             if text_vecs and vision_vecs:
                 text_arr = np.array(text_vecs[0])
                 vision_arr = np.array(vision_vecs[0])
                 fused = text_weight * text_arr + (1 - text_weight) * vision_arr
-                return fused.tolist()
+                return cast(List[float], fused.tolist())
             else:
                 # 하나만 있으면 그대로 반환
                 return vectors[0][1]

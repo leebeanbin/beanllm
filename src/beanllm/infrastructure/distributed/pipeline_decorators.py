@@ -14,8 +14,9 @@
 import asyncio
 import functools
 import hashlib
+import logging
 from pathlib import Path
-from typing import Any, Callable, List, Optional, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypeVar, Union, cast
 
 from .cache_wrapper import SyncCacheWrapper
 from .config import get_distributed_config
@@ -25,11 +26,13 @@ from .lock_integration import get_lock_manager
 from .task_processor import BatchProcessor
 
 try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-    import logging
+    from beanllm.utils.logging import get_logger as _get_logger
 
-    def get_logger(name: str):
+    def get_logger(name: str) -> logging.Logger:
+        return cast(logging.Logger, _get_logger(name))
+except ImportError:
+
+    def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
 
 
@@ -126,9 +129,11 @@ def with_distributed_features(
                 cache_key = _generate_cache_key(cache_prefix, args, kwargs)
 
                 # 캐시 확인
-                cache = SyncCacheWrapper(max_size=1000, ttl=pipeline_config.cache_ttl)
+                sync_cache: SyncCacheWrapper = SyncCacheWrapper(
+                    max_size=1000, ttl=pipeline_config.cache_ttl
+                )
                 try:
-                    cached_result = cache.get(cache_key)
+                    cached_result = sync_cache.get(cache_key)
                     if cached_result:
                         # 이벤트 발행 (캐시 히트)
                         if pipeline_config.enable_event_streaming:
@@ -138,17 +143,20 @@ def with_distributed_features(
                                     "cache_key": cache_key,
                                 },
                             )
-                        return cached_result
+                        return cast(T, cached_result)
                 except Exception as e:
                     logger.debug(f"Cache get failed: {e}")
 
             # 분산 락 키 생성
-            lock_key_value = None
+            lock_key_value: Optional[str] = None
             if pipeline_config.enable_distributed_lock:
-                lock_key_value = _generate_lock_key(lock_key_prefix, args, kwargs)
+                lock_prefix_str = (
+                    lock_key_prefix if isinstance(lock_key_prefix, str) else pipeline_type
+                )
+                lock_key_value = _generate_lock_key(lock_prefix_str, args, kwargs)
 
             # rate_key가 callable이면 동적으로 생성
-            actual_rate_key = rate_key
+            actual_rate_key: Union[str, Callable[..., Any]] = rate_key
             if callable(rate_key):
                 try:
                     actual_rate_key = rate_key(self, args, kwargs)
@@ -208,16 +216,18 @@ def with_distributed_features(
 
             # 캐시 저장
             if pipeline_config.enable_cache and cache_key:
-                cache = SyncCacheWrapper(max_size=1000, ttl=pipeline_config.cache_ttl)
+                sync_cache_store: SyncCacheWrapper = SyncCacheWrapper(
+                    max_size=1000, ttl=pipeline_config.cache_ttl
+                )
                 try:
-                    cache.set(cache_key, result, ttl=pipeline_config.cache_ttl)
+                    sync_cache_store.set(cache_key, result, ttl=pipeline_config.cache_ttl)
                 except Exception as e:
                     logger.debug(f"Cache set failed: {e}")
 
-            return result
+            return cast(T, result)
 
         @functools.wraps(func)
-        async def async_wrapper(self, *args, **kwargs) -> T:
+        async def async_wrapper(self, *args: Any, **kwargs: Any) -> T:
             """비동기 함수 래퍼"""
             # 캐시 키 생성
             cache_key = None
@@ -225,9 +235,9 @@ def with_distributed_features(
                 cache_key = _generate_cache_key(cache_prefix, args, kwargs)
 
                 # 캐시 확인
-                cache = get_cache()
+                async_cache = get_cache()
                 try:
-                    cached_result = await cache.get(cache_key)
+                    cached_result = await async_cache.get(cache_key)
                     if cached_result:
                         # 이벤트 발행 (캐시 히트)
                         if pipeline_config.enable_event_streaming:
@@ -237,24 +247,27 @@ def with_distributed_features(
                                     "cache_key": cache_key,
                                 },
                             )
-                        return cached_result
+                        return cast(T, cached_result)
                 except Exception as e:
                     logger.debug(f"Cache get failed: {e}")
 
             # 분산 락 키 생성
-            lock_key_value = None
+            lock_key_value: Optional[str] = None
             if pipeline_config.enable_distributed_lock:
-                lock_key_value = _generate_lock_key(lock_key_prefix, args, kwargs)
+                lock_prefix_str = (
+                    lock_key_prefix if isinstance(lock_key_prefix, str) else pipeline_type
+                )
+                lock_key_value = _generate_lock_key(lock_prefix_str, args, kwargs)
 
             # rate_key가 callable이면 동적으로 생성 (비동기 래퍼에서 처리하지만 여기서도 미리 생성)
-            actual_rate_key = rate_key
+            actual_rate_key_async: Union[str, Callable[..., Any]] = rate_key
             if callable(rate_key):
                 try:
-                    actual_rate_key = rate_key(self, args, kwargs)
-                    if actual_rate_key is None:
-                        actual_rate_key = pipeline_type
+                    actual_rate_key_async = rate_key(self, args, kwargs)
+                    if actual_rate_key_async is None:
+                        actual_rate_key_async = pipeline_type
                 except Exception:
-                    actual_rate_key = pipeline_type
+                    actual_rate_key_async = pipeline_type
 
             # 분산 락 획득 및 실행
             if lock_key_value:
@@ -269,7 +282,7 @@ def with_distributed_features(
                         kwargs,
                         pipeline_config,
                         cache_key,
-                        actual_rate_key,
+                        actual_rate_key_async,
                         event_prefix,
                         stored_rate_limit_condition,
                         stored_pipeline_type,
@@ -282,7 +295,7 @@ def with_distributed_features(
                     kwargs,
                     pipeline_config,
                     cache_key,
-                    actual_rate_key,
+                    actual_rate_key_async,
                     event_prefix,
                     stored_rate_limit_condition,
                     stored_pipeline_type,
@@ -290,28 +303,29 @@ def with_distributed_features(
 
             # 캐시 저장
             if pipeline_config.enable_cache and cache_key:
-                cache = get_cache()
+                async_cache_store = get_cache()
                 try:
-                    await cache.set(cache_key, result, ttl=pipeline_config.cache_ttl)
+                    await async_cache_store.set(cache_key, result, ttl=pipeline_config.cache_ttl)
                 except Exception as e:
                     logger.debug(f"Cache set failed: {e}")
 
-            return result
+            return cast(T, result)
 
         # 동기/비동기 자동 감지
         if asyncio.iscoroutinefunction(func):
-            return async_wrapper
-        return sync_wrapper
+            return cast(Callable[..., T], async_wrapper)
+        return cast(Callable[..., T], sync_wrapper)
 
     return decorator
 
 
-def _generate_cache_key(prefix: str, args: tuple, kwargs: dict) -> str:
+def _generate_cache_key(prefix: str, args: tuple, kwargs: dict[str, Any]) -> str:
     """캐시 키 생성"""
     import json
 
     # 첫 번째 인자가 이미지 경로나 파일일 수 있음
-    key_data = {"args": [], "kwargs": kwargs}
+    args_list: List[str] = []
+    key_data: dict[str, Any] = {"args": args_list, "kwargs": kwargs}
 
     for arg in args:
         if isinstance(arg, (str, Path)):
@@ -319,14 +333,14 @@ def _generate_cache_key(prefix: str, args: tuple, kwargs: dict) -> str:
             try:
                 with open(str(arg), "rb") as f:
                     file_hash = hashlib.sha256(f.read()).hexdigest()
-                key_data["args"].append(f"file:{file_hash}")
+                args_list.append(f"file:{file_hash}")
             except Exception:
-                key_data["args"].append(str(arg))
+                args_list.append(str(arg))
         elif hasattr(arg, "tobytes"):
             # numpy array나 PIL Image
-            key_data["args"].append(f"array:{hashlib.sha256(arg.tobytes()).hexdigest()}")
+            args_list.append(f"array:{hashlib.sha256(arg.tobytes()).hexdigest()}")
         else:
-            key_data["args"].append(str(arg))
+            args_list.append(str(arg))
 
     key_str = json.dumps(key_data, sort_keys=True, default=str)
     key_hash = hashlib.sha256(key_str.encode()).hexdigest()[:16]
@@ -344,13 +358,13 @@ def _generate_lock_key(prefix: str, args: tuple, kwargs: dict) -> Optional[str]:
 
 
 def _execute_with_features(
-    func: Callable,
+    func: Callable[..., Any],
     self: Any,
-    args: tuple,
-    kwargs: dict,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
     config: Any,
     cache_key: Optional[str],
-    rate_key: Union[str, Callable],
+    rate_key: Union[str, Callable[..., Any]],
     event_prefix: str,
 ) -> Any:
     """동기 함수 실행 (분산 기능 포함)"""
@@ -361,17 +375,15 @@ def _execute_with_features(
     # Rate Limiting
     if config.enable_rate_limiting:
         # rate_key가 callable이면 동적으로 생성
-        actual_rate_key = rate_key
+        actual_rate_key_str: Optional[str] = rate_key if isinstance(rate_key, str) else None
         if callable(rate_key):
             try:
-                actual_rate_key = rate_key(self, args, kwargs)
-                if actual_rate_key is None:
-                    # None이면 Rate Limiting 건너뛰기
-                    actual_rate_key = None
+                result_key = rate_key(self, args, kwargs)
+                actual_rate_key_str = result_key if isinstance(result_key, str) else None
             except Exception:
-                actual_rate_key = "default"
+                actual_rate_key_str = "default"
 
-        if actual_rate_key:
+        if actual_rate_key_str:
             rate_limiter = get_rate_limiter()
             try:
                 loop = asyncio.get_event_loop()
@@ -379,21 +391,9 @@ def _execute_with_features(
                     # 이미 실행 중인 루프가 있으면 Rate Limiting 건너뛰기 (fallback)
                     pass
                 else:
-                    loop.run_until_complete(
-                        rate_limiter.acquire(
-                            key=actual_rate_key,
-                            tokens=1,
-                            rate=config.rate_limit_per_second,
-                        )
-                    )
+                    loop.run_until_complete(rate_limiter.acquire(key=actual_rate_key_str, cost=1.0))
             except RuntimeError:
-                asyncio.run(
-                    rate_limiter.acquire(
-                        key=actual_rate_key,
-                        tokens=1,
-                        rate=config.rate_limit_per_second,
-                    )
-                )
+                asyncio.run(rate_limiter.acquire(key=actual_rate_key_str, cost=1.0))
             except Exception as e:
                 logger.debug(f"Rate limiting failed: {e}")
 
@@ -424,15 +424,15 @@ def _execute_with_features(
 
 
 async def _execute_with_features_async(
-    func: Callable,
+    func: Callable[..., Any],
     self: Any,
-    args: tuple,
-    kwargs: dict,
+    args: tuple[Any, ...],
+    kwargs: dict[str, Any],
     config: Any,
     cache_key: Optional[str],
-    rate_key: Union[str, Callable],
+    rate_key: Union[str, Callable[..., Any]],
     event_prefix: str,
-    rate_limit_condition: Optional[Callable] = None,
+    rate_limit_condition: Optional[Callable[..., bool]] = None,
     pipeline_type: str = "default",
 ) -> Any:
     """비동기 함수 실행 (분산 기능 포함)"""
@@ -452,24 +452,24 @@ async def _execute_with_features_async(
 
         if should_rate_limit:
             # rate_limit_key가 함수면 동적으로 생성
-            actual_rate_key = rate_key
+            actual_rate_key_str: Optional[str] = rate_key if isinstance(rate_key, str) else None
             if callable(rate_key):
                 try:
-                    actual_rate_key = rate_key(self, args, kwargs)
-                    if actual_rate_key is None:
+                    result_key = rate_key(self, args, kwargs)
+                    if result_key is None:
                         # None이면 Rate Limiting 건너뛰기
                         should_rate_limit = False
+                    else:
+                        actual_rate_key_str = (
+                            result_key if isinstance(result_key, str) else pipeline_type
+                        )
                 except Exception:
-                    actual_rate_key = pipeline_type
+                    actual_rate_key_str = pipeline_type
 
-            if should_rate_limit and actual_rate_key:
+            if should_rate_limit and actual_rate_key_str:
                 rate_limiter = get_rate_limiter()
                 try:
-                    await rate_limiter.acquire(
-                        key=actual_rate_key,
-                        tokens=1,
-                        rate=config.rate_limit_per_second,
-                    )
+                    await rate_limiter.acquire(key=actual_rate_key_str, cost=1.0)
                 except Exception as e:
                     logger.debug(f"Rate limiting failed: {e}")
 
@@ -567,7 +567,7 @@ def with_batch_processing(
             )
 
         @functools.wraps(func)
-        def sync_wrapper(self, items: list, *args, **kwargs):
+        def sync_wrapper(self: Any, items: list[Any], *args: Any, **kwargs: Any) -> List[Any]:
             """동기 배치 처리"""
             if use_queue and len(items) > 1:
                 # BatchProcessor 사용
@@ -575,10 +575,20 @@ def with_batch_processing(
                     task_type=f"{pipeline_type}.batch", max_concurrent=max_workers
                 )
 
-                async def _batch_async():
+                async def _batch_async() -> List[Any]:
+                    # 태스크 데이터 준비
+                    tasks_data = [{"item": item, "args": args, "kwargs": kwargs} for item in items]
+
+                    # 핸들러 함수
+                    def handler(task_data: dict[str, Any]) -> Any:
+                        return func(
+                            self, [task_data["item"]], *task_data["args"], **task_data["kwargs"]
+                        )[0]
+
                     results = await processor.process_batch(
-                        items=items,
-                        handler=lambda item: func(self, [item], *args, **kwargs)[0],
+                        task_name=f"{pipeline_type}.batch",
+                        tasks_data=tasks_data,
+                        handler=handler,
                     )
                     return [r for r in results if r is not None]
 
@@ -593,40 +603,48 @@ def with_batch_processing(
                     return asyncio.run(_batch_async())
             else:
                 # 순차 처리
-                results = []
+                results: List[Any] = []
                 for item in items:
                     result = func(self, [item], *args, **kwargs)
                     results.extend(result if isinstance(result, list) else [result])
                 return results
 
         @functools.wraps(func)
-        async def async_wrapper(self, items: List, *args, **kwargs):
+        async def async_wrapper(
+            self: Any, items: List[Any], *args: Any, **kwargs: Any
+        ) -> List[Any]:
             """비동기 배치 처리"""
             if use_queue and len(items) > 1:
                 processor = BatchProcessor(
                     task_type=f"{pipeline_type}.batch", max_concurrent=max_workers
                 )
 
-                # handler는 단일 아이템을 처리하는 함수
-                async def process_item(item):
-                    result = await func(self, [item], *args, **kwargs)
+                # 핸들러는 단일 아이템을 처리하는 함수
+                async def process_item(task_data: dict[str, Any]) -> Any:
+                    result = await func(
+                        self, [task_data["item"]], *task_data["args"], **task_data["kwargs"]
+                    )
                     # 리스트면 첫 번째 요소, 아니면 그대로 반환
                     if isinstance(result, list) and len(result) > 0:
                         return result[0]
                     return result
 
+                # 태스크 데이터 준비
+                tasks_data = [{"item": item, "args": args, "kwargs": kwargs} for item in items]
+
                 results = await processor.process_batch(
-                    items=items,
+                    task_name=f"{pipeline_type}.batch",
+                    tasks_data=tasks_data,
                     handler=process_item,
                 )
                 return [r for r in results if r is not None]
             else:
                 # 순차 처리
-                results = []
+                sequential_results: List[Any] = []
                 for item in items:
                     result = await func(self, [item], *args, **kwargs)
-                    results.extend(result if isinstance(result, list) else [result])
-                return results
+                    sequential_results.extend(result if isinstance(result, list) else [result])
+                return sequential_results
 
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
