@@ -56,10 +56,13 @@ class BenchmarkResult:
         scores: 각 쿼리별 품질 점수 (0.0-1.0)
         avg_latency: 평균 지연시간
         avg_score: 평균 품질 점수
+        min_score: 최소 점수
+        max_score: 최대 점수
         p50_latency: 50th percentile 지연시간
         p95_latency: 95th percentile 지연시간
         p99_latency: 99th percentile 지연시간
         throughput: 처리량 (queries/sec)
+        total_duration: 총 실행 시간 (초)
         metadata: 추가 메타데이터
     """
 
@@ -68,13 +71,16 @@ class BenchmarkResult:
     scores: List[float]
     avg_latency: float = 0.0
     avg_score: float = 0.0
+    min_score: float = 0.0
+    max_score: float = 0.0
     p50_latency: float = 0.0
     p95_latency: float = 0.0
     p99_latency: float = 0.0
     throughput: float = 0.0
+    total_duration: float = 0.0
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """통계 계산"""
         if self.latencies:
             self.avg_latency = sum(self.latencies) / len(self.latencies)
@@ -86,11 +92,15 @@ class BenchmarkResult:
             self.p95_latency = sorted_latencies[int(n * 0.95)]
             self.p99_latency = sorted_latencies[int(n * 0.99)]
 
-            total_time = sum(self.latencies)
-            self.throughput = len(self.latencies) / total_time if total_time > 0 else 0.0
+            self.total_duration = sum(self.latencies)
+            self.throughput = (
+                len(self.latencies) / self.total_duration if self.total_duration > 0 else 0.0
+            )
 
         if self.scores:
             self.avg_score = sum(self.scores) / len(self.scores)
+            self.min_score = min(self.scores)
+            self.max_score = max(self.scores)
 
 
 class Benchmarker:
