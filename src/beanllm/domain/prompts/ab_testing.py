@@ -194,7 +194,7 @@ class ABTestRunner:
         summary = result.get_summary()
 
         # 통계적 유의성 검증 (t-test)
-        significance = {}
+        significance: Dict[str, Dict[str, Any]] = {}
         if SCIPY_AVAILABLE:
             for metric in result.config.metrics:
                 values_a = [r.get(metric, 0) for r in result.results_a if metric in r]

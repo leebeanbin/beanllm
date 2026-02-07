@@ -218,9 +218,9 @@ class SequentialChain:
                 else:
                     # 이전 출력을 다음 체인의 입력으로 (기존과 동일)
                     if isinstance(chain, PromptChain):
-                        result = await chain.run(input=current_output)
+                        result = await chain.run(input=current_output or "")
                     else:
-                        result = await chain.run(current_output)
+                        result = await chain.run(current_output or "")
 
                 if not result.success:
                     return result
@@ -420,12 +420,12 @@ class ChainBuilder:
             error=response.error,
         )
 
-    def build(self) -> Chain:
+    def build(self) -> Union[Chain, "PromptChain"]:
         """
         체인 빌드
 
         Returns:
-            Chain: 구성된 체인
+            Chain or PromptChain: 구성된 체인
         """
         if self._template:
             return PromptChain(self.client, self._template, memory=self._memory)

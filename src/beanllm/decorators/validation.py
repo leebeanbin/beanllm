@@ -13,13 +13,18 @@ except ImportError:
     # Fallback: 직접 구현 (validation_utils가 없는 경우)
     from typing import Any
 
-    def _get_bound_args(func: Any, *args: Any, **kwargs: Any):
+    def _get_bound_args(func: Any, *args: Any, **kwargs: Any):  # type: ignore[misc]
         sig = inspect.signature(func)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         return bound_args
 
-    def _validate_parameters(bound_args, required_params=None, param_types=None, param_ranges=None):
+    def _validate_parameters(  # type: ignore[misc]
+        bound_args: Any,
+        required_params: Any = None,
+        param_types: Any = None,
+        param_ranges: Any = None,
+    ) -> None:
         if required_params:
             for param in required_params:
                 if param not in bound_args.arguments or bound_args.arguments[param] is None:

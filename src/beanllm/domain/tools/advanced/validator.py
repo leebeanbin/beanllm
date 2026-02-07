@@ -2,7 +2,7 @@
 Tool Validator - 도구 입력 검증기
 """
 
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Type, Union
 
 
 class ToolValidator:
@@ -60,7 +60,7 @@ class ToolValidator:
         """개별 필드 검증"""
         expected_type = schema.get("type")
 
-        type_check_map = {
+        type_check_map: Dict[str, Union[Type[Any], Tuple[Type[Any], ...]]] = {
             "string": str,
             "integer": int,
             "number": (int, float),
@@ -71,7 +71,7 @@ class ToolValidator:
 
         if expected_type in type_check_map:
             expected_python_type = type_check_map[expected_type]
-            if not isinstance(value, expected_python_type):
+            if not isinstance(value, expected_python_type):  # type: ignore[arg-type]
                 return (
                     False,
                     f"Field '{field_name}' must be of type {expected_type}, got {type(value).__name__}",

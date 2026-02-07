@@ -5,7 +5,7 @@ Checkpoint - 상태 체크포인트
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 
 class Checkpoint:
@@ -39,7 +39,8 @@ class Checkpoint:
         with open(checkpoint_file, "r", encoding="utf-8") as f:
             checkpoint_data = json.load(f)
 
-        return checkpoint_data.get("state")
+        state = checkpoint_data.get("state")
+        return cast(Optional[Dict[str, Any]], state)
 
     def list_checkpoints(self, execution_id: str) -> List[str]:
         """체크포인트 목록"""

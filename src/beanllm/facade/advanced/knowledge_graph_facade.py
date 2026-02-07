@@ -14,6 +14,7 @@ SOLID:
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Any, Dict, List, Optional
 
 from beanllm.dto.request.graph.kg_request import (
@@ -125,6 +126,7 @@ class KnowledgeGraph:
             ```
         """
         request = ExtractEntitiesRequest(
+            document_id=str(uuid.uuid4()),
             text=text,
             entity_types=entity_types,
             resolve_coreferences=resolve_coreferences,
@@ -170,6 +172,7 @@ class KnowledgeGraph:
             ```
         """
         request = ExtractRelationsRequest(
+            document_id=str(uuid.uuid4()),
             text=text,
             entities=entities,
             relation_types=relation_types,
@@ -278,7 +281,7 @@ class KnowledgeGraph:
         request = QueryGraphRequest(
             graph_id=graph_id,
             query_type=query_type,
-            query=query,
+            query=query or "",
             params=params or {},
         )
         return await self._handler.handle_query_graph(request)
