@@ -2,23 +2,39 @@
 External API Integration - 외부 API 통합
 """
 
+from __future__ import annotations
+
 import asyncio
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+
+# Optional dependencies
+_httpx: Any = None
+_requests: Any = None
+_HTTPBasicAuth: Any = None
+
+HTTPX_AVAILABLE = False
+REQUESTS_AVAILABLE = False
 
 try:
-    import httpx
+    import httpx as _httpx_module
+
+    _httpx = _httpx_module
+    HTTPX_AVAILABLE = True
 except ImportError:
-    httpx = None
+    pass
 
 try:
-    import httpx
-    from requests.auth import HTTPBasicAuth
+    import requests as _requests_module  # type: ignore[import-untyped]
+    from requests.auth import HTTPBasicAuth as _HTTPBasicAuthClass  # type: ignore[import-untyped]
+
+    _requests = _requests_module
+    _HTTPBasicAuth = _HTTPBasicAuthClass
+    REQUESTS_AVAILABLE = True
 except ImportError:
-    requests = None
-    HTTPBasicAuth = None
+    pass
 
 
 class APIProtocol(Enum):
@@ -63,28 +79,30 @@ class ExternalAPITool:
         where wait_time(n) = min(max_wait, base × 2^n)
     """
 
-    def __init__(self, config: APIConfig):
+    def __init__(self, config: APIConfig) -> None:
         """
         Args:
             config: API 설정
         """
-        if requests is None:
+        if not REQUESTS_AVAILABLE or _requests is None:
             raise ImportError("requests library is required for ExternalAPITool")
 
-        self.config = config
-        self.session = requests.Session()
+        self.config: APIConfig = config
+        self.session: Any = _requests.Session()
         self._setup_auth()
-        self._last_request_time = 0
+        self._last_request_time: float = 0.0
+        self._token_bucket: Dict[str, float] = {}
 
-    def _setup_auth(self):
+    def _setup_auth(self) -> None:
         """인증 설정"""
         if self.config.auth_type == "bearer":
             self.session.headers["Authorization"] = f"Bearer {self.config.auth_value}"
         elif self.config.auth_type == "api_key":
             self.session.headers["X-API-Key"] = self.config.auth_value
-        elif self.config.auth_type == "basic" and HTTPBasicAuth is not None:
-            username, password = self.config.auth_value.split(":", 1)
-            self.session.auth = HTTPBasicAuth(username, password)
+        elif self.config.auth_type == "basic" and _HTTPBasicAuth is not None:
+            auth_value = self.config.auth_value or ""
+            username, password = auth_value.split(":", 1)
+            self.session.auth = _HTTPBasicAuth(username, password)
 
         # Add custom headers
         self.session.headers.update(self.config.headers)
@@ -174,15 +192,19 @@ class ExternalAPITool:
                     **kwargs,
                 )
                 response.raise_for_status()
-                return response.json()
+                result: Dict[str, Any] = response.json()
+                return result
 
-            except requests.RequestException:
-                if attempt == self.config.max_retries - 1:
+            except Exception as e:
+                # Check if it's a requests exception
+                if _requests is not None and isinstance(e, _requests.RequestException):
+                    if attempt == self.config.max_retries - 1:
+                        raise
+                    # Exponential backoff: 2^attempt seconds
+                    wait_time = min(30, 2**attempt)
+                    time.sleep(wait_time)
+                else:
                     raise
-
-                # Exponential backoff: 2^attempt seconds
-                wait_time = min(30, 2**attempt)
-                time.sleep(wait_time)
 
         raise RuntimeError("Unexpected error in retry logic")
 
@@ -207,14 +229,14 @@ class ExternalAPITool:
         Returns:
             API 응답 (JSON)
         """
-        if httpx is None:
+        if not HTTPX_AVAILABLE or _httpx is None:
             raise ImportError("httpx library is required for async API calls")
 
         url = f"{self.config.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
-        async with httpx.AsyncClient(timeout=self.config.timeout) as client:
+        async with _httpx.AsyncClient(timeout=self.config.timeout) as client:
             # Setup auth headers
-            headers = self.session.headers.copy()
+            headers = dict(self.session.headers)
 
             for attempt in range(self.config.max_retries):
                 try:
@@ -222,14 +244,18 @@ class ExternalAPITool:
                         method=method, url=url, params=params, json=data, headers=headers, **kwargs
                     )
                     response.raise_for_status()
-                    return response.json()
+                    result: Dict[str, Any] = response.json()
+                    return result
 
-                except httpx.HTTPError:
-                    if attempt == self.config.max_retries - 1:
+                except Exception as e:
+                    # Check if it's an httpx exception
+                    if _httpx is not None and isinstance(e, _httpx.HTTPError):
+                        if attempt == self.config.max_retries - 1:
+                            raise
+                        wait_time = min(30, 2**attempt)
+                        await asyncio.sleep(wait_time)
+                    else:
                         raise
-
-                    wait_time = min(30, 2**attempt)
-                    await asyncio.sleep(wait_time)
 
         raise RuntimeError("Unexpected error in retry logic")
 
@@ -246,7 +272,7 @@ class ExternalAPITool:
         Returns:
             GraphQL 응답
         """
-        payload = {"query": query}
+        payload: Dict[str, Any] = {"query": query}
         if variables:
             payload["variables"] = variables
 
