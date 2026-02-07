@@ -142,12 +142,36 @@ class ABTestResponse:
     effect_size: Optional[Dict[str, float]] = None
     recommendations: Optional[List[str]] = None
     metadata: Optional[Dict[str, Any]] = None
+    # Convenience properties computed from existing fields
+    lift: float = 0.0
+    p_value: float = 1.0
+    is_significant: bool = False
+    confidence_level: float = 0.95
+    variant_a_mean: float = 0.0
+    variant_b_mean: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.recommendations is None:
             self.recommendations = []
         if self.metadata is None:
             self.metadata = {}
+        # Compute convenience properties from existing fields
+        self._compute_convenience_properties()
+
+    def _compute_convenience_properties(self) -> None:
+        """Compute convenience properties from existing DTO fields"""
+        # Extract from statistical_significance
+        if self.statistical_significance:
+            self.p_value = float(self.statistical_significance.get("p_value", 1.0))
+            self.is_significant = bool(self.statistical_significance.get("significant", False))
+        # Extract means from results
+        if self.results_a:
+            self.variant_a_mean = float(self.results_a.get("quality", 0.0))
+        if self.results_b:
+            self.variant_b_mean = float(self.results_b.get("quality", 0.0))
+        # Compute lift
+        if self.variant_a_mean > 0:
+            self.lift = ((self.variant_b_mean - self.variant_a_mean) / self.variant_a_mean) * 100
 
 
 @dataclass
@@ -164,7 +188,19 @@ class RecommendationResponse:
     implementation_difficulty: Dict[str, str]  # {"reduce_chunk_size": "easy"}
     priority_order: List[str]
     metadata: Optional[Dict[str, Any]] = None
+    # Computed summary of recommendation counts by priority
+    summary: Optional[Dict[str, int]] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.metadata is None:
             self.metadata = {}
+        if self.summary is None:
+            self._compute_summary()
+
+    def _compute_summary(self) -> None:
+        """Compute summary counts by priority level"""
+        self.summary = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+        for rec in self.recommendations:
+            priority = rec.get("priority", "low").lower()
+            if priority in self.summary:
+                self.summary[priority] += 1

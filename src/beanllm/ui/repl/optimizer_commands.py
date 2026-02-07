@@ -287,7 +287,8 @@ class OptimizerCommands:
                 best_table.add_column("Parameter", style="cyan")
                 best_table.add_column("Value", style="yellow")
 
-                for param_name, param_value in result.best_params.items():
+                best_params = result.best_params or {}
+                for param_name, param_value in best_params.items():
                     if isinstance(param_value, float):
                         value_str = f"{param_value:.4f}"
                     else:
@@ -296,11 +297,14 @@ class OptimizerCommands:
 
                 self.console.print(best_table)
 
-                # Convergence data
+                # Convergence data (list of dicts - show summary)
                 if result.convergence_data:
                     self.console.print("\n[bold]Convergence Info:[/bold]")
-                    for key, value in result.convergence_data.items():
-                        self.console.print(f"  • {key}: {value}")
+                    self.console.print(f"  • Total trials: {len(result.convergence_data)}")
+                    if result.convergence_data:
+                        last_trial = result.convergence_data[-1]
+                        for key, value in last_trial.items():
+                            self.console.print(f"  • {key}: {value}")
 
             except Exception as e:
                 progress.update(task, completed=True)
@@ -359,7 +363,7 @@ class OptimizerCommands:
                     )
                 )
 
-                # Component breakdown
+                # Component breakdown (List[Dict] with component data)
                 if result.components:
                     comp_table = Table(title="🔍 Component Breakdown")
                     comp_table.add_column("Component", style="cyan")
@@ -368,11 +372,13 @@ class OptimizerCommands:
                     comp_table.add_column("Cost ($)", style="magenta")
                     comp_table.add_column("% of Total", style="blue")
 
-                    for name, metrics in result.components.items():
-                        duration = metrics["duration_ms"]
-                        tokens = metrics["tokens"]
-                        cost = metrics["cost"]
-                        pct = result.breakdown.get(name, 0)
+                    breakdown = result.breakdown or {}
+                    for component in result.components:
+                        name = component.get("name", "unknown")
+                        duration = component.get("duration_ms", 0)
+                        tokens = component.get("tokens", 0)
+                        cost = component.get("cost", 0)
+                        pct = breakdown.get(name, 0)
 
                         comp_table.add_row(
                             name,
@@ -385,11 +391,12 @@ class OptimizerCommands:
                     self.console.print(comp_table)
 
                 # Breakdown visualization
-                self._visualizer.show_component_breakdown(result.breakdown)
+                if result.breakdown:
+                    self._visualizer.show_component_breakdown(result.breakdown)
 
-                # Recommendations
+                # Recommendations (List[str] - convert to display format)
                 if show_recommendations and result.recommendations:
-                    self._show_recommendations_panel(result.recommendations)
+                    self._show_string_recommendations(result.recommendations)
 
             except Exception as e:
                 progress.update(task, completed=True)
@@ -552,14 +559,15 @@ class OptimizerCommands:
                 f"[bold green]✅ Found {len(result.recommendations)} recommendations[/bold green]\n"
             )
 
-            # Summary
+            # Summary (computed from recommendations)
+            summary = result.summary or {"critical": 0, "high": 0, "medium": 0, "low": 0}
             self.console.print(
                 Panel(
                     f"[bold yellow]Profile ID:[/bold yellow] {profile_id}\n"
-                    f"[bold red]Critical:[/bold red] {result.summary['critical']}\n"
-                    f"[bold yellow]High:[/bold yellow] {result.summary['high']}\n"
-                    f"[bold cyan]Medium:[/bold cyan] {result.summary['medium']}\n"
-                    f"[bold]Low:[/bold] {result.summary['low']}",
+                    f"[bold red]Critical:[/bold red] {summary.get('critical', 0)}\n"
+                    f"[bold yellow]High:[/bold yellow] {summary.get('high', 0)}\n"
+                    f"[bold cyan]Medium:[/bold cyan] {summary.get('medium', 0)}\n"
+                    f"[bold]Low:[/bold] {summary.get('low', 0)}",
                     title="📊 Recommendation Summary",
                     border_style="cyan",
                 )
@@ -647,6 +655,18 @@ class OptimizerCommands:
             logger.error(f"Comparison error: {e}")
 
     # ===== Helper Methods =====
+
+    def _show_string_recommendations(self, recommendations: List[str]) -> None:
+        """Show string recommendations as a simple list"""
+        if not recommendations:
+            self.console.print("[dim]No recommendations[/dim]")
+            return
+
+        tree = Tree("💡 [bold]Recommendations[/bold]")
+        for i, rec in enumerate(recommendations, 1):
+            tree.add(f"[{i}] {rec}")
+
+        self.console.print(tree)
 
     def _show_recommendations_panel(self, recommendations: List[Dict[str, Any]]) -> None:
         """Show recommendations in a tree panel"""
