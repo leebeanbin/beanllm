@@ -154,4 +154,4 @@ class CompositeRule(RoutingRule):
 
         weighted_sum = sum(rule.evaluate(model, request) * weight for rule, weight in self.rules)
 
-        return weighted_sum / total_weight
+        return float(weighted_sum / total_weight)

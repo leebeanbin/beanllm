@@ -14,7 +14,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from functools import wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Deque, Dict, Optional
 
 from beanllm.utils.exceptions import RateLimitError
 
@@ -36,7 +36,7 @@ class RateLimiter:
 
     def __init__(self, config: Optional[RateLimitConfig] = None):
         self.config = config or RateLimitConfig()
-        self.calls = deque()
+        self.calls: Deque[float] = deque()
         self._lock = threading.Lock()
 
     def _clean_old_calls(self):
@@ -61,7 +61,7 @@ class RateLimiter:
         elapsed = time.time() - oldest_call
         remaining = self.config.time_window - elapsed
 
-        return max(0.0, remaining)
+        return float(max(0.0, remaining))
 
     def call(self, func: Callable, *args, **kwargs) -> Any:
         """

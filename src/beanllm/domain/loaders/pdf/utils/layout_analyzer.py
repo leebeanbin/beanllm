@@ -11,7 +11,7 @@ Features:
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from beanllm.utils.logging import get_logger
@@ -33,7 +33,7 @@ class Block:
     bbox: Tuple[float, float, float, float]  # (x0, y0, x1, y1)
     content: str
     confidence: float = 1.0
-    metadata: Dict = None
+    metadata: Optional[Dict[Any, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -209,7 +209,7 @@ class LayoutAnalyzer:
         block_size = block_info.get("size", avg_size)
 
         # 평균보다 heading_size_ratio배 이상 크면 제목
-        return block_size >= avg_size * self.heading_size_ratio
+        return bool(block_size >= avg_size * self.heading_size_ratio)
 
     def restore_reading_order(
         self, blocks: List[Block], is_multi_column: bool = False
@@ -289,8 +289,8 @@ class LayoutAnalyzer:
         sorted_blocks = sorted(indexed_blocks, key=lambda x: x[1].bbox[0])
 
         # 간격 기반 컬럼 분리
-        columns = []
-        current_column = []
+        columns: List[List[Tuple[int, Block]]] = []
+        current_column: List[Tuple[int, Block]] = []
 
         for i, (idx, block) in enumerate(sorted_blocks):
             if not current_column:

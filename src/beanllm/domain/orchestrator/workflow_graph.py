@@ -110,10 +110,10 @@ class WorkflowEdge:
             return True
 
         elif self.condition == EdgeCondition.ON_SUCCESS:
-            return context.get("success", True)
+            return bool(context.get("success", True))
 
         elif self.condition == EdgeCondition.ON_FAILURE:
-            return not context.get("success", True)
+            return not bool(context.get("success", True))
 
         elif self.condition == EdgeCondition.CONDITIONAL:
             if self.condition_func:

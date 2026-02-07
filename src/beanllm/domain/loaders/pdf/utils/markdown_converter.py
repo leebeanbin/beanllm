@@ -12,7 +12,7 @@ Features:
 """
 
 import re
-from typing import Dict, List
+from typing import Any, Dict, List
 
 try:
     from beanllm.utils.logging import get_logger
@@ -125,7 +125,7 @@ class MarkdownConverter:
         Returns:
             Dict[int, List[Dict]]: 페이지 번호를 키로 하는 딕셔너리
         """
-        grouped = {}
+        grouped: Dict[int, List[Dict[str, Any]]] = {}
         for item in items:
             page = item.get("page", 0)
             if page not in grouped:
@@ -230,7 +230,7 @@ class MarkdownConverter:
         """
         for heading in headings:
             if heading["text"] in line:
-                return heading["level"]
+                return int(heading["level"])
         return 0
 
     def _clean_text(self, text: str) -> str:

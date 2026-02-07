@@ -52,7 +52,7 @@ class Tool:
         required = []
 
         for param in self.parameters:
-            prop = {"type": param.type, "description": param.description}
+            prop: Dict[str, Any] = {"type": param.type, "description": param.description}
             if param.enum:
                 prop["enum"] = param.enum
 

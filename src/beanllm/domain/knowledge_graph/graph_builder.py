@@ -393,7 +393,7 @@ class GraphBuilder:
         }
 
         # Node types distribution
-        node_types = {}
+        node_types: Dict[str, int] = {}
         for node, data in graph.nodes(data=True):
             node_type = data.get("type", "unknown")
             node_types[node_type] = node_types.get(node_type, 0) + 1
@@ -401,7 +401,7 @@ class GraphBuilder:
         stats["node_type_distribution"] = node_types
 
         # Edge types distribution
-        edge_types = {}
+        edge_types: Dict[str, int] = {}
         for u, v, data in graph.edges(data=True):
             edge_type = data.get("type", "unknown")
             edge_types[edge_type] = edge_types.get(edge_type, 0) + 1

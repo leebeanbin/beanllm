@@ -400,6 +400,7 @@ class CrossEncoderReranker(BaseReranker):
     ) -> List[RerankResult]:
         """문서를 재순위화"""
         self._load_model()
+        assert self._model is not None
 
         try:
             # 쿼리-문서 페어

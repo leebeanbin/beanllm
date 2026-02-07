@@ -33,7 +33,8 @@ def calculator(operation: str, a: float, b: float) -> float:
     if operation not in operations:
         return f"Error: Unknown operation '{operation}'"
 
-    return operations[operation](a, b)
+    result = operations[operation](a, b)
+    return float(result) if isinstance(result, (int, float)) else result
 
 
 @register_tool

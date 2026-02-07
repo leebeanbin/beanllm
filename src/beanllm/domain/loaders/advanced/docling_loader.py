@@ -181,7 +181,7 @@ class DoclingLoader(BaseDocumentLoader):
         Returns:
             메타데이터 딕셔너리
         """
-        metadata = {
+        metadata: Dict[str, Any] = {
             "source": self.file_path,
             "file_name": os.path.basename(self.file_path),
             "file_type": os.path.splitext(self.file_path)[1].lower(),

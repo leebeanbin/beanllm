@@ -4,7 +4,7 @@ Metadata Inferrer - 메타데이터 추론기 구현
 
 import re
 from datetime import datetime
-from typing import Dict
+from typing import Any, Dict
 
 try:
     from beanllm.utils.logging import get_logger
@@ -215,7 +215,7 @@ class MetadataInferrer:
         provider_config = self.INFERENCE_RULES.get(provider, {})
 
         # 기본 메타데이터
-        metadata = {
+        metadata: Dict[str, Any] = {
             "model_id": model_id,
             "display_name": model_id,
             "provider": provider,

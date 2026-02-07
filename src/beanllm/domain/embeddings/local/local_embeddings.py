@@ -583,6 +583,8 @@ class CodeEmbedding(BaseLocalEmbedding):
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """코드들을 임베딩 (동기)"""
         self._load_model()
+        assert self._tokenizer is not None
+        assert self._model is not None
 
         try:
             import torch

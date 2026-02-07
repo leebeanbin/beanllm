@@ -80,7 +80,7 @@ class RoutingDecision:
     fallback_models: List[ModelInfo]  # Fallback 모델 리스트
     estimated_cost: float  # 예상 비용
     confidence_score: float  # 신뢰도 점수 (0-1)
-    metadata: Dict[str, Any] = None  # 추가 메타데이터
+    metadata: Optional[Dict[str, Any]] = None  # 추가 메타데이터
 
     def __post_init__(self):
         if self.metadata is None:
@@ -476,7 +476,7 @@ class ModelRouter:
         if total == 0:
             return 1.0  # No history, assume 100%
 
-        return successful / total
+        return float(successful / total)
 
     def record_result(
         self,

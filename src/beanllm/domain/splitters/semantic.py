@@ -223,6 +223,7 @@ class SemanticTextSplitter(BaseTextSplitter):
             return embeddings.tolist()
         else:
             # 커스텀 함수 사용 (하나씩)
+            assert self._embedding_function is not None, "embedding_function is required"
             return [self._embedding_function(s) for s in sentences]
 
     def _find_breakpoints(self, sentences: List[str], embeddings: List[List[float]]) -> List[int]:
@@ -512,6 +513,7 @@ class CoherenceTextSplitter(BaseTextSplitter):
             )
 
         self._init_model()
+        assert self._model is not None
 
         # 1. 문장 분할
         sentences = re.split(r"(?<=[.!?])\s+|(?<=\n)\s*", text)
