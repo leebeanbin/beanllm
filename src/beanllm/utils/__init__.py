@@ -2,6 +2,8 @@
 Utilities - 독립적인 유틸리티 모듈
 """
 
+from typing import Any
+
 # Config
 # CLI
 from .cli import main
@@ -161,31 +163,58 @@ except ImportError:
     set_cost_tracker = None
 
 # RAG Debug - 순환 참조 방지를 위해 지연 import
+RAG_DEBUG_AVAILABLE = False
+EmbeddingInfo: Any = None
+RAGDebugger: Any = None
+SimilarityInfo: Any = None
+compare_texts: Any = None
+inspect_embedding: Any = None
+similarity_heatmap: Any = None
+validate_pipeline: Any = None
+visualize_embeddings: Any = None
+visualize_embeddings_2d: Any = None
+
 try:
     from .rag_debug import (
-        EmbeddingInfo,
-        RAGDebugger,
-        SimilarityInfo,
-        compare_texts,
-        inspect_embedding,
-        similarity_heatmap,
-        validate_pipeline,
-        visualize_embeddings,
-        visualize_embeddings_2d,
+        EmbeddingInfo as _EmbeddingInfo,
+    )
+    from .rag_debug import (
+        RAGDebugger as _RAGDebugger,
+    )
+    from .rag_debug import (
+        SimilarityInfo as _SimilarityInfo,
+    )
+    from .rag_debug import (
+        compare_texts as _compare_texts,
+    )
+    from .rag_debug import (
+        inspect_embedding as _inspect_embedding,
+    )
+    from .rag_debug import (
+        similarity_heatmap as _similarity_heatmap,
+    )
+    from .rag_debug import (
+        validate_pipeline as _validate_pipeline,
+    )
+    from .rag_debug import (
+        visualize_embeddings as _visualize_embeddings,
+    )
+    from .rag_debug import (
+        visualize_embeddings_2d as _visualize_embeddings_2d,
     )
 
     RAG_DEBUG_AVAILABLE = True
+    EmbeddingInfo = _EmbeddingInfo
+    RAGDebugger = _RAGDebugger
+    SimilarityInfo = _SimilarityInfo
+    compare_texts = _compare_texts
+    inspect_embedding = _inspect_embedding
+    similarity_heatmap = _similarity_heatmap
+    validate_pipeline = _validate_pipeline
+    visualize_embeddings = _visualize_embeddings
+    visualize_embeddings_2d = _visualize_embeddings_2d
 except ImportError:
-    RAG_DEBUG_AVAILABLE = False
-    EmbeddingInfo = None
-    RAGDebugger = None
-    SimilarityInfo = None
-    compare_texts = None
-    inspect_embedding = None
-    similarity_heatmap = None
-    validate_pipeline = None
-    visualize_embeddings = None
-    visualize_embeddings_2d = None
+    pass
 
 __all__ = [
     # Config
