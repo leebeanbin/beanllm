@@ -2,7 +2,7 @@
 Splitters Implementations - 텍스트 분할 구현체들
 """
 
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 from .base import BaseTextSplitter
 
@@ -301,9 +301,9 @@ class MarkdownHeaderTextSplitter:
     def split_text(self, text: str) -> List["Document"]:
         """마크다운 분할"""
         lines = text.split("\n")
-        chunks = []
-        current_chunk = []
-        current_metadata = {}
+        chunks: List["Document"] = []
+        current_chunk: List[str] = []
+        current_metadata: Dict[str, str] = {}
 
         for line in lines:
             # 헤더 체크

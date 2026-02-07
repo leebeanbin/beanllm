@@ -18,7 +18,7 @@ Requirements:
 import logging
 import time
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Any, Dict, List, Union
 
 from .base import BasePDFEngine
 
@@ -161,9 +161,9 @@ class DoclingEngine(BasePDFEngine):
             doc = fitz.open(str(pdf_path))
             total_pages = len(doc)
 
-            pages_data = []
-            tables_data = []
-            images_data = []
+            pages_data: List[Dict[str, Any]] = []
+            tables_data: List[Dict[str, Any]] = []
+            images_data: List[Dict[str, Any]] = []
 
             # 각 페이지 처리
             for page_num in range(total_pages):

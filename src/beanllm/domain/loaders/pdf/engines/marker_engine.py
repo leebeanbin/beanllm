@@ -15,7 +15,7 @@ import gc
 import hashlib
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from .base import BasePDFEngine
 
@@ -327,7 +327,7 @@ class MarkerEngine(BasePDFEngine):
         Returns:
             List[Dict]: 테이블 데이터 리스트
         """
-        tables = []
+        tables: List[Dict[str, Any]] = []
 
         # Markdown 테이블 패턴: | header | header |
         #                      |--------|--------|

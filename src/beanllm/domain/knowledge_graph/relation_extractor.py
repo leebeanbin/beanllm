@@ -71,7 +71,7 @@ class Relation:
             target_id=self.source_id,
             type=self.type,
             description=self.description,
-            properties=self.properties.copy(),
+            properties=self.properties.copy() if self.properties else {},
             confidence=self.confidence,
             bidirectional=True,
         )
