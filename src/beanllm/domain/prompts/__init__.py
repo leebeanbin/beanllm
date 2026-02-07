@@ -26,9 +26,9 @@ try:
     AB_TESTING_AVAILABLE = True
 except ImportError:
     AB_TESTING_AVAILABLE = False
-    ABTestConfig = None
-    ABTestResult = None
-    ABTestRunner = None
+    ABTestConfig = None  # type: ignore[misc, assignment]
+    ABTestResult = None  # type: ignore[misc, assignment]
+    ABTestRunner = None  # type: ignore[misc, assignment]
 
 # Performance Tracking
 try:
@@ -37,8 +37,8 @@ try:
     PERFORMANCE_TRACKING_AVAILABLE = True
 except ImportError:
     PERFORMANCE_TRACKING_AVAILABLE = False
-    PerformanceRecord = None
-    PromptPerformanceTracker = None
+    PerformanceRecord = None  # type: ignore[misc, assignment]
+    PromptPerformanceTracker = None  # type: ignore[misc, assignment]
 
 __all__ = [
     "TemplateFormat",

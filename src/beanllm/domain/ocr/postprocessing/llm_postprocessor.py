@@ -186,7 +186,7 @@ class LLMPostprocessor:
                 temperature=self.temperature,
             )
 
-            corrected_text = response.get("content", "").strip()
+            corrected_text: str = str(response.get("content", "")).strip()
 
             # 검증: 너무 다르면 원본 반환
             if len(corrected_text) < len(text) * 0.5 or len(corrected_text) > len(text) * 2.0:

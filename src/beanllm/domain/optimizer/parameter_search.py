@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from beanllm.utils.logging import get_logger
 
@@ -322,7 +322,7 @@ class ParameterSearch:
         """Trade-off 분석"""
         # Calculate correlation between objectives
 
-        trade_offs = {}
+        trade_offs: Dict[str, Any] = {}
 
         if len(objectives) < 2:
             return trade_offs
@@ -366,7 +366,7 @@ class ParameterSearch:
         if denom1 == 0 or denom2 == 0:
             return 0.0
 
-        return numerator / (denom1 * denom2)
+        return float(numerator / (denom1 * denom2))
 
     def _interpret_correlation(self, correlation: float, maximize1: bool, maximize2: bool) -> str:
         """Correlation 해석"""
@@ -398,7 +398,7 @@ class ParameterSearch:
 def find_balanced_solution(
     result: MultiObjectiveResult,
     objectives: List[Objective],
-) -> SearchResult:
+) -> Optional[SearchResult]:
     """
     균형잡힌 솔루션 찾기 (Pareto frontier 중에서)
 
@@ -407,7 +407,7 @@ def find_balanced_solution(
         objectives: 목적 함수 리스트
 
     Returns:
-        SearchResult: 균형잡힌 솔루션
+        SearchResult: 균형잡힌 솔루션 (결과가 없으면 None)
     """
     if not result.pareto_frontier:
         return result.results[0] if result.results else None

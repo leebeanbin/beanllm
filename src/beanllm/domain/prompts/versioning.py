@@ -7,7 +7,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from .base import BasePromptTemplate
 
@@ -63,7 +63,9 @@ class PromptVersioning:
     """프롬프트 버전 관리 (기존 클래스 - 하위 호환성 유지)"""
 
     def __init__(self):
-        self.versions: Dict[str, List[tuple]] = {}  # name -> [(version, template)]
+        self.versions: Dict[
+            str, List[Tuple[str, BasePromptTemplate]]
+        ] = {}  # name -> [(version, template)]
 
     def save(self, name: str, template: BasePromptTemplate, version: str) -> None:
         """템플릿 저장"""

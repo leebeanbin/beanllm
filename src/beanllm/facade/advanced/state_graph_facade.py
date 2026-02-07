@@ -15,6 +15,7 @@ from typing import (
     Optional,
     TypeVar,
     Union,
+    cast,
 )
 
 from beanllm.domain.state_graph import END, Checkpoint, GraphConfig, GraphExecution
@@ -183,7 +184,7 @@ class StateGraph:
         )
 
         # GraphResponse를 StateType으로 변환 (기존 API 유지)
-        return response.final_state
+        return cast(StateType, response.final_state)
 
     def stream(self, initial_state: StateType, execution_id: Optional[str] = None):
         """

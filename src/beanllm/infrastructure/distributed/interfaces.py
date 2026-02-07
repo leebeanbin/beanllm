@@ -5,7 +5,6 @@
 """
 
 from abc import ABC, abstractmethod
-from contextlib import asynccontextmanager
 from typing import Any, AsyncContextManager, AsyncIterator, Dict, Generic, Optional, TypeVar
 
 K = TypeVar("K")
@@ -183,8 +182,7 @@ class DistributedLockInterface(ABC):
     """분산 락 추상 인터페이스"""
 
     @abstractmethod
-    @asynccontextmanager
-    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncContextManager:
+    def acquire(self, key: str, timeout: float = 30.0) -> AsyncContextManager[None]:
         """
         락 획득 (context manager)
 
@@ -202,4 +200,4 @@ class DistributedLockInterface(ABC):
                 await update_resource()
             ```
         """
-        pass
+        ...

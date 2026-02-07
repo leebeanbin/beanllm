@@ -86,13 +86,18 @@ class ParameterSpace:
     def sample(self) -> Any:
         """랜덤 샘플링"""
         if self.type == ParameterType.INTEGER:
+            # __post_init__에서 검증되므로 low/high는 None이 아님
+            assert self.low is not None and self.high is not None
             return random.randint(int(self.low), int(self.high))
         elif self.type == ParameterType.FLOAT:
+            assert self.low is not None and self.high is not None
             return random.uniform(self.low, self.high)
         elif self.type == ParameterType.CATEGORICAL:
+            assert self.categories is not None
             return random.choice(self.categories)
         elif self.type == ParameterType.BOOLEAN:
             return random.choice([True, False])
+        return None
 
 
 @dataclass
@@ -248,9 +253,11 @@ class OptimizerEngine:
 
         for space in param_spaces:
             if space.type in [ParameterType.INTEGER, ParameterType.FLOAT]:
+                assert space.low is not None and space.high is not None
                 pbounds[space.name] = (space.low, space.high)
             elif space.type == ParameterType.CATEGORICAL:
                 # Map categories to integers
+                assert space.categories is not None
                 categorical_params[space.name] = space.categories
                 pbounds[space.name] = (0, len(space.categories) - 1)
             elif space.type == ParameterType.BOOLEAN:
@@ -348,12 +355,15 @@ class OptimizerEngine:
 
         for space in param_spaces:
             if space.type == ParameterType.INTEGER:
-                step = max(1, (space.high - space.low) // grid_size)
+                assert space.low is not None and space.high is not None
+                step = max(1, int((space.high - space.low) // grid_size))
                 param_grids[space.name] = list(range(int(space.low), int(space.high) + 1, step))
             elif space.type == ParameterType.FLOAT:
+                assert space.low is not None and space.high is not None
                 step = (space.high - space.low) / grid_size
                 param_grids[space.name] = [space.low + i * step for i in range(grid_size + 1)]
             elif space.type == ParameterType.CATEGORICAL:
+                assert space.categories is not None
                 param_grids[space.name] = space.categories
             elif space.type == ParameterType.BOOLEAN:
                 param_grids[space.name] = [True, False]
@@ -364,7 +374,7 @@ class OptimizerEngine:
         param_names = list(param_grids.keys())
         param_values = list(param_grids.values())
 
-        best_params = None
+        best_params: Dict[str, Any] = {}
         best_score = float("-inf") if maximize else float("inf")
 
         for combination in itertools.product(*param_values):
@@ -410,7 +420,7 @@ class OptimizerEngine:
 
         Randomly samples from parameter space.
         """
-        best_params = None
+        best_params: Dict[str, Any] = {}
         best_score = float("-inf") if maximize else float("inf")
 
         for trial in range(n_trials):
@@ -469,7 +479,7 @@ class OptimizerEngine:
             {space.name: space.sample() for space in param_spaces} for _ in range(population_size)
         ]
 
-        best_params = None
+        best_params: Dict[str, Any] = {}
         best_score = float("-inf") if maximize else float("inf")
 
         generations = n_trials // population_size

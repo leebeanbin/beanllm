@@ -417,7 +417,7 @@ class Recommender:
         Returns:
             Dict[str, List[Recommendation]]: 우선순위별 권장사항
         """
-        plan = {
+        plan: Dict[str, List[Recommendation]] = {
             "critical": [],
             "high": [],
             "medium": [],

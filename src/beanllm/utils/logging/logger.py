@@ -74,6 +74,7 @@ def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.L
     handler.setLevel(getattr(logging, level.upper()))
 
     # 포맷터 (보안 활성화 시 SecureFormatter 사용)
+    formatter: logging.Formatter
     if secure:
         formatter = SecureFormatter(
             fmt="%(asctime)s - %(name)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"

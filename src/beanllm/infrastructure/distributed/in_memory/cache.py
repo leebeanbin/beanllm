@@ -2,7 +2,7 @@
 인메모리 Cache (기존 LRUCache 래핑)
 """
 
-from typing import Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar
 
 from beanllm.infrastructure.distributed.interfaces import CacheInterface
 
@@ -14,7 +14,7 @@ except ImportError:
     import time
     from collections import OrderedDict
 
-    class LRUCache:
+    class LRUCache:  # type: ignore[no-redef]
         def __init__(self, max_size: int = 1000, ttl: Optional[int] = None):
             self.max_size = max_size
             self.ttl = ttl
@@ -66,7 +66,7 @@ class InMemoryCache(CacheInterface[K, V], Generic[K, V]):
             max_size: 최대 캐시 크기
             ttl: Time-to-Live (초), None이면 만료 없음
         """
-        self._cache = LRUCache(max_size=max_size, ttl=ttl)
+        self._cache: Any = LRUCache(max_size=max_size, ttl=ttl)
 
     async def get(self, key: K) -> Optional[V]:
         """값 조회"""
