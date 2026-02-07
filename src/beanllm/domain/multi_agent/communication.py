@@ -58,7 +58,7 @@ class AgentMessage:
     ) -> "AgentMessage":
         """이 메시지에 대한 답장 생성"""
         return AgentMessage(
-            sender=self.receiver,
+            sender=self.receiver or "unknown",
             receiver=self.sender,
             message_type=message_type,
             content=content,
@@ -162,7 +162,7 @@ class CommunicationBus:
                     "timestamp": message.timestamp.isoformat(),
                     "reply_to": message.reply_to,
                 }
-                await self.kafka_producer.publish("multi_agent.messages", json.dumps(message_data))
+                await self.kafka_producer.publish("multi_agent.messages", message_data)
 
                 # 이벤트 로깅
                 if self.event_logger:

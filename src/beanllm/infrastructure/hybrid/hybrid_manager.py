@@ -18,7 +18,7 @@ except ImportError:
     def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
         return logging.getLogger(name)
 
-    class MetadataInferrer:
+    class MetadataInferrer:  # type: ignore[no-redef]
         def infer(self, provider: str, model_id: str) -> Dict:
             return {}
 

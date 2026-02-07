@@ -14,7 +14,7 @@ except ImportError:
     HAS_NUMPY = False
 
     # numpy 대체 함수들
-    class np:
+    class np:  # type: ignore[no-redef]
         @staticmethod
         def array(x):
             return x
