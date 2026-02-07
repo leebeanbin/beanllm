@@ -140,6 +140,8 @@ class BGEReranker(BaseReranker):
         """
         # 모델 로드
         self._load_model()
+        assert self._tokenizer is not None
+        assert self._model is not None
 
         try:
             import torch
