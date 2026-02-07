@@ -41,29 +41,39 @@ except ImportError:
     BEANLLM_AVAILABLE = False
 
 
-console = Console() if RICH_AVAILABLE else None
+_console = Console() if RICH_AVAILABLE else None
+
+
+def get_console() -> "Console":
+    """Get console instance (type-safe helper)"""
+    assert _console is not None, "Rich is required for this operation"
+    return _console
+
+
+# Alias for backward compatibility
+console = _console
 
 
 def print_error(message: str):
     """에러 메시지 출력"""
-    if RICH_AVAILABLE:
-        console.print(f"[bold red]❌ Error:[/bold red] {message}")
+    if RICH_AVAILABLE and _console is not None:
+        get_console().print(f"[bold red]❌ Error:[/bold red] {message}")
     else:
         print(f"❌ Error: {message}")
 
 
 def print_success(message: str):
     """성공 메시지 출력"""
-    if RICH_AVAILABLE:
-        console.print(f"[bold green]✅ Success:[/bold green] {message}")
+    if RICH_AVAILABLE and _console is not None:
+        get_console().print(f"[bold green]✅ Success:[/bold green] {message}")
     else:
         print(f"✅ Success: {message}")
 
 
 def print_info(message: str):
     """정보 메시지 출력"""
-    if RICH_AVAILABLE:
-        console.print(f"[bold blue]ℹ️  Info:[/bold blue] {message}")
+    if RICH_AVAILABLE and _console is not None:
+        get_console().print(f"[bold blue]ℹ️  Info:[/bold blue] {message}")
     else:
         print(f"ℹ️  Info: {message}")
 
@@ -105,7 +115,7 @@ async def analyze_with_gemini(hours: int = 24) -> None:
 
         # 2. Gemini 분석 요청
         if RICH_AVAILABLE:
-            console.print("\n[bold cyan]🤖 Analyzing with Gemini...[/bold cyan]\n")
+            get_console().print("\n[bold cyan]🤖 Analyzing with Gemini...[/bold cyan]\n")
         else:
             print("\n🤖 Analyzing with Gemini...\n")
 
@@ -158,14 +168,14 @@ async def analyze_with_gemini(hours: int = 24) -> None:
             for service, count in stats["by_service"].items():
                 table.add_row(service.capitalize(), str(count))
 
-            console.print(table)
-            console.print()
+            get_console().print(table)
+            get_console().print()
 
             # Gemini 분석 결과
             panel = Panel(
                 response.content, title="🤖 Gemini Analysis", border_style="green", padding=(1, 2)
             )
-            console.print(panel)
+            get_console().print(panel)
         else:
             # Plain text 출력
             print("\n" + "=" * 60)
@@ -227,8 +237,8 @@ async def show_stats(hours: int = 24) -> None:
                 percentage = f"{(count / total * 100):.1f}%" if total > 0 else "0%"
                 service_table.add_row(service.capitalize(), str(count), percentage)
 
-            console.print()
-            console.print(service_table)
+            get_console().print()
+            get_console().print(service_table)
 
             # 상위 사용자
             if stats["top_users"]:
@@ -240,9 +250,9 @@ async def show_stats(hours: int = 24) -> None:
                 for i, (user_id, count) in enumerate(stats["top_users"], 1):
                     user_table.add_row(str(i), user_id, str(count))
 
-                console.print()
-                console.print(user_table)
-                console.print()
+                get_console().print()
+                get_console().print(user_table)
+                get_console().print()
 
             # 요약
             summary_panel = Panel(
@@ -252,7 +262,7 @@ async def show_stats(hours: int = 24) -> None:
                 title="📈 Summary",
                 border_style="blue",
             )
-            console.print(summary_panel)
+            get_console().print(summary_panel)
         else:
             # Plain text 출력
             print("\n" + "=" * 60)
@@ -300,7 +310,7 @@ async def optimize_with_gemini() -> None:
         stats_7d = await get_google_export_stats(hours=24 * 7)
 
         if RICH_AVAILABLE:
-            console.print(
+            get_console().print(
                 "\n[bold cyan]💰 Generating cost optimization recommendations with Gemini...[/bold cyan]\n"
             )
         else:
@@ -339,7 +349,7 @@ async def optimize_with_gemini() -> None:
                 border_style="yellow",
                 padding=(1, 2),
             )
-            console.print(panel)
+            get_console().print(panel)
         else:
             print("\n" + "=" * 60)
             print("Cost Optimization Recommendations")
@@ -398,8 +408,8 @@ async def check_security(hours: int = 24) -> None:
 
                 table.add_row(timestamp, user_id, reason, severity)
 
-            console.print()
-            console.print(table)
+            get_console().print()
+            get_console().print(table)
         else:
             print("\n" + "=" * 60)
             print(f"Security Events (Last {hours} hours)")
@@ -415,7 +425,7 @@ async def check_security(hours: int = 24) -> None:
         gemini_key = os.getenv("GEMINI_API_KEY")
         if gemini_key and events:
             if RICH_AVAILABLE:
-                console.print(
+                get_console().print(
                     "\n[bold cyan]🤖 Analyzing security events with Gemini...[/bold cyan]\n"
                 )
             else:
@@ -445,7 +455,7 @@ async def check_security(hours: int = 24) -> None:
                     border_style="red",
                     padding=(1, 2),
                 )
-                console.print(panel)
+                get_console().print(panel)
             else:
                 print("\n" + "=" * 60)
                 print("Security Analysis")
@@ -564,7 +574,7 @@ Requirements:
 """
 
     if RICH_AVAILABLE:
-        console.print(Panel(help_text, title="Admin CLI Help", border_style="cyan"))
+        get_console().print(Panel(help_text, title="Admin CLI Help", border_style="cyan"))
     else:
         print(help_text)
 
