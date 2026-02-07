@@ -114,7 +114,8 @@ class OptimizerHandler:
 
         # Validate method
         valid_methods = ["bayesian", "grid", "random", "genetic"]
-        if request.method.lower() not in valid_methods:
+        method = request.method or request.optimization_method
+        if method.lower() not in valid_methods:
             raise ValueError(
                 f"Invalid optimization method: {request.method}. " f"Must be one of {valid_methods}"
             )

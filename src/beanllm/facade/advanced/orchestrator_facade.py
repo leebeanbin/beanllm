@@ -92,6 +92,11 @@ class Orchestrator:
         # OrchestratorHandler 생성
         self._handler = handler_factory.create_orchestrator_handler()
 
+    def _ensure_handler(self) -> "OrchestratorHandler":
+        """Handler 존재 확인 및 반환"""
+        assert self._handler is not None, "OrchestratorHandler not initialized"
+        return self._handler
+
     async def create_workflow(
         self,
         name: str,
@@ -154,7 +159,7 @@ class Orchestrator:
             edges=edges or [],
         )
 
-        response = await self._handler.handle_create_workflow(request)
+        response = await self._ensure_handler().handle_create_workflow(request)
 
         logger.info(
             f"Workflow created: {response.workflow_id}, "
@@ -217,7 +222,7 @@ class Orchestrator:
             stream=stream,
         )
 
-        response = await self._handler.handle_execute_workflow(request)
+        response = await self._ensure_handler().handle_execute_workflow(request)
 
         logger.info(
             f"Workflow execution {response.status}: {response.execution_id}, "
@@ -268,7 +273,7 @@ class Orchestrator:
             real_time=real_time,
         )
 
-        response = await self._handler.handle_monitor_workflow(request)
+        response = await self._ensure_handler().handle_monitor_workflow(request)
 
         return response
 
@@ -307,7 +312,7 @@ class Orchestrator:
         """
         logger.info(f"Analyzing workflow: {workflow_id}")
 
-        response = await self._handler.handle_get_analytics(workflow_id)
+        response = await self._ensure_handler().handle_get_analytics(workflow_id)
 
         logger.info(
             f"Analytics generated: {response.total_executions} executions, "
@@ -360,7 +365,7 @@ class Orchestrator:
         """
         logger.debug(f"Visualizing workflow: {workflow_id}")
 
-        diagram = await self._handler.handle_visualize_workflow(workflow_id)
+        diagram = await self._ensure_handler().handle_visualize_workflow(workflow_id)
 
         return diagram
 
@@ -389,7 +394,7 @@ class Orchestrator:
         """
         logger.debug("Fetching workflow templates")
 
-        templates = await self._handler.handle_get_templates()
+        templates = await self._ensure_handler().handle_get_templates()
 
         return templates
 

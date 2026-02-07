@@ -361,7 +361,7 @@ class AxolotlProvider(BaseFineTuningProvider):
 
     def _extract_metrics_from_log(self, log_file: Path) -> List[FineTuningMetrics]:
         """로그 파일에서 메트릭 추출"""
-        metrics = []
+        metrics: List[FineTuningMetrics] = []
 
         try:
             with open(log_file, "r", encoding="utf-8") as f:

@@ -412,6 +412,7 @@ class EntityExtractor:
         entity_types: List[EntityType],
     ) -> List[Entity]:
         """NER 엔진을 사용한 엔티티 추출"""
+        assert self._ner_engine is not None
         result = self._ner_engine.extract_with_timing(text)
         entities = []
 

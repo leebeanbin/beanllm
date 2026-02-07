@@ -241,7 +241,7 @@ class OllamaEmbedding(BaseAPIEmbedding):
             3. Reduced context switching
         """
         try:
-            embeddings = []
+            embeddings: List[List[float]] = []
 
             # Try batch embedding (Ollama supports batch since v0.1.17+)
             try:

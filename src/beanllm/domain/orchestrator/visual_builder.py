@@ -360,7 +360,7 @@ class VisualBuilder:
 
     def get_statistics(self) -> Dict[str, any]:
         """워크플로우 통계"""
-        node_type_counts = {}
+        node_type_counts: Dict[str, int] = {}
         for node in self.workflow.nodes.values():
             node_type = node.node_type.value
             node_type_counts[node_type] = node_type_counts.get(node_type, 0) + 1
