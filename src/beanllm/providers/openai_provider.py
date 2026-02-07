@@ -6,7 +6,7 @@ OpenAI API 통합 (최신 SDK: AsyncOpenAI 사용)
 # 독립적인 utils 사용
 import sys
 from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 # 선택적 의존성
 try:
@@ -157,11 +157,11 @@ class OpenAIProvider(BaseLLMProvider):
         self.default_model = "gpt-4o-mini"
 
         # 모델 목록 캐싱 (성능 최적화)
-        self._models_cache = None
-        self._models_cache_time = None
-        self._models_cache_ttl = 3600  # 1시간 캐싱
+        self._models_cache: Optional[List[str]] = None
+        self._models_cache_time: Optional[float] = None
+        self._models_cache_ttl: float = 3600  # 1시간 캐싱
 
-    async def stream_chat(
+    async def stream_chat(  # type: ignore[override]
         self,
         messages: List[Dict[str, str]],
         model: str,
@@ -183,7 +183,7 @@ class OpenAIProvider(BaseLLMProvider):
 
             # 최신 SDK: AsyncOpenAI.chat.completions.create 사용
             # 모델별 파라미터 지원 여부 확인
-            request_params = {
+            request_params: Dict[str, Any] = {
                 "model": model or self.default_model,
                 "messages": openai_messages,
                 "stream": True,
@@ -214,7 +214,7 @@ class OpenAIProvider(BaseLLMProvider):
                     # 일반 모델은 max_tokens 사용
                     request_params["max_tokens"] = max_tokens
 
-            stream = await self.client.chat.completions.create(**request_params)
+            stream = await self.client.chat.completions.create(**request_params)  # type: ignore[arg-type]
 
             async for chunk in stream:
                 if chunk.choices[0].delta.content:
@@ -284,15 +284,15 @@ class OpenAIProvider(BaseLLMProvider):
 
         # 4. Strategy Pattern 기반 추론 (동적으로 발견된 모델용)
         logger.debug(f"Using Strategy pattern for {model}")
-        config = ModelParameterFactory.get_config(model)
+        strategy_config: Dict[str, bool] = ModelParameterFactory.get_config(model)
 
         logger.debug(
-            f"Strategy-based config for {model}: temp={config['supports_temperature']}, "
-            f"max_tokens={config['supports_max_tokens']}, "
-            f"max_completion={config['uses_max_completion_tokens']}"
+            f"Strategy-based config for {model}: temp={strategy_config['supports_temperature']}, "
+            f"max_tokens={strategy_config['supports_max_tokens']}, "
+            f"max_completion={strategy_config['uses_max_completion_tokens']}"
         )
 
-        return config
+        return strategy_config
 
     @retry(max_retries=3, retry_on=(APITimeoutError, APIError, Exception))
     @provider_error_handler(
@@ -322,7 +322,7 @@ class OpenAIProvider(BaseLLMProvider):
 
             # 최신 SDK: AsyncOpenAI.chat.completions.create 사용
             # 모델별 파라미터 지원 여부 확인
-            request_params = {
+            request_params: Dict[str, Any] = {
                 "model": model or self.default_model,
                 "messages": openai_messages,
             }
@@ -352,7 +352,7 @@ class OpenAIProvider(BaseLLMProvider):
                     # 일반 모델은 max_tokens 사용
                     request_params["max_tokens"] = max_tokens
 
-            response = await self.client.chat.completions.create(**request_params)
+            response = await self.client.chat.completions.create(**request_params)  # type: ignore[arg-type]
 
             return LLMResponse(
                 content=response.choices[0].message.content or "",
@@ -465,7 +465,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         # Prefix별로 매칭된 모델을 저장 (우선순위 유지를 위해 딕셔너리 사용)
         # {prefix: [models]}
-        prefix_matches = {prefix: [] for prefix in prefixes}
+        prefix_matches: Dict[str, List[str]] = {prefix: [] for prefix in prefixes}
 
         # O(n) 단일 순회로 모든 필터링 및 그룹화 수행
         for model in chat_models:
