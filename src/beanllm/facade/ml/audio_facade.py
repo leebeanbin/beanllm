@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from beanllm.domain.audio import AudioSegment, TranscriptionResult, TTSProvider, WhisperModel
 from beanllm.handler.ml.audio_handler import AudioHandler
@@ -107,9 +107,9 @@ class WhisperSTT(AsyncHelperMixin):
             )
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
-        if not response.transcription_result:
+        if response is None or not response.transcription_result:
             raise ValueError("Transcription result is None")
-        return response.transcription_result
+        return cast(TranscriptionResult, response.transcription_result)
 
     async def transcribe_async(
         self,
@@ -143,7 +143,7 @@ class WhisperSTT(AsyncHelperMixin):
         # DTO에서 값 추출 (기존 API 호환성 유지)
         if not response.transcription_result:
             raise ValueError("Transcription result is None")
-        return response.transcription_result
+        return cast(TranscriptionResult, response.transcription_result)
 
 
 class TextToSpeech:
@@ -230,9 +230,9 @@ class TextToSpeech:
             )
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
-        if not response.audio_segment:
+        if response is None or not response.audio_segment:
             raise ValueError("Audio segment is None")
-        return response.audio_segment
+        return cast(AudioSegment, response.audio_segment)
 
     async def synthesize_async(
         self, text: str, voice: Optional[str] = None, speed: float = 1.0, **kwargs
@@ -263,7 +263,7 @@ class TextToSpeech:
         # DTO에서 값 추출 (기존 API 호환성 유지)
         if not response.audio_segment:
             raise ValueError("Audio segment is None")
-        return response.audio_segment
+        return cast(AudioSegment, response.audio_segment)
 
 
 class AudioRAG:
@@ -353,9 +353,9 @@ class AudioRAG:
             )
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
-        if not response.transcription:
+        if response is None or not response.transcription:
             raise ValueError("Transcription result is None")
-        return response.transcription
+        return cast(TranscriptionResult, response.transcription)
 
     async def add_audio_async(
         self,
@@ -376,7 +376,7 @@ class AudioRAG:
         Returns:
             TranscriptionResult
         """
-        await self._audio_handler.handle_add_audio(
+        response = await self._audio_handler.handle_add_audio(
             audio=audio,
             audio_id=audio_id,
             metadata=metadata,
@@ -385,6 +385,9 @@ class AudioRAG:
             model=self.stt.model_name if hasattr(self.stt, "model_name") else None,
             device=self.stt.device if hasattr(self.stt, "device") else None,
         )
+        if not response.transcription:
+            raise ValueError("Transcription result is None")
+        return cast(TranscriptionResult, response.transcription)
 
     def search(self, query: str, top_k: int = 5, **kwargs) -> List[Dict[str, Any]]:
         """
@@ -405,6 +408,8 @@ class AudioRAG:
             self._audio_handler.handle_search_audio(query=query, top_k=top_k, **kwargs)
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
+        if response is None:
+            return []
         return response.search_results or []
 
     def get_transcription(self, audio_id: str) -> Optional[TranscriptionResult]:
@@ -424,7 +429,9 @@ class AudioRAG:
             self._audio_handler.handle_get_transcription(audio_id=audio_id)
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
-        return response.transcription
+        if response is None:
+            return None
+        return cast(TranscriptionResult, response.transcription)
 
     def list_audios(self) -> List[str]:
         """
@@ -438,6 +445,8 @@ class AudioRAG:
         # 동기 메서드이지만 내부적으로는 비동기 사용
         response = run_async_in_sync(self._audio_handler.handle_list_audios())
         # DTO에서 값 추출 (기존 API 호환성 유지)
+        if response is None:
+            return []
         return response.audio_ids or []
 
 
