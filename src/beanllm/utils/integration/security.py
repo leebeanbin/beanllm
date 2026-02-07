@@ -4,14 +4,15 @@ Security Utilities - 보안 관련 유틸리티
 """
 
 import re
+from typing import Union
 
 
-def sanitize_error_message(error: Exception) -> str:
+def sanitize_error_message(error: Union[Exception, str]) -> str:
     """
     에러 메시지에서 API 키 마스킹 (범용 Helper 함수)
 
     Args:
-        error: 원본 예외
+        error: 원본 예외 또는 에러 메시지 문자열
 
     Returns:
         마스킹된 에러 메시지
