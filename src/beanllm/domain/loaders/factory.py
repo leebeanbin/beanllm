@@ -14,7 +14,7 @@ try:
 except ImportError:
     import logging
 
-    def get_logger(name: str):
+    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
         return logging.getLogger(name)
 
 

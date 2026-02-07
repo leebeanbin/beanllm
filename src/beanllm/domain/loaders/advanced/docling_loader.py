@@ -15,7 +15,7 @@ try:
     from beanllm.utils.logging import get_logger
 except ImportError:
 
-    def get_logger(name: str):
+    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
         return logging.getLogger(name)
 
 
