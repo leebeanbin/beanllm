@@ -44,7 +44,7 @@ except ImportError:
     def print_logo(*args, **kwargs):
         pass
 
-    class ErrorPattern:
+    class ErrorPattern:  # type: ignore[no-redef]
         @staticmethod
         def render(*args, **kwargs):
             print(*args, **kwargs)

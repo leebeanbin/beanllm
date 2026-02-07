@@ -7,7 +7,7 @@ Directory Loader
 import logging
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Pattern, Union
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import BatchProcessorProtocol
@@ -104,7 +104,7 @@ class DirectoryLoader(BaseDocumentLoader):
         # Path.match()는 매번 패턴을 컴파일하므로, 미리 컴파일하면 1000배 빠름
         from fnmatch import translate
 
-        self._compiled_exclude_patterns = []
+        self._compiled_exclude_patterns: List[Union[Pattern[str], str]] = []
         for pattern in self.exclude:
             try:
                 # glob 패턴을 regex로 변환 후 컴파일
@@ -174,14 +174,14 @@ class DirectoryLoader(BaseDocumentLoader):
             should_exclude = False
 
             for pattern in self._compiled_exclude_patterns:
-                if hasattr(pattern, "match"):
-                    # 컴파일된 regex 패턴 사용 (빠름)
-                    if pattern.match(file_str):
+                if isinstance(pattern, str):
+                    # Fallback: 원본 glob 패턴 사용 (느림)
+                    if file_path.match(pattern):
                         should_exclude = True
                         break
                 else:
-                    # Fallback: 원본 glob 패턴 사용 (느림)
-                    if file_path.match(pattern):
+                    # 컴파일된 regex 패턴 사용 (빠름)
+                    if pattern.match(file_str):
                         should_exclude = True
                         break
 

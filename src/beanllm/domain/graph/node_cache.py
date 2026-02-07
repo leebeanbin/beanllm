@@ -15,7 +15,7 @@ try:
     from beanllm.utils.core.cache import LRUCache
 except ImportError:
     # Fallback: simple dict-based cache without TTL
-    class LRUCache:
+    class LRUCache:  # type: ignore[no-redef]
         def __init__(self, max_size: int = 1000, ttl: Optional[int] = None, **kwargs):
             self.cache: Dict = {}
             self.max_size = max_size
@@ -109,10 +109,10 @@ class NodeCache:
         """
         if cache is not None:
             # 외부에서 주입된 캐시 사용 (분산 캐시 등)
-            self._cache = cache
+            self._cache: Any = cache
         else:
             # 기본 LRUCache 사용 (인메모리)
-            self._cache: LRUCache[str, Any] = LRUCache(
+            self._cache = LRUCache(
                 max_size=max_size,
                 ttl=ttl,
                 cleanup_interval=cleanup_interval,

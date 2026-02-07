@@ -108,28 +108,34 @@ class ImagePreprocessor:
             gray = image.copy()
 
         # 1. 크기 조정 (먼저 수행)
-        if config.resize_config.enabled and config.resize_config.max_size:
-            gray = self._resize(gray, config.resize_config)
+        resize_cfg = config.resize_config
+        if resize_cfg and resize_cfg.enabled and resize_cfg.max_size:
+            gray = self._resize(gray, resize_cfg)
 
         # 2. 노이즈 제거
-        if config.denoise_config.enabled:
-            gray = self._denoise(gray, config.denoise_config)
+        denoise_cfg = config.denoise_config
+        if denoise_cfg and denoise_cfg.enabled:
+            gray = self._denoise(gray, denoise_cfg)
 
         # 3. 대비 조정
-        if config.contrast_config.enabled:
-            gray = self._adjust_contrast(gray, config.contrast_config)
+        contrast_cfg = config.contrast_config
+        if contrast_cfg and contrast_cfg.enabled:
+            gray = self._adjust_contrast(gray, contrast_cfg)
 
         # 4. 기울기 보정
-        if config.deskew_config.enabled:
-            gray = self._deskew(gray, config.deskew_config)
+        deskew_cfg = config.deskew_config
+        if deskew_cfg and deskew_cfg.enabled:
+            gray = self._deskew(gray, deskew_cfg)
 
         # 5. 이진화
-        if config.binarize_config.enabled:
-            gray = self._binarize(gray, config.binarize_config)
+        binarize_cfg = config.binarize_config
+        if binarize_cfg and binarize_cfg.enabled:
+            gray = self._binarize(gray, binarize_cfg)
 
         # 6. 선명화
-        if config.sharpen_config.enabled:
-            gray = self._sharpen(gray, config.sharpen_config)
+        sharpen_cfg = config.sharpen_config
+        if sharpen_cfg and sharpen_cfg.enabled:
+            gray = self._sharpen(gray, sharpen_cfg)
 
         # Grayscale → RGB (OCR 엔진은 RGB를 받음)
         if len(gray.shape) == 2:

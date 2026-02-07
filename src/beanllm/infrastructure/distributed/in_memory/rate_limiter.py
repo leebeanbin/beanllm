@@ -11,7 +11,7 @@ try:
     from beanllm.utils.resilience.rate_limiter import AsyncTokenBucket
 except ImportError:
     # Fallback if not available
-    class AsyncTokenBucket:
+    class AsyncTokenBucket:  # type: ignore[no-redef]
         def __init__(self, rate: float = 1.0, capacity: float = 20.0):
             self.rate = rate
             self.capacity = capacity

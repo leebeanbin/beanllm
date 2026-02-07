@@ -15,7 +15,7 @@ except ImportError:
     def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
         return logging.getLogger(name)
 
-    class EnvConfig:
+    class EnvConfig:  # type: ignore[no-redef]
         def __init__(self):
             pass
 

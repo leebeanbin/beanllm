@@ -215,7 +215,7 @@ async def stream_response(
         stats.end_time = datetime.now()
 
         # 버퍼링된 경우 버퍼에서도 가져오기
-        if enable_buffer and buffer:
+        if enable_buffer and buffer and stream_id:
             buffered_content = buffer.get_content(stream_id)
             final_content = buffered_content if buffered_content else "".join(collected)
         else:
