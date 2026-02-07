@@ -5,7 +5,7 @@ Open-source embedding database
 """
 
 import uuid
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document
@@ -17,6 +17,9 @@ else:
 
 from beanllm.domain.vector_stores.base import BaseVectorStore, VectorSearchResult
 from beanllm.domain.vector_stores.search import AdvancedSearchMixin
+
+# Chroma의 QueryResult 타입 (Optional 필드들)
+ChromaQueryResult = Dict[str, Any]
 
 
 class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
@@ -134,69 +137,111 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
     def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
-        # 쿼리 임베딩
+        results = self._execute_query(query, k, **kwargs)
+        return self._parse_query_results(results)
+
+    def _execute_query(self, query: str, k: int, **kwargs: Any) -> ChromaQueryResult:
+        """쿼리 실행 (임베딩 함수 유무에 따라 분기)"""
         if self.embedding_function:
             query_embedding = self.embedding_function([query])[0]
-            results = self.collection.query(
-                query_embeddings=[query_embedding], n_results=k, **kwargs
+            return cast(
+                ChromaQueryResult,
+                self.collection.query(query_embeddings=[query_embedding], n_results=k, **kwargs),
             )
-        else:
-            results = self.collection.query(query_texts=[query], n_results=k, **kwargs)
+        return cast(
+            ChromaQueryResult,
+            self.collection.query(query_texts=[query], n_results=k, **kwargs),
+        )
 
-        # 결과 변환
-        search_results = []
-        for i in range(len(results["ids"][0])):
-            # 런타임에 Document import
-            from beanllm.domain.loaders import Document
+    def _parse_query_results(self, results: ChromaQueryResult) -> List[VectorSearchResult]:
+        """Chroma 쿼리 결과를 VectorSearchResult 리스트로 변환 (타입 안전)"""
+        from beanllm.domain.loaders import Document
 
-            doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
-            score = 1 - results["distances"][0][i]  # Cosine distance -> similarity
+        search_results: List[VectorSearchResult] = []
+
+        # Optional 필드들 안전하게 추출
+        ids_list = results.get("ids")
+        documents_list = results.get("documents")
+        metadatas_list = results.get("metadatas")
+        distances_list = results.get("distances")
+
+        # 결과가 비어있으면 빈 리스트 반환
+        if not ids_list or not ids_list[0]:
+            return search_results
+
+        ids = ids_list[0]
+        documents = documents_list[0] if documents_list else [""] * len(ids)
+        metadatas = metadatas_list[0] if metadatas_list else [{}] * len(ids)
+        distances = distances_list[0] if distances_list else [0.0] * len(ids)
+
+        for i in range(len(ids)):
+            metadata_dict = self._mapping_to_dict(metadatas[i]) if i < len(metadatas) else {}
+            content = documents[i] if i < len(documents) else ""
+            distance = distances[i] if i < len(distances) else 0.0
+
+            doc = Document(content=content, metadata=metadata_dict)
+            score = 1 - float(distance)  # Cosine distance -> similarity
+
             search_results.append(
-                VectorSearchResult(document=doc, score=score, metadata=results["metadatas"][0][i])
+                VectorSearchResult(document=doc, score=score, metadata=metadata_dict)
             )
 
         return search_results
 
-    def _get_all_vectors_and_docs(self) -> tuple[List[List[float]], List[Any]]:
+    def _mapping_to_dict(self, mapping: Any) -> Dict[str, Any]:
+        """Mapping 타입을 dict로 변환"""
+        if mapping is None:
+            return {}
+        if isinstance(mapping, dict):
+            return mapping
+        # Mapping[str, Any] -> dict[str, Any]
+        return dict(mapping)
+
+    def _get_all_vectors_and_docs(self) -> Tuple[List[List[float]], List[Any]]:
         """Chroma에서 모든 벡터 가져오기"""
         try:
             all_data = self.collection.get()
 
-            vectors = all_data.get("embeddings", [])
-            if not vectors:
+            embeddings = all_data.get("embeddings")
+            if not embeddings:
                 return [], []
 
-            documents = []
-            texts = all_data.get("documents", [])
-            metadatas = all_data.get("metadatas", [{}] * len(texts))
+            # 벡터를 List[List[float]]로 변환
+            import numpy as np
+
+            vectors: List[List[float]] = []
+            for emb in embeddings:
+                if isinstance(emb, np.ndarray):
+                    vectors.append(emb.tolist())
+                else:
+                    vectors.append([float(x) for x in emb])
+
+            documents: List[Any] = []
+            texts = all_data.get("documents") or []
+            metadatas = all_data.get("metadatas") or []
 
             from beanllm.domain.loaders import Document
 
             for i, text in enumerate(texts):
-                doc = Document(content=text, metadata=metadatas[i] if i < len(metadatas) else {})
+                metadata = self._mapping_to_dict(metadatas[i]) if i < len(metadatas) else {}
+                doc = Document(content=text, metadata=metadata)
                 documents.append(doc)
 
             return vectors, documents
         except Exception:
-            # 에러 발생 시 빈 리스트 반환
             return [], []
 
     async def asimilarity_search_by_vector(
-        self, query_vec: List[float], k: int = 4, **kwargs
+        self, query_vec: List[float], k: int = 4, **kwargs: Any
     ) -> List[VectorSearchResult]:
         """벡터로 직접 검색"""
-        results = self.collection.query(query_embeddings=[query_vec], n_results=k, **kwargs)
-
-        search_results = []
-        for i in range(len(results["ids"][0])):
-            from beanllm.domain.loaders import Document
-
-            doc = Document(content=results["documents"][0][i], metadata=results["metadatas"][0][i])
-            score = 1 - results["distances"][0][i]  # Cosine distance -> similarity
-            search_results.append(
-                VectorSearchResult(document=doc, score=score, metadata=results["metadatas"][0][i])
-            )
-        return search_results
+        # Sequence[float]로 변환 (Chroma API 호환)
+        query_sequence: Sequence[float] = query_vec
+        results = cast(
+            ChromaQueryResult,
+            self.collection.query(query_embeddings=[query_sequence], n_results=k, **kwargs),
+        )
+        return self._parse_query_results(results)
 
     def delete(self, ids: List[str], **kwargs) -> bool:
         """문서 삭제"""
