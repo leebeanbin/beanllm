@@ -15,9 +15,10 @@ Requirements:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
+from PIL import Image as PILImage
 
 from .base_task_model import BaseVisionTaskModel
 
@@ -146,19 +147,23 @@ class Florence2Wrapper(BaseVisionTaskModel):
         """
         self._load_model()
 
-        # 이미지 로드
-        if isinstance(image, (str, Path)):
-            from PIL import Image
+        # Ensure model and processor are loaded
+        if self._model is None or self._processor is None:
+            raise RuntimeError("Model or processor not loaded. Call _load_model() first.")
 
-            image = Image.open(image).convert("RGB")
+        # 이미지 로드 (별도 변수로 PIL Image 저장)
+        pil_image: PILImage.Image
+        if isinstance(image, (str, Path)):
+            pil_image = PILImage.open(image).convert("RGB")
+        elif isinstance(image, np.ndarray):
+            pil_image = PILImage.fromarray(image).convert("RGB")
+        else:
+            pil_image = image  # type: ignore[assignment]
 
         # 입력 준비
-        if text_input:
-            prompt = f"{task} {text_input}"
-        else:
-            prompt = task
+        prompt = f"{task} {text_input}" if text_input else task
 
-        inputs = self._processor(text=prompt, images=image, return_tensors="pt").to(self.device)
+        inputs = self._processor(text=prompt, images=pil_image, return_tensors="pt").to(self.device)
 
         # 추론
         generated_ids = self._model.generate(
@@ -173,10 +178,11 @@ class Florence2Wrapper(BaseVisionTaskModel):
 
         # 파싱
         parsed = self._processor.post_process_generation(
-            generated_text, task=task, image_size=(image.width, image.height)
+            generated_text, task=task, image_size=(pil_image.width, pil_image.height)
         )
 
-        return parsed
+        result: Dict[str, Any] = parsed if isinstance(parsed, dict) else {"result": parsed}
+        return result
 
     def caption(
         self,
@@ -195,7 +201,8 @@ class Florence2Wrapper(BaseVisionTaskModel):
         """
         task = "<MORE_DETAILED_CAPTION>" if detailed else "<CAPTION>"
         result = self._run_task(task, image)
-        return result.get(task, "")
+        caption_result = result.get(task, "")
+        return str(caption_result) if caption_result else ""
 
     def detect_objects(
         self,
@@ -211,7 +218,9 @@ class Florence2Wrapper(BaseVisionTaskModel):
             [{"label": str, "box": [x1, y1, x2, y2], "score": float}, ...]
         """
         result = self._run_task("<OD>", image)
-        return result.get("<OD>", {}).get("bboxes", [])
+        od_result = result.get("<OD>", {})
+        bboxes = od_result.get("bboxes", []) if isinstance(od_result, dict) else []
+        return cast(List[Dict[str, Any]], bboxes)
 
     def vqa(
         self,
@@ -229,7 +238,8 @@ class Florence2Wrapper(BaseVisionTaskModel):
             답변
         """
         result = self._run_task("<VQA>", image, text_input=question)
-        return result.get("<VQA>", "")
+        vqa_result = result.get("<VQA>", "")
+        return str(vqa_result) if vqa_result else ""
 
     # BaseVisionTaskModel 추상 메서드 구현
 
