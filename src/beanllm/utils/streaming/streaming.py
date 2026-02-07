@@ -3,29 +3,43 @@ Streaming Helpers
 실시간 스트리밍 출력 헬퍼
 """
 
+from __future__ import annotations
+
 import asyncio
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Callable, Dict, List, Optional, Type
 
-if TYPE_CHECKING:
-    pass
+# Rich library (optional dependency)
+RICH_AVAILABLE = False
+_Console: Optional[Type[Any]] = None
+_Live: Optional[Type[Any]] = None
+_Markdown: Optional[Type[Any]] = None
+_Panel: Optional[Type[Any]] = None
+_Text: Optional[Type[Any]] = None
 
 try:
+    from rich.console import Console as _ConsoleClass
+    from rich.live import Live as _LiveClass
+    from rich.markdown import Markdown as _MarkdownClass
+    from rich.panel import Panel as _PanelClass
+    from rich.text import Text as _TextClass
+
+    RICH_AVAILABLE = True
+    _Console = _ConsoleClass
+    _Live = _LiveClass
+    _Markdown = _MarkdownClass
+    _Panel = _PanelClass
+    _Text = _TextClass
+except ImportError:
+    pass
+
+if TYPE_CHECKING:
     from rich.console import Console
     from rich.live import Live
     from rich.markdown import Markdown
     from rich.panel import Panel
     from rich.text import Text
-
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-    Console = None
-    Live = None
-    Markdown = None
-    Panel = None
-    Text = None
 
 try:
     from beanllm.utils.logging.logger import get_logger
@@ -38,10 +52,8 @@ except ImportError:
 
 logger = get_logger(__name__)
 
-if RICH_AVAILABLE:
-    console = Console()
-else:
-    console = None
+# Global console instance
+console: Optional[Any] = _Console() if RICH_AVAILABLE and _Console else None
 
 
 @dataclass
@@ -161,10 +173,7 @@ async def stream_response(
                         on_chunk(chunk)
 
                     # Live 업데이트
-                    if markdown:
-                        content = Markdown(current_text)
-                    else:
-                        content = Text(current_text)
+                    content: Any = Markdown(current_text) if markdown else Text(current_text)
 
                     live.update(
                         Panel(
@@ -378,7 +387,9 @@ class StreamBuffer:
 
 
 # 편의 함수
-async def pretty_stream(stream: AsyncIterator[str], title: str = "Response") -> StreamResponse:
+async def pretty_stream(
+    stream: AsyncIterator[str], title: str = "Response"
+) -> Optional[StreamResponse]:
     """
     예쁜 스트리밍 출력 (모든 기능 활성화)
 
