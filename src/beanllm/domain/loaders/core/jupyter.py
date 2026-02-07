@@ -193,7 +193,7 @@ class JupyterLoader(BaseDocumentLoader):
             text = output.get("text", "")
             if isinstance(text, list):
                 text = "".join(text)
-            return text
+            return str(text)
 
         elif output_type == "execute_result" or output_type == "display_data":
             # 실행 결과/디스플레이 데이터
@@ -204,7 +204,7 @@ class JupyterLoader(BaseDocumentLoader):
                 text = data["text/plain"]
                 if isinstance(text, list):
                     text = "".join(text)
-                return text
+                return str(text)
 
             # HTML (간단히 표시)
             elif "text/html" in data:

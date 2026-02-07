@@ -149,6 +149,7 @@ class YOLOWrapper(BaseVisionTaskModel):
             [{"class": str, "confidence": float, "box": [x1, y1, x2, y2]}, ...]
         """
         self._load_model()
+        assert self._model is not None
 
         # 추론
         results = self._model(image, conf=conf, iou=iou)
@@ -192,6 +193,7 @@ class YOLOWrapper(BaseVisionTaskModel):
             self._model = None  # 모델 재로드
 
         self._load_model()
+        assert self._model is not None
 
         # 추론
         results = self._model(image, conf=conf, iou=iou)

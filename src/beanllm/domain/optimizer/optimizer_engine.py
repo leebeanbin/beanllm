@@ -310,7 +310,7 @@ class OptimizerEngine:
 
         # Extract best result
         best_params_raw = optimizer.max["params"]
-        best_params = {}
+        best_params: Dict[str, Any] = {}
 
         for name, value in best_params_raw.items():
             space = next(s for s in param_spaces if s.name == name)

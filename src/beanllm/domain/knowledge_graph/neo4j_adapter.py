@@ -98,6 +98,7 @@ class Neo4jAdapter:
         """
         if not self._driver:
             self.connect()
+        assert self._driver is not None
 
         logger.info(
             f"Exporting graph to Neo4j: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
@@ -165,6 +166,7 @@ class Neo4jAdapter:
         """
         if not self._driver:
             self.connect()
+        assert self._driver is not None
 
         logger.info("Importing graph from Neo4j")
 
@@ -226,6 +228,7 @@ class Neo4jAdapter:
         """
         if not self._driver:
             self.connect()
+        assert self._driver is not None
 
         results = []
 

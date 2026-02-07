@@ -68,7 +68,7 @@ class ABTestResult:
             return 0.0
         mean = sum(values) / len(values)
         variance = sum((x - mean) ** 2 for x in values) / len(values)
-        return variance**0.5
+        return float(variance**0.5)
 
 
 class ABTestRunner:

@@ -122,7 +122,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
         # Lazy loading
         self._deepeval = None
-        self._metrics_cache = {}
+        self._metrics_cache: Dict[str, Any] = {}
 
     def _check_dependencies(self):
         """의존성 확인"""

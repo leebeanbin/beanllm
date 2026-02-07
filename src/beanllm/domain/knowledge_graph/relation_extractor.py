@@ -56,7 +56,7 @@ class Relation:
     target_id: str
     type: RelationType
     description: str = ""
-    properties: Dict[str, Any] = None
+    properties: Optional[Dict[str, Any]] = None
     confidence: float = 1.0
     bidirectional: bool = False
 
@@ -224,7 +224,7 @@ class RelationExtractor:
 
         # Transitive relations
         # Example: A -> B, B -> C => A -> C
-        relation_map = {}
+        relation_map: Dict[str, List[Relation]] = {}
         for rel in relations:
             if rel.source_id not in relation_map:
                 relation_map[rel.source_id] = []
@@ -341,7 +341,7 @@ class RelationExtractor:
         relations: List[Relation],
     ) -> Dict[str, Any]:
         """관계 통계"""
-        type_counts = {}
+        type_counts: Dict[str, int] = {}
         for relation in relations:
             type_name = relation.type.value
             type_counts[type_name] = type_counts.get(type_name, 0) + 1

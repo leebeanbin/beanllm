@@ -304,7 +304,7 @@ class Benchmarker:
         ]
 
         transformation = random.choice(transformations)
-        return transformation(base_query)
+        return str(transformation(base_query))
 
     def _introduce_typo(self, text: str) -> str:
         """무작위로 오타 추가"""

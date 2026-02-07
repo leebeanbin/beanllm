@@ -278,7 +278,7 @@ class EvaluationAnalyticsEngine:
             return 0.0
 
         correlation = sum_xy / denominator
-        return correlation
+        return float(correlation)
 
     def generate_analytics(
         self,

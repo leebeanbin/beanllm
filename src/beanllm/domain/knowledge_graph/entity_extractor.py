@@ -383,6 +383,7 @@ class EntityExtractor:
         )
 
         # LLM 호출
+        assert self._llm_function is not None
         response = self._llm_function(prompt)
 
         # JSON 파싱
@@ -672,6 +673,7 @@ class EntityExtractor:
             entities=json.dumps(entity_list, ensure_ascii=False),
         )
 
+        assert self._llm_function is not None
         response = self._llm_function(prompt)
 
         # JSON 파싱

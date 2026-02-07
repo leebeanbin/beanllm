@@ -163,6 +163,7 @@ class WhisperEngine(BaseSTTEngine):
             generate_kwargs["do_sample"] = True
 
         # 전사 실행
+        assert self._pipeline is not None
         if config.timestamp:
             # Timestamp 포함
             result = self._pipeline(

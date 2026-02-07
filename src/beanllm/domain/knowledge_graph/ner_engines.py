@@ -148,6 +148,7 @@ class SpacyNEREngine(BaseNEREngine):
     def extract(self, text: str) -> List[NEREntity]:
         if not self._is_loaded:
             self.load()
+        assert self._nlp is not None
 
         doc = self._nlp(text)
         entities = []
@@ -215,6 +216,7 @@ class HuggingFaceNEREngine(BaseNEREngine):
     def extract(self, text: str) -> List[NEREntity]:
         if not self._is_loaded:
             self.load()
+        assert self._pipeline is not None
 
         results = self._pipeline(text)
         entities = []
@@ -290,6 +292,7 @@ class GLiNEREngine(BaseNEREngine):
     def extract(self, text: str) -> List[NEREntity]:
         if not self._is_loaded:
             self.load()
+        assert self._model is not None
 
         results = self._model.predict_entities(text, self.labels, threshold=self.threshold)
         entities = []
@@ -353,6 +356,7 @@ class FlairNEREngine(BaseNEREngine):
     def extract(self, text: str) -> List[NEREntity]:
         if not self._is_loaded:
             self.load()
+        assert self._tagger is not None and self._Sentence is not None
 
         sentence = self._Sentence(text)
         self._tagger.predict(sentence)
@@ -587,7 +591,7 @@ class NERBenchmark:
             total_tp = 0
             total_fp = 0
             total_fn = 0
-            total_latency = 0
+            total_latency: float = 0.0
             detailed = []
 
             for sample in test_data:
@@ -603,11 +607,13 @@ class NERBenchmark:
 
                 # 정답 엔티티 정규화
                 gold = set()
-                for ent in sample.entities:
+                for gold_ent in sample.entities:
                     label = (
-                        self._normalize_label(ent["label"]) if normalize_labels else ent["label"]
+                        self._normalize_label(gold_ent["label"])
+                        if normalize_labels
+                        else gold_ent["label"]
                     )
-                    gold.add((ent["text"].lower(), label))
+                    gold.add((gold_ent["text"].lower(), label))
 
                 # TP, FP, FN 계산
                 tp = len(predicted & gold)

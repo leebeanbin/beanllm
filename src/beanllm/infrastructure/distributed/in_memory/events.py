@@ -62,7 +62,7 @@ class InMemoryEventBus(EventProducerInterface, EventConsumerInterface):
 
         # 기존 이벤트 재생 (선택적)
         # 여기서는 실시간 이벤트만 전달
-        queue = asyncio.Queue()
+        queue: asyncio.Queue[Dict[str, Any]] = asyncio.Queue()
 
         async def _handler(event: Dict[str, Any]):
             await queue.put(event)
