@@ -7,13 +7,13 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from beanllm.domain.tools import Tool, ToolRegistry
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class AgentStep:
     """에이전트 단계 (기존 API 유지)"""
 
@@ -26,7 +26,7 @@ class AgentStep:
     final_answer: Optional[str] = None
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class AgentResult:
     """에이전트 실행 결과 (기존 API 유지)"""
 

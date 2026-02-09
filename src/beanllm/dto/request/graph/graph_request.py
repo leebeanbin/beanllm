@@ -5,11 +5,11 @@ GraphRequest - Graph 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class GraphRequest:
     """
     Graph 요청 DTO
@@ -21,22 +21,11 @@ class GraphRequest:
     """
 
     initial_state: Dict[str, Any]
-    nodes: Optional[List[Any]] = None  # BaseNode 리스트
-    edges: Optional[Dict[str, List[str]]] = None  # node_name -> [next_nodes]
-    conditional_edges: Optional[Dict[str, Callable]] = None  # node_name -> condition_func
+    nodes: List[Any] = field(default_factory=list)
+    edges: Dict[str, List[str]] = field(default_factory=dict)
+    conditional_edges: Dict[str, Callable] = field(default_factory=dict)
     entry_point: Optional[str] = None
     enable_cache: bool = True
     verbose: bool = False
     max_iterations: int = 100
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.nodes is None:
-            self.nodes = []
-        if self.edges is None:
-            self.edges = {}
-        if self.conditional_edges is None:
-            self.conditional_edges = {}
-        if self.extra_params is None:
-            self.extra_params = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)

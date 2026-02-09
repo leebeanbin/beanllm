@@ -5,12 +5,14 @@ RAG Debug Response DTOs - RAG 디버깅 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from pydantic import ConfigDict
 
-@dataclass
-class DebugSessionResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class DebugSessionResponse(BaseResponse):
     """
     디버그 세션 응답 DTO
 
@@ -18,6 +20,8 @@ class DebugSessionResponse:
     - 응답 데이터 구조 정의만
     - 변환 로직 없음 (Service에서 처리)
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     session_id: str
     session_name: str
@@ -27,73 +31,56 @@ class DebugSessionResponse:
     embedding_dim: int
     status: str
     created_at: str
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class AnalyzeEmbeddingsResponse:
+class AnalyzeEmbeddingsResponse(BaseResponse):
     """
     Embedding 분석 응답 DTO
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     session_id: str
     method: str
     num_clusters: int
     cluster_labels: List[int]
     cluster_sizes: Dict[int, int]
-    outliers: List[int]  # Indices of outlier embeddings
-    reduced_embeddings: Optional[List[List[float]]] = None  # 2D/3D coordinates
+    outliers: List[int]
+    reduced_embeddings: Optional[List[List[float]]] = None
     silhouette_score: Optional[float] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class ValidateChunksResponse:
+class ValidateChunksResponse(BaseResponse):
     """
     청크 검증 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     session_id: str
     total_chunks: int
     valid_chunks: int
-    issues: List[Dict[str, Any]]  # [{"type": "size", "chunk_id": ..., "details": ...}]
-    size_distribution: Dict[str, int]  # {"0-200": 10, "200-500": 50, ...}
+    issues: List[Dict[str, Any]]
+    size_distribution: Dict[str, int]
     overlap_stats: Optional[Dict[str, Any]] = None
-    duplicate_chunks: Optional[List[tuple]] = None  # [(chunk_id1, chunk_id2), ...]
-    recommendations: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.recommendations is None:
-            self.recommendations = []
-        if self.metadata is None:
-            self.metadata = {}
+    duplicate_chunks: Optional[List[tuple]] = None
+    recommendations: List[str] = []
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class TuneParametersResponse:
+class TuneParametersResponse(BaseResponse):
     """
     파라미터 튜닝 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     session_id: str
     parameters: Dict[str, Any]
-    test_results: List[Dict[str, Any]]  # Results for each test query
+    test_results: List[Dict[str, Any]]
     avg_score: float
     comparison_with_baseline: Optional[Dict[str, float]] = None
-    recommendations: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.recommendations is None:
-            self.recommendations = []
-        if self.metadata is None:
-            self.metadata = {}
+    recommendations: List[str] = []
+    metadata: Dict[str, Any] = {}

@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 from .enums import FineTuningStatus
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TrainingExample:
     """훈련 예제"""
 
@@ -30,7 +30,7 @@ class TrainingExample:
         return cls(messages=data["messages"], metadata=data.get("metadata", {}))
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class FineTuningConfig:
     """파인튜닝 설정"""
 
@@ -44,7 +44,7 @@ class FineTuningConfig:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class FineTuningJob:
     """파인튜닝 작업"""
 
@@ -74,7 +74,7 @@ class FineTuningJob:
         return self.status == FineTuningStatus.SUCCEEDED
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class FineTuningMetrics:
     """파인튜닝 메트릭"""
 

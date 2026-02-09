@@ -5,12 +5,14 @@ Optimizer Response DTOs - 최적화 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from pydantic import ConfigDict, model_validator
 
-@dataclass
-class BenchmarkResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class BenchmarkResponse(BaseResponse):
     """
     벤치마크 응답 DTO
 
@@ -19,15 +21,17 @@ class BenchmarkResponse:
     - 변환 로직 없음 (Service에서 처리)
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     benchmark_id: str
     num_queries: int
     # Optional fields for backward compatibility
     system_id: Optional[str] = None
     system_type: Optional[str] = None
-    queries: Optional[List[str]] = None
-    baseline_metrics: Optional[Dict[str, float]] = None
-    detailed_results: Optional[List[Dict[str, Any]]] = None
-    bottlenecks: Optional[List[str]] = None
+    queries: List[str] = []
+    baseline_metrics: Dict[str, float] = {}
+    detailed_results: List[Dict[str, Any]] = []
+    bottlenecks: List[str] = []
     timestamp: Optional[str] = None
     # Latency metrics
     avg_latency: float = 0.0
@@ -41,26 +45,15 @@ class BenchmarkResponse:
     # Throughput metrics
     throughput: float = 0.0
     total_duration: float = 0.0
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
-        if self.baseline_metrics is None:
-            self.baseline_metrics = {}
-        if self.detailed_results is None:
-            self.detailed_results = []
-        if self.bottlenecks is None:
-            self.bottlenecks = []
-        if self.queries is None:
-            self.queries = []
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class OptimizeResponse:
+class OptimizeResponse(BaseResponse):
     """
     파라미터 최적화 응답 DTO
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     optimization_id: str
     system_id: str
@@ -72,31 +65,32 @@ class OptimizeResponse:
     baseline_score: float = 0.0
     best_params: Optional[Dict[str, Any]] = None  # Alias for optimal_parameters
     n_trials: int = 0  # Alias for num_trials
-    convergence_data: Optional[List[Dict[str, Any]]] = None  # Detailed convergence data
-    recommendations: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    convergence_data: Optional[List[Dict[str, Any]]] = None
+    recommendations: List[str] = []
+    metadata: Dict[str, Any] = {}
 
-    def __post_init__(self):
-        if self.recommendations is None:
-            self.recommendations = []
-        if self.metadata is None:
-            self.metadata = {}
-        if self.best_params is None:
-            self.best_params = self.optimal_parameters
-        if self.n_trials == 0:
-            self.n_trials = self.num_trials
+    @model_validator(mode="before")
+    @classmethod
+    def compute_aliases(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("best_params") is None:
+                data["best_params"] = data.get("optimal_parameters")
+            if data.get("n_trials", 0) == 0:
+                data["n_trials"] = data.get("num_trials", 0)
+        return data
 
 
-@dataclass
-class ProfileResponse:
+class ProfileResponse(BaseResponse):
     """
     프로파일링 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     profile_id: str
     system_id: str
     duration: float
-    component_breakdown: Dict[str, Dict[str, float]]  # {"embedding": {"time": 0.5, "cost": 0.0001}}
+    component_breakdown: Dict[str, Dict[str, float]]
     total_latency: float
     total_cost: float
     bottlenecks: List[Dict[str, Any]]
@@ -104,44 +98,44 @@ class ProfileResponse:
     # Additional fields for service compatibility
     total_duration_ms: float = 0.0
     total_tokens: int = 0
-    components: Optional[List[Dict[str, Any]]] = None
-    bottleneck: Optional[str] = None  # Single bottleneck string (alias)
-    breakdown: Optional[Dict[str, float]] = None  # Alias for cost_breakdown
-    recommendations: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    components: List[Dict[str, Any]] = []
+    bottleneck: Optional[str] = None
+    breakdown: Optional[Dict[str, float]] = None
+    recommendations: List[str] = []
+    metadata: Dict[str, Any] = {}
 
-    def __post_init__(self):
-        if self.recommendations is None:
-            self.recommendations = []
-        if self.metadata is None:
-            self.metadata = {}
-        if self.components is None:
-            self.components = []
-        if self.breakdown is None:
-            self.breakdown = self.cost_breakdown
-        if self.total_duration_ms == 0.0:
-            self.total_duration_ms = self.total_latency * 1000
+    @model_validator(mode="before")
+    @classmethod
+    def compute_derived(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if data.get("breakdown") is None:
+                data["breakdown"] = data.get("cost_breakdown")
+            if data.get("total_duration_ms", 0.0) == 0.0:
+                total_latency = data.get("total_latency", 0.0)
+                data["total_duration_ms"] = total_latency * 1000
+        return data
 
 
-@dataclass
-class ABTestResponse:
+class ABTestResponse(BaseResponse):
     """
     A/B 테스트 응답 DTO
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     test_id: str
     config_a_id: str
     config_b_id: str
     num_queries: int
-    results_a: Dict[str, float]  # {"quality": 0.85, "latency": 1.5}
+    results_a: Dict[str, float]
     results_b: Dict[str, float]
-    statistical_significance: Dict[str, Any]  # {"p_value": 0.03, "significant": True}
-    winner: Optional[str] = None  # "config_a", "config_b", or None (no significant diff)
+    statistical_significance: Dict[str, Any]
+    winner: Optional[str] = None
     variant_a_name: str = "variant_a"
     variant_b_name: str = "variant_b"
     effect_size: Optional[Dict[str, float]] = None
-    recommendations: Optional[List[str]] = None
-    metadata: Optional[Dict[str, Any]] = None
+    recommendations: List[str] = []
+    metadata: Dict[str, Any] = {}
     # Convenience properties computed from existing fields
     lift: float = 0.0
     p_value: float = 1.0
@@ -150,57 +144,53 @@ class ABTestResponse:
     variant_a_mean: float = 0.0
     variant_b_mean: float = 0.0
 
-    def __post_init__(self) -> None:
-        if self.recommendations is None:
-            self.recommendations = []
-        if self.metadata is None:
-            self.metadata = {}
-        # Compute convenience properties from existing fields
-        self._compute_convenience_properties()
+    @model_validator(mode="before")
+    @classmethod
+    def compute_convenience_properties(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            stat_sig = data.get("statistical_significance", {})
+            if stat_sig:
+                data.setdefault("p_value", float(stat_sig.get("p_value", 1.0)))
+                data.setdefault("is_significant", bool(stat_sig.get("significant", False)))
 
-    def _compute_convenience_properties(self) -> None:
-        """Compute convenience properties from existing DTO fields"""
-        # Extract from statistical_significance
-        if self.statistical_significance:
-            self.p_value = float(self.statistical_significance.get("p_value", 1.0))
-            self.is_significant = bool(self.statistical_significance.get("significant", False))
-        # Extract means from results
-        if self.results_a:
-            self.variant_a_mean = float(self.results_a.get("quality", 0.0))
-        if self.results_b:
-            self.variant_b_mean = float(self.results_b.get("quality", 0.0))
-        # Compute lift
-        if self.variant_a_mean > 0:
-            self.lift = ((self.variant_b_mean - self.variant_a_mean) / self.variant_a_mean) * 100
+            results_a = data.get("results_a", {})
+            results_b = data.get("results_b", {})
+            if results_a:
+                data.setdefault("variant_a_mean", float(results_a.get("quality", 0.0)))
+            if results_b:
+                data.setdefault("variant_b_mean", float(results_b.get("quality", 0.0)))
+
+            va_mean = data.get("variant_a_mean", 0.0)
+            vb_mean = data.get("variant_b_mean", 0.0)
+            if va_mean > 0:
+                data.setdefault("lift", ((vb_mean - va_mean) / va_mean) * 100)
+        return data
 
 
-@dataclass
-class RecommendationResponse:
+class RecommendationResponse(BaseResponse):
     """
     최적화 권장사항 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     profile_id: str
-    recommendations: List[
-        Dict[str, Any]
-    ]  # [{"type": "reduce_chunk_size", "priority": "high", ...}]
+    recommendations: List[Dict[str, Any]]
     estimated_improvements: Dict[str, float]
-    implementation_difficulty: Dict[str, str]  # {"reduce_chunk_size": "easy"}
+    implementation_difficulty: Dict[str, str]
     priority_order: List[str]
-    metadata: Optional[Dict[str, Any]] = None
-    # Computed summary of recommendation counts by priority
+    metadata: Dict[str, Any] = {}
     summary: Optional[Dict[str, int]] = None
 
-    def __post_init__(self) -> None:
-        if self.metadata is None:
-            self.metadata = {}
-        if self.summary is None:
-            self._compute_summary()
-
-    def _compute_summary(self) -> None:
-        """Compute summary counts by priority level"""
-        self.summary = {"critical": 0, "high": 0, "medium": 0, "low": 0}
-        for rec in self.recommendations:
-            priority = rec.get("priority", "low").lower()
-            if priority in self.summary:
-                self.summary[priority] += 1
+    @model_validator(mode="before")
+    @classmethod
+    def compute_summary(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("summary") is None:
+            recs = data.get("recommendations", [])
+            summary: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+            for rec in recs:
+                priority = rec.get("priority", "low").lower()
+                if priority in summary:
+                    summary[priority] += 1
+            data["summary"] = summary
+        return data

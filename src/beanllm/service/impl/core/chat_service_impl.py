@@ -109,7 +109,7 @@ class ChatServiceImpl(BaseService, IChatService):
 
         # 4. 응답 변환 (비즈니스 로직)
         response = ChatResponse.from_provider_response(
-            provider_response, request.model, provider.name
+            provider_response, model=request.model, provider=provider.name
         )
 
         # 5. 캐시에 저장

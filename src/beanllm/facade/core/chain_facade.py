@@ -20,7 +20,7 @@ from .client_facade import Client
 logger = get_logger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ChainResult:
     """체인 실행 결과 (기존 API 유지)"""
 

@@ -340,14 +340,12 @@ class LLMJudgeMetric(BaseMetric):
         self.use_reference = use_reference
 
     def _get_client(self):
-        """클라이언트 lazy loading"""
+        """클라이언트 반환 (생성자에서 주입 필수)"""
         if self.client is None:
-            try:
-                from beanllm.facade.core.client_facade import create_client
-
-                self.client = create_client()
-            except Exception:
-                raise RuntimeError("LLM client not available. Please provide a client.")
+            raise RuntimeError(
+                "LLM client not available. "
+                "Please provide a client via constructor: LLMJudge(client=your_client)"
+            )
         return self.client
 
     def _create_judge_prompt(
@@ -459,10 +457,10 @@ class AnswerRelevanceMetric(BaseMetric):
         # LLM-as-judge 사용
         judge = LLMJudgeMetric(client=self.client, criterion="relevance", use_reference=True)
 
-        result = judge.compute(answer, question)
-        result.metric_name = self.name
+        from dataclasses import replace
 
-        return result
+        result = judge.compute(answer, question)
+        return replace(result, metric_name=self.name)
 
 
 class ContextPrecisionMetric(BaseMetric):
@@ -522,14 +520,12 @@ class FaithfulnessMetric(BaseMetric):
         self.client = client
 
     def _get_client(self):
-        """클라이언트 lazy loading"""
+        """클라이언트 반환 (생성자에서 주입 필수)"""
         if self.client is None:
-            try:
-                from beanllm.facade.core.client_facade import create_client
-
-                self.client = create_client()
-            except Exception:
-                raise RuntimeError("LLM client not available")
+            raise RuntimeError(
+                "LLM client not available. "
+                "Please provide a client via constructor: FaithfulnessMetric(client=your_client)"
+            )
         return self.client
 
     def compute(

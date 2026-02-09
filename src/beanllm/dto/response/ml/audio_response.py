@@ -5,15 +5,17 @@ AudioResponse - Audio 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+from pydantic import ConfigDict
+
+from beanllm.dto.response.base_response import BaseResponse
 
 if TYPE_CHECKING:
     from beanllm.domain.audio import AudioSegment, TranscriptionResult
 
 
-@dataclass
-class AudioResponse:
+class AudioResponse(BaseResponse):
     """
     Audio 응답 DTO
 
@@ -21,6 +23,8 @@ class AudioResponse:
     - 응답 데이터 구조 정의만
     - 변환 로직 없음 (Service에서 처리)
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     # transcribe 메서드 응답
     transcription_result: Optional["TranscriptionResult"] = None
@@ -38,9 +42,4 @@ class AudioResponse:
     audio_ids: Optional[List[str]] = None
 
     # 메타데이터
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}

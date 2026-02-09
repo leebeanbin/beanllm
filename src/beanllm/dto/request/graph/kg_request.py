@@ -5,11 +5,11 @@ Knowledge Graph Request DTOs - Knowledge Graph 요청 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ExtractEntitiesRequest:
     """
     엔티티 추출 요청 DTO
@@ -20,45 +20,36 @@ class ExtractEntitiesRequest:
     """
 
     document_id: str
-    text: Optional[str] = None  # Raw text to extract entities from
-    entity_types: Optional[List[str]] = None  # ["PERSON", "ORG", "LOCATION", ...]
+    text: Optional[str] = None
+    entity_types: List[str] = field(
+        default_factory=lambda: ["PERSON", "ORG", "LOCATION", "DATE", "EVENT"]
+    )
     use_coreference: bool = True
-    resolve_coreferences: bool = True  # Alias for use_coreference
+    resolve_coreferences: bool = True
     llm_model: str = "gpt-4o-mini"
 
-    def __post_init__(self):
-        if self.entity_types is None:
-            self.entity_types = ["PERSON", "ORG", "LOCATION", "DATE", "EVENT"]
-        # Sync aliases
+    def __post_init__(self) -> None:
         if not self.resolve_coreferences:
             self.use_coreference = False
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ExtractRelationsRequest:
     """
     관계 추출 요청 DTO
     """
 
     document_id: str
-    text: Optional[str] = None  # Raw text to extract relations from
-    entities: Optional[List[Dict[str, Any]]] = None  # Pre-extracted entities
-    entity_pairs: Optional[List[tuple]] = None  # [(entity1, entity2), ...]
-    relation_types: Optional[List[str]] = None
+    text: Optional[str] = None
+    entities: List[Dict[str, Any]] = field(default_factory=list)
+    entity_pairs: List[tuple] = field(default_factory=list)
+    relation_types: List[str] = field(default_factory=list)
     bidirectional: bool = True
-    infer_implicit: bool = False  # Infer implicit relations
+    infer_implicit: bool = False
     llm_model: str = "gpt-4o-mini"
 
-    def __post_init__(self):
-        if self.entity_pairs is None:
-            self.entity_pairs = []
-        if self.relation_types is None:
-            self.relation_types = []
-        if self.entities is None:
-            self.entities = []
 
-
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class BuildGraphRequest:
     """
     그래프 구축 요청 DTO
@@ -66,37 +57,26 @@ class BuildGraphRequest:
 
     graph_name: str = ""
     graph_id: Optional[str] = None
-    documents: Optional[List[str]] = None  # Document texts
-    document_ids: Optional[List[str]] = None  # Document IDs (for existing docs)
+    documents: List[str] = field(default_factory=list)
+    document_ids: List[str] = field(default_factory=list)
     entity_types: Optional[List[str]] = None
     relation_types: Optional[List[str]] = None
-    backend: str = "networkx"  # "networkx" or "neo4j"
+    backend: str = "networkx"
     persist_to_neo4j: bool = False
     clear_existing: bool = False
     incremental: bool = True
     deduplicate: bool = True
-    config: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.config is None:
-            self.config = {}
-        # Ensure at least one of documents or document_ids is provided
-        if not self.documents and not self.document_ids:
-            self.documents = []
+    config: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class QueryGraphRequest:
     """
     그래프 쿼리 요청 DTO
     """
 
     graph_id: str
-    query: str  # Cypher-like query or natural language
-    query_type: str = "cypher"  # "cypher" or "natural"
+    query: str
+    query_type: str = "cypher"
     limit: int = 10
-    params: Optional[Dict[str, Any]] = None  # Query parameters
-
-    def __post_init__(self):
-        if self.params is None:
-            self.params = {}
+    params: Dict[str, Any] = field(default_factory=dict)

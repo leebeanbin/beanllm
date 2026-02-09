@@ -5,11 +5,11 @@ AgentRequest - 에이전트 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class AgentRequest:
     """
     에이전트 요청 DTO
@@ -22,17 +22,10 @@ class AgentRequest:
 
     task: str
     model: str
-    tools: Optional[List[Any]] = None
+    tools: List[Any] = field(default_factory=list)
     tool_registry: Optional[Any] = None  # ToolRegistry 인스턴스
     max_steps: int = 10
     temperature: Optional[float] = None
     system_prompt: Optional[str] = None
     memory: Optional[Any] = None
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.tools is None:
-            self.tools = []
-        if self.extra_params is None:
-            self.extra_params = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)

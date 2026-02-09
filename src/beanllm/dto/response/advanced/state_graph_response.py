@@ -5,12 +5,14 @@ StateGraphResponse - StateGraph 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
+from pydantic import ConfigDict
 
-@dataclass
-class StateGraphResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class StateGraphResponse(BaseResponse):
     """
     StateGraph 응답 DTO
 
@@ -19,8 +21,10 @@ class StateGraphResponse:
     - 변환 로직 없음
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     final_state: Dict[str, Any]
     execution_id: str
-    nodes_executed: List[str] = field(default_factory=list)
+    nodes_executed: List[str] = []
     iterations: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = {}

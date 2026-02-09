@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class AudioSegment:
     """
     음성 세그먼트
@@ -65,7 +65,7 @@ class AudioSegment:
                 metadata={"file_path": str(file_path)},
             )
 
-    def to_file(self, file_path: Union[str, Path]):
+    def to_file(self, file_path: Union[str, Path]) -> None:
         """파일로 저장"""
         file_path = Path(file_path)
         with open(file_path, "wb") as f:
@@ -76,7 +76,7 @@ class AudioSegment:
         return base64.b64encode(self.audio_data).decode("utf-8")
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TranscriptionSegment:
     """
     전사(Transcription) 세그먼트
@@ -101,7 +101,7 @@ class TranscriptionSegment:
         return f"[{self.start:.2f}s - {self.end:.2f}s] {self.text}"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class TranscriptionResult:
     """
     전사 결과

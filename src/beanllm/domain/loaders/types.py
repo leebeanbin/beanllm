@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class Document:
     """
     문서 클래스

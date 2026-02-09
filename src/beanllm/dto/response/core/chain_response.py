@@ -5,12 +5,14 @@ ChainResponse - Chain 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from pydantic import ConfigDict
 
-@dataclass
-class ChainResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class ChainResponse(BaseResponse):
     """
     Chain 응답 DTO
 
@@ -19,8 +21,10 @@ class ChainResponse:
     - 변환 로직 없음
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     output: str
-    steps: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    steps: List[Dict[str, Any]] = []
+    metadata: Dict[str, Any] = {}
     success: bool = True
     error: Optional[str] = None

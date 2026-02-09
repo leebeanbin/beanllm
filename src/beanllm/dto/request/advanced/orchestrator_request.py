@@ -5,11 +5,11 @@ Orchestrator Request DTOs - 오케스트레이터 요청 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass, field
+from typing import Any, Dict, List
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class CreateWorkflowRequest:
     """
     워크플로우 생성 요청 DTO
@@ -20,17 +20,13 @@ class CreateWorkflowRequest:
     """
 
     workflow_name: str
-    nodes: List[Dict[str, Any]]  # [{"type": "agent", "name": "researcher", ...}]
-    edges: List[Dict[str, Any]]  # [{"from": "researcher", "to": "writer"}]
-    strategy: str = "sequential"  # "sequential", "parallel", "hierarchical", "debate"
-    config: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.config is None:
-            self.config = {}
+    nodes: List[Dict[str, Any]]
+    edges: List[Dict[str, Any]]
+    strategy: str = "sequential"
+    config: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ExecuteWorkflowRequest:
     """
     워크플로우 실행 요청 DTO
@@ -42,7 +38,7 @@ class ExecuteWorkflowRequest:
     checkpoint: bool = True
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class MonitorWorkflowRequest:
     """
     워크플로우 모니터링 요청 DTO

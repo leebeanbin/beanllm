@@ -5,12 +5,14 @@ RAGResponse - RAG 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List
 
+from pydantic import ConfigDict
 
-@dataclass
-class RAGResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class RAGResponse(BaseResponse):
     """
     RAG 응답 DTO
 
@@ -19,11 +21,8 @@ class RAGResponse:
     - 변환 로직 없음 (Service에서 처리)
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
     answer: str
     sources: List[Any]  # VectorSearchResult 타입
-    metadata: Dict[str, Any]
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}

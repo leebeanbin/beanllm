@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SearchResult:
     """
     검색 결과 하나
@@ -34,7 +34,7 @@ class SearchResult:
         return f"[{self.source}] {self.title}\n{self.url}\n{self.snippet[:100]}..."
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SearchResponse:
     """
     검색 응답

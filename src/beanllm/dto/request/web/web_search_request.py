@@ -5,11 +5,11 @@ WebSearchRequest - Web Search 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class WebSearchRequest:
     """
     Web Search 요청 DTO
@@ -21,21 +21,16 @@ class WebSearchRequest:
     """
 
     query: str
-    engine: Optional[str] = None  # "google", "bing", "duckduckgo"
+    engine: Optional[str] = None
     max_results: int = 10
-    max_scrape: int = 3  # search_and_scrape용
+    max_scrape: int = 3
     google_api_key: Optional[str] = None
     google_search_engine_id: Optional[str] = None
     bing_api_key: Optional[str] = None
     # 엔진별 옵션
-    language: Optional[str] = None  # Google용
-    safe: Optional[str] = None  # Google용
-    market: Optional[str] = None  # Bing용
-    safe_search: Optional[str] = None  # Bing/DuckDuckGo용
-    region: Optional[str] = None  # DuckDuckGo용
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.extra_params is None:
-            self.extra_params = {}
+    language: Optional[str] = None
+    safe: Optional[str] = None
+    market: Optional[str] = None
+    safe_search: Optional[str] = None
+    region: Optional[str] = None
+    extra_params: Dict[str, Any] = field(default_factory=dict)

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class PromptExample:
     """Few-shot 예제"""
 
@@ -15,7 +15,7 @@ class PromptExample:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ChatMessage:
     """채팅 메시지"""
 
