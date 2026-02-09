@@ -5,15 +5,14 @@ VisionRAGResponse - Vision RAG 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-if TYPE_CHECKING:
-    pass
+from pydantic import ConfigDict
+
+from beanllm.dto.response.base_response import BaseResponse
 
 
-@dataclass
-class VisionRAGResponse:
+class VisionRAGResponse(BaseResponse):
     """
     Vision RAG 응답 DTO
 
@@ -21,6 +20,8 @@ class VisionRAGResponse:
     - 응답 데이터 구조 정의만
     - 변환 로직 없음 (Service에서 처리)
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     # query 메서드 응답
     answer: Optional[str] = None
@@ -33,9 +34,4 @@ class VisionRAGResponse:
     answers: Optional[List[str]] = None
 
     # 메타데이터
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}

@@ -5,12 +5,14 @@ AgentResponse - 에이전트 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, List, Optional
 
+from pydantic import ConfigDict
 
-@dataclass
-class AgentResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class AgentResponse(BaseResponse):
     """
     에이전트 응답 DTO
 
@@ -18,6 +20,8 @@ class AgentResponse:
     - 응답 데이터 구조 정의만
     - 변환 로직 없음 (Service에서 처리)
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
     answer: str
     steps: List[Any]  # AgentStep 타입

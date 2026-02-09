@@ -5,11 +5,11 @@ ChainRequest - Chain 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ChainRequest:
     """
     Chain 요청 DTO
@@ -23,24 +23,11 @@ class ChainRequest:
     chain_type: str  # "basic", "prompt", "sequential", "parallel"
     user_input: Optional[str] = None  # 기본 Chain용
     template: Optional[str] = None  # PromptChain용
-    template_vars: Optional[Dict[str, Any]] = None  # PromptChain용
-    chains: Optional[List[Any]] = None  # SequentialChain, ParallelChain용
+    template_vars: Dict[str, Any] = field(default_factory=dict)
+    chains: List[Any] = field(default_factory=list)
     model: str = "gpt-4o-mini"
     memory_type: Optional[str] = None
-    memory_config: Optional[Dict[str, Any]] = None
-    tools: Optional[List[Any]] = None
+    memory_config: Dict[str, Any] = field(default_factory=dict)
+    tools: List[Any] = field(default_factory=list)
     verbose: bool = False
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.template_vars is None:
-            self.template_vars = {}
-        if self.chains is None:
-            self.chains = []
-        if self.tools is None:
-            self.tools = []
-        if self.memory_config is None:
-            self.memory_config = {}
-        if self.extra_params is None:
-            self.extra_params = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)

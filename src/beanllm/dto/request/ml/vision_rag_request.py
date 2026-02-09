@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from beanllm.vision_embeddings import CLIPEmbedding, MultimodalEmbedding
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class VisionRAGRequest:
     """
     Vision RAG 요청 DTO
@@ -51,9 +51,4 @@ class VisionRAGRequest:
     prompt_template: Optional[str] = None
 
     # 추가 파라미터
-    extra_params: Optional[Dict[str, Any]] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.extra_params is None:
-            self.extra_params = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)

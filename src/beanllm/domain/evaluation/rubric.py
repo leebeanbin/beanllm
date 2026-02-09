@@ -79,14 +79,12 @@ class RubricGrader(BaseMetric):
         self.use_llm = use_llm
 
     def _get_client(self):
-        """클라이언트 lazy loading"""
+        """클라이언트 반환 (생성자에서 주입 필수)"""
         if self.client is None:
-            try:
-                from beanllm.facade.core.client_facade import create_client
-
-                self.client = create_client()
-            except Exception:
-                raise RuntimeError("LLM client not available. Please provide a client.")
+            raise RuntimeError(
+                "LLM client not available. "
+                "Please provide a client via constructor: RubricEvaluator(client=your_client)"
+            )
         return self.client
 
     def _create_rubric_prompt(self, prediction: str, reference: Optional[str] = None) -> str:

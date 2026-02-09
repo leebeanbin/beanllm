@@ -5,10 +5,7 @@ OCR 결과와 설정을 위한 데이터 클래스 정의.
 """
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Dict, List, Literal, Optional
-
-if TYPE_CHECKING:
-    from beanllm.infrastructure.distributed.config import OCRDistributedConfig
+from typing import Any, Dict, List, Literal, Optional
 
 __all__ = [
     "BoundingBox",
@@ -24,7 +21,7 @@ __all__ = [
 ]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BoundingBox:
     """
     텍스트 영역의 경계 상자 (Bounding Box)
@@ -40,7 +37,7 @@ class BoundingBox:
 
     Example:
         ```python
-        bbox = BoundingBox(x0=10, y0=20, x1=100, y1=50, confidence=0.95)
+        bbox = BoundingBox(x0=10.0, y0=20.0, x1=100.0, y1=50.0, confidence=0.95)
         width = bbox.x1 - bbox.x0
         height = bbox.y1 - bbox.y0
         ```
@@ -79,7 +76,7 @@ class BoundingBox:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OCRTextLine:
     """
     OCR로 인식된 텍스트 라인
@@ -96,7 +93,7 @@ class OCRTextLine:
         ```python
         line = OCRTextLine(
             text="안녕하세요",
-            bbox=BoundingBox(10, 20, 100, 50, 0.95),
+            bbox=BoundingBox(x0=10.0, y0=20.0, x1=100.0, y1=50.0, confidence=0.95),
             confidence=0.92,
             language="ko"
         )
@@ -113,7 +110,7 @@ class OCRTextLine:
         return f"OCRTextLine(text='{self.text[:20]}...', conf={self.confidence:.2f})"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class OCRResult:
     """
     OCR 인식 결과
@@ -152,7 +149,7 @@ class OCRResult:
     confidence: float
     engine: str
     processing_time: float
-    metadata: Dict = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def line_count(self) -> int:
@@ -178,7 +175,7 @@ class OCRResult:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class DenoiseConfig:
     """
     노이즈 제거 세부 설정
@@ -196,7 +193,7 @@ class DenoiseConfig:
     strength: Literal["light", "medium", "strong"] = "medium"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ContrastConfig:
     """
     대비 조정 세부 설정 (CLAHE)
@@ -212,7 +209,7 @@ class ContrastConfig:
     tile_grid_size: tuple[int, int] = (8, 8)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BinarizeConfig:
     """
     이진화 세부 설정
@@ -232,7 +229,7 @@ class BinarizeConfig:
     c: int = 2
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class DeskewConfig:
     """
     기울기 보정 세부 설정
@@ -246,7 +243,7 @@ class DeskewConfig:
     angle_threshold: float = 0.5
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class SharpenConfig:
     """
     선명화 세부 설정
@@ -260,7 +257,7 @@ class SharpenConfig:
     strength: float = 0.5
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ResizeConfig:
     """
     크기 조정 세부 설정
@@ -276,7 +273,7 @@ class ResizeConfig:
     interpolation: Literal["area", "linear", "cubic"] = "area"
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class OCRConfig:
     """
     OCR 설정
@@ -376,7 +373,7 @@ class OCRConfig:
     output_format: str = "text"  # text, json, markdown
 
     # 분산 시스템 설정 (선택적, None이면 전역 설정 사용)
-    distributed_config: Optional["OCRDistributedConfig"] = None
+    distributed_config: Optional[Any] = None
 
     def __post_init__(self):
         """설정 유효성 검증 및 기본값 초기화"""

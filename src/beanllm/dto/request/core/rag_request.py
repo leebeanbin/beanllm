@@ -5,7 +5,7 @@ RAGRequest - RAG 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from beanllm.service.types import VectorStoreProtocol
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class RAGRequest:
     """
     RAG 요청 DTO
@@ -36,12 +36,5 @@ class RAGRequest:
     embedding_model: str = "text-embedding-3-small"
     llm_model: str = "gpt-4o-mini"
     prompt_template: Optional[str] = None
-    retriever_config: Optional[Dict[str, Any]] = None
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.retriever_config is None:
-            self.retriever_config = {}
-        if self.extra_params is None:
-            self.extra_params = {}
+    retriever_config: Dict[str, Any] = field(default_factory=dict)
+    extra_params: Dict[str, Any] = field(default_factory=dict)

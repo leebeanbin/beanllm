@@ -5,12 +5,14 @@ GraphResponse - Graph 응답 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from pydantic import ConfigDict
 
-@dataclass
-class GraphResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class GraphResponse(BaseResponse):
     """
     Graph 응답 DTO
 
@@ -19,8 +21,10 @@ class GraphResponse:
     - 변환 로직 없음
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     final_state: Dict[str, Any]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = {}
     cache_stats: Optional[Dict[str, Any]] = None
-    visited_nodes: List[str] = field(default_factory=list)
+    visited_nodes: List[str] = []
     iterations: int = 0

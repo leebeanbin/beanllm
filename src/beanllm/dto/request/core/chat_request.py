@@ -5,11 +5,11 @@ ChatRequest - 채팅 요청 DTO
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ChatRequest:
     """
     채팅 요청 DTO
@@ -27,9 +27,4 @@ class ChatRequest:
     top_p: Optional[float] = None
     system: Optional[str] = None
     stream: bool = False
-    extra_params: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.extra_params is None:
-            self.extra_params = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)

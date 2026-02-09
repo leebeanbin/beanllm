@@ -374,7 +374,7 @@ from .utils import (
 FineTuningManager = FineTuningManagerFacade
 get_registry = get_model_registry
 
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 __all__ = [
     # Infrastructure
     "ParameterAdapter",

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class EmbeddingResult:
     """Embedding 결과"""
 

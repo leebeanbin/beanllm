@@ -10,7 +10,7 @@ from typing import List, Optional, Union
 from beanllm.domain.loaders import BaseDocumentLoader, Document
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class ImageDocument(Document):
     """
     이미지 문서

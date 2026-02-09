@@ -4,60 +4,70 @@ Finetuning Response DTOs
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
+
+from pydantic import ConfigDict
 
 from beanllm.domain.finetuning.types import FineTuningJob, FineTuningMetrics
+from beanllm.dto.response.base_response import BaseResponse
 
 
-class PrepareDataResponse:
+class PrepareDataResponse(BaseResponse):
     """데이터 준비 응답 DTO"""
 
-    def __init__(self, file_id: str):
-        self.file_id = file_id
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    file_id: str
 
 
-class CreateJobResponse:
+class CreateJobResponse(BaseResponse):
     """작업 생성 응답 DTO"""
 
-    def __init__(self, job: FineTuningJob):
-        self.job = job
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    job: FineTuningJob
 
 
-class GetJobResponse:
+class GetJobResponse(BaseResponse):
     """작업 조회 응답 DTO"""
 
-    def __init__(self, job: FineTuningJob):
-        self.job = job
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    job: FineTuningJob
 
 
-class ListJobsResponse:
+class ListJobsResponse(BaseResponse):
     """작업 목록 조회 응답 DTO"""
 
-    def __init__(self, jobs: List[FineTuningJob]):
-        self.jobs = jobs
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    jobs: List[FineTuningJob]
 
 
-class CancelJobResponse:
+class CancelJobResponse(BaseResponse):
     """작업 취소 응답 DTO"""
 
-    def __init__(self, job: FineTuningJob):
-        self.job = job
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    job: FineTuningJob
 
 
-class GetMetricsResponse:
+class GetMetricsResponse(BaseResponse):
     """메트릭 조회 응답 DTO"""
 
-    def __init__(self, metrics: List[FineTuningMetrics]):
-        self.metrics = metrics
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    metrics: List[FineTuningMetrics]
 
 
-class GetTrainingProgressResponse:
+class GetTrainingProgressResponse(BaseResponse):
     """훈련 진행상황 응답 DTO"""
 
-    def __init__(self, job: FineTuningJob, metrics: List[FineTuningMetrics]):
-        self.job = job
-        self.metrics = metrics
-        self.latest_metric = metrics[-1] if metrics else None
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    job: FineTuningJob
+    metrics: List[FineTuningMetrics]
+    latest_metric: Optional[FineTuningMetrics] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """딕셔너리로 변환"""
@@ -87,8 +97,9 @@ class GetTrainingProgressResponse:
         }
 
 
-class StartTrainingResponse:
+class StartTrainingResponse(BaseResponse):
     """훈련 시작 응답 DTO"""
 
-    def __init__(self, job: FineTuningJob):
-        self.job = job
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    job: FineTuningJob

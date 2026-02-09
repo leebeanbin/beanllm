@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 
-@dataclass
+@dataclass(slots=True)
 class GraphState:
     """
     그래프 상태

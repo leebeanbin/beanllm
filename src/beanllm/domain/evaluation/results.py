@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class EvaluationResult:
     """평가 결과"""
 
@@ -19,7 +19,7 @@ class EvaluationResult:
         return f"{self.metric_name}: {self.score:.4f}"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True, kw_only=True)
 class BatchEvaluationResult:
     """배치 평가 결과"""
 

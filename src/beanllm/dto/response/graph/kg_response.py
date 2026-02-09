@@ -5,12 +5,14 @@ Knowledge Graph Response DTOs - Knowledge Graph 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from pydantic import ConfigDict
 
-@dataclass
-class EntitiesResponse:
+from beanllm.dto.response.base_response import BaseResponse
+
+
+class EntitiesResponse(BaseResponse):
     """
     엔티티 추출 응답 DTO
 
@@ -19,41 +21,37 @@ class EntitiesResponse:
     - 변환 로직 없음 (Service에서 처리)
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     document_id: str
-    entities: List[Dict[str, Any]]  # [{"text": "Apple", "type": "ORG", "start": 0, "end": 5}]
+    entities: List[Dict[str, Any]]
     num_entities: int
-    entity_counts_by_type: Dict[str, int]  # {"PERSON": 10, "ORG": 5}
+    entity_counts_by_type: Dict[str, int]
     coreference_chains: Optional[List[List[str]]] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class RelationsResponse:
+class RelationsResponse(BaseResponse):
     """
     관계 추출 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     document_id: str
-    relations: List[Dict[str, Any]]  # [{"source": "Apple", "target": "iPhone", "type": "PRODUCES"}]
+    relations: List[Dict[str, Any]]
     num_relations: int
     relation_counts_by_type: Dict[str, int]
     confidence_scores: Optional[List[float]] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class BuildGraphResponse:
+class BuildGraphResponse(BaseResponse):
     """
     그래프 구축 응답 DTO
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     graph_id: str
     graph_name: str
@@ -62,43 +60,37 @@ class BuildGraphResponse:
     backend: str
     document_ids: List[str]
     created_at: str
-    statistics: Dict[str, Any]  # {"density": 0.1, "avg_degree": 2.5}
+    statistics: Dict[str, Any]
     density: float = 0.0
     num_connected_components: int = 1
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class QueryGraphResponse:
+class QueryGraphResponse(BaseResponse):
     """
     그래프 쿼리 응답 DTO
     """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
 
     graph_id: str
     query: str
     results: List[Dict[str, Any]]
     num_results: int
     execution_time: float
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}
 
 
-@dataclass
-class GraphRAGResponse:
+class GraphRAGResponse(BaseResponse):
     """
     그래프 기반 RAG 응답 DTO
     """
 
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
     answer: str
     entities_used: List[str]
-    reasoning_paths: List[List[str]]  # [[entity1, relation, entity2, ...]]
+    reasoning_paths: List[List[str]]
     graph_context: str
     graph_id: Optional[str] = None
     num_results: int = 0
@@ -108,8 +100,4 @@ class GraphRAGResponse:
     entity_results: Optional[List[Dict[str, Any]]] = None
     path_results: Optional[List[Dict[str, Any]]] = None
     hybrid_results: Optional[List[Dict[str, Any]]] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.metadata is None:
-            self.metadata = {}
+    metadata: Dict[str, Any] = {}

@@ -4,29 +4,34 @@ Evaluation Response DTOs
 
 from __future__ import annotations
 
-from typing import List
+from typing import Any, Dict, List
+
+from pydantic import ConfigDict
 
 from beanllm.domain.evaluation.results import BatchEvaluationResult
+from beanllm.dto.response.base_response import BaseResponse
 
 
-class EvaluationResponse:
+class EvaluationResponse(BaseResponse):
     """평가 응답 DTO"""
 
-    def __init__(self, result: BatchEvaluationResult):
-        self.result = result
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    def to_dict(self) -> dict:
+    result: BatchEvaluationResult
+
+    def to_dict(self) -> Dict[str, Any]:
         """딕셔너리로 변환"""
         return self.result.to_dict()
 
 
-class BatchEvaluationResponse:
+class BatchEvaluationResponse(BaseResponse):
     """배치 평가 응답 DTO"""
 
-    def __init__(self, results: List[BatchEvaluationResult]):
-        self.results = results
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
 
-    def to_dict(self) -> dict:
+    results: List[BatchEvaluationResult]
+
+    def to_dict(self) -> Dict[str, Any]:
         """딕셔너리로 변환"""
         return {
             "results": [r.to_dict() for r in self.results],

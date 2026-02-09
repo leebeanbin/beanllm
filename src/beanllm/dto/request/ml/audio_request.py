@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from beanllm.domain.audio import AudioSegment
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class AudioRequest:
     """
     Audio 요청 DTO
@@ -27,32 +27,25 @@ class AudioRequest:
     # transcribe 메서드용
     audio: Optional[Union[str, Path, "AudioSegment", bytes]] = None
     language: Optional[str] = None
-    task: str = "transcribe"  # 'transcribe' 또는 'translate'
-    model: Optional[str] = None  # Whisper 모델 크기
-    device: Optional[str] = None  # 디바이스 ('cpu', 'cuda', 'mps')
+    task: str = "transcribe"
+    model: Optional[str] = None
+    device: Optional[str] = None
 
     # synthesize 메서드용
     text: Optional[str] = None
-    provider: Optional[str] = None  # TTS 제공자
-    voice: Optional[str] = None  # 음성 ID
-    speed: float = 1.0  # 속도 (0.5 ~ 2.0)
-    api_key: Optional[str] = None  # API 키
-    tts_model: Optional[str] = None  # TTS 모델
+    provider: Optional[str] = None
+    voice: Optional[str] = None
+    speed: float = 1.0
+    api_key: Optional[str] = None
+    tts_model: Optional[str] = None
 
     # add_audio 메서드용 (AudioRAG)
     audio_id: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     # search 메서드용 (AudioRAG)
     query: Optional[str] = None
     top_k: int = 5
 
     # 추가 파라미터
-    extra_params: Optional[Dict[str, Any]] = field(default_factory=dict)
-
-    def __post_init__(self):
-        """기본값 설정"""
-        if self.extra_params is None:
-            self.extra_params = {}
-        if self.metadata is None:
-            self.metadata = {}
+    extra_params: Dict[str, Any] = field(default_factory=dict)
