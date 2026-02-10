@@ -288,7 +288,10 @@ class ChunkValidator:
             )
 
         # Statistics
-        overlap_ratios = [o["overlap_ratio"] for o in overlaps]
+        overlap_ratios: list[float] = [
+            o["overlap_ratio"]
+            for o in overlaps  # type: ignore[misc]
+        ]
         stats = {
             "num_pairs": len(overlaps),
             "avg_overlap_ratio": sum(overlap_ratios) / len(overlap_ratios)

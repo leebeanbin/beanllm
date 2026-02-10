@@ -6,7 +6,7 @@ Replaces Dict[str, Any] with concrete types for type safety.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 
 class TokenUsage(TypedDict, total=False):
@@ -38,5 +38,5 @@ class StatisticalResult(TypedDict, total=False):
 
 
 # Type aliases for common patterns
-Metadata = Dict[str, Any]
-ExtraParams = Dict[str, Any]
+Metadata = dict[str, object]
+ExtraParams = dict[str, object]

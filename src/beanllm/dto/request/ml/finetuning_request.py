@@ -5,7 +5,7 @@ Finetuning Request DTOs
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 if TYPE_CHECKING:
     from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class PrepareDataRequest:
     """데이터 준비 요청 DTO"""
 
-    examples: List["TrainingExample"]
+    examples: list["TrainingExample"]
     output_path: str
     validate: bool = True
 
@@ -62,7 +62,7 @@ class StartTrainingRequest:
     model: str
     training_file: str
     validation_file: Optional[str] = None
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -79,9 +79,9 @@ class WaitForCompletionRequest:
 class QuickFinetuneRequest:
     """빠른 파인튜닝 요청 DTO"""
 
-    training_data: List["TrainingExample"]
+    training_data: list["TrainingExample"]
     model: str = "gpt-3.5-turbo"
     validation_split: float = 0.1
     n_epochs: int = 3
     wait: bool = True
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

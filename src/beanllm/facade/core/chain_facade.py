@@ -25,8 +25,8 @@ class ChainResult:
     """체인 실행 결과 (기존 API 유지)"""
 
     output: str
-    steps: List[Dict[str, Any]] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    steps: list[dict[str, object]] = field(default_factory=list)
+    metadata: dict[str, object] = field(default_factory=dict)
     success: bool = True
     error: Optional[str] = None
 

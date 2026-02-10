@@ -5,7 +5,7 @@ AudioResponse - Audio 응답 DTO
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import ConfigDict
 
@@ -24,7 +24,9 @@ class AudioResponse(BaseResponse):
     - 변환 로직 없음 (Service에서 처리)
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
     # transcribe 메서드 응답
     transcription_result: Optional["TranscriptionResult"] = None
@@ -33,13 +35,13 @@ class AudioResponse(BaseResponse):
     audio_segment: Optional["AudioSegment"] = None
 
     # search 메서드 응답 (AudioRAG)
-    search_results: Optional[List[Dict[str, Any]]] = None
+    search_results: Optional[list[dict[str, object]]] = None
 
     # get_transcription 메서드 응답 (AudioRAG)
     transcription: Optional["TranscriptionResult"] = None
 
     # list_audios 메서드 응답 (AudioRAG)
-    audio_ids: Optional[List[str]] = None
+    audio_ids: Optional[list[str]] = None
 
     # 메타데이터
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}

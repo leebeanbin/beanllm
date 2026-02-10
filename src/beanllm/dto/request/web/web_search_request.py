@@ -6,7 +6,7 @@ WebSearchRequest - Web Search 요청 DTO
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -33,4 +33,4 @@ class WebSearchRequest:
     market: Optional[str] = None
     safe_search: Optional[str] = None
     region: Optional[str] = None
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

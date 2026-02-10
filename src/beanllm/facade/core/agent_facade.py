@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from beanllm.domain.tools import Tool, ToolRegistry
 
@@ -20,7 +20,7 @@ class AgentStep:
     step_number: int
     thought: str
     action: Optional[str] = None
-    action_input: Optional[Dict[str, Any]] = None
+    action_input: Optional[dict[str, object]] = None
     observation: Optional[str] = None
     is_final: bool = False
     final_answer: Optional[str] = None
@@ -31,7 +31,7 @@ class AgentResult:
     """에이전트 실행 결과 (기존 API 유지)"""
 
     answer: str
-    steps: List[AgentStep]
+    steps: list[AgentStep]
     total_steps: int
     success: bool = True
     error: Optional[str] = None
@@ -66,7 +66,7 @@ class Agent:
     def __init__(
         self,
         model: str,
-        tools: Optional[List[Tool]] = None,
+        tools: Optional[list[Tool]] = None,
         max_iterations: int = 10,
         provider: Optional[str] = None,
         verbose: bool = False,
@@ -172,7 +172,7 @@ class Agent:
 # 편의 함수 (기존 API 유지)
 def create_agent(
     model: str,
-    tools: Optional[List[Tool]] = None,
+    tools: Optional[list[Tool]] = None,
     max_iterations: int = 10,
     provider: Optional[str] = None,
 ) -> Agent:

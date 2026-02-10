@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from beanllm.service.types import VectorStoreProtocol
@@ -25,7 +25,7 @@ class RAGRequest:
     """
 
     query: str
-    source: Optional[Union[str, Path, List[Any]]] = None
+    source: Optional[Union[str, Path, list[object]]] = None
     vector_store: Optional["VectorStoreProtocol"] = None
     k: int = 4
     rerank: bool = False
@@ -36,5 +36,5 @@ class RAGRequest:
     embedding_model: str = "text-embedding-3-small"
     llm_model: str = "gpt-4o-mini"
     prompt_template: Optional[str] = None
-    retriever_config: Dict[str, Any] = field(default_factory=dict)
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    retriever_config: dict[str, object] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

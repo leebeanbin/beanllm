@@ -3,7 +3,7 @@ CheckEval - 체크리스트 기반 평가
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from .base_metric import BaseMetric
 from .enums import MetricType
@@ -26,8 +26,8 @@ class Checklist:
 
     name: str
     description: str
-    items: List[ChecklistItem]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    items: list[ChecklistItem]
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self):
         """검증"""
@@ -105,7 +105,7 @@ class ChecklistGrader(BaseMetric):
         self,
         prediction: str,
         reference: str = "",
-        manual_answers: Optional[Dict[int, bool]] = None,
+        manual_answers: Optional[dict[int, bool]] = None,
         **kwargs,
     ) -> EvaluationResult:
         """
@@ -132,7 +132,7 @@ class ChecklistGrader(BaseMetric):
     def _compute_manual(
         self,
         prediction: str,
-        manual_answers: Dict[int, bool],
+        manual_answers: dict[int, bool],
     ) -> EvaluationResult:
         """수동 평가 실행"""
         item_results = {}
@@ -234,7 +234,7 @@ class ChecklistGrader(BaseMetric):
             explanation=self._generate_explanation(item_results, final_score, required_failed),
         )
 
-    def _parse_llm_response(self, llm_output: str) -> Dict[int, bool]:
+    def _parse_llm_response(self, llm_output: str) -> dict[int, bool]:
         """LLM 응답 파싱"""
         import re
 
@@ -264,9 +264,9 @@ class ChecklistGrader(BaseMetric):
 
     def _generate_explanation(
         self,
-        item_results: Dict[int, Dict[str, Any]],
+        item_results: dict[int, dict[str, object]],
         final_score: float,
-        required_failed: List[str],
+        required_failed: list[str],
     ) -> str:
         """설명 생성"""
         parts = [

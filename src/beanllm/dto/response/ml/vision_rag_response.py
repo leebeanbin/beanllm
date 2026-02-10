@@ -5,7 +5,7 @@ VisionRAGResponse - Vision RAG 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,17 +21,19 @@ class VisionRAGResponse(BaseResponse):
     - 변환 로직 없음 (Service에서 처리)
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
     # query 메서드 응답
     answer: Optional[str] = None
-    sources: Optional[List[Any]] = None  # VectorSearchResult 타입
+    sources: Optional[list[object]] = None
 
     # retrieve 메서드 응답
-    results: Optional[List[Any]] = None  # VectorSearchResult 타입
+    results: Optional[list[object]] = None
 
     # batch_query 메서드 응답
-    answers: Optional[List[str]] = None
+    answers: Optional[list[str]] = None
 
     # 메타데이터
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}

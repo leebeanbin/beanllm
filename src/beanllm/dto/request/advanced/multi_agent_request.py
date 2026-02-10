@@ -6,7 +6,7 @@ MultiAgentRequest - Multi-Agent 요청 DTO
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,15 +20,15 @@ class MultiAgentRequest:
     - 비즈니스 로직 없음 (Service에서 처리)
     """
 
-    strategy: str  # "sequential", "parallel", "hierarchical", "debate"
+    strategy: str
     task: str
-    agents: List[Any] = field(default_factory=list)
-    agent_order: List[str] = field(default_factory=list)
-    agent_ids: List[str] = field(default_factory=list)
+    agents: list[object] = field(default_factory=list)
+    agent_order: list[str] = field(default_factory=list)
+    agent_ids: list[str] = field(default_factory=list)
     manager_id: Optional[str] = None
-    worker_ids: List[str] = field(default_factory=list)
+    worker_ids: list[str] = field(default_factory=list)
     aggregation: str = "vote"
     rounds: int = 3
     judge_id: Optional[str] = None
-    judge_agent: Optional[Any] = None
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    judge_agent: Optional[object] = None
+    extra_params: dict[str, object] = field(default_factory=dict)

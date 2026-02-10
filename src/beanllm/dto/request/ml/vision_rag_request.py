@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from beanllm.facade.core.client_facade import Client
@@ -36,11 +36,11 @@ class VisionRAGRequest:
     include_images: bool = True
 
     # batch_query 메서드용
-    questions: Optional[List[str]] = None
+    questions: Optional[list[str]] = None
 
     # from_images/from_sources 메서드용
-    source: Optional[Union[str, Path, List[Union[str, Path]]]] = None
-    sources: Optional[List[Union[str, Path]]] = None
+    source: Optional[Union[str, Path, list[Union[str, Path]]]] = None
+    sources: Optional[list[Union[str, Path]]] = None
     generate_captions: bool = True
     llm_model: str = "gpt-4o"
 
@@ -51,4 +51,4 @@ class VisionRAGRequest:
     prompt_template: Optional[str] = None
 
     # 추가 파라미터
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

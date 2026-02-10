@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Callable, Optional, Type, Union
 
 from beanllm.domain.state_graph import END
 
@@ -23,11 +23,11 @@ class StateGraphRequest:
     - 비즈니스 로직 없음 (Service에서 처리)
     """
 
-    initial_state: Dict[str, Any]
-    state_schema: Optional[Type] = None
-    nodes: Dict[str, Callable] = field(default_factory=dict)
-    edges: Dict[str, Union[str, Type[END]]] = field(default_factory=dict)
-    conditional_edges: Dict[str, tuple] = field(default_factory=dict)
+    initial_state: dict[str, object]
+    state_schema: Optional[Type[object]] = None
+    nodes: dict[str, Callable[..., object]] = field(default_factory=dict)
+    edges: dict[str, Union[str, Type[END]]] = field(default_factory=dict)
+    conditional_edges: dict[str, tuple[object, ...]] = field(default_factory=dict)
     entry_point: Optional[str] = None
     execution_id: Optional[str] = None
     resume_from: Optional[str] = None
@@ -35,4 +35,4 @@ class StateGraphRequest:
     enable_checkpointing: bool = False
     checkpoint_dir: Optional[Path] = None
     debug: bool = False
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

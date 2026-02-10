@@ -5,7 +5,7 @@ AgentResponse - 에이전트 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,10 +21,12 @@ class AgentResponse(BaseResponse):
     - 변환 로직 없음 (Service에서 처리)
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
     answer: str
-    steps: List[Any]  # AgentStep 타입
-    total_steps: int
+    steps: list[object] = []
+    total_steps: int = 0
     success: bool = True
     error: Optional[str] = None

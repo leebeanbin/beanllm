@@ -2,8 +2,9 @@
 Rubric-Driven Grading - 루브릭 기반 평가
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from .base_metric import BaseMetric
 from .enums import MetricType
@@ -17,7 +18,7 @@ class RubricCriterion:
     name: str
     description: str
     weight: float = 1.0  # 가중치
-    levels: Optional[Dict[str, float]] = None  # {"excellent": 1.0, "good": 0.8, ...}
+    levels: Optional[dict[str, float]] = None  # {"excellent": 1.0, "good": 0.8, ...}
 
     def __post_init__(self):
         """검증"""
@@ -40,8 +41,8 @@ class Rubric:
 
     name: str
     description: str
-    criteria: List[RubricCriterion]
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    criteria: list[RubricCriterion]
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def __post_init__(self):
         """검증"""
@@ -121,7 +122,7 @@ class RubricGrader(BaseMetric):
         self,
         prediction: str,
         reference: str = "",
-        manual_scores: Optional[Dict[str, str]] = None,
+        manual_scores: Optional[dict[str, str]] = None,
         **kwargs,
     ) -> EvaluationResult:
         """
@@ -148,7 +149,7 @@ class RubricGrader(BaseMetric):
     def _compute_manual(
         self,
         prediction: str,
-        manual_scores: Dict[str, str],
+        manual_scores: dict[str, str],
     ) -> EvaluationResult:
         """수동 평가 실행"""
         criterion_scores = {}
@@ -258,7 +259,7 @@ class RubricGrader(BaseMetric):
             explanation=self._generate_explanation(score_dict, final_score),
         )
 
-    def _parse_llm_response(self, llm_output: str) -> Dict[str, Dict[str, str]]:
+    def _parse_llm_response(self, llm_output: str) -> dict[str, dict[str, str]]:
         """LLM 응답 파싱"""
         import re
 
@@ -292,7 +293,7 @@ class RubricGrader(BaseMetric):
 
     def _generate_explanation(
         self,
-        criterion_scores: Dict[str, Any],
+        criterion_scores: Mapping[str, object],
         final_score: float,
     ) -> str:
         """설명 생성"""

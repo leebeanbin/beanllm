@@ -6,7 +6,7 @@ ChatRequest - 채팅 요청 DTO
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,11 +20,11 @@ class ChatRequest:
     - 비즈니스 로직 없음 (Service에서 처리)
     """
 
-    messages: List[Dict[str, str]]
+    messages: list[dict[str, str]]
     model: str
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     top_p: Optional[float] = None
     system: Optional[str] = None
     stream: bool = False
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

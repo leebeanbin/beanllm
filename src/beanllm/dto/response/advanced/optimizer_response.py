@@ -5,7 +5,7 @@ Optimizer Response DTOs - 최적화 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict, model_validator
 
@@ -21,17 +21,17 @@ class BenchmarkResponse(BaseResponse):
     - 변환 로직 없음 (Service에서 처리)
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     benchmark_id: str
     num_queries: int
     # Optional fields for backward compatibility
     system_id: Optional[str] = None
     system_type: Optional[str] = None
-    queries: List[str] = []
-    baseline_metrics: Dict[str, float] = {}
-    detailed_results: List[Dict[str, Any]] = []
-    bottlenecks: List[str] = []
+    queries: list[str] = []
+    baseline_metrics: dict[str, float] = {}
+    detailed_results: list[dict[str, object]] = []
+    bottlenecks: list[str] = []
     timestamp: Optional[str] = None
     # Latency metrics
     avg_latency: float = 0.0
@@ -45,7 +45,7 @@ class BenchmarkResponse(BaseResponse):
     # Throughput metrics
     throughput: float = 0.0
     total_duration: float = 0.0
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}
 
 
 class OptimizeResponse(BaseResponse):
@@ -53,25 +53,25 @@ class OptimizeResponse(BaseResponse):
     파라미터 최적화 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     optimization_id: str
     system_id: str
-    optimal_parameters: Dict[str, Any]
-    improvement_metrics: Dict[str, float]  # {"latency": -20%, "quality": +5%}
+    optimal_parameters: dict[str, object]
+    improvement_metrics: dict[str, float]
     num_trials: int
-    convergence_curve: Optional[List[float]] = None
+    convergence_curve: Optional[list[float]] = None
     best_score: float = 0.0
     baseline_score: float = 0.0
-    best_params: Optional[Dict[str, Any]] = None  # Alias for optimal_parameters
-    n_trials: int = 0  # Alias for num_trials
-    convergence_data: Optional[List[Dict[str, Any]]] = None
-    recommendations: List[str] = []
-    metadata: Dict[str, Any] = {}
+    best_params: Optional[dict[str, object]] = None
+    n_trials: int = 0
+    convergence_data: Optional[list[dict[str, object]]] = None
+    recommendations: list[str] = []
+    metadata: dict[str, object] = {}
 
     @model_validator(mode="before")
     @classmethod
-    def compute_aliases(cls, data: Any) -> Any:
+    def compute_aliases(cls, data: object) -> object:
         if isinstance(data, dict):
             if data.get("best_params") is None:
                 data["best_params"] = data.get("optimal_parameters")
@@ -85,28 +85,28 @@ class ProfileResponse(BaseResponse):
     프로파일링 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     profile_id: str
     system_id: str
     duration: float
-    component_breakdown: Dict[str, Dict[str, float]]
+    component_breakdown: dict[str, dict[str, float]]
     total_latency: float
     total_cost: float
-    bottlenecks: List[Dict[str, Any]]
-    cost_breakdown: Dict[str, float]
+    bottlenecks: list[dict[str, object]]
+    cost_breakdown: dict[str, float]
     # Additional fields for service compatibility
     total_duration_ms: float = 0.0
     total_tokens: int = 0
-    components: List[Dict[str, Any]] = []
+    components: list[dict[str, object]] = []
     bottleneck: Optional[str] = None
-    breakdown: Optional[Dict[str, float]] = None
-    recommendations: List[str] = []
-    metadata: Dict[str, Any] = {}
+    breakdown: Optional[dict[str, float]] = None
+    recommendations: list[str] = []
+    metadata: dict[str, object] = {}
 
     @model_validator(mode="before")
     @classmethod
-    def compute_derived(cls, data: Any) -> Any:
+    def compute_derived(cls, data: object) -> object:
         if isinstance(data, dict):
             if data.get("breakdown") is None:
                 data["breakdown"] = data.get("cost_breakdown")
@@ -121,21 +121,21 @@ class ABTestResponse(BaseResponse):
     A/B 테스트 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     test_id: str
     config_a_id: str
     config_b_id: str
     num_queries: int
-    results_a: Dict[str, float]
-    results_b: Dict[str, float]
-    statistical_significance: Dict[str, Any]
+    results_a: dict[str, float]
+    results_b: dict[str, float]
+    statistical_significance: dict[str, object]
     winner: Optional[str] = None
     variant_a_name: str = "variant_a"
     variant_b_name: str = "variant_b"
-    effect_size: Optional[Dict[str, float]] = None
-    recommendations: List[str] = []
-    metadata: Dict[str, Any] = {}
+    effect_size: Optional[dict[str, float]] = None
+    recommendations: list[str] = []
+    metadata: dict[str, object] = {}
     # Convenience properties computed from existing fields
     lift: float = 0.0
     p_value: float = 1.0
@@ -146,7 +146,7 @@ class ABTestResponse(BaseResponse):
 
     @model_validator(mode="before")
     @classmethod
-    def compute_convenience_properties(cls, data: Any) -> Any:
+    def compute_convenience_properties(cls, data: object) -> object:
         if isinstance(data, dict):
             stat_sig = data.get("statistical_significance", {})
             if stat_sig:
@@ -172,22 +172,22 @@ class RecommendationResponse(BaseResponse):
     최적화 권장사항 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     profile_id: str
-    recommendations: List[Dict[str, Any]]
-    estimated_improvements: Dict[str, float]
-    implementation_difficulty: Dict[str, str]
-    priority_order: List[str]
-    metadata: Dict[str, Any] = {}
-    summary: Optional[Dict[str, int]] = None
+    recommendations: list[dict[str, object]]
+    estimated_improvements: dict[str, float]
+    implementation_difficulty: dict[str, str]
+    priority_order: list[str]
+    metadata: dict[str, object] = {}
+    summary: Optional[dict[str, int]] = None
 
     @model_validator(mode="before")
     @classmethod
-    def compute_summary(cls, data: Any) -> Any:
+    def compute_summary(cls, data: object) -> object:
         if isinstance(data, dict) and data.get("summary") is None:
             recs = data.get("recommendations", [])
-            summary: Dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
+            summary: dict[str, int] = {"critical": 0, "high": 0, "medium": 0, "low": 0}
             for rec in recs:
                 priority = rec.get("priority", "low").lower()
                 if priority in summary:

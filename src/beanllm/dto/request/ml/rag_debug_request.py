@@ -6,7 +6,7 @@ RAG Debug Request DTOs - RAG 디버깅 요청 데이터 전송 객체
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -21,7 +21,7 @@ class StartDebugSessionRequest:
 
     vector_store_id: str
     session_name: Optional[str] = None
-    config: Dict[str, Any] = field(default_factory=dict)
+    config: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -58,5 +58,5 @@ class TuneParametersRequest:
     """
 
     session_id: str
-    parameters: Dict[str, Any]
-    test_queries: List[str] = field(default_factory=list)
+    parameters: dict[str, object]
+    test_queries: list[str] = field(default_factory=list)
