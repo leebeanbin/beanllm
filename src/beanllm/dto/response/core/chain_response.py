@@ -5,7 +5,7 @@ ChainResponse - Chain 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,10 +21,10 @@ class ChainResponse(BaseResponse):
     - 변환 로직 없음
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     output: str
-    steps: List[Dict[str, Any]] = []
-    metadata: Dict[str, Any] = {}
+    steps: list[dict[str, object]] = []
+    metadata: dict[str, object] = {}
     success: bool = True
     error: Optional[str] = None

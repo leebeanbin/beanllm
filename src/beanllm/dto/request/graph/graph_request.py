@@ -6,7 +6,7 @@ GraphRequest - Graph 요청 DTO
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,12 +20,12 @@ class GraphRequest:
     - 비즈니스 로직 없음 (Service에서 처리)
     """
 
-    initial_state: Dict[str, Any]
-    nodes: List[Any] = field(default_factory=list)
-    edges: Dict[str, List[str]] = field(default_factory=dict)
-    conditional_edges: Dict[str, Callable] = field(default_factory=dict)
+    initial_state: dict[str, object]
+    nodes: list[object] = field(default_factory=list)
+    edges: dict[str, list[str]] = field(default_factory=dict)
+    conditional_edges: dict[str, Callable[..., object]] = field(default_factory=dict)
     entry_point: Optional[str] = None
     enable_cache: bool = True
     verbose: bool = False
     max_iterations: int = 100
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

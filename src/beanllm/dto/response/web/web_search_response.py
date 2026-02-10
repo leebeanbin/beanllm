@@ -5,7 +5,7 @@ WebSearchResponse - Web Search 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -22,11 +22,13 @@ class WebSearchResponse(BaseResponse):
     - 변환 로직 없음
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
     query: str
-    results: List[SearchResult]
+    results: list[SearchResult]
     total_results: Optional[int] = None
     search_time: float = 0.0
     engine: str = "unknown"
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}

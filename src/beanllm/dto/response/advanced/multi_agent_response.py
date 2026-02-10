@@ -5,7 +5,7 @@ MultiAgentResponse - Multi-Agent 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,10 +21,12 @@ class MultiAgentResponse(BaseResponse):
     - 변환 로직 없음
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
-    final_result: Any
+    final_result: object
     strategy: str
-    intermediate_results: Optional[List[Any]] = None
-    all_steps: Optional[List[Any]] = None
-    metadata: Dict[str, Any] = {}
+    intermediate_results: Optional[list[object]] = None
+    all_steps: Optional[list[object]] = None
+    metadata: dict[str, object] = {}

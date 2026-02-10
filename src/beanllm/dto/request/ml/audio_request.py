@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     from beanllm.domain.audio import AudioSegment
@@ -41,11 +41,11 @@ class AudioRequest:
 
     # add_audio 메서드용 (AudioRAG)
     audio_id: Optional[str] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     # search 메서드용 (AudioRAG)
     query: Optional[str] = None
     top_k: int = 5
 
     # 추가 파라미터
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    extra_params: dict[str, object] = field(default_factory=dict)

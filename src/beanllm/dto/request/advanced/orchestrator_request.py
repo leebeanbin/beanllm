@@ -6,7 +6,6 @@ Orchestrator Request DTOs - 오케스트레이터 요청 데이터 전송 객체
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,10 +19,10 @@ class CreateWorkflowRequest:
     """
 
     workflow_name: str
-    nodes: List[Dict[str, Any]]
-    edges: List[Dict[str, Any]]
+    nodes: list[dict[str, object]]
+    edges: list[dict[str, object]]
     strategy: str = "sequential"
-    config: Dict[str, Any] = field(default_factory=dict)
+    config: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -33,7 +32,7 @@ class ExecuteWorkflowRequest:
     """
 
     workflow_id: str
-    input_data: Dict[str, Any]
+    input_data: dict[str, object]
     stream: bool = False
     checkpoint: bool = True
 

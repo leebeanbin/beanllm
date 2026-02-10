@@ -3,7 +3,7 @@ Evaluation Results - 평가 결과 데이터 구조
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -12,7 +12,7 @@ class EvaluationResult:
 
     metric_name: str
     score: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
     explanation: Optional[str] = None
 
     def __repr__(self) -> str:
@@ -23,9 +23,9 @@ class EvaluationResult:
 class BatchEvaluationResult:
     """배치 평가 결과"""
 
-    results: List[EvaluationResult]
+    results: list[EvaluationResult]
     average_score: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def get_metric(self, metric_name: str) -> Optional[EvaluationResult]:
         """특정 메트릭 결과 가져오기"""
@@ -34,7 +34,7 @@ class BatchEvaluationResult:
                 return result
         return None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, object]:
         """딕셔너리로 변환"""
         return {
             "results": [

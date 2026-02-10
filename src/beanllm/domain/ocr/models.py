@@ -5,7 +5,7 @@ OCR 결과와 설정을 위한 데이터 클래스 정의.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional
+from typing import Literal, Optional
 
 __all__ = [
     "BoundingBox",
@@ -144,12 +144,12 @@ class OCRResult:
     """
 
     text: str
-    lines: List[OCRTextLine]
+    lines: list[OCRTextLine]
     language: str
     confidence: float
     engine: str
     processing_time: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, object] = field(default_factory=dict)
 
     @property
     def line_count(self) -> int:
@@ -164,7 +164,7 @@ class OCRResult:
         return sum(line.confidence for line in self.lines) / len(self.lines)
 
     @property
-    def low_confidence_lines(self, threshold: float = 0.7) -> List[OCRTextLine]:
+    def low_confidence_lines(self, threshold: float = 0.7) -> list[OCRTextLine]:
         """신뢰도가 낮은 라인 목록 (기본값: 0.7 미만)"""
         return [line for line in self.lines if line.confidence < threshold]
 
@@ -373,7 +373,7 @@ class OCRConfig:
     output_format: str = "text"  # text, json, markdown
 
     # 분산 시스템 설정 (선택적, None이면 전역 설정 사용)
-    distributed_config: Optional[Any] = None
+    distributed_config: Optional[object] = None
 
     def __post_init__(self):
         """설정 유효성 검증 및 기본값 초기화"""

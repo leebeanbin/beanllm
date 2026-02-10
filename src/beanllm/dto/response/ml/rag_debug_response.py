@@ -5,7 +5,7 @@ RAG Debug Response DTOs - RAG 디버깅 응답 데이터 전송 객체
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,7 +21,7 @@ class DebugSessionResponse(BaseResponse):
     - 변환 로직 없음 (Service에서 처리)
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     session_id: str
     session_name: str
@@ -31,7 +31,7 @@ class DebugSessionResponse(BaseResponse):
     embedding_dim: int
     status: str
     created_at: str
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}
 
 
 class AnalyzeEmbeddingsResponse(BaseResponse):
@@ -39,17 +39,17 @@ class AnalyzeEmbeddingsResponse(BaseResponse):
     Embedding 분석 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     session_id: str
     method: str
     num_clusters: int
-    cluster_labels: List[int]
-    cluster_sizes: Dict[int, int]
-    outliers: List[int]
-    reduced_embeddings: Optional[List[List[float]]] = None
+    cluster_labels: list[int]
+    cluster_sizes: dict[int, int]
+    outliers: list[int]
+    reduced_embeddings: Optional[list[list[float]]] = None
     silhouette_score: Optional[float] = None
-    metadata: Dict[str, Any] = {}
+    metadata: dict[str, object] = {}
 
 
 class ValidateChunksResponse(BaseResponse):
@@ -57,17 +57,17 @@ class ValidateChunksResponse(BaseResponse):
     청크 검증 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     session_id: str
     total_chunks: int
     valid_chunks: int
-    issues: List[Dict[str, Any]]
-    size_distribution: Dict[str, int]
-    overlap_stats: Optional[Dict[str, Any]] = None
-    duplicate_chunks: Optional[List[tuple]] = None
-    recommendations: List[str] = []
-    metadata: Dict[str, Any] = {}
+    issues: list[dict[str, object]]
+    size_distribution: dict[str, int]
+    overlap_stats: Optional[dict[str, object]] = None
+    duplicate_chunks: Optional[list[tuple[str, ...]]] = None
+    recommendations: list[str] = []
+    metadata: dict[str, object] = {}
 
 
 class TuneParametersResponse(BaseResponse):
@@ -75,12 +75,12 @@ class TuneParametersResponse(BaseResponse):
     파라미터 튜닝 응답 DTO
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
     session_id: str
-    parameters: Dict[str, Any]
-    test_results: List[Dict[str, Any]]
+    parameters: dict[str, object]
+    test_results: list[dict[str, object]]
     avg_score: float
-    comparison_with_baseline: Optional[Dict[str, float]] = None
-    recommendations: List[str] = []
-    metadata: Dict[str, Any] = {}
+    comparison_with_baseline: Optional[dict[str, float]] = None
+    recommendations: list[str] = []
+    metadata: dict[str, object] = {}

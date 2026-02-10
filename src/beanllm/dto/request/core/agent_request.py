@@ -6,7 +6,7 @@ AgentRequest - 에이전트 요청 DTO
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -22,10 +22,10 @@ class AgentRequest:
 
     task: str
     model: str
-    tools: List[Any] = field(default_factory=list)
-    tool_registry: Optional[Any] = None  # ToolRegistry 인스턴스
+    tools: list[object] = field(default_factory=list)
+    tool_registry: Optional[object] = None
     max_steps: int = 10
     temperature: Optional[float] = None
     system_prompt: Optional[str] = None
-    memory: Optional[Any] = None
-    extra_params: Dict[str, Any] = field(default_factory=dict)
+    memory: Optional[object] = None
+    extra_params: dict[str, object] = field(default_factory=dict)

@@ -6,7 +6,7 @@ Optimizer Request DTOs - 최적화 요청 데이터 전송 객체
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
@@ -23,11 +23,11 @@ class BenchmarkRequest:
     system_type: str = "rag"
     num_queries: int = 100
     synthetic: bool = True
-    test_queries: List[str] = field(default_factory=list)
-    queries: Optional[List[str]] = None  # Alias for test_queries
-    query_types: Optional[List[str]] = None
+    test_queries: list[str] = field(default_factory=list)
+    queries: Optional[list[str]] = None
+    query_types: Optional[list[str]] = None
     domain: Optional[str] = None
-    metrics: List[str] = field(default_factory=lambda: ["latency", "quality", "cost"])
+    metrics: list[str] = field(default_factory=lambda: ["latency", "quality", "cost"])
 
     def __post_init__(self) -> None:
         if self.queries is None:
@@ -41,15 +41,15 @@ class OptimizeRequest:
     """
 
     system_id: str
-    parameter_space: Dict[str, Any]
-    parameters: List[Dict[str, Any]] = field(default_factory=list)
+    parameter_space: dict[str, object]
+    parameters: list[dict[str, object]] = field(default_factory=list)
     optimization_method: str = "bayesian"
-    method: Optional[str] = None  # Alias for optimization_method
+    method: Optional[str] = None
     max_trials: int = 30
-    n_trials: Optional[int] = None  # Alias for max_trials
+    n_trials: Optional[int] = None
     objective: str = "quality"
-    objectives: Optional[List[str]] = None
-    multi_objectives: Optional[List[str]] = None
+    objectives: Optional[list[str]] = None
+    multi_objectives: Optional[list[str]] = None
     multi_objective: bool = False
 
     def __post_init__(self) -> None:
@@ -72,9 +72,9 @@ class ProfileRequest:
 
     system_id: str
     duration: int = 60
-    sample_queries: List[str] = field(default_factory=list)
+    sample_queries: list[str] = field(default_factory=list)
     profile_components: bool = True
-    components: List[str] = field(default_factory=list)
+    components: list[str] = field(default_factory=list)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -85,10 +85,10 @@ class ABTestRequest:
 
     config_a_id: str
     config_b_id: str
-    test_queries: List[str]
+    test_queries: list[str]
     variant_a_name: str = "variant_a"
     variant_b_name: str = "variant_b"
     num_queries: int = 100
     confidence_level: float = 0.95
-    metrics: List[str] = field(default_factory=lambda: ["quality", "latency"])
+    metrics: list[str] = field(default_factory=lambda: ["quality", "latency"])
     statistical_test: str = "ttest"

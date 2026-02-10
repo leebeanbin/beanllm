@@ -5,7 +5,7 @@ GraphResponse - Graph 응답 DTO
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Optional
 
 from pydantic import ConfigDict
 
@@ -21,10 +21,10 @@ class GraphResponse(BaseResponse):
     - 변환 로직 없음
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
 
-    final_state: Dict[str, Any]
-    metadata: Dict[str, Any] = {}
-    cache_stats: Optional[Dict[str, Any]] = None
-    visited_nodes: List[str] = []
+    final_state: dict[str, object]
+    metadata: dict[str, object] = {}
+    cache_stats: Optional[dict[str, object]] = None
+    visited_nodes: list[str] = []
     iterations: int = 0

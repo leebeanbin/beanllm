@@ -5,8 +5,6 @@ BaseResponse - 응답 DTO의 공통 로직
 
 from __future__ import annotations
 
-from typing import Any, Dict
-
 from pydantic import BaseModel, ConfigDict
 
 
@@ -23,10 +21,12 @@ class BaseResponse(BaseModel):
     - DRY: 공통 패턴 재사용
     """
 
-    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+    model_config = ConfigDict(
+        extra="forbid", frozen=True, strict=True, arbitrary_types_allowed=True
+    )
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], **kwargs: Any) -> "BaseResponse":
+    def from_dict(cls, data: dict[str, object], **kwargs: object) -> "BaseResponse":
         """
         딕셔너리에서 응답 생성 (공통 로직)
 
@@ -37,11 +37,11 @@ class BaseResponse(BaseModel):
         Returns:
             응답 인스턴스
         """
-        return cls.model_validate({**data, **kwargs})
+        return cls.model_validate({**data, **kwargs}, strict=False)
 
     @classmethod
     def from_provider_response(
-        cls, provider_response: Dict[str, Any], **kwargs: Any
+        cls, provider_response: dict[str, object], **kwargs: object
     ) -> "BaseResponse":
         """
         Provider 응답에서 생성 (공통 로직)
@@ -53,4 +53,4 @@ class BaseResponse(BaseModel):
         Returns:
             응답 인스턴스
         """
-        return cls.model_validate({**provider_response, **kwargs})
+        return cls.model_validate({**provider_response, **kwargs}, strict=False)
