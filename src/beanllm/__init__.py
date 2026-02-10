@@ -3,378 +3,388 @@ beanllm - Unified toolkit for managing and using multiple LLM providers
 환경변수 기반 LLM 모델 활성화 및 관리 패키지
 """
 
-# Infrastructure - infrastructure/__init__.py에서 통합 export
-# Domain
-from .domain import (
-    END,
-    AdvancedToolRegistry,
-    # Multi-Agent
-    AgentMessage,
-    # Graph
-    AgentNode,
-    # Evaluation
-    AnswerRelevanceMetric,
-    # Advanced Tools
-    APIConfig,
-    APIProtocol,
-    # Audio
-    AudioSegment,
-    # Document Loaders
-    BaseDocumentLoader,
-    # Embeddings
-    BaseEmbedding,
-    # Fine-tuning
-    BaseFineTuningProvider,
-    # Memory
-    BaseMemory,
-    BaseMetric,
-    BaseNode,
-    # Output Parsers
-    BaseOutputParser,
-    # Prompts
-    BasePromptTemplate,
-    # Web Search
-    BaseSearchEngine,
-    # Text Splitters
-    BaseTextSplitter,
-    # Vector Stores
-    BaseVectorStore,
-    BatchEvaluationResult,
-    BingSearch,
-    BLEUMetric,
-    BooleanOutputParser,
-    BufferMemory,
-    CharacterTextSplitter,
-    ChatMessage,
-    ChatPromptTemplate,
-    # State Graph
-    Checkpoint,
-    ChromaVectorStore,
-    # Vision
-    CLIPEmbedding,
-    CohereEmbedding,
-    CommaSeparatedListOutputParser,
-    CommunicationBus,
-    ConditionalNode,
-    ContextPrecisionMetric,
-    ConversationMemory,
-    CoordinationStrategy,
-    CSVLoader,
-    CustomMetric,
-    DatasetBuilder,
-    DataValidator,
-    DatetimeOutputParser,
-    DebateStrategy,
-    DirectoryLoader,
-    Document,
-    DocumentLoader,
-    DuckDuckGoSearch,
-    Embedding,
-    EmbeddingCache,
-    EmbeddingResult,
-    EnumOutputParser,
-    EvaluationResult,
-    ExactMatchMetric,
-    ExampleSelector,
-    ExternalAPITool,
-    F1ScoreMetric,
-    FAISSVectorStore,
-    FaithfulnessMetric,
-    FewShotPromptTemplate,
-    FineTuningConfig,
-    FineTuningCostEstimator,
-    FineTuningJob,
-    FineTuningMetrics,
-    FineTuningStatus,
-    FunctionNode,
-    GeminiEmbedding,
-    GoogleSearch,
-    GraderNode,
-    GraphConfig,
-    GraphExecution,
-    GraphState,
-    HierarchicalStrategy,
-    ImageDocument,
-    ImageLoader,
-    JinaEmbedding,
-    JSONOutputParser,
-    LLMJudgeMetric,
-    LLMNode,
-    LoopNode,
-    MarkdownHeaderTextSplitter,
-    Message,
-    MessageType,
-    MetricType,
-    MistralEmbedding,
-    ModelProvider,
-    MultimodalEmbedding,
-    NodeCache,
-    NodeExecution,
-    NumberedListOutputParser,
-    OllamaEmbedding,
-    OpenAIEmbedding,
-    OpenAIFineTuningProvider,
-    OutputParserException,
-    ParallelNode,
-    ParallelStrategy,
-    PDFLoader,
-    PDFWithImagesLoader,
-    PineconeVectorStore,
-    PredefinedTemplates,
-    PromptCache,
-    PromptComposer,
-    PromptExample,
-    PromptOptimizer,
-    PromptTemplate,
-    PromptVersioning,
-    PydanticOutputParser,
-    QdrantVectorStore,
-    RecursiveCharacterTextSplitter,
-    RetryOutputParser,
-    ROUGEMetric,
-    SchemaGenerator,
-    SearchEngine,
-    SearchResponse,
-    SearchResult,
-    SemanticSimilarityMetric,
-    SequentialStrategy,
-    SummaryMemory,
-    SystemMessageTemplate,
-    TemplateFormat,
-    TextLoader,
-    TextSplitter,
-    TokenMemory,
-    TokenTextSplitter,
-    # Tools
-    Tool,
-    ToolChain,
-    ToolParameter,
-    ToolRegistry,
-    ToolValidator,
-    TrainingExample,
-    TranscriptionResult,
-    TranscriptionSegment,
-    TTSProvider,
-    VectorSearchResult,
-    VectorStore,
-    VectorStoreBuilder,
-    VoyageEmbedding,
-    WeaviateVectorStore,
-    WebScraper,
-    WhisperModel,
-    WindowMemory,
-    batch_cosine_similarity,
-    calculator,
-    clear_cache,
-    cosine_similarity,
-    create_chat_template,
-    create_few_shot_template,
-    create_memory,
-    create_prompt_template,
-    create_vector_store,
-    create_vision_embedding,
-    default_registry,
-    echo,
-    embed,
-    embed_sync,
-    euclidean_distance,
-    find_hard_negatives,
-    from_documents,
-    get_all_tools,
-    get_cache_stats,
-    get_cached_prompt,
-    get_current_time,
-    get_tool,
-    load_documents,
-    load_images,
-    load_pdf_with_images,
-    mmr_search,
-    normalize_vector,
-    parse_bool,
-    parse_json,
-    parse_list,
-    query_expansion,
-    register_tool,
-    # search_web는 domain.tools에서 이미 import됨
-    split_documents,
-    tool,
-)
-
-# DTO
-from .dto.response.core.rag_response import RAGResponse
-
-# Facade
-from .facade import Agent, Client, RAGChain
-from .facade.advanced.graph_facade import Graph, create_simple_graph
-from .facade.advanced.multi_agent_facade import (
-    MultiAgentCoordinator,
-    create_coordinator,
-    quick_debate,
-)
-from .facade.advanced.state_graph_facade import StateGraph, create_state_graph
-from .facade.core.agent_facade import AgentResult, AgentStep, create_agent
-from .facade.core.chain_facade import (
-    Chain,
-    ChainBuilder,
-    ChainResult,
-    ParallelChain,
-    PromptChain,
-    SequentialChain,
-    create_chain,
-)
-from .facade.core.client_facade import ChatResponse, create_client
-from .facade.core.rag_facade import RAG, RAGBuilder, create_rag
-
-# Audio Facade
-from .facade.ml.audio_facade import (
-    AudioRAG,
-    TextToSpeech,
-    WhisperSTT,
-    text_to_speech,
-    transcribe_audio,
-)
-from .facade.ml.evaluation_facade import (
-    Evaluator,
-    create_evaluator,
-    evaluate_rag,
-    evaluate_text,
-)
-from .facade.ml.finetuning_facade import (
-    FineTuningManagerFacade,
-    create_finetuning_provider,
-    quick_finetune,
-)
-from .facade.ml.vision_rag_facade import MultimodalRAG, VisionRAG, create_vision_rag
-from .facade.ml.web_search_facade import WebSearch
-
-# search_web는 domain.tools에서 이미 import됨
-from .infrastructure import (
-    MODELS,
-    AdaptedParameters,
-    # ML Models (미사용 - 주석 처리)
-    # BaseMLModel,
-    HybridModelInfo,
-    HybridModelManager,
-    MetadataInferrer,
-    # MLModelFactory,
-    ModelCapabilityInfo,
-    ModelRegistry,
-    ModelScanner,
-    ModelStatus,
-    ParameterAdapter,
-    ParameterInfo,
-    ProviderInfo,
-    # PyTorchModel,
-    ScannedModel,
-    # SklearnModel,
-    # TensorFlowModel,
-    adapt_parameters,
-    create_hybrid_manager,
-    get_all_models,
-    get_default_model,
-    get_model_registry,
-    get_models_by_provider,
-    get_models_by_type,
-    # load_ml_model,
-    validate_parameters,
-)
-
-# Provider Factory (providers 패키지에서)
-from .providers import ProviderFactory
-
-# Utils
-from .utils import (
-    # Callbacks
-    BaseCallback,
-    CallbackEvent,
-    CallbackManager,
-    # Error Handling (retry_decorator는 retry와 동일)
-    CircuitBreaker,
-    CircuitBreakerConfig,
-    CircuitBreakerError,
-    CircuitState,
-    # Config
-    Config,
-    # Token Counter
-    CostEstimate,
-    CostEstimator,
-    CostTrackingCallback,
-    # RAG Debug
-    EmbeddingInfo,
-    EnvConfig,
-    ErrorHandler,
-    ErrorHandlerConfig,
-    ErrorRecord,
-    ErrorTracker,
-    FallbackHandler,
-    FunctionCallback,
-    LLMKitError,
-    LoggingCallback,
-    MaxRetriesExceededError,
-    ModelContextWindow,
-    ModelPricing,
-    RAGDebugger,
-    RateLimitConfig,
-    RateLimiter,
-    RateLimitError,
-    RetryConfig,
-    RetryHandler,
-    RetryStrategy,
-    SimilarityInfo,
-    # Streaming
-    StreamBuffer,
-    StreamingCallback,
-    StreamResponse,
-    StreamStats,
-    TimeoutError,
-    TimingCallback,
-    TokenCounter,
-    # Tracer
-    Trace,
-    Tracer,
-    TraceSpan,
-    ValidationError,
-    circuit_breaker,
-    compare_texts,
-    count_message_tokens,
-    count_tokens,
-    create_callback_manager,
-    enable_tracing,
-    estimate_cost,
-    fallback,
-    get_cheapest_model,
-    get_context_window,
-    get_error_tracker,
-    # Exceptions (utils에서 이미 import됨, 중복 제거)
-    # ModelNotFoundError,
-    # ProviderError as UtilsProviderError,
-    # RateLimitError as UtilsRateLimitError,
-    # Logger
-    get_logger,
-    get_tracer,
-    inspect_embedding,
-    # CLI
-    main,
-    pretty_stream,
-    rate_limit,
-    # Retry
-    retry,
-    # retry_decorator는 retry와 동일하므로 제거
-    similarity_heatmap,
-    stream_collect,
-    stream_print,
-    stream_response,
-    timeout,
-    validate_pipeline,
-    visualize_embeddings_2d,
-    with_error_handling,
-)
-
-# 하위 호환성
-FineTuningManager = FineTuningManagerFacade
-get_registry = get_model_registry
+import importlib
 
 __version__ = "0.3.0"
+
+_LAZY_IMPORT_MAP: dict[str, tuple[str, str]] = {
+    # ── Domain ──────────────────────────────────────────────────────────
+    # Audio
+    "AudioSegment": ("beanllm.domain.audio", "AudioSegment"),
+    "TranscriptionResult": ("beanllm.domain.audio", "TranscriptionResult"),
+    "TranscriptionSegment": ("beanllm.domain.audio", "TranscriptionSegment"),
+    "TTSProvider": ("beanllm.domain.audio", "TTSProvider"),
+    "WhisperModel": ("beanllm.domain.audio", "WhisperModel"),
+    # Embeddings
+    "BaseEmbedding": ("beanllm.domain.embeddings", "BaseEmbedding"),
+    "CohereEmbedding": ("beanllm.domain.embeddings", "CohereEmbedding"),
+    "Embedding": ("beanllm.domain.embeddings", "Embedding"),
+    "EmbeddingCache": ("beanllm.domain.embeddings", "EmbeddingCache"),
+    "EmbeddingResult": ("beanllm.domain.embeddings", "EmbeddingResult"),
+    "GeminiEmbedding": ("beanllm.domain.embeddings", "GeminiEmbedding"),
+    "JinaEmbedding": ("beanllm.domain.embeddings", "JinaEmbedding"),
+    "MistralEmbedding": ("beanllm.domain.embeddings", "MistralEmbedding"),
+    "OllamaEmbedding": ("beanllm.domain.embeddings", "OllamaEmbedding"),
+    "OpenAIEmbedding": ("beanllm.domain.embeddings", "OpenAIEmbedding"),
+    "VoyageEmbedding": ("beanllm.domain.embeddings", "VoyageEmbedding"),
+    "batch_cosine_similarity": ("beanllm.domain.embeddings", "batch_cosine_similarity"),
+    "cosine_similarity": ("beanllm.domain.embeddings", "cosine_similarity"),
+    "embed": ("beanllm.domain.embeddings", "embed"),
+    "embed_sync": ("beanllm.domain.embeddings", "embed_sync"),
+    "euclidean_distance": ("beanllm.domain.embeddings", "euclidean_distance"),
+    "find_hard_negatives": ("beanllm.domain.embeddings", "find_hard_negatives"),
+    "mmr_search": ("beanllm.domain.embeddings", "mmr_search"),
+    "normalize_vector": ("beanllm.domain.embeddings", "normalize_vector"),
+    "query_expansion": ("beanllm.domain.embeddings", "query_expansion"),
+    # Evaluation
+    "AnswerRelevanceMetric": ("beanllm.domain.evaluation", "AnswerRelevanceMetric"),
+    "BaseMetric": ("beanllm.domain.evaluation", "BaseMetric"),
+    "BatchEvaluationResult": ("beanllm.domain.evaluation", "BatchEvaluationResult"),
+    "BLEUMetric": ("beanllm.domain.evaluation", "BLEUMetric"),
+    "ContextPrecisionMetric": ("beanllm.domain.evaluation", "ContextPrecisionMetric"),
+    "CustomMetric": ("beanllm.domain.evaluation", "CustomMetric"),
+    "EvaluationResult": ("beanllm.domain.evaluation", "EvaluationResult"),
+    "ExactMatchMetric": ("beanllm.domain.evaluation", "ExactMatchMetric"),
+    "F1ScoreMetric": ("beanllm.domain.evaluation", "F1ScoreMetric"),
+    "FaithfulnessMetric": ("beanllm.domain.evaluation", "FaithfulnessMetric"),
+    "LLMJudgeMetric": ("beanllm.domain.evaluation", "LLMJudgeMetric"),
+    "MetricType": ("beanllm.domain.evaluation", "MetricType"),
+    "ROUGEMetric": ("beanllm.domain.evaluation", "ROUGEMetric"),
+    "SemanticSimilarityMetric": ("beanllm.domain.evaluation", "SemanticSimilarityMetric"),
+    # Fine-tuning
+    "BaseFineTuningProvider": ("beanllm.domain.finetuning", "BaseFineTuningProvider"),
+    "DatasetBuilder": ("beanllm.domain.finetuning", "DatasetBuilder"),
+    "DataValidator": ("beanllm.domain.finetuning", "DataValidator"),
+    "FineTuningConfig": ("beanllm.domain.finetuning", "FineTuningConfig"),
+    "FineTuningCostEstimator": ("beanllm.domain.finetuning", "FineTuningCostEstimator"),
+    "FineTuningJob": ("beanllm.domain.finetuning", "FineTuningJob"),
+    "FineTuningMetrics": ("beanllm.domain.finetuning", "FineTuningMetrics"),
+    "FineTuningStatus": ("beanllm.domain.finetuning", "FineTuningStatus"),
+    "ModelProvider": ("beanllm.domain.finetuning", "ModelProvider"),
+    "OpenAIFineTuningProvider": ("beanllm.domain.finetuning", "OpenAIFineTuningProvider"),
+    "TrainingExample": ("beanllm.domain.finetuning", "TrainingExample"),
+    # Graph
+    "AgentNode": ("beanllm.domain.graph", "AgentNode"),
+    "BaseNode": ("beanllm.domain.graph", "BaseNode"),
+    "ConditionalNode": ("beanllm.domain.graph", "ConditionalNode"),
+    "FunctionNode": ("beanllm.domain.graph", "FunctionNode"),
+    "GraderNode": ("beanllm.domain.graph", "GraderNode"),
+    "GraphState": ("beanllm.domain.graph", "GraphState"),
+    "LLMNode": ("beanllm.domain.graph", "LLMNode"),
+    "LoopNode": ("beanllm.domain.graph", "LoopNode"),
+    "NodeCache": ("beanllm.domain.graph", "NodeCache"),
+    "ParallelNode": ("beanllm.domain.graph", "ParallelNode"),
+    # Loaders
+    "BaseDocumentLoader": ("beanllm.domain.loaders", "BaseDocumentLoader"),
+    "CSVLoader": ("beanllm.domain.loaders", "CSVLoader"),
+    "DirectoryLoader": ("beanllm.domain.loaders", "DirectoryLoader"),
+    "Document": ("beanllm.domain.loaders", "Document"),
+    "DocumentLoader": ("beanllm.domain.loaders", "DocumentLoader"),
+    "PDFLoader": ("beanllm.domain.loaders", "PDFLoader"),
+    "TextLoader": ("beanllm.domain.loaders", "TextLoader"),
+    "load_documents": ("beanllm.domain.loaders", "load_documents"),
+    # Text Splitters
+    "BaseTextSplitter": ("beanllm.domain.splitters", "BaseTextSplitter"),
+    "CharacterTextSplitter": ("beanllm.domain.splitters", "CharacterTextSplitter"),
+    "MarkdownHeaderTextSplitter": (
+        "beanllm.domain.splitters",
+        "MarkdownHeaderTextSplitter",
+    ),
+    "RecursiveCharacterTextSplitter": (
+        "beanllm.domain.splitters",
+        "RecursiveCharacterTextSplitter",
+    ),
+    "TextSplitter": ("beanllm.domain.splitters", "TextSplitter"),
+    "TokenTextSplitter": ("beanllm.domain.splitters", "TokenTextSplitter"),
+    "split_documents": ("beanllm.domain.splitters", "split_documents"),
+    # Memory
+    "BaseMemory": ("beanllm.domain.memory", "BaseMemory"),
+    "BufferMemory": ("beanllm.domain.memory", "BufferMemory"),
+    "ConversationMemory": ("beanllm.domain.memory", "ConversationMemory"),
+    "Message": ("beanllm.domain.memory", "Message"),
+    "SummaryMemory": ("beanllm.domain.memory", "SummaryMemory"),
+    "TokenMemory": ("beanllm.domain.memory", "TokenMemory"),
+    "WindowMemory": ("beanllm.domain.memory", "WindowMemory"),
+    "create_memory": ("beanllm.domain.memory", "create_memory"),
+    # Multi-Agent
+    "AgentMessage": ("beanllm.domain.multi_agent", "AgentMessage"),
+    "CommunicationBus": ("beanllm.domain.multi_agent", "CommunicationBus"),
+    "CoordinationStrategy": ("beanllm.domain.multi_agent", "CoordinationStrategy"),
+    "DebateStrategy": ("beanllm.domain.multi_agent", "DebateStrategy"),
+    "HierarchicalStrategy": ("beanllm.domain.multi_agent", "HierarchicalStrategy"),
+    "MessageType": ("beanllm.domain.multi_agent", "MessageType"),
+    "ParallelStrategy": ("beanllm.domain.multi_agent", "ParallelStrategy"),
+    "SequentialStrategy": ("beanllm.domain.multi_agent", "SequentialStrategy"),
+    # Output Parsers
+    "BaseOutputParser": ("beanllm.domain.parsers", "BaseOutputParser"),
+    "BooleanOutputParser": ("beanllm.domain.parsers", "BooleanOutputParser"),
+    "CommaSeparatedListOutputParser": (
+        "beanllm.domain.parsers",
+        "CommaSeparatedListOutputParser",
+    ),
+    "DatetimeOutputParser": ("beanllm.domain.parsers", "DatetimeOutputParser"),
+    "EnumOutputParser": ("beanllm.domain.parsers", "EnumOutputParser"),
+    "JSONOutputParser": ("beanllm.domain.parsers", "JSONOutputParser"),
+    "NumberedListOutputParser": ("beanllm.domain.parsers", "NumberedListOutputParser"),
+    "OutputParserException": ("beanllm.domain.parsers", "OutputParserException"),
+    "PydanticOutputParser": ("beanllm.domain.parsers", "PydanticOutputParser"),
+    "RetryOutputParser": ("beanllm.domain.parsers", "RetryOutputParser"),
+    "parse_bool": ("beanllm.domain.parsers", "parse_bool"),
+    "parse_json": ("beanllm.domain.parsers", "parse_json"),
+    "parse_list": ("beanllm.domain.parsers", "parse_list"),
+    # Prompts
+    "BasePromptTemplate": ("beanllm.domain.prompts", "BasePromptTemplate"),
+    "ChatMessage": ("beanllm.domain.prompts", "ChatMessage"),
+    "ChatPromptTemplate": ("beanllm.domain.prompts", "ChatPromptTemplate"),
+    "ExampleSelector": ("beanllm.domain.prompts", "ExampleSelector"),
+    "FewShotPromptTemplate": ("beanllm.domain.prompts", "FewShotPromptTemplate"),
+    "PredefinedTemplates": ("beanllm.domain.prompts", "PredefinedTemplates"),
+    "PromptCache": ("beanllm.domain.prompts", "PromptCache"),
+    "PromptComposer": ("beanllm.domain.prompts", "PromptComposer"),
+    "PromptExample": ("beanllm.domain.prompts", "PromptExample"),
+    "PromptOptimizer": ("beanllm.domain.prompts", "PromptOptimizer"),
+    "PromptTemplate": ("beanllm.domain.prompts", "PromptTemplate"),
+    "PromptVersioning": ("beanllm.domain.prompts", "PromptVersioning"),
+    "SystemMessageTemplate": ("beanllm.domain.prompts", "SystemMessageTemplate"),
+    "TemplateFormat": ("beanllm.domain.prompts", "TemplateFormat"),
+    "clear_cache": ("beanllm.domain.prompts", "clear_cache"),
+    "create_chat_template": ("beanllm.domain.prompts", "create_chat_template"),
+    "create_few_shot_template": ("beanllm.domain.prompts", "create_few_shot_template"),
+    "create_prompt_template": ("beanllm.domain.prompts", "create_prompt_template"),
+    "get_cache_stats": ("beanllm.domain.prompts", "get_cache_stats"),
+    "get_cached_prompt": ("beanllm.domain.prompts", "get_cached_prompt"),
+    # State Graph
+    "Checkpoint": ("beanllm.domain.state_graph", "Checkpoint"),
+    "END": ("beanllm.domain.state_graph", "END"),
+    "GraphConfig": ("beanllm.domain.state_graph", "GraphConfig"),
+    "GraphExecution": ("beanllm.domain.state_graph", "GraphExecution"),
+    "NodeExecution": ("beanllm.domain.state_graph", "NodeExecution"),
+    # Tools
+    "Tool": ("beanllm.domain.tools", "Tool"),
+    "ToolParameter": ("beanllm.domain.tools", "ToolParameter"),
+    "ToolRegistry": ("beanllm.domain.tools", "ToolRegistry"),
+    "calculator": ("beanllm.domain.tools", "calculator"),
+    "echo": ("beanllm.domain.tools", "echo"),
+    "get_all_tools": ("beanllm.domain.tools", "get_all_tools"),
+    "get_current_time": ("beanllm.domain.tools", "get_current_time"),
+    "get_tool": ("beanllm.domain.tools", "get_tool"),
+    "register_tool": ("beanllm.domain.tools", "register_tool"),
+    # Advanced Tools
+    "APIConfig": ("beanllm.domain.tools.advanced", "APIConfig"),
+    "APIProtocol": ("beanllm.domain.tools.advanced", "APIProtocol"),
+    "AdvancedToolRegistry": ("beanllm.domain.tools.advanced", "ToolRegistry"),
+    "ExternalAPITool": ("beanllm.domain.tools.advanced", "ExternalAPITool"),
+    "SchemaGenerator": ("beanllm.domain.tools.advanced", "SchemaGenerator"),
+    "ToolChain": ("beanllm.domain.tools.advanced", "ToolChain"),
+    "ToolValidator": ("beanllm.domain.tools.advanced", "ToolValidator"),
+    "default_registry": ("beanllm.domain.tools.advanced", "default_registry"),
+    "tool": ("beanllm.domain.tools.advanced", "tool"),
+    # Vector Stores
+    "BaseVectorStore": ("beanllm.domain.vector_stores", "BaseVectorStore"),
+    "ChromaVectorStore": ("beanllm.domain.vector_stores", "ChromaVectorStore"),
+    "FAISSVectorStore": ("beanllm.domain.vector_stores", "FAISSVectorStore"),
+    "PineconeVectorStore": ("beanllm.domain.vector_stores", "PineconeVectorStore"),
+    "QdrantVectorStore": ("beanllm.domain.vector_stores", "QdrantVectorStore"),
+    "VectorSearchResult": ("beanllm.domain.vector_stores", "VectorSearchResult"),
+    "VectorStore": ("beanllm.domain.vector_stores", "VectorStore"),
+    "VectorStoreBuilder": ("beanllm.domain.vector_stores", "VectorStoreBuilder"),
+    "WeaviateVectorStore": ("beanllm.domain.vector_stores", "WeaviateVectorStore"),
+    "create_vector_store": ("beanllm.domain.vector_stores", "create_vector_store"),
+    "from_documents": ("beanllm.domain.vector_stores", "from_documents"),
+    # Vision
+    "CLIPEmbedding": ("beanllm.domain.vision", "CLIPEmbedding"),
+    "ImageDocument": ("beanllm.domain.vision", "ImageDocument"),
+    "ImageLoader": ("beanllm.domain.vision", "ImageLoader"),
+    "MultimodalEmbedding": ("beanllm.domain.vision", "MultimodalEmbedding"),
+    "PDFWithImagesLoader": ("beanllm.domain.vision", "PDFWithImagesLoader"),
+    "create_vision_embedding": ("beanllm.domain.vision", "create_vision_embedding"),
+    "load_images": ("beanllm.domain.vision", "load_images"),
+    "load_pdf_with_images": ("beanllm.domain.vision", "load_pdf_with_images"),
+    # Web Search
+    "BaseSearchEngine": ("beanllm.domain.web_search", "BaseSearchEngine"),
+    "BingSearch": ("beanllm.domain.web_search", "BingSearch"),
+    "DuckDuckGoSearch": ("beanllm.domain.web_search", "DuckDuckGoSearch"),
+    "GoogleSearch": ("beanllm.domain.web_search", "GoogleSearch"),
+    "SearchEngine": ("beanllm.domain.web_search", "SearchEngine"),
+    "SearchResponse": ("beanllm.domain.web_search", "SearchResponse"),
+    "SearchResult": ("beanllm.domain.web_search", "SearchResult"),
+    "WebScraper": ("beanllm.domain.web_search", "WebScraper"),
+    # ── DTO ─────────────────────────────────────────────────────────────
+    "RAGResponse": ("beanllm.dto.response.core.rag_response", "RAGResponse"),
+    # ── Facade ──────────────────────────────────────────────────────────
+    "Agent": ("beanllm.facade.core.agent_facade", "Agent"),
+    "AgentResult": ("beanllm.facade.core.agent_facade", "AgentResult"),
+    "AgentStep": ("beanllm.facade.core.agent_facade", "AgentStep"),
+    "create_agent": ("beanllm.facade.core.agent_facade", "create_agent"),
+    "Chain": ("beanllm.facade.core.chain_facade", "Chain"),
+    "ChainBuilder": ("beanllm.facade.core.chain_facade", "ChainBuilder"),
+    "ChainResult": ("beanllm.facade.core.chain_facade", "ChainResult"),
+    "ParallelChain": ("beanllm.facade.core.chain_facade", "ParallelChain"),
+    "PromptChain": ("beanllm.facade.core.chain_facade", "PromptChain"),
+    "SequentialChain": ("beanllm.facade.core.chain_facade", "SequentialChain"),
+    "create_chain": ("beanllm.facade.core.chain_facade", "create_chain"),
+    "ChatResponse": ("beanllm.facade.core.client_facade", "ChatResponse"),
+    "Client": ("beanllm.facade.core.client_facade", "Client"),
+    "create_client": ("beanllm.facade.core.client_facade", "create_client"),
+    "RAG": ("beanllm.facade.core.rag_facade", "RAG"),
+    "RAGBuilder": ("beanllm.facade.core.rag_facade", "RAGBuilder"),
+    "RAGChain": ("beanllm.facade.core.rag_facade", "RAGChain"),
+    "create_rag": ("beanllm.facade.core.rag_facade", "create_rag"),
+    "Graph": ("beanllm.facade.advanced.graph_facade", "Graph"),
+    "create_simple_graph": ("beanllm.facade.advanced.graph_facade", "create_simple_graph"),
+    "MultiAgentCoordinator": (
+        "beanllm.facade.advanced.multi_agent_facade",
+        "MultiAgentCoordinator",
+    ),
+    "create_coordinator": (
+        "beanllm.facade.advanced.multi_agent_facade",
+        "create_coordinator",
+    ),
+    "quick_debate": ("beanllm.facade.advanced.multi_agent_facade", "quick_debate"),
+    "StateGraph": ("beanllm.facade.advanced.state_graph_facade", "StateGraph"),
+    "create_state_graph": (
+        "beanllm.facade.advanced.state_graph_facade",
+        "create_state_graph",
+    ),
+    # Audio Facade
+    "AudioRAG": ("beanllm.facade.ml.audio_facade", "AudioRAG"),
+    "TextToSpeech": ("beanllm.facade.ml.audio_facade", "TextToSpeech"),
+    "WhisperSTT": ("beanllm.facade.ml.audio_facade", "WhisperSTT"),
+    "text_to_speech": ("beanllm.facade.ml.audio_facade", "text_to_speech"),
+    "transcribe_audio": ("beanllm.facade.ml.audio_facade", "transcribe_audio"),
+    # Evaluation Facade
+    "Evaluator": ("beanllm.facade.ml.evaluation_facade", "Evaluator"),
+    "create_evaluator": ("beanllm.facade.ml.evaluation_facade", "create_evaluator"),
+    "evaluate_rag": ("beanllm.facade.ml.evaluation_facade", "evaluate_rag"),
+    "evaluate_text": ("beanllm.facade.ml.evaluation_facade", "evaluate_text"),
+    # Fine-tuning Facade
+    "FineTuningManagerFacade": (
+        "beanllm.facade.ml.finetuning_facade",
+        "FineTuningManagerFacade",
+    ),
+    "create_finetuning_provider": (
+        "beanllm.facade.ml.finetuning_facade",
+        "create_finetuning_provider",
+    ),
+    "quick_finetune": ("beanllm.facade.ml.finetuning_facade", "quick_finetune"),
+    # Vision RAG Facade
+    "MultimodalRAG": ("beanllm.facade.ml.vision_rag_facade", "MultimodalRAG"),
+    "VisionRAG": ("beanllm.facade.ml.vision_rag_facade", "VisionRAG"),
+    "create_vision_rag": ("beanllm.facade.ml.vision_rag_facade", "create_vision_rag"),
+    # Web Search Facade
+    "WebSearch": ("beanllm.facade.ml.web_search_facade", "WebSearch"),
+    # ── Infrastructure ──────────────────────────────────────────────────
+    "AdaptedParameters": ("beanllm.infrastructure.adapter", "AdaptedParameters"),
+    "HybridModelInfo": ("beanllm.infrastructure.hybrid", "HybridModelInfo"),
+    "HybridModelManager": ("beanllm.infrastructure.hybrid", "HybridModelManager"),
+    "MetadataInferrer": ("beanllm.infrastructure.inferrer", "MetadataInferrer"),
+    "MODELS": ("beanllm.infrastructure.models", "MODELS"),
+    "ModelCapabilityInfo": ("beanllm.infrastructure.models", "ModelCapabilityInfo"),
+    "ModelRegistry": ("beanllm.infrastructure.registry", "ModelRegistry"),
+    "ModelScanner": ("beanllm.infrastructure.scanner", "ModelScanner"),
+    "ModelStatus": ("beanllm.infrastructure.models", "ModelStatus"),
+    "ParameterAdapter": ("beanllm.infrastructure.adapter", "ParameterAdapter"),
+    "ParameterInfo": ("beanllm.infrastructure.models", "ParameterInfo"),
+    "ProviderInfo": ("beanllm.infrastructure.models", "ProviderInfo"),
+    "ScannedModel": ("beanllm.infrastructure.scanner", "ScannedModel"),
+    "adapt_parameters": ("beanllm.infrastructure.adapter", "adapt_parameters"),
+    "create_hybrid_manager": ("beanllm.infrastructure.hybrid", "create_hybrid_manager"),
+    "get_all_models": ("beanllm.infrastructure.models", "get_all_models"),
+    "get_default_model": ("beanllm.infrastructure.models", "get_default_model"),
+    "get_model_registry": ("beanllm.infrastructure.registry", "get_model_registry"),
+    "get_models_by_provider": ("beanllm.infrastructure.models", "get_models_by_provider"),
+    "get_models_by_type": ("beanllm.infrastructure.models", "get_models_by_type"),
+    "validate_parameters": ("beanllm.infrastructure.adapter", "validate_parameters"),
+    # ── Provider Factory ────────────────────────────────────────────────
+    "ProviderFactory": ("beanllm.providers", "ProviderFactory"),
+    # ── Utils ───────────────────────────────────────────────────────────
+    # Callbacks
+    "BaseCallback": ("beanllm.utils.integration", "BaseCallback"),
+    "CallbackEvent": ("beanllm.utils.integration", "CallbackEvent"),
+    "CallbackManager": ("beanllm.utils.integration", "CallbackManager"),
+    "CostTrackingCallback": ("beanllm.utils.integration", "CostTrackingCallback"),
+    "FunctionCallback": ("beanllm.utils.integration", "FunctionCallback"),
+    "LoggingCallback": ("beanllm.utils.integration", "LoggingCallback"),
+    "StreamingCallback": ("beanllm.utils.integration", "StreamingCallback"),
+    "TimingCallback": ("beanllm.utils.integration", "TimingCallback"),
+    "create_callback_manager": ("beanllm.utils.integration", "create_callback_manager"),
+    # Error Handling
+    "CircuitBreaker": ("beanllm.utils.integration", "CircuitBreaker"),
+    "CircuitBreakerConfig": ("beanllm.utils.integration", "CircuitBreakerConfig"),
+    "CircuitBreakerError": ("beanllm.utils.integration", "CircuitBreakerError"),
+    "CircuitState": ("beanllm.utils.integration", "CircuitState"),
+    "ErrorHandler": ("beanllm.utils.integration", "ErrorHandler"),
+    "ErrorHandlerConfig": ("beanllm.utils.integration", "ErrorHandlerConfig"),
+    "ErrorRecord": ("beanllm.utils.integration", "ErrorRecord"),
+    "ErrorTracker": ("beanllm.utils.integration", "ErrorTracker"),
+    "FallbackHandler": ("beanllm.utils.integration", "FallbackHandler"),
+    "LLMKitError": ("beanllm.utils.integration", "LLMKitError"),
+    "MaxRetriesExceededError": ("beanllm.utils.integration", "MaxRetriesExceededError"),
+    "RateLimitConfig": ("beanllm.utils.integration", "RateLimitConfig"),
+    "RateLimiter": ("beanllm.utils.integration", "RateLimiter"),
+    "RateLimitError": ("beanllm.utils.integration", "RateLimitError"),
+    "RetryConfig": ("beanllm.utils.integration", "RetryConfig"),
+    "RetryHandler": ("beanllm.utils.integration", "RetryHandler"),
+    "RetryStrategy": ("beanllm.utils.integration", "RetryStrategy"),
+    "TimeoutError": ("beanllm.utils.integration", "TimeoutError"),
+    "ValidationError": ("beanllm.utils.integration", "ValidationError"),
+    "circuit_breaker": ("beanllm.utils.integration", "circuit_breaker"),
+    "fallback": ("beanllm.utils.integration", "fallback"),
+    "get_error_tracker": ("beanllm.utils.integration", "get_error_tracker"),
+    "rate_limit": ("beanllm.utils.integration", "rate_limit"),
+    "timeout": ("beanllm.utils.integration", "timeout"),
+    "with_error_handling": ("beanllm.utils.integration", "with_error_handling"),
+    # Config
+    "Config": ("beanllm.utils.config", "Config"),
+    "EnvConfig": ("beanllm.utils.config", "EnvConfig"),
+    # Token Counter
+    "CostEstimate": ("beanllm.utils.token_counter", "CostEstimate"),
+    "CostEstimator": ("beanllm.utils.token_counter", "CostEstimator"),
+    "ModelContextWindow": ("beanllm.utils.token_counter", "ModelContextWindow"),
+    "ModelPricing": ("beanllm.utils.token_counter", "ModelPricing"),
+    "TokenCounter": ("beanllm.utils.token_counter", "TokenCounter"),
+    "count_message_tokens": ("beanllm.utils.token_counter", "count_message_tokens"),
+    "count_tokens": ("beanllm.utils.token_counter", "count_tokens"),
+    "estimate_cost": ("beanllm.utils.token_counter", "estimate_cost"),
+    "get_cheapest_model": ("beanllm.utils.token_counter", "get_cheapest_model"),
+    "get_context_window": ("beanllm.utils.token_counter", "get_context_window"),
+    # Streaming
+    "StreamBuffer": ("beanllm.utils.streaming", "StreamBuffer"),
+    "StreamResponse": ("beanllm.utils.streaming", "StreamResponse"),
+    "StreamStats": ("beanllm.utils.streaming", "StreamStats"),
+    "pretty_stream": ("beanllm.utils.streaming", "pretty_stream"),
+    "stream_collect": ("beanllm.utils.streaming", "stream_collect"),
+    "stream_print": ("beanllm.utils.streaming", "stream_print"),
+    "stream_response": ("beanllm.utils.streaming", "stream_response"),
+    # Tracer
+    "Trace": ("beanllm.utils.tracer", "Trace"),
+    "Tracer": ("beanllm.utils.tracer", "Tracer"),
+    "TraceSpan": ("beanllm.utils.tracer", "TraceSpan"),
+    "enable_tracing": ("beanllm.utils.tracer", "enable_tracing"),
+    "get_tracer": ("beanllm.utils.tracer", "get_tracer"),
+    # Logger
+    "get_logger": ("beanllm.utils.logging", "get_logger"),
+    # CLI
+    "main": ("beanllm.utils.cli", "main"),
+    # Retry
+    "retry": ("beanllm.utils.resilience.retry", "retry"),
+    # ── Compatibility aliases ───────────────────────────────────────────
+    "FineTuningManager": ("beanllm.facade.ml.finetuning_facade", "FineTuningManagerFacade"),
+    "get_registry": ("beanllm.infrastructure.registry", "get_model_registry"),
+}
+
+_OPTIONAL_LAZY_IMPORT_MAP: dict[str, tuple[str, str]] = {
+    # RAG Debug (optional deps)
+    "EmbeddingInfo": ("beanllm.utils.rag_debug", "EmbeddingInfo"),
+    "RAGDebugger": ("beanllm.utils.rag_debug", "RAGDebugger"),
+    "SimilarityInfo": ("beanllm.utils.rag_debug", "SimilarityInfo"),
+    "compare_texts": ("beanllm.utils.rag_debug", "compare_texts"),
+    "inspect_embedding": ("beanllm.utils.rag_debug", "inspect_embedding"),
+    "similarity_heatmap": ("beanllm.utils.rag_debug", "similarity_heatmap"),
+    "validate_pipeline": ("beanllm.utils.rag_debug", "validate_pipeline"),
+    "visualize_embeddings_2d": ("beanllm.utils.rag_debug", "visualize_embeddings_2d"),
+}
+
 __all__ = [
     # Infrastructure
     "ParameterAdapter",
@@ -400,12 +410,6 @@ __all__ = [
     "MetadataInferrer",
     "ModelScanner",
     "ScannedModel",
-    # "BaseMLModel",
-    # "TensorFlowModel",
-    # "PyTorchModel",
-    # "SklearnModel",
-    # "MLModelFactory",
-    # "load_ml_model",
     # Facade
     "Client",
     "create_client",
@@ -437,7 +441,6 @@ __all__ = [
     "MultimodalRAG",
     "create_vision_rag",
     "WebSearch",
-    # "search_web",  # domain.tools에서 이미 export됨
     "AudioRAG",
     "TextToSpeech",
     "WhisperSTT",
@@ -535,7 +538,6 @@ __all__ = [
     "echo",
     "calculator",
     "get_current_time",
-    # "search_web",  # domain.tools에서 이미 export됨
     # Domain - Advanced Tools
     "SchemaGenerator",
     "ToolValidator",
@@ -722,9 +724,6 @@ __all__ = [
     "main",
 ]
 
-# 하위 호환성을 위한 별칭
-get_model_registry = get_registry
-
 
 # 설치 안내 메시지 (선택적 의존성)
 def _check_optional_dependencies():
@@ -816,12 +815,24 @@ def _print_welcome_banner():
     )
 
 
-# 패키지 import 시 확인 (경고만, 에러 아님)
-try:
-    _check_optional_dependencies()
-    _print_welcome_banner()
-except Exception as e:
-    # 에러 발생해도 import는 성공
-    import logging
+def __getattr__(name: str):
+    if name in _LAZY_IMPORT_MAP:
+        mod_path, attr = _LAZY_IMPORT_MAP[name]
+        mod = importlib.import_module(mod_path)
+        val = getattr(mod, attr)
+        globals()[name] = val
+        return val
+    if name in _OPTIONAL_LAZY_IMPORT_MAP:
+        mod_path, attr = _OPTIONAL_LAZY_IMPORT_MAP[name]
+        try:
+            mod = importlib.import_module(mod_path)
+            val = getattr(mod, attr)
+        except ImportError:
+            val = None
+        globals()[name] = val
+        return val
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    logging.getLogger(__name__).debug(f"Initialization check failed (safe to ignore): {e}")
+
+def __dir__():
+    return list(__all__)
