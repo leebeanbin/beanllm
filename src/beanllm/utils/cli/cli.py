@@ -121,8 +121,21 @@ console = get_console()
 
 
 def main():
-    if len(sys.argv) < 2:
-        print_help()
+    if len(sys.argv) < 2 or sys.argv[1].startswith("--theme"):
+        # No args → OpenCode-style interactive TUI
+        from beanllm.ui.interactive.themes import set_theme
+        from beanllm.ui.interactive.tui import run_interactive_tui
+
+        # --theme 옵션 파싱
+        theme_name = "dark"
+        for i, arg in enumerate(sys.argv[1:], 1):
+            if arg == "--theme" and i + 1 < len(sys.argv):
+                theme_name = sys.argv[i + 1]
+            elif arg.startswith("--theme="):
+                theme_name = arg.split("=", 1)[1]
+        set_theme(theme_name)
+
+        asyncio.run(run_interactive_tui())
         return
 
     command = sys.argv[1]
