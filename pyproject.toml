@@ -247,11 +247,12 @@ package-dir = {"" = "src"}
 # 자동으로 모든 패키지 찾기 (find_packages 사용)
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["beanllm*"]
+include = ["beanllm*", "beantui*"]
 exclude = ["tests*", "*.tests*", "*.tests.*", "tests.*"]
 
 [tool.setuptools.package-data]
 beanllm = ["data/*.json"]
+beantui = ["py.typed"]
 
 # Ruff 설정 (linter/formatter)
 [tool.ruff]
