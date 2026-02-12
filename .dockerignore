@@ -1,0 +1,57 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.egg-info
+.eggs
+dist
+build
+*.egg
+.mypy_cache
+.ruff_cache
+.pytest_cache
+htmlcov
+.coverage
+.tox
+.nox
+.venv
+venv
+env
+
+# Node.js
+node_modules
+.next
+.turbo
+
+# IDE
+.vscode
+.cursor
+.idea
+*.swp
+*.swo
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Docs & tests (not needed in image)
+docs
+tests
+*.md
+LICENSE
+CHANGELOG*
+.pre-commit-config.yaml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.log
+*.bak
+*.tmp

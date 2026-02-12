@@ -1,0 +1,22 @@
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.mypy_cache
+.ruff_cache
+.pytest_cache
+
+# IDE
+.vscode
+.cursor
+.idea
+
+# Env files (secrets - mount at runtime)
+.env
+
+# Docs
+*.md
+docs/
+
+# Test data
+test_data/
