@@ -6,9 +6,6 @@ Uses Python best practices: context managers, generators, and duck typing.
 """
 
 import logging
-import shutil
-import tempfile
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -22,6 +19,7 @@ from schemas.responses.rag import (
     RAGBuildResponse,
     RAGQueryResponse,
 )
+from utils.file_upload import save_upload_to_temp, temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -87,16 +85,6 @@ def _get_document_count(chain: Any) -> int:
     return 0
 
 
-@asynccontextmanager
-async def temp_directory():
-    """Context manager for temporary directory cleanup."""
-    temp_dir = tempfile.mkdtemp()
-    try:
-        yield temp_dir
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-
 # ============================================================================
 # Endpoints
 # ============================================================================
@@ -160,22 +148,20 @@ async def rag_build_from_files(
         from beanllm.facade.core import Client, RAGBuilder
 
         async with temp_directory() as temp_dir:
-            file_paths = []
+            file_paths: List[str] = []
 
-            # Save uploaded files with validation
+            # Save uploaded files with sanitization + streaming + size validation
             for file in files:
-                ext = Path(file.filename).suffix.lower() if file.filename else ""
-
-                if ext not in SUPPORTED_EXTENSIONS:
-                    logger.warning(f"Unsupported file type: {ext}, skipping {file.filename}")
+                try:
+                    saved = await save_upload_to_temp(
+                        file,
+                        temp_dir,
+                        allowed_extensions=SUPPORTED_EXTENSIONS,
+                    )
+                    file_paths.append(str(saved))
+                except HTTPException as exc:
+                    logger.warning("Skipping %s: %s", file.filename, exc.detail)
                     continue
-
-                file_path = Path(temp_dir) / (file.filename or f"file_{len(file_paths)}{ext}")
-                content = await file.read()
-
-                # Use Path.write_bytes for cleaner file handling
-                file_path.write_bytes(content)
-                file_paths.append(str(file_path))
 
             if not file_paths:
                 raise HTTPException(400, "No valid files uploaded")
@@ -379,22 +365,14 @@ async def session_rag_upload_files(
             failed_files = []
 
             for file in files:
-                ext = Path(file.filename).suffix.lower() if file.filename else ""
-
-                if ext not in SUPPORTED_EXTENSIONS:
-                    failed_files.append(
-                        {
-                            "filename": file.filename,
-                            "reason": f"Unsupported file type: {ext}",
-                        }
-                    )
-                    continue
-
                 try:
-                    # 임시 파일 저장
-                    file_path = Path(temp_dir) / (file.filename or f"file_{added_count}{ext}")
-                    content = await file.read()
-                    file_path.write_bytes(content)
+                    # 파일명 살균 + 스트리밍 저장 + 크기 검증
+                    file_path = await save_upload_to_temp(
+                        file,
+                        temp_dir,
+                        allowed_extensions=SUPPORTED_EXTENSIONS,
+                    )
+                    ext = file_path.suffix.lower()
 
                     # 문서 로드
                     docs = DocumentLoader.load(str(file_path))
@@ -413,14 +391,11 @@ async def session_rag_upload_files(
                         if success:
                             added_count += 1
 
+                except HTTPException as exc:
+                    failed_files.append({"filename": file.filename, "reason": exc.detail})
                 except Exception as e:
                     logger.warning(f"Failed to process file {file.filename}: {e}")
-                    failed_files.append(
-                        {
-                            "filename": file.filename,
-                            "reason": str(e),
-                        }
-                    )
+                    failed_files.append({"filename": file.filename, "reason": str(e)})
 
             # 세션 정보 가져오기
             session_info = session_rag_service.get_session_info(session_id)

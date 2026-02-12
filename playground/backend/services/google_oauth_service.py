@@ -174,29 +174,29 @@ class GoogleOAuthService:
             raise ValueError("Google OAuth is not configured")
 
         try:
-            import httpx
+            from utils.http_client import get_http_client
 
             # State에서 user_id 추출
             user_id = state.split(":")[0] if ":" in state else "default"
 
             # 토큰 교환
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    "https://oauth2.googleapis.com/token",
-                    data={
-                        "client_id": self._client_id,
-                        "client_secret": self._client_secret,
-                        "code": code,
-                        "grant_type": "authorization_code",
-                        "redirect_uri": self._redirect_uri,
-                    },
-                )
+            client = get_http_client()
+            response = await client.post(
+                "https://oauth2.googleapis.com/token",
+                data={
+                    "client_id": self._client_id,
+                    "client_secret": self._client_secret,
+                    "code": code,
+                    "grant_type": "authorization_code",
+                    "redirect_uri": self._redirect_uri,
+                },
+            )
 
-                if response.status_code != 200:
-                    error_data = response.json()
-                    raise ValueError(f"Token exchange failed: {error_data}")
+            if response.status_code != 200:
+                error_data = response.json()
+                raise ValueError(f"Token exchange failed: {error_data}")
 
-                token_data = response.json()
+            token_data = response.json()
 
             # 토큰 정보 추출
             access_token = token_data["access_token"]
@@ -308,26 +308,26 @@ class GoogleOAuthService:
         db,
     ):
         """토큰 갱신"""
-        import httpx
+        from utils.http_client import get_http_client
 
         refresh_token = encryption_service.decrypt(refresh_token_encrypted)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://oauth2.googleapis.com/token",
-                data={
-                    "client_id": self._client_id,
-                    "client_secret": self._client_secret,
-                    "refresh_token": refresh_token,
-                    "grant_type": "refresh_token",
-                },
-            )
+        client = get_http_client()
+        response = await client.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "client_id": self._client_id,
+                "client_secret": self._client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            },
+        )
 
-            if response.status_code != 200:
-                error_data = response.json()
-                raise ValueError(f"Token refresh failed: {error_data}")
+        if response.status_code != 200:
+            error_data = response.json()
+            raise ValueError(f"Token refresh failed: {error_data}")
 
-            token_data = response.json()
+        token_data = response.json()
 
         # 새 토큰 저장
         access_token = token_data["access_token"]
@@ -436,13 +436,13 @@ class GoogleOAuthService:
                     access_token = encryption_service.decrypt(access_token_encrypted)
 
                     # Google에 토큰 취소 요청
-                    import httpx
+                    from utils.http_client import get_http_client
 
-                    async with httpx.AsyncClient() as client:
-                        await client.post(
-                            "https://oauth2.googleapis.com/revoke",
-                            params={"token": access_token},
-                        )
+                    revoke_client = get_http_client()
+                    await revoke_client.post(
+                        "https://oauth2.googleapis.com/revoke",
+                        params={"token": access_token},
+                    )
 
                 # MongoDB에서 삭제
                 await db.google_oauth_tokens.delete_one({"user_id": user_id})

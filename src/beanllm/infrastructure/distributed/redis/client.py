@@ -61,6 +61,7 @@ def get_redis_client():
         socket_connect_timeout = float(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "5.0"))
 
         try:
+            max_connections = int(os.getenv("REDIS_MAX_CONNECTIONS", "50"))
             _redis_client = redis.Redis(
                 host=host,
                 port=port,
@@ -71,8 +72,10 @@ def get_redis_client():
                 socket_connect_timeout=socket_connect_timeout,
                 retry_on_timeout=True,  # 타임아웃 시 재시도
                 health_check_interval=30,  # 30초마다 헬스 체크
+                max_connections=max_connections,  # 커넥션 풀 크기
+                socket_keepalive=True,  # TCP keepalive
             )
-            logger.info(f"Redis client initialized: {host}:{port}/{db}")
+            logger.info(f"Redis client initialized: {host}:{port}/{db} (pool: {max_connections})")
         except Exception as e:
             logger.error(f"Failed to initialize Redis client: {e}")
             # 연결 실패해도 클라이언트는 생성 (fallback에서 처리)

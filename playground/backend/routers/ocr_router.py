@@ -6,13 +6,11 @@ Uses Python best practices: context managers, type hints.
 """
 
 import logging
-import os
-import shutil
-import tempfile
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel, Field
+from utils.file_upload import save_upload_to_temp, temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -124,15 +122,18 @@ async def ocr_recognize(
     try:
         from beanllm.domain.ocr import OCRConfig, beanOCR
 
-        # Get file extension
-        ext = file.filename.split(".")[-1] if file.filename else "jpg"
+        # Allowed image extensions for OCR
+        ocr_extensions = frozenset([".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tiff", ".webp"])
 
-        # Save uploaded file to temp location
-        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp_file:
-            shutil.copyfileobj(file.file, tmp_file)
-            tmp_path = tmp_file.name
+        async with temp_directory() as temp_dir:
+            # Save with sanitized filename + streaming + size check
+            tmp_path = await save_upload_to_temp(
+                file,
+                temp_dir,
+                allowed_extensions=ocr_extensions,
+                fallback_ext=".jpg",
+            )
 
-        try:
             # Create OCR config
             ocr_config = OCRConfig(
                 engine=engine,
@@ -155,7 +156,7 @@ async def ocr_recognize(
 
             # Run OCR
             ocr = beanOCR(config=ocr_config)
-            result = ocr.recognize(tmp_path)
+            result = ocr.recognize(str(tmp_path))
 
             # Extract lines using duck typing
             lines_data = _extract_lines(getattr(result, "lines", []))
@@ -178,11 +179,8 @@ async def ocr_recognize(
                 lines=lines,
             )
 
-        finally:
-            # Cleanup temp file
-            if os.path.exists(tmp_path):
-                os.unlink(tmp_path)
-
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"OCR error: {e}", exc_info=True)
         raise HTTPException(500, f"OCR processing failed: {str(e)}")

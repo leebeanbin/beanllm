@@ -28,8 +28,15 @@ def get_mongodb_client() -> Optional[AsyncIOMotorClient]:
             return None
 
         try:
-            _mongodb_client = AsyncIOMotorClient(mongodb_uri)
-            logger.info("✅ MongoDB client initialized")
+            _mongodb_client = AsyncIOMotorClient(
+                mongodb_uri,
+                maxPoolSize=50,
+                minPoolSize=5,
+                maxIdleTimeMS=45000,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=10000,
+            )
+            logger.info("✅ MongoDB client initialized (pool: 5-50)")
         except Exception as e:
             logger.error(f"❌ Failed to initialize MongoDB client: {e}")
             return None

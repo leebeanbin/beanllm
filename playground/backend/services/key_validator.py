@@ -219,188 +219,188 @@ class KeyValidator:
 
     async def _validate_tavily(self, api_key: str) -> ApiKeyValidationResult:
         """Validate Tavily API key."""
-        import httpx
+        from utils.http_client import get_http_client
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                response = await client.post(
-                    "https://api.tavily.com/search",
-                    json={
-                        "api_key": api_key,
-                        "query": "test",
-                        "max_results": 1,
-                    },
+        client = get_http_client()
+        try:
+            response = await client.post(
+                "https://api.tavily.com/search",
+                json={
+                    "api_key": api_key,
+                    "query": "test",
+                    "max_results": 1,
+                },
+            )
+
+            if response.status_code == 200:
+                return ApiKeyValidationResult(
+                    provider="tavily",
+                    is_valid=True,
                 )
-
-                if response.status_code == 200:
-                    return ApiKeyValidationResult(
-                        provider="tavily",
-                        is_valid=True,
-                    )
-                elif response.status_code in [401, 403]:
-                    return ApiKeyValidationResult(
-                        provider="tavily",
-                        is_valid=False,
-                        error="Invalid API key",
-                    )
-                else:
-                    return ApiKeyValidationResult(
-                        provider="tavily",
-                        is_valid=False,
-                        error=f"API error: {response.status_code}",
-                    )
-            except Exception as e:
+            elif response.status_code in [401, 403]:
                 return ApiKeyValidationResult(
                     provider="tavily",
                     is_valid=False,
-                    error=str(e),
+                    error="Invalid API key",
                 )
+            else:
+                return ApiKeyValidationResult(
+                    provider="tavily",
+                    is_valid=False,
+                    error=f"API error: {response.status_code}",
+                )
+        except Exception as e:
+            return ApiKeyValidationResult(
+                provider="tavily",
+                is_valid=False,
+                error=str(e),
+            )
 
     async def _validate_serpapi(self, api_key: str) -> ApiKeyValidationResult:
         """Validate SerpAPI key."""
-        import httpx
+        from utils.http_client import get_http_client
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                response = await client.get(
-                    "https://serpapi.com/account",
-                    params={"api_key": api_key},
+        client = get_http_client()
+        try:
+            response = await client.get(
+                "https://serpapi.com/account",
+                params={"api_key": api_key},
+            )
+
+            if response.status_code == 200:
+                return ApiKeyValidationResult(
+                    provider="serpapi",
+                    is_valid=True,
                 )
-
-                if response.status_code == 200:
-                    return ApiKeyValidationResult(
-                        provider="serpapi",
-                        is_valid=True,
-                    )
-                else:
-                    return ApiKeyValidationResult(
-                        provider="serpapi",
-                        is_valid=False,
-                        error="Invalid API key",
-                    )
-            except Exception as e:
+            else:
                 return ApiKeyValidationResult(
                     provider="serpapi",
                     is_valid=False,
-                    error=str(e),
+                    error="Invalid API key",
                 )
+        except Exception as e:
+            return ApiKeyValidationResult(
+                provider="serpapi",
+                is_valid=False,
+                error=str(e),
+            )
 
     async def _validate_pinecone(self, api_key: str) -> ApiKeyValidationResult:
         """Validate Pinecone API key."""
-        import httpx
+        from utils.http_client import get_http_client
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                response = await client.get(
-                    "https://api.pinecone.io/indexes",
-                    headers={"Api-Key": api_key},
+        client = get_http_client()
+        try:
+            response = await client.get(
+                "https://api.pinecone.io/indexes",
+                headers={"Api-Key": api_key},
+            )
+
+            if response.status_code == 200:
+                return ApiKeyValidationResult(
+                    provider="pinecone",
+                    is_valid=True,
                 )
-
-                if response.status_code == 200:
-                    return ApiKeyValidationResult(
-                        provider="pinecone",
-                        is_valid=True,
-                    )
-                elif response.status_code == 401:
-                    return ApiKeyValidationResult(
-                        provider="pinecone",
-                        is_valid=False,
-                        error="Invalid API key",
-                    )
-                else:
-                    return ApiKeyValidationResult(
-                        provider="pinecone",
-                        is_valid=False,
-                        error=f"API error: {response.status_code}",
-                    )
-            except Exception as e:
+            elif response.status_code == 401:
                 return ApiKeyValidationResult(
                     provider="pinecone",
                     is_valid=False,
-                    error=str(e),
+                    error="Invalid API key",
                 )
+            else:
+                return ApiKeyValidationResult(
+                    provider="pinecone",
+                    is_valid=False,
+                    error=f"API error: {response.status_code}",
+                )
+        except Exception as e:
+            return ApiKeyValidationResult(
+                provider="pinecone",
+                is_valid=False,
+                error=str(e),
+            )
 
     async def _validate_qdrant(self, api_key: str) -> ApiKeyValidationResult:
         """Validate Qdrant API key."""
-        import httpx
+        from utils.http_client import get_http_client
 
         qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                headers = {}
-                if api_key:
-                    headers["api-key"] = api_key
+        client = get_http_client()
+        try:
+            headers = {}
+            if api_key:
+                headers["api-key"] = api_key
 
-                response = await client.get(
-                    f"{qdrant_url}/collections",
-                    headers=headers,
+            response = await client.get(
+                f"{qdrant_url}/collections",
+                headers=headers,
+            )
+
+            if response.status_code == 200:
+                return ApiKeyValidationResult(
+                    provider="qdrant",
+                    is_valid=True,
                 )
-
-                if response.status_code == 200:
-                    return ApiKeyValidationResult(
-                        provider="qdrant",
-                        is_valid=True,
-                    )
-                elif response.status_code == 401:
-                    return ApiKeyValidationResult(
-                        provider="qdrant",
-                        is_valid=False,
-                        error="Invalid API key",
-                    )
-                else:
-                    return ApiKeyValidationResult(
-                        provider="qdrant",
-                        is_valid=False,
-                        error=f"API error: {response.status_code}",
-                    )
-            except Exception as e:
+            elif response.status_code == 401:
                 return ApiKeyValidationResult(
                     provider="qdrant",
                     is_valid=False,
-                    error=str(e),
+                    error="Invalid API key",
                 )
+            else:
+                return ApiKeyValidationResult(
+                    provider="qdrant",
+                    is_valid=False,
+                    error=f"API error: {response.status_code}",
+                )
+        except Exception as e:
+            return ApiKeyValidationResult(
+                provider="qdrant",
+                is_valid=False,
+                error=str(e),
+            )
 
     async def _validate_weaviate(self, api_key: str) -> ApiKeyValidationResult:
         """Validate Weaviate API key."""
-        import httpx
+        from utils.http_client import get_http_client
 
         weaviate_url = os.getenv("WEAVIATE_URL", "http://localhost:8080")
 
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            try:
-                headers = {}
-                if api_key:
-                    headers["Authorization"] = f"Bearer {api_key}"
+        client = get_http_client()
+        try:
+            headers = {}
+            if api_key:
+                headers["Authorization"] = f"Bearer {api_key}"
 
-                response = await client.get(
-                    f"{weaviate_url}/v1/schema",
-                    headers=headers,
+            response = await client.get(
+                f"{weaviate_url}/v1/schema",
+                headers=headers,
+            )
+
+            if response.status_code == 200:
+                return ApiKeyValidationResult(
+                    provider="weaviate",
+                    is_valid=True,
                 )
-
-                if response.status_code == 200:
-                    return ApiKeyValidationResult(
-                        provider="weaviate",
-                        is_valid=True,
-                    )
-                elif response.status_code == 401:
-                    return ApiKeyValidationResult(
-                        provider="weaviate",
-                        is_valid=False,
-                        error="Invalid API key",
-                    )
-                else:
-                    return ApiKeyValidationResult(
-                        provider="weaviate",
-                        is_valid=False,
-                        error=f"API error: {response.status_code}",
-                    )
-            except Exception as e:
+            elif response.status_code == 401:
                 return ApiKeyValidationResult(
                     provider="weaviate",
                     is_valid=False,
-                    error=str(e),
+                    error="Invalid API key",
                 )
+            else:
+                return ApiKeyValidationResult(
+                    provider="weaviate",
+                    is_valid=False,
+                    error=f"API error: {response.status_code}",
+                )
+        except Exception as e:
+            return ApiKeyValidationResult(
+                provider="weaviate",
+                is_valid=False,
+                error=str(e),
+            )
 
 
 # Singleton instance

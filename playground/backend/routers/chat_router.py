@@ -422,11 +422,12 @@ async def agentic_chat(request: AgenticChatRequest, http_request: Request):
 
         except Exception as e:
             logger.error(f"Agentic chat error: {e}", exc_info=True)
-            import traceback
+            # Never expose traceback to client
+            safe_msg = str(e).replace('"', '\\"')
+            yield f'data: {{"type": "error", "data": {{"message": "{safe_msg}"}}}}\n\n'
 
-            error_traceback = traceback.format_exc()
-            logger.error(f"Traceback: {error_traceback}")
-            yield f"data: {{\"type\": \"error\", \"data\": {{\"message\": \"{str(e)}\", \"traceback\": \"{error_traceback.replace(chr(10), ' ').replace(chr(13), ' ')}\"}}}}\n\n"
+        # Always send done signal for SSE termination
+        yield "data: [DONE]\n\n"
 
     return StreamingResponse(
         generate(),

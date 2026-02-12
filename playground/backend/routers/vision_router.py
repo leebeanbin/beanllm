@@ -7,14 +7,12 @@ Uses Python best practices: context managers, duck typing.
 
 import base64
 import logging
-import shutil
-import tempfile
-from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from utils.file_upload import temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -80,16 +78,6 @@ class VisionRAGQueryResponse(BaseModel):
 # ============================================================================
 
 
-@asynccontextmanager
-async def temp_directory():
-    """Context manager for temporary directory with automatic cleanup"""
-    temp_dir = tempfile.mkdtemp()
-    try:
-        yield temp_dir
-    finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
-
 def _decode_base64_image(data: str, index: int, temp_dir: str) -> Optional[str]:
     """Decode base64 image and save to temp directory"""
     try:
@@ -106,15 +94,15 @@ def _decode_base64_image(data: str, index: int, temp_dir: str) -> Optional[str]:
 async def _download_image(url: str, index: int, temp_dir: str) -> Optional[str]:
     """Download image from URL with security validation"""
     try:
-        import httpx
+        from utils.http_client import get_http_client
 
         from beanllm.domain.web_search.security import validate_url
 
         validated_url = validate_url(url)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(validated_url, timeout=30, follow_redirects=True)
-            response.raise_for_status()
+        client = get_http_client()
+        response = await client.get(validated_url, timeout=30)
+        response.raise_for_status()
 
         content_type = response.headers.get("Content-Type", "")
         if not content_type.startswith("image/"):
