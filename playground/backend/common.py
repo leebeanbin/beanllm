@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 # Global State (Lazy Initialization)
 # ============================================================================
 
-_client: Optional[Client] = None
+_clients: Dict[str, Client] = {}  # model_name -> Client (per-model caching)
 _kg: Optional[KnowledgeGraph] = None
 _rag_chains: Dict[str, RAGChain] = {}  # collection_name -> RAGChain
 _web_search: Optional[WebSearch] = None
@@ -57,12 +57,17 @@ _downloaded_models: Dict[str, str] = {}
 
 
 def get_client(model: str = "qwen2.5:0.5b") -> Client:
-    """Get or create Client instance"""
-    global _client
-    if _client is None:
-        _client = Client(model=model)
+    """Get or create Client instance per model (cached by model name)."""
+    if model not in _clients:
+        _clients[model] = Client(model=model)
         logger.info(f"✅ Client initialized with model: {model}")
-    return _client
+    return _clients[model]
+
+
+def cleanup_clients() -> None:
+    """Clear all cached Client instances. Call on shutdown."""
+    _clients.clear()
+    logger.info("All cached Client instances cleared")
 
 
 def get_kg(graph_name: str = "default") -> KnowledgeGraph:

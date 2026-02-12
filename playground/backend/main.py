@@ -4,6 +4,7 @@ beanllm Playground Backend - FastAPI
 Complete working backend for all 9 beanllm features
 """
 
+import asyncio
 import logging
 import os
 import sys
@@ -126,7 +127,29 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     logger.info("🛑 Shutting down beanllm Playground Backend...")
+
+    # 1. Close shared httpx client
+    try:
+        from utils.http_client import close_http_client
+
+        await close_http_client()
+    except Exception as e:
+        logger.warning(f"httpx client cleanup error: {e}")
+
+    # 2. Close MongoDB connection
     await close_mongodb_connection()
+
+    # 3. Clear cached beanllm Client instances
+    try:
+        from common import cleanup_clients
+
+        cleanup_clients()
+    except Exception as e:
+        logger.warning(f"Client cleanup error: {e}")
+
+    # 4. Close WebSocket connections
+    await ws_manager.close_all()
+
     logger.info("✅ Shutdown complete")
 
 
@@ -135,7 +158,56 @@ from common import (
 )
 
 _chains: Dict[str, Chain] = {}
-active_connections: Dict[str, WebSocket] = {}
+
+# ---------------------------------------------------------------------------
+# WebSocket ConnectionManager
+# ---------------------------------------------------------------------------
+
+MAX_WS_CONNECTIONS = 100
+WS_HEARTBEAT_INTERVAL = 30  # seconds
+
+
+class ConnectionManager:
+    """Manage WebSocket connections with heartbeat and limits."""
+
+    def __init__(self, max_connections: int = MAX_WS_CONNECTIONS) -> None:
+        self._connections: Dict[str, WebSocket] = {}
+        self._max_connections = max_connections
+
+    @property
+    def connections(self) -> Dict[str, WebSocket]:
+        return self._connections
+
+    async def connect(self, session_id: str, websocket: WebSocket) -> bool:
+        """Accept and register a connection. Returns False if limit reached."""
+        if len(self._connections) >= self._max_connections:
+            await websocket.close(code=1013, reason="Max connections reached")
+            logger.warning(
+                "WS rejected %s: max connections (%d)", session_id, self._max_connections
+            )
+            return False
+        await websocket.accept()
+        self._connections[session_id] = websocket
+        logger.info("WS connected: %s (total: %d)", session_id, len(self._connections))
+        return True
+
+    def disconnect(self, session_id: str) -> None:
+        self._connections.pop(session_id, None)
+        logger.info("WS disconnected: %s (total: %d)", session_id, len(self._connections))
+
+    async def close_all(self) -> None:
+        """Close all active connections."""
+        for ws in list(self._connections.values()):
+            try:
+                await ws.close()
+            except Exception:
+                pass
+        self._connections.clear()
+
+
+ws_manager = ConnectionManager()
+# Keep backward-compatible name for shutdown handler
+active_connections = ws_manager.connections
 
 # Import schemas from centralized location
 from schemas import (
@@ -834,9 +906,9 @@ async def chat(request: ChatRequest, http_request: Request = None):
 
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(websocket: WebSocket, session_id: str):
-    await websocket.accept()
-    active_connections[session_id] = websocket
-    print(f"WebSocket connected: {session_id}")
+    connected = await ws_manager.connect(session_id, websocket)
+    if not connected:
+        return
 
     try:
         await websocket.send_json(
@@ -849,20 +921,28 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
         while True:
             try:
-                data = await websocket.receive_json()
+                # Wait for message with heartbeat timeout
+                data = await asyncio.wait_for(
+                    websocket.receive_json(),
+                    timeout=WS_HEARTBEAT_INTERVAL,
+                )
                 if data.get("type") == "ping":
                     await websocket.send_json({"type": "pong"})
                 else:
-                    print(f"Received from {session_id}: {data}")
+                    logger.debug("WS %s received: %s", session_id, data.get("type", "unknown"))
+            except asyncio.TimeoutError:
+                # Send server-side ping to detect dead connections
+                try:
+                    await websocket.send_json({"type": "ping"})
+                except Exception:
+                    break
             except WebSocketDisconnect:
                 break
             except Exception as e:
-                print(f"WebSocket error: {e}")
+                logger.warning("WS error for %s: %s", session_id, e)
                 break
     finally:
-        if session_id in active_connections:
-            del active_connections[session_id]
-        print(f"WebSocket disconnected: {session_id}")
+        ws_manager.disconnect(session_id)
 
 
 from routers.agent_router import router as agent_router

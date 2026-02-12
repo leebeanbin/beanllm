@@ -262,6 +262,8 @@ async def pull_model(model_name: str):
                 logger.error(f"Failed to pull model {model_name}: {e}")
                 yield f"data: {json.dumps({'status': 'error', 'error': str(e)})}\n\n"
 
+            yield "data: [DONE]\n\n"
+
         return StreamingResponse(
             generate(),
             media_type="text/event-stream",

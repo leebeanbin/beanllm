@@ -23,6 +23,28 @@ logger = logging.getLogger(__name__)
 # 그래프/노드 제한 (제안 단계·검증용)
 MAX_NODES = 6
 
+# 동시 tool 실행 제한
+MAX_CONCURRENT_TOOLS = 5
+_tool_semaphore = asyncio.Semaphore(MAX_CONCURRENT_TOOLS)
+
+
+def _safe_create_task(coro: Any) -> "asyncio.Task[Any]":
+    """
+    Create an asyncio task with error logging.
+
+    Fire-and-forget tasks that raise exceptions are silently ignored by
+    asyncio.  This wrapper adds a done-callback that logs failures.
+    """
+    task = asyncio.create_task(coro)
+    task.add_done_callback(_handle_task_exception)
+    return task
+
+
+def _handle_task_exception(task: "asyncio.Task[Any]") -> None:
+    """Log unhandled exceptions from background tasks."""
+    if not task.cancelled() and task.exception():
+        logger.error("Background task failed: %s", task.exception())
+
 
 class EventType(str, Enum):
     """SSE 이벤트 타입"""
@@ -287,7 +309,7 @@ class AgenticOrchestrator:
             for idx in range(start_from_tool_index, len(context.selected_tools)):
                 tool_check = context.selected_tools[idx]
                 tool = tool_check.tool
-                logger.info(f"Executing tool {idx+1}/{len(context.selected_tools)}: {tool.name}")
+                logger.info(f"Executing tool {idx + 1}/{len(context.selected_tools)}: {tool.name}")
 
                 # 도구 사용 불가 체크
                 if not tool_check.is_available:
@@ -1629,18 +1651,22 @@ class AgenticOrchestrator:
                         )
                     )
 
-            # 5. 병렬 실행 시작
+            # 5. 병렬 실행 시작 (동시성 제한 적용)
+            async def run_tool_with_limit(tool_check: ToolCheckResult, index: int) -> None:
+                async with _tool_semaphore:
+                    await run_tool_with_progress(tool_check, index)
+
             tasks = [
-                asyncio.create_task(run_tool_with_progress(tool_check, i))
+                _safe_create_task(run_tool_with_limit(tool_check, i))
                 for i, tool_check in enumerate(available_tools)
             ]
 
             # 완료 신호를 위한 태스크
-            async def wait_for_completion():
+            async def wait_for_completion() -> None:
                 await asyncio.gather(*tasks, return_exceptions=True)
                 await event_queue.put(None)  # 종료 신호
 
-            asyncio.create_task(wait_for_completion())
+            _safe_create_task(wait_for_completion())
 
             # 6. 이벤트 스트리밍
             completed_count = 0

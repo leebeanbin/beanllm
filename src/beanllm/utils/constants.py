@@ -86,6 +86,9 @@ MAX_MESSAGE_LENGTH: int = 100_000
 MAX_FILE_SIZE: int = 50 * 1024 * 1024
 """파일 업로드 최대 크기 (50MB)"""
 
+MAX_UPLOAD_CHUNK_SIZE: int = 1024 * 1024
+"""파일 업로드 청크 크기 (1MB, 스트리밍 저장용)"""
+
 HEALTH_CHECK_MAX_TOKENS: int = 5
 """Provider health check용 max_tokens"""
 

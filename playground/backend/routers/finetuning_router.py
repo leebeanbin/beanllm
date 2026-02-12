@@ -7,12 +7,12 @@ Uses Python best practices: context managers, duck typing.
 
 import json
 import logging
-import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
+from utils.file_upload import temp_directory
 
 logger = logging.getLogger(__name__)
 
@@ -98,17 +98,17 @@ async def finetuning_create(request: FineTuningCreateRequest) -> FineTuningJobRe
     try:
         finetuning = _get_finetuning_manager()
 
-        # Create temp file for training data
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as temp_file:
-            for example in request.training_data:
-                json.dump(example, temp_file)
-                temp_file.write("\n")
-            temp_path = temp_file.name
+        # Create temp file for training data inside a managed temp directory
+        async with temp_directory() as temp_dir:
+            temp_path = Path(temp_dir) / "training_data.jsonl"
+            with open(temp_path, "w") as temp_file:
+                for example in request.training_data:
+                    json.dump(example, temp_file)
+                    temp_file.write("\n")
 
-        try:
             job = finetuning.start_training(
                 model=request.base_model,
-                training_file=temp_path,
+                training_file=str(temp_path),
                 **(request.hyperparameters or {}),
             )
 
@@ -118,9 +118,6 @@ async def finetuning_create(request: FineTuningCreateRequest) -> FineTuningJobRe
                 base_model=request.base_model,
                 created_at=_safe_get(job, "created_at"),
             )
-
-        finally:
-            Path(temp_path).unlink(missing_ok=True)
 
     except Exception as e:
         logger.error(f"Fine-tuning create error: {e}", exc_info=True)
