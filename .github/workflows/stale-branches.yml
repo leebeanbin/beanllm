@@ -1,0 +1,57 @@
+name: Stale Branches Cleanup
+
+on:
+  schedule:
+    # 매주 월요일 09:00 KST (일요일 24:00 UTC)
+    - cron: "0 0 * * 1"
+  workflow_dispatch: # 수동 실행 가능
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  report-stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find stale branches (60+ days inactive)
+        id: stale
+        run: |
+          echo "## Stale Branches Report" > report.md
+          echo "" >> report.md
+          echo "60일 이상 비활성 브랜치 목록:" >> report.md
+          echo "" >> report.md
+
+          STALE_COUNT=0
+          CUTOFF=$(date -d "60 days ago" +%s 2>/dev/null || date -v-60d +%s)
+
+          for branch in $(git branch -r --format='%(refname:short)' | grep -v 'origin/HEAD\|origin/main'); do
+            LAST_COMMIT=$(git log -1 --format='%ct' "$branch" 2>/dev/null || echo "0")
+            if [ "$LAST_COMMIT" -lt "$CUTOFF" ] 2>/dev/null; then
+              LAST_DATE=$(git log -1 --format='%ci' "$branch" 2>/dev/null || echo "unknown")
+              AUTHOR=$(git log -1 --format='%an' "$branch" 2>/dev/null || echo "unknown")
+              BRANCH_NAME=$(echo "$branch" | sed 's|origin/||')
+              echo "- \`$BRANCH_NAME\` (last commit: $LAST_DATE by $AUTHOR)" >> report.md
+              STALE_COUNT=$((STALE_COUNT + 1))
+            fi
+          done
+
+          if [ "$STALE_COUNT" -eq 0 ]; then
+            echo "비활성 브랜치가 없습니다." >> report.md
+          fi
+
+          echo "stale_count=$STALE_COUNT" >> "$GITHUB_OUTPUT"
+          cat report.md
+
+      - name: Create issue if stale branches found
+        if: steps.stale.outputs.stale_count != '0'
+        uses: peter-evans/create-issue-from-file@v5
+        with:
+          title: "chore: Stale branches cleanup needed"
+          content-filepath: report.md
+          labels: "chore,stale-branch"
+          assignees: leebeanbin

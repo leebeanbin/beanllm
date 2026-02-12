@@ -1,4 +1,5 @@
-.PHONY: help install install-dev type-check lint lint-fix format check-fix all clean test pre-commit quality
+.PHONY: help install install-dev type-check lint lint-fix format check-fix all clean test pre-commit quality \
+       new-feat new-fix new-refactor pr sync done
 
 # 기본 변수
 PYTHON := python
@@ -156,3 +157,87 @@ quick-fix: lint-fix format import-sort ## 빠른 자동 수정 (린트 + 포맷�
 
 lint-format: lint-fix format import-sort ## 린트 수정 + 포맷팅 + import 정렬 (가장 많이 사용)
 	@echo "$(GREEN)✅ 코드 품질 개선 완료$(NC)"
+
+# ============================================================================
+# 브랜치 개발 워크플로우
+# ============================================================================
+
+# GitHub 원격 저장소 URL (SSH/HTTPS 자동 감지)
+REPO_URL := $(shell git remote get-url origin 2>/dev/null | sed 's/\.git$$//' | sed 's|git@github.com:|https://github.com/|')
+
+new-feat: ## 새 기능 브랜치 생성 (예: make new-feat NAME=rag-hyde)
+	@if [ -z "$(NAME)" ]; then \
+		echo "$(RED)❌ NAME이 필요합니다. 사용법: make new-feat NAME=rag-hyde$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🔀 Feature 브랜치 생성 중...$(NC)"
+	@git checkout main && git pull origin main
+	@git checkout -b feat/$(NAME)
+	@echo "$(GREEN)✅ 브랜치 feat/$(NAME) 생성 완료$(NC)"
+	@echo "$(YELLOW)다음 단계: 개발 후 'make pr'로 PR을 생성하세요$(NC)"
+
+new-fix: ## 버그 수정 브랜치 생성 (예: make new-fix NAME=chat-rate-limit)
+	@if [ -z "$(NAME)" ]; then \
+		echo "$(RED)❌ NAME이 필요합니다. 사용법: make new-fix NAME=chat-rate-limit$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🔀 Fix 브랜치 생성 중...$(NC)"
+	@git checkout main && git pull origin main
+	@git checkout -b fix/$(NAME)
+	@echo "$(GREEN)✅ 브랜치 fix/$(NAME) 생성 완료$(NC)"
+	@echo "$(YELLOW)다음 단계: 수정 후 'make pr'로 PR을 생성하세요$(NC)"
+
+new-refactor: ## 리팩토링 브랜치 생성 (예: make new-refactor NAME=service-layer)
+	@if [ -z "$(NAME)" ]; then \
+		echo "$(RED)❌ NAME이 필요합니다. 사용법: make new-refactor NAME=service-layer$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(GREEN)🔀 Refactor 브랜치 생성 중...$(NC)"
+	@git checkout main && git pull origin main
+	@git checkout -b refactor/$(NAME)
+	@echo "$(GREEN)✅ 브랜치 refactor/$(NAME) 생성 완료$(NC)"
+	@echo "$(YELLOW)다음 단계: 리팩토링 후 'make pr'로 PR을 생성하세요$(NC)"
+
+pr: quality ## 품질 체크 후 Push + PR 안내 (make quality 포함)
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$BRANCH" = "main" ]; then \
+		echo "$(RED)❌ main 브랜치에서는 PR을 만들 수 없습니다. 먼저 feature 브랜치를 생성하세요.$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(GREEN)📤 Push 중...$(NC)"; \
+	git push -u origin HEAD; \
+	echo ""; \
+	echo "$(GREEN)✅ Push 완료! PR을 생성하세요:$(NC)"; \
+	echo "$(YELLOW)  $(REPO_URL)/compare/main...$$BRANCH?expand=1$(NC)"; \
+	echo ""; \
+	if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then \
+		echo "$(GREEN)gh CLI가 인증되어 있습니다. 자동으로 PR을 생성합니다...$(NC)"; \
+		gh pr create --fill; \
+	fi
+
+sync: ## main 최신화 후 현재 브랜치에 리베이스
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	echo "$(GREEN)🔄 main 최신화 + 리베이스 중...$(NC)"; \
+	git fetch origin; \
+	git rebase origin/main || \
+		(echo "$(RED)❌ 충돌이 발생했습니다. 충돌을 해결한 후:$(NC)"; \
+		 echo "$(YELLOW)  git rebase --continue$(NC)"; \
+		 echo "$(YELLOW)  또는 취소: git rebase --abort$(NC)"; \
+		 exit 1); \
+	echo "$(GREEN)✅ $$BRANCH 브랜치가 main과 동기화되었습니다$(NC)"
+
+done: ## main으로 전환 + 이전 브랜치 정리
+	@BRANCH=$$(git rev-parse --abbrev-ref HEAD); \
+	if [ "$$BRANCH" = "main" ]; then \
+		echo "$(YELLOW)이미 main 브랜치입니다.$(NC)"; \
+		git pull origin main; \
+	else \
+		echo "$(GREEN)🧹 브랜치 정리 중...$(NC)"; \
+		git checkout main; \
+		git pull origin main; \
+		git branch -d "$$BRANCH" 2>/dev/null && \
+			echo "$(GREEN)✅ 로컬 브랜치 $$BRANCH 삭제 완료$(NC)" || \
+			echo "$(YELLOW)⚠️  $$BRANCH 삭제 실패 (머지되지 않았을 수 있음). 강제 삭제: git branch -D $$BRANCH$(NC)"; \
+	fi
+	@git fetch --prune
+	@echo "$(GREEN)✅ 브랜치 정리 완료$(NC)"
