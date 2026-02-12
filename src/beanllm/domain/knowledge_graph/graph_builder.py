@@ -110,7 +110,7 @@ class GraphBuilder:
             )
 
         logger.info(
-            f"Graph built: {graph.number_of_nodes()} nodes, " f"{graph.number_of_edges()} edges"
+            f"Graph built: {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
         )
 
         return graph
@@ -238,7 +238,7 @@ class GraphBuilder:
                 merged.add_edge(u, v, **data)
 
         logger.info(
-            f"Merged graph: {merged.number_of_nodes()} nodes, " f"{merged.number_of_edges()} edges"
+            f"Merged graph: {merged.number_of_nodes()} nodes, {merged.number_of_edges()} edges"
         )
 
         return merged

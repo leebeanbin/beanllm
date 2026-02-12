@@ -250,7 +250,7 @@ class DirectoryLoader(BaseDocumentLoader):
             except Exception as parallel_error:
                 # Parallel failed - fallback to sequential
                 logger.warning(
-                    f"Parallel loading failed ({parallel_error}), " f"falling back to sequential"
+                    f"Parallel loading failed ({parallel_error}), falling back to sequential"
                 )
                 documents = []
                 for file_path in filtered_files:

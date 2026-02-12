@@ -22,6 +22,7 @@ from beanllm.dto.response.advanced.optimizer_response import (
     ProfileResponse,
     RecommendationResponse,
 )
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class OptimizerHandler:
+class OptimizerHandler(BaseHandler["IOptimizerService"]):
     """
     Auto-Optimizer Handler
 
@@ -49,7 +50,7 @@ class OptimizerHandler:
         Args:
             service: Optimizer 서비스
         """
-        self._service = service
+        super().__init__(service)
 
     async def handle_benchmark(self, request: BenchmarkRequest) -> BenchmarkResponse:
         """
@@ -117,7 +118,7 @@ class OptimizerHandler:
         method = request.method or request.optimization_method
         if method.lower() not in valid_methods:
             raise ValueError(
-                f"Invalid optimization method: {request.method}. " f"Must be one of {valid_methods}"
+                f"Invalid optimization method: {request.method}. Must be one of {valid_methods}"
             )
 
         # Validate parameters
@@ -128,7 +129,7 @@ class OptimizerHandler:
             if "type" not in param:
                 raise ValueError(f"Parameter {param['name']} must have 'type' field")
 
-            param_type = param["type"].lower()
+            param_type = str(param["type"]).lower()
             if param_type not in ["integer", "float", "categorical", "boolean"]:
                 raise ValueError(f"Invalid parameter type: {param_type} for {param['name']}")
 
@@ -136,7 +137,9 @@ class OptimizerHandler:
             if param_type in ["integer", "float"]:
                 if "low" not in param or "high" not in param:
                     raise ValueError(f"Parameter {param['name']} must have 'low' and 'high' fields")
-                if param["low"] >= param["high"]:
+                low = float(str(param["low"]))
+                high = float(str(param["high"]))
+                if low >= high:
                     raise ValueError(f"Parameter {param['name']}: low must be less than high")
 
             elif param_type == "categorical":

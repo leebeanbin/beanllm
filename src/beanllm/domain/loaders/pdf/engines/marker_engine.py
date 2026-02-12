@@ -96,8 +96,7 @@ class MarkerEngine(BasePDFEngine):
         except ImportError:
             self._marker_available = False
             raise ImportError(
-                "marker-pdf is required for MarkerEngine. "
-                "Install it with: pip install marker-pdf"
+                "marker-pdf is required for MarkerEngine. Install it with: pip install marker-pdf"
             )
 
     def extract(
@@ -138,7 +137,7 @@ class MarkerEngine(BasePDFEngine):
 
         if not self._marker_available:
             raise ImportError(
-                "marker-pdf is not available. " "Install it with: pip install marker-pdf"
+                "marker-pdf is not available. Install it with: pip install marker-pdf"
             )
 
         # marker-pdf import
@@ -147,7 +146,7 @@ class MarkerEngine(BasePDFEngine):
             from marker.models import load_all_models
         except ImportError as e:
             raise ImportError(
-                f"Failed to import marker-pdf: {e}. " "Install it with: pip install marker-pdf"
+                f"Failed to import marker-pdf: {e}. Install it with: pip install marker-pdf"
             )
 
         # 설정 추출
@@ -196,7 +195,7 @@ class MarkerEngine(BasePDFEngine):
             result["metadata"]["from_cache"] = False
 
             logger.info(
-                f"MarkerEngine extracted {len(result['pages'])} pages " f"in {processing_time:.2f}s"
+                f"MarkerEngine extracted {len(result['pages'])} pages in {processing_time:.2f}s"
             )
 
             # 결과 캐싱

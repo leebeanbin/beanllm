@@ -80,8 +80,7 @@ class PaddleOCREngine(BaseOCREngine):
             import paddleocr  # noqa: F401
         except ImportError:
             raise ImportError(
-                "PaddleOCR is required for PaddleOCREngine. "
-                "Install it with: pip install paddleocr"
+                "PaddleOCR is required for PaddleOCREngine. Install it with: pip install paddleocr"
             )
 
     def _get_language_code(self, language: str) -> str:

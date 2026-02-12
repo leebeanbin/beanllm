@@ -179,13 +179,13 @@ Answer:"""
             hypothetical_docs.append(doc)
 
             logger.info(
-                f"HyDE document {i+1}/{self.num_documents} generated: " f"length={len(doc)} chars"
+                f"HyDE document {i + 1}/{self.num_documents} generated: length={len(doc)} chars"
             )
 
         return hypothetical_docs
 
     def __repr__(self) -> str:
-        return f"HyDEExpander(num_docs={self.num_documents}, " f"temperature={self.temperature})"
+        return f"HyDEExpander(num_docs={self.num_documents}, temperature={self.temperature})"
 
 
 class MultiQueryExpander(BaseQueryExpander):

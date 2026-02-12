@@ -202,7 +202,7 @@ class ConfigPresets:
         if preset_path.exists():
             return self.load(preset_name)
 
-        raise ValueError(f"Preset '{preset_name}' not found. " f"Available presets: {self.list()}")
+        raise ValueError(f"Preset '{preset_name}' not found. Available presets: {self.list()}")
 
     def save(self, preset_name: str, config: OCRConfig) -> None:
         """

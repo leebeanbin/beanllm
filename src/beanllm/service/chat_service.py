@@ -46,7 +46,7 @@ class IChatService(ABC):
         pass
 
     @abstractmethod
-    async def stream_chat(self, request: ChatRequest) -> AsyncIterator[str]:
+    def stream_chat(self, request: ChatRequest) -> AsyncIterator[str]:
         """
         스트리밍 채팅 요청 처리
 

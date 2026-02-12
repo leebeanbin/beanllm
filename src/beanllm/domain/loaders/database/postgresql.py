@@ -285,7 +285,5 @@ class PostgreSQLLoader(BaseDocumentLoader):
 
     def __repr__(self) -> str:
         return (
-            f"PostgreSQLLoader("
-            f"query={self.query[:50]}..., "
-            f"content_columns={self.content_columns})"
+            f"PostgreSQLLoader(query={self.query[:50]}..., content_columns={self.content_columns})"
         )

@@ -517,9 +517,7 @@ class PositionEngineeringReranker(BaseReranker):
         # 유효한 전략인지 확인
         valid_strategies = ["head", "tail", "head_tail", "side"]
         if self.strategy not in valid_strategies:
-            raise ValueError(
-                f"Invalid strategy: {self.strategy}. " f"Available: {valid_strategies}"
-            )
+            raise ValueError(f"Invalid strategy: {self.strategy}. Available: {valid_strategies}")
 
     def rerank(
         self,
@@ -579,7 +577,7 @@ class PositionEngineeringReranker(BaseReranker):
         reordered = self._apply_position_engineering(ranked_results)
 
         logger.info(
-            f"Position Engineering applied: strategy={self.strategy}, " f"count={len(reordered)}"
+            f"Position Engineering applied: strategy={self.strategy}, count={len(reordered)}"
         )
 
         return reordered
@@ -654,4 +652,4 @@ class PositionEngineeringReranker(BaseReranker):
 
     def __repr__(self) -> str:
         base_name = self.base_reranker.__class__.__name__ if self.base_reranker else "None"
-        return f"PositionEngineeringReranker(" f"base={base_name}, strategy={self.strategy})"
+        return f"PositionEngineeringReranker(base={base_name}, strategy={self.strategy})"

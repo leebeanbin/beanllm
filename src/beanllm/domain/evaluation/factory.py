@@ -91,7 +91,7 @@ def create_evaluation_framework(
             return RAGASWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "ragas is required for RAGASWrapper. " "Install it with: pip install ragas"
+                "ragas is required for RAGASWrapper. Install it with: pip install ragas"
             )
 
     elif framework == "deepeval":
@@ -102,7 +102,7 @@ def create_evaluation_framework(
             return DeepEvalWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "deepeval is required for DeepEvalWrapper. " "Install it with: pip install deepeval"
+                "deepeval is required for DeepEvalWrapper. Install it with: pip install deepeval"
             )
 
     elif framework in ["lm-eval", "lm-eval-harness", "lm_eval", "lm_eval_harness"]:
@@ -113,12 +113,11 @@ def create_evaluation_framework(
             return LMEvalHarnessWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "lm-eval is required for LMEvalHarnessWrapper. "
-                "Install it with: pip install lm-eval"
+                "lm-eval is required for LMEvalHarnessWrapper. Install it with: pip install lm-eval"
             )
 
     else:
-        raise ValueError(f"Unknown framework: {framework}. " f"Available: ragas, deepeval, lm-eval")
+        raise ValueError(f"Unknown framework: {framework}. Available: ragas, deepeval, lm-eval")
 
 
 def list_available_frameworks() -> dict:

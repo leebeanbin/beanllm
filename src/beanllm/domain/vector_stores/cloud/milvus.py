@@ -87,8 +87,7 @@ class MilvusVectorStore(BaseVectorStore, AdvancedSearchMixin):
             from pymilvus import Collection, CollectionSchema, DataType, FieldSchema, connections
         except ImportError:
             raise ImportError(
-                "pymilvus is required for MilvusVectorStore. "
-                "Install it with: pip install pymilvus"
+                "pymilvus is required for MilvusVectorStore. Install it with: pip install pymilvus"
             )
 
         # Milvus 연결

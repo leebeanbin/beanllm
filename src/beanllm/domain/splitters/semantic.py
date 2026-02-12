@@ -178,8 +178,7 @@ class SemanticTextSplitter(BaseTextSplitter):
             self._chunker = semchunk.chunkerify(self.model_name, chunk_size=self.semchunk_size)
         except ImportError:
             raise ImportError(
-                "semchunk is required when use_semchunk=True. "
-                "Install it with: pip install semchunk"
+                "semchunk is required when use_semchunk=True. Install it with: pip install semchunk"
             )
 
     def _split_into_sentences(self, text: str) -> List[str]:
@@ -572,8 +571,4 @@ class CoherenceTextSplitter(BaseTextSplitter):
         return final_chunks
 
     def __repr__(self) -> str:
-        return (
-            f"CoherenceTextSplitter("
-            f"model={self.model_name}, "
-            f"num_clusters={self.num_clusters})"
-        )
+        return f"CoherenceTextSplitter(model={self.model_name}, num_clusters={self.num_clusters})"

@@ -290,7 +290,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
                 raise ValueError("VQA task requires 'question' parameter")
             return self.vqa(image, kwargs["question"])
         else:
-            raise ValueError(f"Unknown task: {task}. " f"Available: caption, detect, vqa")
+            raise ValueError(f"Unknown task: {task}. Available: caption, detect, vqa")
 
     def __repr__(self) -> str:
         return f"Florence2Wrapper(model_size={self.model_size}, device={self.device})"

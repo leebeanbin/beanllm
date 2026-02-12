@@ -628,8 +628,7 @@ class OptimizerCommands:
 
                 if config_type == "optimization":
                     metrics = (
-                        f"Score: {config_data['best_score']:.4f}\n"
-                        f"Trials: {config_data['n_trials']}"
+                        f"Score: {config_data['best_score']:.4f}\nTrials: {config_data['n_trials']}"
                     )
                 elif config_type == "profile":
                     metrics = (

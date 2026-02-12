@@ -136,7 +136,7 @@ class ABTester:
             ABTestResult: A/B 테스트 결과
         """
         logger.info(
-            f"Running A/B test: {variant_a_name} vs {variant_b_name}, " f"{len(queries)} queries"
+            f"Running A/B test: {variant_a_name} vs {variant_b_name}, {len(queries)} queries"
         )
 
         scores_a = []

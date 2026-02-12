@@ -42,12 +42,15 @@ class EvaluatorFacade(AsyncHelperMixin):
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
         from beanllm.handler.ml.evaluation_handler import EvaluationHandler
-        from beanllm.service.impl.ml.evaluation_service_impl import EvaluationServiceImpl
+        from beanllm.utils.core.di_container import get_container
 
-        # EvaluationService 생성
-        evaluation_service = EvaluationServiceImpl()
+        container = get_container()
+        service_factory = container.get_service_factory()
 
-        # EvaluationHandler 생성 (직접 생성 - 커스텀 Service 사용)
+        # EvaluationService 생성 (ServiceFactory 경유)
+        evaluation_service = service_factory.create_evaluation_service()
+
+        # EvaluationHandler 생성
         self._evaluation_handler = EvaluationHandler(evaluation_service)
 
     def add_metric(self, metric: "BaseMetric") -> "EvaluatorFacade":
@@ -74,7 +77,9 @@ class EvaluatorFacade(AsyncHelperMixin):
                         **kwargs,
                     )
                 )
-                return response.result
+                assert response is not None
+                result: BatchEvaluationResult = response.result
+                return result
             else:
                 raise
 
@@ -88,7 +93,9 @@ class EvaluatorFacade(AsyncHelperMixin):
             metrics=self.metrics,
             **kwargs,
         )
-        return response.result
+        assert response is not None
+        result: BatchEvaluationResult = response.result
+        return result
 
     def batch_evaluate(
         self, predictions: List[str], references: List[str], **kwargs
@@ -111,7 +118,9 @@ class EvaluatorFacade(AsyncHelperMixin):
                         **kwargs,
                     )
                 )
-                return response.results
+                assert response is not None
+                results: List[BatchEvaluationResult] = response.results
+                return results
             else:
                 raise
 
@@ -125,7 +134,9 @@ class EvaluatorFacade(AsyncHelperMixin):
             metrics=self.metrics,
             **kwargs,
         )
-        return response.results
+        assert response is not None
+        results: List[BatchEvaluationResult] = response.results
+        return results
 
 
 # 편의 함수들 (기존 API 유지)
@@ -143,10 +154,11 @@ def evaluate_text(
         metrics: 사용할 메트릭 이름 리스트 (기본: ["bleu", "rouge", "f1"])
     """
     # Handler/Service 초기화 - DI Container 사용
-    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
-    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.handler.ml.evaluation_handler import EvaluationHandler
+    from beanllm.utils.core.di_container import get_container
 
-    evaluation_service = EvaluationServiceImpl()
+    container = get_container()
+    evaluation_service = container.get_service_factory().create_evaluation_service()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
@@ -158,7 +170,9 @@ def evaluate_text(
             **kwargs,
         )
     )
-    return response.result
+    assert response is not None
+    result: BatchEvaluationResult = response.result
+    return result
 
 
 def evaluate_rag(
@@ -178,10 +192,11 @@ def evaluate_rag(
         ground_truth: 정답 (있는 경우)
     """
     # Handler/Service 초기화 - DI Container 사용
-    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
-    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.handler.ml.evaluation_handler import EvaluationHandler
+    from beanllm.utils.core.di_container import get_container
 
-    evaluation_service = EvaluationServiceImpl()
+    container = get_container()
+    evaluation_service = container.get_service_factory().create_evaluation_service()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
@@ -194,20 +209,26 @@ def evaluate_rag(
             **kwargs,
         )
     )
-    return response.result
+    assert response is not None
+    result: BatchEvaluationResult = response.result
+    return result
 
 
-def create_evaluator(metric_names: List[str]) -> Evaluator:
+def create_evaluator(metric_names: List[str]) -> EvaluatorFacade:
     """간편한 Evaluator 생성"""
     # Handler/Service 초기화 - DI Container 사용
-    from beanllm.facade.handler.evaluation_handler import EvaluationHandler
-    from beanllm.facade.service.impl.evaluation_service_impl import EvaluationServiceImpl
+    from beanllm.handler.ml.evaluation_handler import EvaluationHandler
+    from beanllm.utils.core.di_container import get_container
 
-    evaluation_service = EvaluationServiceImpl()
+    container = get_container()
+    evaluation_service = container.get_service_factory().create_evaluation_service()
     handler = EvaluationHandler(evaluation_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용
-    return run_async_in_sync(handler.handle_create_evaluator(metric_names=metric_names))
+    result = run_async_in_sync(handler.handle_create_evaluator(metric_names=metric_names))
+    assert result is not None
+    evaluator: EvaluatorFacade = result
+    return evaluator
 
 
 # 기존 Evaluator 클래스를 EvaluatorFacade로 alias (하위 호환성)

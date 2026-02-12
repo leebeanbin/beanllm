@@ -6,7 +6,12 @@ LLM 제공자 추상화 인터페이스
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, TypeVar
+from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, TypeVar
+
+try:
+    from beanllm.utils.constants import DEFAULT_TEMPERATURE
+except ImportError:
+    DEFAULT_TEMPERATURE: float = 0.7  # type: ignore[no-redef]
 
 # 선택적 의존성 - ProviderError 임포트 시도
 try:
@@ -53,13 +58,14 @@ class BaseLLMProvider(ABC):
         self._logger = get_logger(self.__class__.__name__)
 
     @abstractmethod
-    async def stream_chat(
+    def stream_chat(
         self,
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
+        **kwargs: Any,
     ) -> AsyncGenerator[str, None]:
         """
         스트리밍 채팅
@@ -74,7 +80,7 @@ class BaseLLMProvider(ABC):
         Yields:
             응답 청크 (str)
         """
-        pass
+        ...
 
     @abstractmethod
     async def chat(
@@ -82,7 +88,7 @@ class BaseLLMProvider(ABC):
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
     ) -> LLMResponse:
         """
@@ -249,7 +255,7 @@ class BaseLLMProvider(ABC):
             }
         return None
 
-    async def _safe_health_check(self, health_check_fn: Callable[[], bool]) -> bool:
+    async def _safe_health_check(self, health_check_fn: Callable[[], Awaitable[bool]]) -> bool:
         """
         Health check를 안전하게 실행 (모든 provider에서 동일한 패턴)
 

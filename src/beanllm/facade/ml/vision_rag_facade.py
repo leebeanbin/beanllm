@@ -82,20 +82,15 @@ Answer:"""
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.service.impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
         from beanllm.utils.core.di_container import get_container
 
         container = get_container()
         service_factory = container.get_service_factory(vector_store=self.vector_store)
 
-        # ChatService 생성
-        chat_service = service_factory.create_chat_service()
-
-        # VisionRAGService 생성 (커스텀 의존성)
-        vision_rag_service = VisionRAGServiceImpl(
+        # VisionRAGService 생성 (ServiceFactory 경유)
+        vision_rag_service = service_factory.create_vision_rag_service(
             vector_store=self.vector_store,
             vision_embedding=self.vision_embedding,
-            chat_service=chat_service,
             llm=self.llm,
             prompt_template=self.prompt_template,
         )
@@ -193,7 +188,7 @@ Answer:"""
                             priority=0,
                         )
                         all_embeddings.extend(
-                            [r[0] if isinstance(r, list) and r else [] for r in results]
+                            [r[0] if isinstance(r, list) and r else [] for r in (results or [])]
                         )
 
                     return all_embeddings
@@ -210,7 +205,7 @@ Answer:"""
                     else:
                         embeddings = loop.run_until_complete(process_embeddings_async())
                 except RuntimeError:
-                    embeddings = run_async_in_sync(process_embeddings_async())
+                    embeddings = run_async_in_sync(process_embeddings_async()) or []
 
                 # 이벤트 발행: 임베딩 완료
                 asyncio.create_task(
@@ -288,6 +283,7 @@ Answer:"""
             self._vision_rag_handler.handle_retrieve(query=query, k=k, **kwargs)
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
+        assert response is not None
         return response.results or []
 
     def query(
@@ -332,6 +328,7 @@ Answer:"""
             )
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
+        assert response is not None
         if include_sources:
             return response.answer or "", response.sources or []
         return response.answer or ""
@@ -361,6 +358,7 @@ Answer:"""
             )
         )
         # DTO에서 값 추출 (기존 API 호환성 유지)
+        assert response is not None
         return response.answers or []
 
 
@@ -415,7 +413,7 @@ class MultimodalRAG(VisionRAG):
                 image_loader = ImageLoader(generate_captions=generate_captions)
                 try:
                     images = image_loader.load(source_path)
-                    all_documents.extend(images)
+                    all_documents.extend(images)  # type: ignore[arg-type]
                 except Exception as e:
                     logger.debug(f"Failed to load images from {source_path} (continuing): {e}")
 
@@ -423,7 +421,7 @@ class MultimodalRAG(VisionRAG):
                 try:
                     docs = DocumentLoader.load(source_path)
                     chunks = TextSplitter.split(docs)
-                    all_documents.extend(chunks)
+                    all_documents.extend(chunks)  # type: ignore[arg-type]
                 except Exception as e:
                     logger.debug(
                         f"Failed to load text documents from {source_path} (continuing): {e}"
@@ -435,13 +433,13 @@ class MultimodalRAG(VisionRAG):
                     # PDF with images
                     pdf_loader = PDFWithImagesLoader()
                     docs = pdf_loader.load(source_path)
-                    all_documents.extend(docs)
+                    all_documents.extend(docs)  # type: ignore[arg-type]
                 else:
                     # 일반 문서
                     try:
                         docs = DocumentLoader.load(source_path)
                         chunks = TextSplitter.split(docs)
-                        all_documents.extend(chunks)
+                        all_documents.extend(chunks)  # type: ignore[arg-type]
                     except Exception as e:
                         logger.debug(
                             f"Failed to load document from {source_path} (continuing): {e}"

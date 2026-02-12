@@ -48,16 +48,30 @@ from .entity_extractor import (
     EntityType,
     extract_entities_simple,
 )
-from .graph_builder import GraphBuilder, build_graph_simple
-from .graph_querier import GraphQuerier
-from .graph_rag import GraphRAG
-from .neo4j_adapter import Neo4jAdapter
 from .relation_extractor import (
     Relation,
     RelationExtractor,
     RelationType,
     extract_relations_simple,
 )
+
+# Graph components (require networkx - optional dependency)
+try:
+    from .graph_builder import GraphBuilder, build_graph_simple
+    from .graph_querier import GraphQuerier
+    from .graph_rag import GraphRAG
+
+    _GRAPH_AVAILABLE = True
+except ImportError:
+    _GRAPH_AVAILABLE = False
+
+# Neo4j adapter (optional dependency)
+try:
+    from .neo4j_adapter import Neo4jAdapter
+
+    _NEO4J_AVAILABLE = True
+except ImportError:
+    _NEO4J_AVAILABLE = False
 
 # NER Engines (optional - may require additional dependencies)
 try:

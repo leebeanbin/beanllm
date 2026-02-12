@@ -396,7 +396,7 @@ class OCRConfig:
             "deepseek-ocr",
         }
         if self.engine not in valid_engines:
-            raise ValueError(f"Invalid engine: {self.engine}. " f"Must be one of {valid_engines}")
+            raise ValueError(f"Invalid engine: {self.engine}. Must be one of {valid_engines}")
 
         # 언어 유효성 검사 (일부만 체크)
         if self.language not in ["auto", "ko", "en", "zh", "ja"]:
@@ -411,8 +411,7 @@ class OCRConfig:
         # 신뢰도 임계값 범위 검사
         if not 0.0 <= self.confidence_threshold <= 1.0:
             raise ValueError(
-                f"confidence_threshold must be between 0.0 and 1.0, "
-                f"got {self.confidence_threshold}"
+                f"confidence_threshold must be between 0.0 and 1.0, got {self.confidence_threshold}"
             )
 
         # LLM 후처리 설정 검증

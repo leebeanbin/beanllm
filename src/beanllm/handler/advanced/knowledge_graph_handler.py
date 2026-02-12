@@ -29,12 +29,13 @@ from beanllm.dto.response.graph.kg_response import (
     QueryGraphResponse,
     RelationsResponse,
 )
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
 
 logger = logging.getLogger(__name__)
 
 
-class KnowledgeGraphHandler:
+class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
     """
     Knowledge Graph 핸들러
 
@@ -63,7 +64,7 @@ class KnowledgeGraphHandler:
         Args:
             service: Knowledge Graph Service
         """
-        self._service = service
+        super().__init__(service)
         logger.info("KnowledgeGraphHandler initialized")
 
     async def handle_extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
@@ -99,8 +100,7 @@ class KnowledgeGraphHandler:
             for entity_type in request.entity_types:
                 if entity_type.lower() not in valid_types:
                     raise ValueError(
-                        f"Invalid entity type: {entity_type}. "
-                        f"Valid types: {', '.join(valid_types)}"
+                        f"Invalid entity type: {entity_type}. Valid types: {', '.join(valid_types)}"
                     )
 
         try:
@@ -220,8 +220,7 @@ class KnowledgeGraphHandler:
             for entity_type in request.entity_types:
                 if entity_type.lower() not in valid_types:
                     raise ValueError(
-                        f"Invalid entity type: {entity_type}. "
-                        f"Valid types: {', '.join(valid_types)}"
+                        f"Invalid entity type: {entity_type}. Valid types: {', '.join(valid_types)}"
                     )
 
         if request.relation_types:
@@ -297,7 +296,7 @@ class KnowledgeGraphHandler:
 
         if query_type not in valid_query_types:
             raise ValueError(
-                f"Invalid query type: {query_type}. " f"Valid types: {', '.join(valid_query_types)}"
+                f"Invalid query type: {query_type}. Valid types: {', '.join(valid_query_types)}"
             )
 
         # 쿼리 타입별 파라미터 검증
@@ -330,7 +329,7 @@ class KnowledgeGraphHandler:
         try:
             response = await self._service.query_graph(request)
             logger.info(
-                f"Graph query executed: {response.graph_id} " f"({response.num_results} results)"
+                f"Graph query executed: {response.graph_id} ({response.num_results} results)"
             )
             return response
 
@@ -369,9 +368,7 @@ class KnowledgeGraphHandler:
                 query=query,
                 graph_id=graph_id,
             )
-            logger.info(
-                f"Graph RAG executed: {response.graph_id} " f"({response.num_results} results)"
-            )
+            logger.info(f"Graph RAG executed: {response.graph_id} ({response.num_results} results)")
             return response
 
         except ValueError as e:

@@ -226,7 +226,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
             TuneParametersResponse: 튜닝 결과
         """
         logger.info(
-            f"Tuning parameters for session: {request.session_id}, " f"params={request.parameters}"
+            f"Tuning parameters for session: {request.session_id}, params={request.parameters}"
         )
 
         # Get session

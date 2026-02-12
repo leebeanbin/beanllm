@@ -102,9 +102,7 @@ class LlamaIndexQueryEngine:
         try:
             from llama_index.core import Settings, VectorStoreIndex
         except ImportError:
-            raise ImportError(
-                "llama-index is required. " "Install it with: pip install llama-index"
-            )
+            raise ImportError("llama-index is required. Install it with: pip install llama-index")
 
         # beanLLM Document → LlamaIndex Document
         bridge = LlamaIndexBridge()

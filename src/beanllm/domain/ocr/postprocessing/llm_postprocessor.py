@@ -191,8 +191,7 @@ class LLMPostprocessor:
             # 검증: 너무 다르면 원본 반환
             if len(corrected_text) < len(text) * 0.5 or len(corrected_text) > len(text) * 2.0:
                 logger.warning(
-                    "LLM correction produced significantly different length. "
-                    "Using original text."
+                    "LLM correction produced significantly different length. Using original text."
                 )
                 return text
 

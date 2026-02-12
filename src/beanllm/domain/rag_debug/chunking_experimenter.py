@@ -146,8 +146,7 @@ class ChunkingExperimenter:
         self._current_chunks: Dict[str, List[str]] = {}  # strategy_name -> chunks
 
         logger.info(
-            f"ChunkingExperimenter initialized: "
-            f"{len(documents)} docs, {len(test_queries)} queries"
+            f"ChunkingExperimenter initialized: {len(documents)} docs, {len(test_queries)} queries"
         )
 
     def _get_splitter(self, config: Dict[str, Any]):
@@ -509,17 +508,17 @@ class ChunkingExperimenter:
         by_type = summary.get("by_type", {})
         if "relevance" in by_type and by_type["relevance"]["avg"] < 0.5:
             suggestions.append(
-                "관련성 점수가 낮습니다. 청크 오버랩을 늘리거나 " "시맨틱 청킹을 사용해보세요."
+                "관련성 점수가 낮습니다. 청크 오버랩을 늘리거나 시맨틱 청킹을 사용해보세요."
             )
 
         if "completeness" in by_type and by_type["completeness"]["avg"] < 0.5:
             suggestions.append(
-                "완전성 점수가 낮습니다. 청크 크기를 늘려 " "더 많은 컨텍스트를 포함하세요."
+                "완전성 점수가 낮습니다. 청크 크기를 늘려 더 많은 컨텍스트를 포함하세요."
             )
 
         if "coherence" in by_type and by_type["coherence"]["avg"] < 0.5:
             suggestions.append(
-                "일관성 점수가 낮습니다. 시맨틱 청킹이나 " "문장 경계 기반 분할을 시도해보세요."
+                "일관성 점수가 낮습니다. 시맨틱 청킹이나 문장 경계 기반 분할을 시도해보세요."
             )
 
         # 자동 재실험 제안

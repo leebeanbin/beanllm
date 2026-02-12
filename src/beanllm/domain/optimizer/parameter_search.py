@@ -145,7 +145,7 @@ class ParameterSearch:
             MultiObjectiveResult: 다목적 최적화 결과
         """
         logger.info(
-            f"Starting multi-objective search: {len(objectives)} objectives, " f"{n_trials} trials"
+            f"Starting multi-objective search: {len(objectives)} objectives, {n_trials} trials"
         )
 
         results: List[SearchResult] = []

@@ -449,7 +449,7 @@ class OptimizerEngine:
                     best_score = score
                     best_params = params.copy()
 
-            logger.debug(f"Trial {trial + 1}/{n_trials}: score={score:.4f}, " f"params={params}")
+            logger.debug(f"Trial {trial + 1}/{n_trials}: score={score:.4f}, params={params}")
 
         return OptimizationResult(
             best_params=best_params,

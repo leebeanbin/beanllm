@@ -63,7 +63,7 @@ class IRAGService(ABC):
         pass
 
     @abstractmethod
-    async def stream_query(self, request: RAGRequest) -> AsyncIterator[str]:
+    def stream_query(self, request: RAGRequest) -> AsyncIterator[str]:
         """
         RAG 스트리밍 질의 처리
 

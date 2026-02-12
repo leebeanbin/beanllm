@@ -106,7 +106,7 @@ class OCRExperiment:
             ```
         """
         if labels is None:
-            labels = [f"Config {i+1}" for i in range(len(configs))]
+            labels = [f"Config {i + 1}" for i in range(len(configs))]
 
         if len(labels) != len(configs):
             raise ValueError(
@@ -258,7 +258,7 @@ class OCRExperiment:
             best_idx = max(range(len(results)), key=lambda i: results[i]["text_length"])
         else:
             raise ValueError(
-                f"Invalid metric: {metric}. " f"Must be one of: confidence, speed, text_length"
+                f"Invalid metric: {metric}. Must be one of: confidence, speed, text_length"
             )
 
         best_result = results[best_idx]

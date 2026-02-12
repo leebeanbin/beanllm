@@ -271,7 +271,7 @@ class UnifiedEvaluator:
         self._update_unified_score(record)
 
         logger.info(
-            f"Auto evaluation: query='{query[:30]}...', " f"avg_score={record.auto_avg_score:.4f}"
+            f"Auto evaluation: query='{query[:30]}...', avg_score={record.auto_avg_score:.4f}"
         )
 
         return scores
@@ -648,9 +648,7 @@ class UnifiedEvaluator:
                 "new_score": new_avg,
                 "drift_magnitude": drift,
                 "severity": "high" if drift > 0.3 else "medium",
-                "message": (
-                    f"성능 저하 감지: {old_avg:.2f} → {new_avg:.2f} " f"(하락폭: {drift:.2f})"
-                ),
+                "message": (f"성능 저하 감지: {old_avg:.2f} → {new_avg:.2f} (하락폭: {drift:.2f})"),
             }
 
         return {"detected": False, "old_score": old_avg, "new_score": new_avg}

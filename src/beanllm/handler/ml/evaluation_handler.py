@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from beanllm.domain.evaluation.evaluator import Evaluator
 
 
-class EvaluationHandler(BaseHandler):
+class EvaluationHandler(BaseHandler[IEvaluationService]):
     """평가 요청 핸들러"""
 
     def __init__(self, evaluation_service: IEvaluationService):
@@ -36,9 +36,6 @@ class EvaluationHandler(BaseHandler):
             evaluation_service: 평가 서비스
         """
         super().__init__(evaluation_service)
-        self._evaluation_service = (
-            evaluation_service  # BaseHandler._service와 동일하지만 명시적으로 유지
-        )
 
     @handle_errors(error_message="Evaluation failed")
     @validate_input(
@@ -59,7 +56,7 @@ class EvaluationHandler(BaseHandler):
             metrics=metrics or [],
             **kwargs,
         )
-        return await self._call_service("evaluate", request)
+        return await self._service.evaluate(request)
 
     @handle_errors(error_message="Batch evaluation failed")
     @validate_input(
@@ -80,7 +77,7 @@ class EvaluationHandler(BaseHandler):
             metrics=metrics or [],
             **kwargs,
         )
-        return await self._call_service("batch_evaluate", request)
+        return await self._service.batch_evaluate(request)
 
     @handle_errors(error_message="Text evaluation failed")
     @validate_input(
@@ -98,10 +95,10 @@ class EvaluationHandler(BaseHandler):
         request = TextEvaluationRequest(
             prediction=prediction,
             reference=reference,
-            metrics=metrics,
+            metrics=metrics or [],
             **kwargs,
         )
-        return await self._evaluation_service.evaluate_text(request)
+        return await self._service.evaluate_text(request)
 
     @handle_errors(error_message="RAG evaluation failed")
     @validate_input(
@@ -124,7 +121,7 @@ class EvaluationHandler(BaseHandler):
             ground_truth=ground_truth,
             **kwargs,
         )
-        return await self._call_service("evaluate_rag", request)
+        return await self._service.evaluate_rag(request)
 
     @handle_errors(error_message="Create evaluator failed")
     @validate_input(
@@ -134,4 +131,4 @@ class EvaluationHandler(BaseHandler):
     async def handle_create_evaluator(self, metric_names: List[str]) -> "Evaluator":
         """Evaluator 생성 처리"""
         request = CreateEvaluatorRequest(metric_names=metric_names)
-        return await self._call_service("create_evaluator", request)
+        return await self._service.create_evaluator(request)

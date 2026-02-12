@@ -413,7 +413,7 @@ class LLMNEREngine(BaseNEREngine):
 
 Text: {text}
 
-Entity types to extract: {', '.join(self.labels)}
+Entity types to extract: {", ".join(self.labels)}
 
 Return as JSON array:
 [{{"text": "entity text", "label": "ENTITY_TYPE", "start": 0, "end": 10, "confidence": 0.95}}]

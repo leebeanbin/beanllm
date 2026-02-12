@@ -89,8 +89,7 @@ class ChunkValidator:
         distribution = self._compute_size_distribution(sizes)
 
         logger.info(
-            f"Size validation completed: {len(issues)} issues found, "
-            f"distribution: {distribution}"
+            f"Size validation completed: {len(issues)} issues found, distribution: {distribution}"
         )
 
         return issues, distribution
@@ -137,9 +136,7 @@ class ChunkValidator:
             - 0 ~ 1 사이 값 (1에 가까울수록 유사)
         """
         threshold = threshold or self.overlap_threshold
-        logger.info(
-            f"Detecting duplicates in {len(documents)} documents " f"(threshold={threshold})"
-        )
+        logger.info(f"Detecting duplicates in {len(documents)} documents (threshold={threshold})")
 
         duplicates = []
 
@@ -207,8 +204,7 @@ class ChunkValidator:
         """
         required_keys = required_keys or []
         logger.info(
-            f"Validating metadata for {len(documents)} documents "
-            f"(required keys: {required_keys})"
+            f"Validating metadata for {len(documents)} documents (required keys: {required_keys})"
         )
 
         issues = []

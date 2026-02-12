@@ -133,7 +133,7 @@ class RAGASWrapper(BaseEvaluationFramework):
             import ragas
         except ImportError:
             raise ImportError(
-                "ragas is required for RAGASWrapper. " "Install it with: pip install ragas"
+                "ragas is required for RAGASWrapper. Install it with: pip install ragas"
             )
 
         self._ragas = ragas
@@ -758,7 +758,7 @@ class RAGASWrapper(BaseEvaluationFramework):
             return self.evaluate_answer_correctness(**data, **kwargs)
         else:
             raise ValueError(
-                f"Unknown metric: {metric}. " f"Available: {list(self.list_tasks().keys())}"
+                f"Unknown metric: {metric}. Available: {list(self.list_tasks().keys())}"
             )
 
     def list_tasks(self) -> Dict[str, str]:

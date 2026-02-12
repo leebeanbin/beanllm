@@ -105,7 +105,7 @@ def create_vision_task_model(
             return Florence2Wrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "transformers required for Florence-2. " "Install with: pip install transformers"
+                "transformers required for Florence-2. Install with: pip install transformers"
             )
 
     elif model in ["yolo", "yolov8", "yolov11", "yolov12"]:
@@ -116,7 +116,7 @@ def create_vision_task_model(
             return YOLOWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "ultralytics required for YOLO. " "Install with: pip install ultralytics"
+                "ultralytics required for YOLO. Install with: pip install ultralytics"
             )
 
     elif model in ["qwen3vl", "qwen-vl", "qwen3-vl"]:
@@ -127,12 +127,11 @@ def create_vision_task_model(
             return Qwen3VLWrapper(**kwargs)
         except ImportError:
             raise ImportError(
-                "transformers required for Qwen3-VL. "
-                "Install with: pip install transformers torch"
+                "transformers required for Qwen3-VL. Install with: pip install transformers torch"
             )
 
     else:
-        raise ValueError(f"Unknown model: {model}. " f"Available: sam, florence2, yolo, qwen3vl")
+        raise ValueError(f"Unknown model: {model}. Available: sam, florence2, yolo, qwen3vl")
 
 
 def list_available_models() -> dict:

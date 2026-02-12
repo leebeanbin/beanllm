@@ -21,6 +21,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
+from beanllm.utils.constants import (
+    CLAUDE_DEFAULT_MAX_TOKENS,
+    DEFAULT_MAX_RETRIES,
+    DEFAULT_TEMPERATURE,
+    HEALTH_CHECK_MAX_TOKENS,
+)
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -50,7 +56,7 @@ class ClaudeProvider(BaseLLMProvider):
         )
         self.default_model = "claude-3-5-sonnet-20241022"
 
-    @retry(max_retries=3, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
     @provider_error_handler(
         operation="stream_chat",
         api_error_types=(APITimeoutError, APIError),
@@ -61,7 +67,7 @@ class ClaudeProvider(BaseLLMProvider):
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
     ) -> AsyncGenerator[str, None]:
         """
@@ -81,7 +87,7 @@ class ClaudeProvider(BaseLLMProvider):
         # 최신 SDK: messages.stream() 사용
         async with self.client.messages.stream(
             model=model or self.default_model,
-            max_tokens=max_tokens or 4096,
+            max_tokens=max_tokens or CLAUDE_DEFAULT_MAX_TOKENS,
             system=system,
             temperature=temperature,
             messages=claude_messages,
@@ -91,7 +97,7 @@ class ClaudeProvider(BaseLLMProvider):
                 if text:
                     yield text
 
-    @retry(max_retries=3, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APITimeoutError, APIError),
@@ -102,7 +108,7 @@ class ClaudeProvider(BaseLLMProvider):
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
@@ -116,7 +122,7 @@ class ClaudeProvider(BaseLLMProvider):
 
         response = await self.client.messages.create(
             model=model or self.default_model,
-            max_tokens=max_tokens or 4096,
+            max_tokens=max_tokens or CLAUDE_DEFAULT_MAX_TOKENS,
             system=system,
             temperature=temperature,
             messages=claude_messages,
@@ -162,7 +168,7 @@ class ClaudeProvider(BaseLLMProvider):
         try:
             response = await self.client.messages.create(
                 model=self.default_model,
-                max_tokens=5,
+                max_tokens=HEALTH_CHECK_MAX_TOKENS,
                 messages=[{"role": "user", "content": "test"}],
             )
             return response.content[0].text is not None

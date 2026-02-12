@@ -15,6 +15,7 @@ from beanllm.dto.response.core.rag_response import RAGResponse
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.service.impl.advanced.search_strategy import SearchStrategyFactory
 from beanllm.service.rag_service import IRAGService
+from beanllm.utils.constants import DEFAULT_MAX_CONTEXT_TOKENS
 
 if TYPE_CHECKING:
     from beanllm.service.chat_service import IChatService
@@ -174,7 +175,7 @@ class RAGServiceImpl(IRAGService):
             results = self._vector_store.rerank(request.query, results, top_k=request.k)
 
         # 3단계: 동적 패시지 선택 (토큰 제한 고려)
-        max_tokens = extra_params.get("max_context_tokens", 4000)
+        max_tokens = extra_params.get("max_context_tokens", DEFAULT_MAX_CONTEXT_TOKENS)
         results = self._select_passages_dynamically(results, max_tokens)
 
         return results
@@ -218,7 +219,7 @@ Answer:"""
     def _select_passages_dynamically(
         self,
         results: List[Any],
-        max_tokens: int = 4000,
+        max_tokens: int = DEFAULT_MAX_CONTEXT_TOKENS,
     ) -> List[Any]:
         """
         동적 패시지 선택: 토큰 제한 고려

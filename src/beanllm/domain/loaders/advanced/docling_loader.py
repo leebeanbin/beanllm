@@ -117,7 +117,7 @@ class DoclingLoader(BaseDocumentLoader):
         valid_formats = ["markdown", "text"]
         if self.output_format not in valid_formats:
             raise ValueError(
-                f"Invalid output_format: {self.output_format}. " f"Available: {valid_formats}"
+                f"Invalid output_format: {self.output_format}. Available: {valid_formats}"
             )
 
     def load(self) -> List[Document]:
@@ -127,7 +127,7 @@ class DoclingLoader(BaseDocumentLoader):
             from docling.document_converter import DocumentConverter
         except ImportError:
             raise ImportError(
-                "docling is required for DoclingLoader. " "Install it with: pip install docling"
+                "docling is required for DoclingLoader. Install it with: pip install docling"
             )
 
         # 파일 존재 확인
@@ -249,7 +249,7 @@ class DoclingLoader(BaseDocumentLoader):
             from beanllm.domain.loaders.splitters import RecursiveCharacterTextSplitter
         except ImportError:
             logger.warning(
-                "RecursiveCharacterTextSplitter not available, " "returning unsplit documents"
+                "RecursiveCharacterTextSplitter not available, returning unsplit documents"
             )
             return docs
 

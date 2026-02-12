@@ -298,4 +298,4 @@ class SQLiteLoader(BaseDocumentLoader):
             self._close_connection()
 
     def __repr__(self) -> str:
-        return f"SQLiteLoader(" f"db_path={self.db_path}, " f"query={self.query[:50]}...)"
+        return f"SQLiteLoader(db_path={self.db_path}, query={self.query[:50]}...)"

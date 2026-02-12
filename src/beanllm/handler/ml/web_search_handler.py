@@ -16,10 +16,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.web.web_search_request import WebSearchRequest
 from beanllm.dto.response.web.web_search_response import WebSearchResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.web_search_service import IWebSearchService
 
 
-class WebSearchHandler:
+class WebSearchHandler(BaseHandler[IWebSearchService]):
     """
     Web Search 요청 처리 Handler
 
@@ -38,7 +39,7 @@ class WebSearchHandler:
         Args:
             web_search_service: Web Search 서비스 (인터페이스에 의존 - DIP)
         """
-        self._web_search_service = web_search_service
+        super().__init__(web_search_service)
 
     @log_handler_call
     @handle_errors(error_message="Web search failed")
@@ -104,7 +105,7 @@ class WebSearchHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._web_search_service.search(request)
+        return await self._service.search(request)
 
     @log_handler_call
     @handle_errors(error_message="Web search and scrape failed")
@@ -167,4 +168,4 @@ class WebSearchHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._web_search_service.search_and_scrape(request)
+        return await self._service.search_and_scrape(request)

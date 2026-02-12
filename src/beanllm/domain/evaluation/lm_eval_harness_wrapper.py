@@ -171,8 +171,7 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
             import lm_eval
         except ImportError:
             raise ImportError(
-                "lm-eval is required for LMEvalHarnessWrapper. "
-                "Install it with: pip install lm-eval"
+                "lm-eval is required for LMEvalHarnessWrapper. Install it with: pip install lm-eval"
             )
 
         self._lm_eval = lm_eval
@@ -378,7 +377,7 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
         }
 
         if suite not in suites:
-            raise ValueError(f"Unknown suite: {suite}. " f"Available: {list(suites.keys())}")
+            raise ValueError(f"Unknown suite: {suite}. Available: {list(suites.keys())}")
 
         tasks = suites[suite]
         logger.info(f"Evaluating {suite} suite: {tasks}")

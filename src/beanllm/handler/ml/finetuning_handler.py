@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob, TrainingExample
 
 
-class FinetuningHandler(BaseHandler):
+class FinetuningHandler(BaseHandler[IFinetuningService]):
     """파인튜닝 요청 핸들러"""
 
     def __init__(self, finetuning_service: IFinetuningService):
@@ -44,9 +44,6 @@ class FinetuningHandler(BaseHandler):
             finetuning_service: 파인튜닝 서비스
         """
         super().__init__(finetuning_service)
-        self._finetuning_service = (
-            finetuning_service  # BaseHandler._service와 동일하지만 명시적으로 유지
-        )
 
     @handle_errors(error_message="Prepare data failed")
     @validate_input(
@@ -61,7 +58,7 @@ class FinetuningHandler(BaseHandler):
     ) -> "PrepareDataResponse":
         """데이터 준비 처리"""
         request = PrepareDataRequest(examples=examples, output_path=output_path, validate=validate)
-        return await self._call_service("prepare_data", request)
+        return await self._service.prepare_data(request)
 
     @handle_errors(error_message="Create job failed")
     @validate_input(
@@ -71,7 +68,7 @@ class FinetuningHandler(BaseHandler):
     async def handle_create_job(self, config: "FineTuningConfig") -> "CreateJobResponse":
         """작업 생성 처리"""
         request = CreateJobRequest(config=config)
-        return await self._call_service("create_job", request)
+        return await self._service.create_job(request)
 
     @handle_errors(error_message="Get job failed")
     @validate_input(
@@ -81,7 +78,7 @@ class FinetuningHandler(BaseHandler):
     async def handle_get_job(self, job_id: str) -> "GetJobResponse":
         """작업 조회 처리"""
         request = GetJobRequest(job_id=job_id)
-        return await self._finetuning_service.get_job(request)
+        return await self._service.get_job(request)
 
     @handle_errors(error_message="List jobs failed")
     @validate_input(
@@ -91,7 +88,7 @@ class FinetuningHandler(BaseHandler):
     async def handle_list_jobs(self, limit: int = 20) -> "ListJobsResponse":
         """작업 목록 조회 처리"""
         request = ListJobsRequest(limit=limit)
-        return await self._call_service("list_jobs", request)
+        return await self._service.list_jobs(request)
 
     @handle_errors(error_message="Cancel job failed")
     @validate_input(
@@ -101,7 +98,7 @@ class FinetuningHandler(BaseHandler):
     async def handle_cancel_job(self, job_id: str) -> "CancelJobResponse":
         """작업 취소 처리"""
         request = CancelJobRequest(job_id=job_id)
-        return await self._call_service("cancel_job", request)
+        return await self._service.cancel_job(request)
 
     @handle_errors(error_message="Get metrics failed")
     @validate_input(
@@ -111,7 +108,7 @@ class FinetuningHandler(BaseHandler):
     async def handle_get_metrics(self, job_id: str) -> "GetMetricsResponse":
         """메트릭 조회 처리"""
         request = GetMetricsRequest(job_id=job_id)
-        return await self._call_service("get_metrics", request)
+        return await self._service.get_metrics(request)
 
     @handle_errors(error_message="Start training failed")
     @validate_input(
@@ -132,7 +129,7 @@ class FinetuningHandler(BaseHandler):
             validation_file=validation_file,
             **kwargs,
         )
-        return await self._finetuning_service.start_training(request)
+        return await self._service.start_training(request)
 
     @handle_errors(error_message="Wait for completion failed")
     @validate_input(
@@ -154,7 +151,7 @@ class FinetuningHandler(BaseHandler):
             timeout=timeout,
             callback=callback,
         )
-        return await self._call_service("wait_for_completion", request)
+        return await self._service.wait_for_completion(request)
 
     @handle_errors(error_message="Quick finetune failed")
     @validate_input(
@@ -185,4 +182,4 @@ class FinetuningHandler(BaseHandler):
             wait=wait,
             **kwargs,
         )
-        return await self._call_service("quick_finetune", request)
+        return await self._service.quick_finetune(request)

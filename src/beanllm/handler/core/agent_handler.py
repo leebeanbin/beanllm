@@ -16,10 +16,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.core.agent_request import AgentRequest
 from beanllm.dto.response.core.agent_response import AgentResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.agent_service import IAgentService
 
 
-class AgentHandler:
+class AgentHandler(BaseHandler[IAgentService]):
     """
     에이전트 요청 처리 Handler
 
@@ -38,7 +39,7 @@ class AgentHandler:
         Args:
             agent_service: 에이전트 서비스 (인터페이스에 의존 - DIP)
         """
-        self._agent_service = agent_service
+        super().__init__(agent_service)
 
     @log_handler_call
     @handle_errors(error_message="Agent task failed")
@@ -103,8 +104,4 @@ class AgentHandler:
 
         # Service 호출 (에러 처리는 decorator가 담당)
         # tool_registry는 request를 통해 전달됨
-        return await self._agent_service.run(request)
-
-    def _create_request(self, request_class, **kwargs):
-        """Helper method to create request DTO"""
-        return request_class(**kwargs)
+        return await self._service.run(request)

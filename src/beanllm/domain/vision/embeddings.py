@@ -645,5 +645,5 @@ def create_vision_embedding(model: str = "clip", **kwargs) -> BaseEmbedding:
         return MultimodalEmbedding(**kwargs)
     else:
         raise ValueError(
-            f"Unknown model: {model}. " f"Supported models: clip, siglip, mobileclip, multimodal"
+            f"Unknown model: {model}. Supported models: clip, siglip, mobileclip, multimodal"
         )

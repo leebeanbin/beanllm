@@ -37,9 +37,9 @@ class FineTuningManagerFacade(AsyncHelperMixin):
 
     def _init_services(self) -> None:
         """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.facade.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
+        from beanllm.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
 
-        # FinetuningService 생성 (커스텀 의존성)
+        # FinetuningService 생성 (커스텀 의존성 - provider 필요)
         finetuning_service = FinetuningServiceImpl(provider=self.provider)
 
         # FinetuningHandler 생성 (직접 생성 - 커스텀 Service 사용)
@@ -55,7 +55,9 @@ class FineTuningManagerFacade(AsyncHelperMixin):
                 examples=examples, output_path=output_path, validate=validate
             )
         )
-        return response.file_id
+        assert response is not None
+        file_id: str = response.file_id
+        return file_id
 
     def start_training(
         self, model: str, training_file: str, validation_file: Optional[str] = None, **kwargs
@@ -70,7 +72,9 @@ class FineTuningManagerFacade(AsyncHelperMixin):
                 **kwargs,
             )
         )
-        return response.job
+        assert response is not None
+        job: FineTuningJob = response.job
+        return job
 
     def wait_for_completion(
         self,
@@ -89,7 +93,9 @@ class FineTuningManagerFacade(AsyncHelperMixin):
                 callback=callback,
             )
         )
-        return response.job
+        assert response is not None
+        job: FineTuningJob = response.job
+        return job
 
     def get_training_progress(self, job_id: str) -> dict:
         """훈련 진행상황 조회"""
@@ -98,6 +104,8 @@ class FineTuningManagerFacade(AsyncHelperMixin):
         metrics_response = run_async_in_sync(
             self._finetuning_handler.handle_get_metrics(job_id=job_id)
         )
+        assert job_response is not None
+        assert metrics_response is not None
 
         return {
             "job": job_response.job,
@@ -147,8 +155,8 @@ def quick_finetune(
     Returns:
         파인튜닝 작업
     """
-    # Handler/Service 초기화
-    from beanllm.facade.service.impl.finetuning_service_impl import FinetuningServiceImpl
+    # Handler/Service 초기화 - DI Container 사용
+    from beanllm.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
 
     finetuning_service = FinetuningServiceImpl()
     handler = FinetuningHandler(finetuning_service)
@@ -164,4 +172,6 @@ def quick_finetune(
             **kwargs,
         )
     )
-    return response.job
+    assert response is not None
+    job: FineTuningJob = response.job
+    return job

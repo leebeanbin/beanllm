@@ -170,7 +170,7 @@ class WebSocketServer:
         """
         if not WEBSOCKETS_AVAILABLE:
             raise ImportError(
-                "websockets is required for streaming. " "Install with: pip install websockets"
+                "websockets is required for streaming. Install with: pip install websockets"
             )
 
         self.host = host

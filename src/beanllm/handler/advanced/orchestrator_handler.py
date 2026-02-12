@@ -20,6 +20,7 @@ from beanllm.dto.response.advanced.orchestrator_response import (
     ExecuteWorkflowResponse,
     MonitorWorkflowResponse,
 )
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -28,7 +29,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class OrchestratorHandler:
+class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
     """
     Multi-Agent 오케스트레이터 Handler
 
@@ -43,7 +44,7 @@ class OrchestratorHandler:
         Args:
             service: Orchestrator 서비스
         """
-        self._service = service
+        super().__init__(service)
 
     async def handle_create_workflow(
         self, request: CreateWorkflowRequest
