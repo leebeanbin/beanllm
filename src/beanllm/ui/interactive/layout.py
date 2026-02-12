@@ -382,21 +382,25 @@ def render_context_indicator(
     p = theme.palette
 
     parts = Text()
+    has_content = False
     if files > 0:
         parts.append(
             f"  {theme.icons['file']} {files} file{'s' if files > 1 else ''}",
             style=f"{p.info_color}",
         )
+        has_content = True
     if rag_active:
-        if len(parts) > 0:
+        if has_content:
             parts.append("  ·  ", style=p.muted)
         parts.append(f"{theme.icons['rag']} RAG active", style=f"{p.success_color}")
+        has_content = True
     if token_count > 0:
-        if len(parts) > 0:
+        if has_content:
             parts.append("  ·  ", style=p.muted)
         parts.append(f"{theme.icons['token']} ~{token_count:,} chars", style=f"{p.dim}")
+        has_content = True
 
-    if len(parts) > 0:
+    if has_content:
         console.print(parts)
 
 

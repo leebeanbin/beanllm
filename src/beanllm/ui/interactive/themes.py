@@ -11,7 +11,7 @@ aichat / Gemini CLI 스타일 테마 시스템:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, Optional
 
 
 @dataclass(frozen=True)
@@ -144,11 +144,15 @@ class Theme:
         }
     )
 
+    _pt_style_cache: Optional[dict[str, str]] = field(default=None, repr=False)
+
     @property
     def prompt_toolkit_style(self) -> dict[str, str]:
-        """prompt_toolkit 스타일 딕셔너리"""
+        """prompt_toolkit 스타일 딕셔너리 (캐싱)"""
+        if self._pt_style_cache is not None:
+            return self._pt_style_cache
         p = self.palette
-        return {
+        style = {
             "bottom-toolbar": f"bg:{p.bg_toolbar} {p.dim}",
             "bottom-toolbar.text": p.dim,
             "completion-menu": f"bg:{p.bg_panel} {p.text}",
@@ -159,26 +163,17 @@ class Theme:
             "scrollbar.background": f"bg:{p.border_dim}",
             "scrollbar.button": f"bg:{p.muted}",
         }
+        object.__setattr__(self, "_pt_style_cache", style)
+        return style
 
     def get_prompt_color(self, mode: str) -> str:
-        """모드에 따른 프롬프트 색상 반환"""
-        color_map = {
-            "chat": self.palette.chat_prompt,
-            "rag": self.palette.rag_prompt,
-            "shell": self.palette.shell_prompt,
-            "plan": self.palette.plan_prompt,
-        }
-        return color_map.get(mode, self.palette.chat_prompt)
+        """모드에 따른 프롬프트 색상 반환 — getattr로 dict 재생성 회피"""
+        attr = f"{mode}_prompt"
+        return getattr(self.palette, attr, self.palette.chat_prompt)
 
     def get_prompt_icon(self, mode: str) -> str:
         """모드에 따른 프롬프트 아이콘 반환"""
-        icon_map = {
-            "chat": self.icons["prompt_chat"],
-            "rag": self.icons["prompt_rag"],
-            "shell": self.icons["prompt_shell"],
-            "plan": self.icons["prompt_plan"],
-        }
-        return icon_map.get(mode, self.icons["prompt_chat"])
+        return self.icons.get(f"prompt_{mode}", self.icons["prompt_chat"])
 
 
 # ---------------------------------------------------------------------------
