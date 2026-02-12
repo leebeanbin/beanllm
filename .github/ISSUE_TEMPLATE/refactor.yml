@@ -1,0 +1,86 @@
+name: "Refactoring / Improvement"
+description: "코드 리팩토링 또는 개선 제안"
+title: "refactor(<scope>): "
+labels: ["refactor"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        코드 품질, 성능, 아키텍처 개선을 제안해주세요.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: "Scope (영역)"
+      description: "리팩토링 대상 영역을 선택하세요."
+      options:
+        - facade
+        - handler
+        - service
+        - domain
+        - infrastructure
+        - playground
+        - cli
+        - ci
+        - other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: "개선 유형"
+      description: "어떤 종류의 개선인지 선택하세요."
+      options:
+        - "코드 중복 제거"
+        - "성능 최적화"
+        - "아키텍처 개선"
+        - "타입 안전성 강화"
+        - "테스트 커버리지 향상"
+        - "의존성 업데이트"
+        - "문서화"
+        - "기타"
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-problem
+    attributes:
+      label: "현재 문제"
+      description: "현재 코드의 어떤 점이 문제인지 설명해주세요."
+      placeholder: |
+        예: ChatHandler에서 캐싱, rate limiting, 이벤트 발행 로직이 각 메서드마다
+        30-50줄씩 중복되어 있어 유지보수가 어렵고 버그 발생 위험이 높음
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-improvement
+    attributes:
+      label: "개선 방향"
+      description: "어떻게 개선하면 좋을지 설명해주세요."
+      placeholder: |
+        예: @with_distributed_features 데코레이터 패턴으로 추출하여
+        중복 코드를 85-90% 감소시킬 수 있음
+    validations:
+      required: true
+
+  - type: textarea
+    id: affected-files
+    attributes:
+      label: "영향 범위 (선택)"
+      description: "변경이 필요한 파일이나 모듈을 나열해주세요."
+      placeholder: |
+        - src/beanllm/handler/core/chat_handler.py
+        - src/beanllm/handler/core/rag_handler.py
+        - src/beanllm/infrastructure/distributed/pipeline_decorators.py
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "추가 정보 (선택)"
+      description: "벤치마크 결과, 참고 자료, 관련 이슈 등"
+    validations:
+      required: false
