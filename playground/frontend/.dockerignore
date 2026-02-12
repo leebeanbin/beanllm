@@ -1,0 +1,19 @@
+# Node.js
+node_modules
+.next
+.turbo
+
+# IDE
+.vscode
+.cursor
+.idea
+
+# Env files
+.env.local
+.env*.local
+
+# E2E tests
+e2e/
+
+# Docs
+*.md
