@@ -7,7 +7,7 @@ name = "beanllm"
 version = "0.3.0"
 description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
 readme = "README.md"
-requires-python = ">=3.10,<3.14"
+requires-python = ">=3.10,<3.15"
 license = "MIT"
 authors = [
     {name = "leebeanbin", email = "wjdqlsdu388@gmail.com"}
@@ -47,6 +47,7 @@ dependencies = [
     "pandas>=2.0.0,<3.0.0",  # 테이블 데이터 처리
     "chromadb (>=1.4.1,<2.0.0)",
     "openai (>=2.16.0,<3.0.0)",
+    "prompt-toolkit>=3.0.0,<4.0.0",  # Interactive TUI (자동완성, 히스토리)
 ]
 
 # 선택적 의존성 (Provider별로 선택 가능)
@@ -84,7 +85,7 @@ ml = [
 
 # CLI 기능
 cli = [
-    "typer[all]>=0.9.0,<1.0.0", # 'all' includes shell completion dependencies
+    "typer>=0.9.0,<1.0.0",
 ]
 
 # Model Context Protocol (MCP) 서버
@@ -104,7 +105,7 @@ all = [
     "marker-pdf>=0.2.0,<2.0.0",
     "torch>=2.0.0,<3.0.0",
     # CLI dependencies (directly included to avoid circular reference)
-    "typer[all]>=0.9.0,<1.0.0",
+    "typer>=0.9.0,<1.0.0",
     # MCP dependencies (directly included to avoid circular reference)
     "fastmcp>=2.0.0,<3.0.0",
     "uvicorn>=0.23.0,<1.0.0",
@@ -113,7 +114,7 @@ all = [
 
 # 벡터 스토어 (세션 검색·메시지 임베딩, Chroma)
 vector = [
-    "chromadb>=0.4.0,<1.0.0",
+    "chromadb>=1.4.1,<2.0.0",
 ]
 
 # Continuous Evaluation (선택적)
@@ -143,7 +144,6 @@ advanced = [
     "scikit-learn>=1.0.0,<2.0.0",  # ML utilities
     "networkx>=3.0.0,<4.0.0",  # Knowledge graphs
     "bayesian-optimization>=1.4.0,<2.0.0",  # Parameter optimization
-    "prompt-toolkit>=3.0.0,<4.0.0",  # REPL shell
 ]
 
 # Optional persistence for knowledge graphs
@@ -226,7 +226,7 @@ dev = [
     "pre-commit>=3.0.0,<4.0.0",  # pre-commit 훅
     "faker>=20.0.0,<25.0.0",  # 테스트 데이터 생성
     # CLI dependencies (directly included to avoid circular reference)
-    "typer[all]>=0.9.0,<1.0.0",
+    "typer>=0.9.0,<1.0.0",
 ]
 
 
@@ -283,6 +283,10 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = "prompt_toolkit.*"
+ignore_missing_imports = true
+
 # Pytest 설정
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -299,7 +303,7 @@ asyncio_mode = "auto"
 packages = [{include = "beanllm", from = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.14"
+python = ">=3.10,<3.15"
 httpx = ">=0.24.0,<1.0.0"
 python-dotenv = ">=1.0.0,<2.0.0"
 rich = ">=13.0.0,<15.0.0"
@@ -312,6 +316,9 @@ ollama = ">=0.1.0,<1.0.0"  # Ollama provider (기본 설치)
 PyMuPDF = ">=1.23.0,<2.0.0"
 pdfplumber = ">=0.10.0,<1.0.0"
 pandas = ">=2.0.0,<3.0.0"
+chromadb = ">=1.4.1,<2.0.0"
+openai = ">=2.16.0,<3.0.0"
+prompt-toolkit = ">=3.0.0,<4.0.0"
 
 [tool.poetry.group.openai]
 optional = true
@@ -336,7 +343,7 @@ ollama = ">=0.1.0,<1.0.0"
 [tool.poetry.group.cli]
 optional = true
 [tool.poetry.group.cli.dependencies]
-typer = {extras = ["all"], version = ">=0.9.0,<1.0.0"}
+typer = ">=0.9.0,<1.0.0"
 
 [tool.poetry.group.mcp]
 optional = true
