@@ -315,46 +315,51 @@ def render_error(console: "Console", message: str, suggestion: str = "") -> None
     )
 
 
-def render_warning(console: "Console", message: str) -> None:
-    """스타일된 경고 메시지"""
+def _render_styled_message(
+    console: "Console",
+    message: str,
+    icon_key: str,
+    icon_color: str,
+    text_color: str,
+    bold_icon: bool = False,
+) -> None:
+    """공통 스타일 메시지 렌더링 (warning/success/info 통합)"""
     from rich.text import Text
 
     from beanllm.ui.interactive.themes import get_theme
 
     theme = get_theme()
-    p = theme.palette
+    icon_style = f"bold {icon_color}" if bold_icon else icon_color
     text = Text()
-    text.append(f"  {theme.icons['warning']} ", style=f"{p.warning_color}")
-    text.append(message, style=f"{p.warning_color}")
+    text.append(f"  {theme.icons[icon_key]} ", style=icon_style)
+    text.append(message, style=text_color)
     console.print(text)
+
+
+def render_warning(console: "Console", message: str) -> None:
+    """스타일된 경고 메시지"""
+    from beanllm.ui.interactive.themes import get_theme
+
+    p = get_theme().palette
+    _render_styled_message(console, message, "warning", p.warning_color, p.warning_color)
 
 
 def render_success(console: "Console", message: str) -> None:
     """성공 메시지"""
-    from rich.text import Text
-
     from beanllm.ui.interactive.themes import get_theme
 
-    theme = get_theme()
-    p = theme.palette
-    text = Text()
-    text.append(f"  {theme.icons['success']} ", style=f"bold {p.success_color}")
-    text.append(message, style=f"{p.success_color}")
-    console.print(text)
+    p = get_theme().palette
+    _render_styled_message(
+        console, message, "success", p.success_color, p.success_color, bold_icon=True
+    )
 
 
 def render_info(console: "Console", message: str) -> None:
     """정보 메시지"""
-    from rich.text import Text
-
     from beanllm.ui.interactive.themes import get_theme
 
-    theme = get_theme()
-    p = theme.palette
-    text = Text()
-    text.append(f"  {theme.icons['info']} ", style=f"{p.info_color}")
-    text.append(message, style=f"{p.dim}")
-    console.print(text)
+    p = get_theme().palette
+    _render_styled_message(console, message, "info", p.info_color, p.dim)
 
 
 # ---------------------------------------------------------------------------
