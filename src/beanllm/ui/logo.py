@@ -41,7 +41,7 @@ beanllm
     MINIMAL = "beanllm"
 
     # 모토
-    MOTTO = "Claude Code"  # 명확하고 간결한 코드처럼
+    MOTTO = "leebeanbin"
 
     @classmethod
     def render(
