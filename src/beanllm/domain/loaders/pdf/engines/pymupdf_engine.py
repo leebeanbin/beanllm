@@ -61,7 +61,7 @@ class PyMuPDFEngine(BasePDFEngine):
             import fitz  # PyMuPDF
         except ImportError:
             raise ImportError(
-                "PyMuPDF is required for PyMuPDFEngine. " "Install it with: pip install PyMuPDF"
+                "PyMuPDF is required for PyMuPDFEngine. Install it with: pip install PyMuPDF"
             )
 
     def extract(

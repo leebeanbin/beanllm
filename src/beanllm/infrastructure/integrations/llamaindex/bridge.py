@@ -153,9 +153,7 @@ class LlamaIndexBridge:
         try:
             from llama_index.core.embeddings import BaseEmbedding
         except ImportError:
-            raise ImportError(
-                "llama-index is required. " "Install it with: pip install llama-index"
-            )
+            raise ImportError("llama-index is required. Install it with: pip install llama-index")
 
         class BeanLLMEmbeddingWrapper(BaseEmbedding):
             """beanLLM Embedding Wrapper for LlamaIndex"""
@@ -212,9 +210,7 @@ class LlamaIndexBridge:
             from llama_index.core.llms import CompletionResponse, CustomLLM
             from llama_index.core.llms.callbacks import llm_completion_callback
         except ImportError:
-            raise ImportError(
-                "llama-index is required. " "Install it with: pip install llama-index"
-            )
+            raise ImportError("llama-index is required. Install it with: pip install llama-index")
 
         class BeanLLMWrapper(CustomLLM):
             """beanLLM Client Wrapper for LlamaIndex"""

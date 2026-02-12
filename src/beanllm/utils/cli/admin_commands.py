@@ -123,13 +123,13 @@ async def analyze_with_gemini(hours: int = 24) -> None:
         prompt = f"""
 다음은 지난 {hours}시간 동안의 Google Workspace 서비스 사용 통계입니다.
 
-**총 내보내기 수**: {stats['total_exports']}
+**총 내보내기 수**: {stats["total_exports"]}
 
 **서비스별 사용량**:
-{json.dumps(stats['by_service'], indent=2, ensure_ascii=False)}
+{json.dumps(stats["by_service"], indent=2, ensure_ascii=False)}
 
 **상위 사용자 (Top 10)**:
-{json.dumps([{"user": u, "count": c} for u, c in stats['top_users']], indent=2, ensure_ascii=False)}
+{json.dumps([{"user": u, "count": c} for u, c in stats["top_users"]], indent=2, ensure_ascii=False)}
 
 위 데이터를 분석하여 다음 정보를 제공해주세요:
 
@@ -324,9 +324,9 @@ async def optimize_with_gemini() -> None:
 - 사용자: ~100-1000명 예상
 
 사용 통계:
-- 24시간 내보내기: {stats_24h['total_exports']}건
-- 7일 내보내기: {stats_7d['total_exports']}건
-- 서비스별 (24h): {json.dumps(stats_24h['by_service'], ensure_ascii=False)}
+- 24시간 내보내기: {stats_24h["total_exports"]}건
+- 7일 내보내기: {stats_7d["total_exports"]}건
+- 서비스별 (24h): {json.dumps(stats_24h["by_service"], ensure_ascii=False)}
 
 비용 최적화 방안을 제안해주세요:
 1. MongoDB/Redis 무료 티어 초과 방지 전략

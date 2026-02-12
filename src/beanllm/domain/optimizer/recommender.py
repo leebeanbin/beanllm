@@ -192,8 +192,7 @@ class Recommender:
                             title=f"Generation Bottleneck ({percentage:.1f}%)",
                             description=f"Generation takes {percentage:.1f}% of total time.",
                             rationale="LLM generation is the slowest component.",
-                            action="Use a faster model, reduce max_tokens, "
-                            "or implement streaming.",
+                            action="Use a faster model, reduce max_tokens, or implement streaming.",
                             expected_impact="Reduce generation time by 20-40%",
                         )
                     )

@@ -79,8 +79,7 @@ class LanceDBVectorStore(BaseVectorStore, AdvancedSearchMixin):
             import lancedb
         except ImportError:
             raise ImportError(
-                "lancedb is required for LanceDBVectorStore. "
-                "Install it with: pip install lancedb"
+                "lancedb is required for LanceDBVectorStore. Install it with: pip install lancedb"
             )
 
         # LanceDB 연결

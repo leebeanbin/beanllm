@@ -107,7 +107,7 @@ class DependencyManager:
                     except ImportError as e:
                         install_cmd = DependencyManager._INSTALL_MSGS.get(pkg, f"pip install {pkg}")
                         raise ImportError(
-                            f"{pkg} is required but not installed. " f"Install with: {install_cmd}"
+                            f"{pkg} is required but not installed. Install with: {install_cmd}"
                         ) from e
 
                 # All dependencies satisfied, execute function
@@ -189,8 +189,7 @@ class DependencyManager:
                             DependencyManager.get_install_command(pkg) for pkg in group
                         )
                         raise ImportError(
-                            f"At least one of {pkg_list} is required. "
-                            f"Install with: {install_cmds}"
+                            f"At least one of {pkg_list} is required. Install with: {install_cmds}"
                         )
 
                 return func(*args, **kwargs)

@@ -137,7 +137,7 @@ class MongoDBLoader(BaseDocumentLoader):
             from pymongo import MongoClient
         except ImportError:
             raise ImportError(
-                "pymongo is required for MongoDBLoader. " "Install it with: pip install pymongo"
+                "pymongo is required for MongoDBLoader. Install it with: pip install pymongo"
             )
 
         if self._client is None:
@@ -267,8 +267,7 @@ class MongoDBLoader(BaseDocumentLoader):
             collection = self._get_connection()
 
             logger.info(
-                f"Querying MongoDB: {self.database}.{self.collection_name} "
-                f"with filter={self.query}"
+                f"Querying MongoDB: {self.database}.{self.collection_name} with filter={self.query}"
             )
 
             # 쿼리 실행
@@ -306,7 +305,7 @@ class MongoDBLoader(BaseDocumentLoader):
             from motor.motor_asyncio import AsyncIOMotorClient
         except ImportError:
             raise ImportError(
-                "motor is required for async MongoDB loading. " "Install it with: pip install motor"
+                "motor is required for async MongoDB loading. Install it with: pip install motor"
             )
 
         client = AsyncIOMotorClient(self.connection_string, **self.kwargs)

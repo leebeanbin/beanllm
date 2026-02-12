@@ -115,8 +115,7 @@ class DoclingEngine(BasePDFEngine):
 
         except Exception as e:
             raise ImportError(
-                f"Failed to load Docling converter: {e}. "
-                "Install Docling with: pip install docling"
+                f"Failed to load Docling converter: {e}. Install Docling with: pip install docling"
             )
 
     def extract(

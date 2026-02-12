@@ -94,7 +94,7 @@ class OptimizerServiceImpl(IOptimizerService):
             RuntimeError: If benchmark execution fails
         """
         logger.info(
-            f"Running benchmark: {request.num_queries} queries, " f"types={request.query_types}"
+            f"Running benchmark: {request.num_queries} queries, types={request.query_types}"
         )
 
         benchmark_id = str(uuid.uuid4())
@@ -140,9 +140,7 @@ class OptimizerServiceImpl(IOptimizerService):
             # Store benchmark
             self._benchmarks[benchmark_id] = result
 
-            logger.info(
-                f"Benchmark completed: {benchmark_id}, " f"{len(queries)} queries generated"
-            )
+            logger.info(f"Benchmark completed: {benchmark_id}, {len(queries)} queries generated")
 
             return BenchmarkResponse(
                 benchmark_id=benchmark_id,
@@ -181,9 +179,7 @@ class OptimizerServiceImpl(IOptimizerService):
             ValueError: If parameter spaces or objective_fn not provided
             RuntimeError: If optimization fails
         """
-        logger.info(
-            f"Starting optimization: method={request.method}, " f"n_trials={request.n_trials}"
-        )
+        logger.info(f"Starting optimization: method={request.method}, n_trials={request.n_trials}")
 
         optimization_id = str(uuid.uuid4())
 
@@ -334,7 +330,7 @@ class OptimizerServiceImpl(IOptimizerService):
             recommendations = self._recommender.analyze_profile(result)
 
             logger.info(
-                f"Profiling completed: {profile_id}, " f"{len(recommendations)} recommendations"
+                f"Profiling completed: {profile_id}, {len(recommendations)} recommendations"
             )
 
             # Build component breakdown
@@ -423,8 +419,7 @@ class OptimizerServiceImpl(IOptimizerService):
             self._ab_tests[test_id] = result
 
             logger.info(
-                f"A/B test completed: {test_id}, "
-                f"winner={result.winner}, lift={result.lift:.1f}%"
+                f"A/B test completed: {test_id}, winner={result.winner}, lift={result.lift:.1f}%"
             )
 
             return ABTestResponse(

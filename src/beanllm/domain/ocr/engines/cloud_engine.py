@@ -110,7 +110,7 @@ class CloudOCREngine(BaseOCREngine):
                 import boto3  # noqa: F401
             except ImportError:
                 raise ImportError(
-                    "boto3 is required for AWS Textract. " "Install it with: pip install boto3"
+                    "boto3 is required for AWS Textract. Install it with: pip install boto3"
                 )
         else:
             raise ValueError(f"Unsupported provider: {self.provider}. Use 'google' or 'aws'")

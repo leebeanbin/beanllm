@@ -91,8 +91,7 @@ class OCRVisualizer:
         """
         if not HAS_MATPLOTLIB:
             raise ImportError(
-                "matplotlib is required for OCRVisualizer. "
-                "Install it with: pip install matplotlib"
+                "matplotlib is required for OCRVisualizer. Install it with: pip install matplotlib"
             )
 
     # === Image Loading (타입 안전 헬퍼) ===

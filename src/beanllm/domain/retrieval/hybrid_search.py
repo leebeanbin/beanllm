@@ -117,7 +117,7 @@ class HybridRetriever:
         valid_methods = ["rrf", "weighted_sum", "distribution_based"]
         if self.fusion_method not in valid_methods:
             raise ValueError(
-                f"Invalid fusion_method: {self.fusion_method}. " f"Available: {valid_methods}"
+                f"Invalid fusion_method: {self.fusion_method}. Available: {valid_methods}"
             )
 
         # BM25 초기화
@@ -129,8 +129,7 @@ class HybridRetriever:
         self._init_embeddings()
 
         logger.info(
-            f"HybridRetriever initialized: {len(documents)} documents, "
-            f"fusion={self.fusion_method}"
+            f"HybridRetriever initialized: {len(documents)} documents, fusion={self.fusion_method}"
         )
 
     def _init_bm25(self):
@@ -139,8 +138,7 @@ class HybridRetriever:
             from rank_bm25 import BM25Okapi
         except ImportError:
             raise ImportError(
-                "rank-bm25 is required for HybridRetriever. "
-                "Install it with: pip install rank-bm25"
+                "rank-bm25 is required for HybridRetriever. Install it with: pip install rank-bm25"
             )
 
         # 문서 토큰화 (간단한 공백 기반)

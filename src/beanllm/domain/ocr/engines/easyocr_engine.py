@@ -80,7 +80,7 @@ class EasyOCREngine(BaseOCREngine):
             import easyocr  # noqa: F401
         except ImportError:
             raise ImportError(
-                "EasyOCR is required for EasyOCREngine. " "Install it with: pip install easyocr"
+                "EasyOCR is required for EasyOCREngine. Install it with: pip install easyocr"
             )
 
     def _get_language_code(self, language: str) -> str:

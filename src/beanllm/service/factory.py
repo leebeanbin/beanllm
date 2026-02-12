@@ -107,6 +107,12 @@ class ServiceFactory:
         """
         from .impl.core.rag_service_impl import RAGServiceImpl
 
+        if self._vector_store is None:
+            raise ValueError(
+                "RAG service requires a vector_store. "
+                "Pass vector_store when creating ServiceFactory."
+            )
+
         # 공통 로직: chat_service 자동 생성
         chat_service = self._get_or_create_chat_service(chat_service)
 
@@ -400,9 +406,14 @@ class ServiceFactory:
 
         return OptimizerServiceImpl()
 
-    def create_knowledge_graph_service(self) -> IKnowledgeGraphService:
+    def create_knowledge_graph_service(
+        self, client: Optional[Any] = None
+    ) -> IKnowledgeGraphService:
         """
         Knowledge Graph 서비스 생성 (의존성 주입)
+
+        Args:
+            client: LLM Client (선택적)
 
         Returns:
             IKnowledgeGraphService: Knowledge Graph 서비스 인스턴스
@@ -411,9 +422,9 @@ class ServiceFactory:
             - 의존성 주입만
             - 비즈니스 로직 없음
         """
-        from .impl.ml.knowledge_graph_service_impl import KnowledgeGraphServiceImpl
+        from .impl.advanced.knowledge_graph_service_impl import KnowledgeGraphServiceImpl
 
-        return KnowledgeGraphServiceImpl()
+        return KnowledgeGraphServiceImpl(client=client)
 
     def create_all_services(self) -> Dict[str, Any]:
         """

@@ -57,9 +57,9 @@ class MultiAgentServiceImpl(IMultiAgentService):
         enable_distributed_lock=True,
         cache_key_prefix="multi_agent:sequential",
         rate_limit_key="multi_agent:execute",
-        lock_key=lambda self,
-        args,
-        kwargs: f"multi_agent:sequential:{hash(args[0].task.encode()) if args and hasattr(args[0], 'task') else 'default'}",
+        lock_key=lambda self, args, kwargs: (
+            f"multi_agent:sequential:{hash(args[0].task.encode()) if args and hasattr(args[0], 'task') else 'default'}"
+        ),
         event_type="multi_agent.sequential",
     )
     async def execute_sequential(self, request: MultiAgentRequest) -> MultiAgentResponse:

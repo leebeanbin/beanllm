@@ -24,6 +24,8 @@ from .core.chain_handler import ChainHandler
 from .core.chat_handler import ChatHandler
 from .core.rag_handler import RAGHandler
 from .ml.audio_handler import AudioHandler
+from .ml.evaluation_handler import EvaluationHandler
+from .ml.finetuning_handler import FinetuningHandler
 from .ml.knowledge_graph_handler import KnowledgeGraphHandler
 from .ml.vision_rag_handler import VisionRAGHandler
 from .ml.web_search_handler import WebSearchHandler
@@ -208,6 +210,26 @@ class HandlerFactory:
         """
         optimizer_service = self._service_factory.create_optimizer_service()
         return OptimizerHandler(optimizer_service)
+
+    def create_evaluation_handler(self) -> EvaluationHandler:
+        """
+        Evaluation Handler 생성 (의존성 주입)
+
+        Returns:
+            EvaluationHandler: Evaluation Handler 인스턴스
+        """
+        evaluation_service = self._service_factory.create_evaluation_service()
+        return EvaluationHandler(evaluation_service)
+
+    def create_finetuning_handler(self) -> FinetuningHandler:
+        """
+        Finetuning Handler 생성 (의존성 주입)
+
+        Returns:
+            FinetuningHandler: Finetuning Handler 인스턴스
+        """
+        finetuning_service = self._service_factory.create_finetuning_service()
+        return FinetuningHandler(finetuning_service)
 
     def create_knowledge_graph_handler(self) -> KnowledgeGraphHandler:
         """

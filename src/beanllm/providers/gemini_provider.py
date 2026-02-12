@@ -13,6 +13,7 @@ except ImportError:
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES, DEFAULT_TEMPERATURE
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -40,13 +41,13 @@ class GeminiProvider(BaseLLMProvider):
         self.client = genai.Client(api_key=api_key)
         self.default_model = "gemini-2.0-flash-exp"
 
-    @retry(max_retries=3, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
@@ -86,14 +87,14 @@ class GeminiProvider(BaseLLMProvider):
             logger.error(f"Gemini stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=3, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
     @provider_error_handler(operation="chat", custom_error_message="Gemini chat failed")
     async def chat(
         self,
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> LLMResponse:

@@ -21,6 +21,7 @@ from beanllm.dto.response.ml.rag_debug_response import (
     TuneParametersResponse,
     ValidateChunksResponse,
 )
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-class RAGDebugHandler:
+class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
     """
     RAG 디버깅 Handler
 
@@ -48,7 +49,7 @@ class RAGDebugHandler:
         Args:
             service: RAG Debug 서비스
         """
-        self._service = service
+        super().__init__(service)
 
     async def handle_start_session(self, request: StartDebugSessionRequest) -> DebugSessionResponse:
         """
@@ -183,12 +184,15 @@ class RAGDebugHandler:
             raise ValueError("parameters dictionary is required")
 
         # Validate parameter values
-        if "top_k" in request.parameters and request.parameters["top_k"] <= 0:
+        top_k = request.parameters.get("top_k")
+        if top_k is not None and isinstance(top_k, (int, float)) and top_k <= 0:
             raise ValueError("top_k must be positive")
 
+        score_threshold = request.parameters.get("score_threshold")
         if (
-            "score_threshold" in request.parameters
-            and not 0 <= request.parameters["score_threshold"] <= 1
+            score_threshold is not None
+            and isinstance(score_threshold, (int, float))
+            and not 0 <= score_threshold <= 1
         ):
             raise ValueError("score_threshold must be between 0 and 1")
 

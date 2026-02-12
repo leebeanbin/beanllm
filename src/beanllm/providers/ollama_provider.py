@@ -6,7 +6,7 @@ Ollama API 통합 (최신 SDK: ollama 패키지의 AsyncClient 사용)
 # 독립적인 utils 사용
 import sys
 from pathlib import Path
-from typing import AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 # 선택적 의존성
 try:
@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES, DEFAULT_TEMPERATURE
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -49,7 +50,7 @@ class OllamaProvider(BaseLLMProvider):
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> AsyncGenerator[str, None]:
@@ -91,14 +92,14 @@ class OllamaProvider(BaseLLMProvider):
             logger.error(f"Ollama stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=3, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
     @provider_error_handler(operation="chat", custom_error_message="Ollama chat failed")
     async def chat(
         self,
         messages: List[Dict[str, str]],
         model: str,
         system: Optional[str] = None,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> LLMResponse:
@@ -150,11 +151,11 @@ class OllamaProvider(BaseLLMProvider):
             )
 
             # models_response 처리: dict, list, ListResponse 객체 모두 처리
-            models_list = []
+            models_list: list[Any] = []
 
             # 1. ListResponse 객체인 경우 (ollama._types.ListResponse)
             if hasattr(models_response, "models"):
-                models_list = models_response.models
+                models_list = list(models_response.models)
                 logger.debug(
                     f"[OllamaProvider] Extracted models_list from ListResponse.models: {len(models_list)} models"
                 )

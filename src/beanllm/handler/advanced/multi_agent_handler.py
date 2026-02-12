@@ -16,10 +16,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.advanced.multi_agent_request import MultiAgentRequest
 from beanllm.dto.response.advanced.multi_agent_response import MultiAgentResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.multi_agent_service import IMultiAgentService
 
 
-class MultiAgentHandler:
+class MultiAgentHandler(BaseHandler[IMultiAgentService]):
     """
     Multi-Agent 요청 처리 Handler
 
@@ -38,7 +39,7 @@ class MultiAgentHandler:
         Args:
             multi_agent_service: Multi-Agent 서비스 (인터페이스에 의존 - DIP)
         """
-        self._multi_agent_service = multi_agent_service
+        super().__init__(multi_agent_service)
 
     @log_handler_call
     @handle_errors(error_message="Multi-Agent execution failed")
@@ -110,4 +111,4 @@ class MultiAgentHandler:
         )
 
         # Service 호출 (Strategy 패턴 적용 - 통합 execute 메서드 사용)
-        return await self._multi_agent_service.execute(request)
+        return await self._service.execute(request)

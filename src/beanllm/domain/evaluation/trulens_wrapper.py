@@ -193,8 +193,7 @@ class TruLensWrapper(BaseEvaluationFramework):
                 )
             else:
                 raise ValueError(
-                    f"Unsupported provider: {self.provider}. "
-                    f"Available: openai, anthropic, azure"
+                    f"Unsupported provider: {self.provider}. Available: openai, anthropic, azure"
                 )
 
             logger.info(f"LLM provider initialized: {self.provider}/{self.model}")

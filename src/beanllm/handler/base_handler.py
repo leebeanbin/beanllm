@@ -9,12 +9,13 @@ SOLID 원칙:
 from __future__ import annotations
 
 from abc import ABC
-from typing import Any, Type, TypeVar
+from typing import Any, Generic, Type, TypeVar
 
 T = TypeVar("T")
+S = TypeVar("S")
 
 
-class BaseHandler(ABC):
+class BaseHandler(ABC, Generic[S]):
     """
     Handler 기본 클래스
 
@@ -25,16 +26,19 @@ class BaseHandler(ABC):
     SOLID:
     - DRY: 공통 패턴 재사용
     - SRP: 공통 로직만 담당
+
+    Type Parameters:
+        S: Service 인터페이스 타입 (DIP 원칙)
     """
 
-    def __init__(self, service: Any) -> None:
+    def __init__(self, service: S) -> None:
         """
         의존성 주입
 
         Args:
             service: Service 인스턴스 (인터페이스에 의존 - DIP)
         """
-        self._service = service
+        self._service: S = service
 
     def _create_request(self, request_class: Type[T], **kwargs: Any) -> T:
         """

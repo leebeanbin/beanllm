@@ -130,7 +130,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             import deepeval
         except ImportError:
             raise ImportError(
-                "deepeval is required for DeepEvalWrapper. " "Install it with: pip install deepeval"
+                "deepeval is required for DeepEvalWrapper. Install it with: pip install deepeval"
             )
 
         self._deepeval = deepeval
@@ -180,9 +180,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         }
 
         if metric_name not in metric_map:
-            raise ValueError(
-                f"Unknown metric: {metric_name}. " f"Available: {list(metric_map.keys())}"
-            )
+            raise ValueError(f"Unknown metric: {metric_name}. Available: {list(metric_map.keys())}")
 
         metric_class = metric_map[metric_name]
 
@@ -559,7 +557,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
                 return self.evaluate_toxicity(**data, **kwargs)
             else:
                 raise ValueError(
-                    f"Unknown metric: {metric}. " f"Available: {list(self.list_tasks().keys())}"
+                    f"Unknown metric: {metric}. Available: {list(self.list_tasks().keys())}"
                 )
 
     def list_tasks(self) -> Dict[str, str]:

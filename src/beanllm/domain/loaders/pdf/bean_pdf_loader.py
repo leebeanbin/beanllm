@@ -208,7 +208,7 @@ class beanPDFLoader(BaseDocumentLoader):
 
         if not self._engines:
             raise ImportError(
-                "No PDF engines available. " "Install at least one: pip install PyMuPDF pdfplumber"
+                "No PDF engines available. Install at least one: pip install PyMuPDF pdfplumber"
             )
 
     def _check_dependencies(self) -> None:
@@ -216,7 +216,7 @@ class beanPDFLoader(BaseDocumentLoader):
         # 엔진이 하나라도 있으면 OK
         if not self._engines:
             raise ImportError(
-                "No PDF engines available. " "Install at least one: pip install PyMuPDF pdfplumber"
+                "No PDF engines available. Install at least one: pip install PyMuPDF pdfplumber"
             )
 
     def load(self) -> List[Document]:
@@ -357,7 +357,7 @@ class beanPDFLoader(BaseDocumentLoader):
         else:
             # 스트리밍 미지원 엔진 - lazy_load로 fallback
             logger.warning(
-                f"Engine '{strategy}' does not support streaming, " f"falling back to lazy_load"
+                f"Engine '{strategy}' does not support streaming, falling back to lazy_load"
             )
             yield from self.lazy_load()
 
@@ -374,7 +374,7 @@ class beanPDFLoader(BaseDocumentLoader):
                 return self.config.strategy
             else:
                 logger.warning(
-                    f"Strategy '{self.config.strategy}' not available, " f"falling back to auto"
+                    f"Strategy '{self.config.strategy}' not available, falling back to auto"
                 )
 
         # 자동 선택 로직

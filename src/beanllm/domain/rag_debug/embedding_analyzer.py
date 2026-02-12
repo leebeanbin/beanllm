@@ -48,7 +48,7 @@ class EmbeddingAnalyzer:
             from sklearn.manifold import TSNE  # noqa: F401
             from sklearn.metrics import silhouette_score  # noqa: F401
         except ImportError as e:
-            logger.error(f"Missing dependency: {e}. " "Install with: pip install beanllm[advanced]")
+            logger.error(f"Missing dependency: {e}. Install with: pip install beanllm[advanced]")
             raise ImportError(
                 "Advanced features require additional dependencies. "
                 "Install with: pip install beanllm[advanced]"
@@ -87,8 +87,7 @@ class EmbeddingAnalyzer:
         import umap
 
         logger.info(
-            f"Running UMAP: {len(embeddings)} embeddings, "
-            f"{len(embeddings[0])}D → {n_components}D"
+            f"Running UMAP: {len(embeddings)} embeddings, {len(embeddings[0])}D → {n_components}D"
         )
 
         embeddings_array = np.array(embeddings)
@@ -139,8 +138,7 @@ class EmbeddingAnalyzer:
         from sklearn.manifold import TSNE
 
         logger.info(
-            f"Running t-SNE: {len(embeddings)} embeddings, "
-            f"{len(embeddings[0])}D → {n_components}D"
+            f"Running t-SNE: {len(embeddings)} embeddings, {len(embeddings[0])}D → {n_components}D"
         )
 
         embeddings_array = np.array(embeddings)
@@ -191,7 +189,7 @@ class EmbeddingAnalyzer:
         import hdbscan
 
         logger.info(
-            f"Running HDBSCAN: {len(embeddings)} points, " f"min_cluster_size={min_cluster_size}"
+            f"Running HDBSCAN: {len(embeddings)} points, min_cluster_size={min_cluster_size}"
         )
 
         clusterer = hdbscan.HDBSCAN(

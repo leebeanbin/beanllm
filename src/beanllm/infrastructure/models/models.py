@@ -27,6 +27,7 @@ def _model_config_to_dict(config: ModelConfig) -> Dict:
 
 
 # Backward compatibility: ModelConfigManager.MODELS를 dict 형태로 변환
+ModelConfigManager._ensure_loaded()
 MODELS = {name: _model_config_to_dict(config) for name, config in ModelConfigManager.MODELS.items()}
 
 

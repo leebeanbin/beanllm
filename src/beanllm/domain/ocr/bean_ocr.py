@@ -611,7 +611,7 @@ class beanOCR(AsyncHelperMixin):
             import fitz  # PyMuPDF
         except ImportError:
             raise ImportError(
-                "PyMuPDF is required for PDF processing. " "Install it with: pip install pymupdf"
+                "PyMuPDF is required for PDF processing. Install it with: pip install pymupdf"
             )
 
         pdf_path = Path(pdf_path)
@@ -625,7 +625,7 @@ class beanOCR(AsyncHelperMixin):
         if page_num < 0 or page_num >= len(doc):
             doc.close()
             raise IndexError(
-                f"Invalid page number: {page_num}. " f"PDF has {len(doc)} pages (0-{len(doc)-1})"
+                f"Invalid page number: {page_num}. PDF has {len(doc)} pages (0-{len(doc) - 1})"
             )
 
         # 페이지를 이미지로 변환

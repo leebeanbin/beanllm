@@ -17,10 +17,11 @@ from beanllm.decorators.validation import validate_input
 from beanllm.domain.state_graph import END
 from beanllm.dto.request.advanced.state_graph_request import StateGraphRequest
 from beanllm.dto.response.advanced.state_graph_response import StateGraphResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.state_graph_service import IStateGraphService
 
 
-class StateGraphHandler:
+class StateGraphHandler(BaseHandler[IStateGraphService]):
     """
     StateGraph 요청 처리 Handler
 
@@ -39,7 +40,7 @@ class StateGraphHandler:
         Args:
             state_graph_service: StateGraph 서비스 (인터페이스에 의존 - DIP)
         """
-        self._state_graph_service = state_graph_service
+        super().__init__(state_graph_service)
 
     @log_handler_call
     @handle_errors(error_message="StateGraph execution failed")
@@ -108,7 +109,7 @@ class StateGraphHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._state_graph_service.invoke(request)
+        return await self._service.invoke(request)
 
     @log_handler_call
     @handle_errors(error_message="StateGraph streaming failed")
@@ -168,4 +169,4 @@ class StateGraphHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return self._state_graph_service.stream(request)
+        return self._service.stream(request)

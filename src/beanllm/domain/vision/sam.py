@@ -376,8 +376,7 @@ class SAMWrapper(BaseVisionTaskModel):
         except AttributeError:
             # Fallback: SAM 3 API가 다를 경우
             logger.warning(
-                "SAM 3 text prompt API not available. "
-                "Using automatic masking with text filtering."
+                "SAM 3 text prompt API not available. Using automatic masking with text filtering."
             )
 
             # 대안: 자동 마스크 생성 후 필터링

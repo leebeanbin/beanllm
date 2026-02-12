@@ -16,10 +16,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.graph.graph_request import GraphRequest
 from beanllm.dto.response.graph.graph_response import GraphResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.graph_service import IGraphService
 
 
-class GraphHandler:
+class GraphHandler(BaseHandler[IGraphService]):
     """
     Graph 요청 처리 Handler
 
@@ -38,7 +39,7 @@ class GraphHandler:
         Args:
             graph_service: Graph 서비스 (인터페이스에 의존 - DIP)
         """
-        self._graph_service = graph_service
+        super().__init__(graph_service)
 
     @log_handler_call
     @handle_errors(error_message="Graph execution failed")
@@ -95,4 +96,4 @@ class GraphHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._graph_service.run_graph(request)
+        return await self._service.run_graph(request)

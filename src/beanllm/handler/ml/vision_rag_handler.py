@@ -16,10 +16,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.ml.vision_rag_request import VisionRAGRequest
 from beanllm.dto.response.ml.vision_rag_response import VisionRAGResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.vision_rag_service import IVisionRAGService
 
 
-class VisionRAGHandler:
+class VisionRAGHandler(BaseHandler[IVisionRAGService]):
     """
     Vision RAG 요청 처리 Handler
 
@@ -38,7 +39,7 @@ class VisionRAGHandler:
         Args:
             vision_rag_service: Vision RAG 서비스 (인터페이스에 의존 - DIP)
         """
-        self._vision_rag_service = vision_rag_service
+        super().__init__(vision_rag_service)
 
     @log_handler_call
     @handle_errors(error_message="Vision RAG retrieve failed")
@@ -74,7 +75,7 @@ class VisionRAGHandler:
         request = VisionRAGRequest(query=query, k=k, extra_params=kwargs)
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._vision_rag_service.retrieve(request)
+        return await self._service.retrieve(request)
 
     @log_handler_call
     @handle_errors(error_message="Vision RAG query failed")
@@ -123,7 +124,7 @@ class VisionRAGHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._vision_rag_service.query(request)
+        return await self._service.query(request)
 
     @log_handler_call
     @handle_errors(error_message="Vision RAG batch query failed")
@@ -169,4 +170,4 @@ class VisionRAGHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._vision_rag_service.batch_query(request)
+        return await self._service.batch_query(request)

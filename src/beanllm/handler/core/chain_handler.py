@@ -20,7 +20,7 @@ from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.chain_service import IChainService
 
 
-class ChainHandler(BaseHandler):
+class ChainHandler(BaseHandler[IChainService]):
     """
     Chain 요청 처리 Handler
 

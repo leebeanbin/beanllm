@@ -156,9 +156,9 @@ Answer:"""
         pipeline_type="vision_rag",
         enable_rate_limiting=True,
         enable_event_streaming=True,
-        rate_limit_key=lambda self,
-        args,
-        kwargs: f"llm:{(args[0] if args else kwargs.get('request')).llm_model if hasattr(args[0] if args else kwargs.get('request'), 'llm_model') else 'default'}",
+        rate_limit_key=lambda self, args, kwargs: (
+            f"llm:{(args[0] if args else kwargs.get('request')).llm_model if hasattr(args[0] if args else kwargs.get('request'), 'llm_model') else 'default'}"
+        ),
         event_type="vision_rag.query",
     )
     async def query(self, request: VisionRAGRequest) -> VisionRAGResponse:

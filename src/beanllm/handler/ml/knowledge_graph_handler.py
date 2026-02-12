@@ -9,11 +9,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict
 
+from beanllm.handler.base_handler import BaseHandler
+
 if TYPE_CHECKING:
     from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
 
 
-class KnowledgeGraphHandler:
+class KnowledgeGraphHandler(BaseHandler["IKnowledgeGraphService"]):
     """
     Knowledge Graph Handler
 
@@ -32,7 +34,7 @@ class KnowledgeGraphHandler:
         Args:
             service: Knowledge Graph 서비스
         """
-        self._service = service
+        super().__init__(service)
 
     # TODO: Implement methods in Phase 5
     async def handle_extract_entities(self, request: Any) -> Any:

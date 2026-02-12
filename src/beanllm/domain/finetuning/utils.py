@@ -262,7 +262,7 @@ class FineTuningManager:
                 provider_instance = AxolotlProvider(**kwargs)
             except ImportError:
                 raise ImportError(
-                    "AxolotlProvider requires axolotl. " "Install with: pip install axolotl-ai"
+                    "AxolotlProvider requires axolotl. Install with: pip install axolotl-ai"
                 )
         elif provider == "unsloth":
             try:
@@ -271,12 +271,10 @@ class FineTuningManager:
                 provider_instance = UnslothProvider(**kwargs)
             except ImportError:
                 raise ImportError(
-                    "UnslothProvider requires unsloth. " "Install with: pip install unsloth"
+                    "UnslothProvider requires unsloth. Install with: pip install unsloth"
                 )
         else:
-            raise ValueError(
-                f"Unknown provider: {provider}. " f"Available: openai, axolotl, unsloth"
-            )
+            raise ValueError(f"Unknown provider: {provider}. Available: openai, axolotl, unsloth")
 
         return FineTuningManager(provider_instance)
 

@@ -339,7 +339,7 @@ class SklearnModel(BaseMLModel):
                     "Set verify_signature=False to skip verification."
                 )
                 raise ValueError(
-                    f"Signature file {sig_path} not found. " "Model integrity cannot be verified."
+                    f"Signature file {sig_path} not found. Model integrity cannot be verified."
                 )
 
             # 파일 내용 읽기

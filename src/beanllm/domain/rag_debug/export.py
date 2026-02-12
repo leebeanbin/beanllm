@@ -250,20 +250,20 @@ class DebugReportExporter:
 <body>
     <div class="container">
         <h1>🔍 RAG Debug Report</h1>
-        <p><strong>Generated:</strong> {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+        <p><strong>Generated:</strong> {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>
 
         <h2>📊 Summary</h2>
         <div class="metric">
             <span class="metric-label">Documents:</span>
-            <span class="metric-value">{data.get('metadata', {}).get('num_documents', 0)}</span>
+            <span class="metric-value">{data.get("metadata", {}).get("num_documents", 0)}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Embeddings:</span>
-            <span class="metric-value">{data.get('metadata', {}).get('num_embeddings', 0)}</span>
+            <span class="metric-value">{data.get("metadata", {}).get("num_embeddings", 0)}</span>
         </div>
         <div class="metric">
             <span class="metric-label">Dimension:</span>
-            <span class="metric-value">{data.get('metadata', {}).get('embedding_dim', 0)}</span>
+            <span class="metric-value">{data.get("metadata", {}).get("embedding_dim", 0)}</span>
         </div>
 
         <h2>🔬 Analysis Results</h2>

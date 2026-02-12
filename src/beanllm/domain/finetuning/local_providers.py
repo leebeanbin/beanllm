@@ -124,7 +124,7 @@ class AxolotlProvider(BaseFineTuningProvider):
         try:
             import axolotl
         except ImportError:
-            logger.warning("axolotl not installed. " "Install it with: pip install axolotl-core")
+            logger.warning("axolotl not installed. Install it with: pip install axolotl-core")
 
     def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
@@ -433,7 +433,7 @@ class AxolotlProvider(BaseFineTuningProvider):
         return result
 
     def __repr__(self) -> str:
-        return f"AxolotlProvider(base_model={self.base_model}, " f"output_dir={self.output_dir})"
+        return f"AxolotlProvider(base_model={self.base_model}, output_dir={self.output_dir})"
 
 
 class UnslothProvider(BaseFineTuningProvider):
@@ -514,7 +514,7 @@ class UnslothProvider(BaseFineTuningProvider):
         try:
             from unsloth import FastLanguageModel
         except ImportError:
-            logger.warning("unsloth not installed. " "Install it with: pip install unsloth")
+            logger.warning("unsloth not installed. Install it with: pip install unsloth")
 
     def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """
@@ -611,4 +611,4 @@ class UnslothProvider(BaseFineTuningProvider):
         return []
 
     def __repr__(self) -> str:
-        return f"UnslothProvider(model={self.model_name}, " f"4bit={self.load_in_4bit})"
+        return f"UnslothProvider(model={self.model_name}, 4bit={self.load_in_4bit})"

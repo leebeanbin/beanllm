@@ -158,8 +158,7 @@ class WorkflowBuilder:
             from langgraph.graph import END, StateGraph
         except ImportError:
             raise ImportError(
-                "langgraph is required for WorkflowBuilder. "
-                "Install it with: pip install langgraph"
+                "langgraph is required for WorkflowBuilder. Install it with: pip install langgraph"
             )
 
         self.state_class = state_class

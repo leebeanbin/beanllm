@@ -95,12 +95,12 @@ class Optimizer:
             handler: Optional OptimizerHandler (for DI)
         """
         if handler is None:
-            # Default initialization
-            from beanllm.service.impl.advanced.optimizer_service_impl import (
-                OptimizerServiceImpl,
-            )
+            # Default initialization (ServiceFactory 경유)
+            from beanllm.utils.core.di_container import get_container
 
-            service = OptimizerServiceImpl()
+            container = get_container()
+            service_factory = container.get_service_factory()
+            service = service_factory.create_optimizer_service()
             handler = OptimizerHandler(service)
 
         self._optimizer = handler
@@ -149,11 +149,11 @@ class Optimizer:
             ```
         """
         request = BenchmarkRequest(
-            num_queries=num_queries,
+            system_id="default",
+            num_queries=num_queries or 50,
             queries=queries,
             query_types=query_types,
             domain=domain,
-            metadata=metadata or {},
         )
 
         response = await self._optimizer.handle_benchmark(request)
@@ -219,12 +219,13 @@ class Optimizer:
             ```
         """
         request = OptimizeRequest(
+            system_id="default",
+            parameter_space={},
             parameters=parameters,
             method=method,
             n_trials=n_trials,
             multi_objective=multi_objective,
-            objectives=objectives,
-            metadata=metadata or {},
+            objectives=objectives,  # type: ignore[arg-type]
         )
 
         response = await self._optimizer.handle_optimize(request)
@@ -275,8 +276,8 @@ class Optimizer:
             ```
         """
         request = ProfileRequest(
-            components=components,
-            metadata=metadata or {},
+            system_id="default",
+            components=components or [],
         )
 
         response = await self._optimizer.handle_profile(request)
@@ -328,11 +329,13 @@ class Optimizer:
             ```
         """
         request = ABTestRequest(
+            config_a_id=variant_a_name,
+            config_b_id=variant_b_name,
+            test_queries=[],
             variant_a_name=variant_a_name,
             variant_b_name=variant_b_name,
             num_queries=num_queries,
             confidence_level=confidence_level,
-            metadata=metadata or {},
         )
 
         response = await self._optimizer.handle_ab_test(request)
@@ -379,8 +382,7 @@ class Optimizer:
         """
         response = await self._optimizer.handle_get_recommendations(profile_id)
         logger.info(
-            f"Retrieved {len(response.recommendations)} recommendations "
-            f"for profile {profile_id}"
+            f"Retrieved {len(response.recommendations)} recommendations for profile {profile_id}"
         )
         return response
 
@@ -666,7 +668,7 @@ class Optimizer:
                 print(f"Top recommendation: {results['recommendations'].recommendations[0]['title']}")
             ```
         """
-        results = {}
+        results: Dict[str, Any] = {}
 
         # Profile
         if profile:
@@ -684,8 +686,7 @@ class Optimizer:
             results["optimization"] = optimization
 
         logger.info(
-            f"Auto-tune completed: profile={profile}, "
-            f"optimize={optimize}, recommend={recommend}"
+            f"Auto-tune completed: profile={profile}, optimize={optimize}, recommend={recommend}"
         )
 
         return results

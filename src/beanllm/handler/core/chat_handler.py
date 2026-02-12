@@ -21,7 +21,7 @@ from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.chat_service import IChatService
 
 
-class ChatHandler(BaseHandler):
+class ChatHandler(BaseHandler[IChatService]):
     """
     채팅 요청 처리 Handler
 
@@ -42,7 +42,6 @@ class ChatHandler(BaseHandler):
             chat_service: 채팅 서비스 (인터페이스에 의존 - DIP)
         """
         super().__init__(chat_service)
-        self._chat_service = chat_service  # BaseHandler._service와 동일하지만 명시적으로 유지
 
     @log_handler_call
     @handle_errors(error_message="Chat request failed")
@@ -98,7 +97,7 @@ class ChatHandler(BaseHandler):
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._call_service("chat", request)
+        return await self._service.chat(request)
 
     @log_handler_call
     @handle_errors(error_message="Stream chat failed")
@@ -152,5 +151,5 @@ class ChatHandler(BaseHandler):
 
         # Service 호출 (에러 처리는 decorator가 담당)
         # BaseHandler._call_service는 async generator를 직접 반환하지 않으므로 직접 호출
-        async for chunk in self._chat_service.stream_chat(request):
+        async for chunk in self._service.stream_chat(request):
             yield chunk

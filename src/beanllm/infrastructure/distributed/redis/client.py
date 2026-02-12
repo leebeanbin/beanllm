@@ -49,7 +49,7 @@ def get_redis_client():
 
     if redis is None:
         raise ImportError(
-            "redis package is required for distributed mode. " "Install it with: pip install redis"
+            "redis package is required for distributed mode. Install it with: pip install redis"
         )
 
     if _redis_client is None:

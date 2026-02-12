@@ -193,8 +193,7 @@ class RAGImprovementLoop:
         self._baseline_score: float = 0.0
 
         logger.info(
-            f"RAGImprovementLoop initialized: "
-            f"{len(documents)} docs, {len(test_queries)} queries"
+            f"RAGImprovementLoop initialized: {len(documents)} docs, {len(test_queries)} queries"
         )
 
     # ==================== 1단계: 초기 실험 ====================

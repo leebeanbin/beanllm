@@ -18,7 +18,7 @@ try:
     import streamlit as st
 except ImportError:
     raise ImportError(
-        "Streamlit is required for OCR Tuner App. " "Install it with: pip install streamlit"
+        "Streamlit is required for OCR Tuner App. Install it with: pip install streamlit"
     )
 
 

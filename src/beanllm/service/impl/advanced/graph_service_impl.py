@@ -45,12 +45,12 @@ class GraphServiceImpl(IGraphService):
         enable_rate_limiting=True,
         enable_event_streaming=True,
         enable_distributed_lock=True,
-        rate_limit_key=lambda self,
-        args,
-        kwargs: f"graph:node:{(args[0] if args else kwargs.get('request')).entry_point or 'default'}",
-        lock_key=lambda self,
-        args,
-        kwargs: f"graph:node:{hash(str((args[0] if args else kwargs.get('request')).nodes)) if hasattr(args[0] if args else kwargs.get('request'), 'nodes') else 'default'}",
+        rate_limit_key=lambda self, args, kwargs: (
+            f"graph:node:{(args[0] if args else kwargs.get('request')).entry_point or 'default'}"
+        ),
+        lock_key=lambda self, args, kwargs: (
+            f"graph:node:{hash(str((args[0] if args else kwargs.get('request')).nodes)) if hasattr(args[0] if args else kwargs.get('request'), 'nodes') else 'default'}"
+        ),
         event_type="graph.run",
     )
     async def run_graph(self, request: GraphRequest) -> GraphResponse:

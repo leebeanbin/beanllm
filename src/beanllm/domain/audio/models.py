@@ -126,7 +126,7 @@ class STTConfig:
             "moonshine-base",
         }
         if self.engine not in valid_engines:
-            raise ValueError(f"Invalid engine: {self.engine}. " f"Must be one of {valid_engines}")
+            raise ValueError(f"Invalid engine: {self.engine}. Must be one of {valid_engines}")
 
         # 언어 유효성 검사 (일부만 체크)
         if self.language not in [

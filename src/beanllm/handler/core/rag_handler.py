@@ -17,10 +17,11 @@ from beanllm.decorators.logger import log_handler_call
 from beanllm.decorators.validation import validate_input
 from beanllm.dto.request.core.rag_request import RAGRequest
 from beanllm.dto.response.core.rag_response import RAGResponse
+from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.rag_service import IRAGService
 
 
-class RAGHandler:
+class RAGHandler(BaseHandler[IRAGService]):
     """
     RAG 요청 처리 Handler
 
@@ -39,7 +40,7 @@ class RAGHandler:
         Args:
             rag_service: RAG 서비스 (인터페이스에 의존 - DIP)
         """
-        self._rag_service = rag_service
+        super().__init__(rag_service)
 
     @log_handler_call
     @handle_errors(error_message="RAG query failed")
@@ -104,7 +105,7 @@ class RAGHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._rag_service.query(request)
+        return await self._service.query(request)
 
     async def handle_retrieve(
         self,
@@ -143,7 +144,7 @@ class RAGHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        return await self._rag_service.retrieve(request)
+        return await self._service.retrieve(request)
 
     @log_handler_call
     @handle_errors(error_message="RAG stream query failed")
@@ -202,9 +203,5 @@ class RAGHandler:
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
-        async for chunk in self._rag_service.stream_query(request):
+        async for chunk in self._service.stream_query(request):
             yield chunk
-
-    def _create_request(self, request_class, **kwargs):
-        """Helper method to create request DTO"""
-        return request_class(**kwargs)

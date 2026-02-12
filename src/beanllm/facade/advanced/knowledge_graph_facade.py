@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
@@ -84,11 +84,11 @@ class KnowledgeGraph:
         if handler:
             self._handler = handler
         else:
-            from beanllm.service.impl.advanced.knowledge_graph_service_impl import (
-                KnowledgeGraphServiceImpl,
-            )
+            from beanllm.utils.core.di_container import get_container
 
-            service = KnowledgeGraphServiceImpl(client=client)
+            container = get_container()
+            service_factory = container.get_service_factory()
+            service = service_factory.create_knowledge_graph_service(client=client)
             self._handler = KnowledgeGraphHandler(service=service)
 
         logger.info("KnowledgeGraph facade initialized")
@@ -128,7 +128,7 @@ class KnowledgeGraph:
         request = ExtractEntitiesRequest(
             document_id=str(uuid.uuid4()),
             text=text,
-            entity_types=entity_types,
+            entity_types=entity_types or [],
             resolve_coreferences=resolve_coreferences,
         )
         return await self._handler.handle_extract_entities(request)
@@ -175,7 +175,7 @@ class KnowledgeGraph:
             document_id=str(uuid.uuid4()),
             text=text,
             entities=entities,
-            relation_types=relation_types,
+            relation_types=relation_types or [],
             infer_implicit=infer_implicit,
         )
         return await self._handler.handle_extract_relations(request)
@@ -534,7 +534,8 @@ class KnowledgeGraph:
         )
 
         if response.results:
-            return response.results[0].get("path")
+            path = response.results[0].get("path")
+            return cast(Optional[List[str]], path) if isinstance(path, list) else None
         return None
 
     async def get_entity_details(
@@ -608,6 +609,8 @@ class KnowledgeGraph:
 
             for result in top_results:
                 entity = result.get("entity", {})
+                if not isinstance(entity, dict):
+                    entity = {}
                 name = entity.get("name", "Unknown")
                 entity_type = entity.get("type", "UNKNOWN")
                 score = result.get("score", 0.0)

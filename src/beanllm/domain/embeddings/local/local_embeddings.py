@@ -440,8 +440,7 @@ class Qwen3Embedding(BaseLocalEmbedding):
             self._model = SentenceTransformer(self.model, device=self._device)
 
             logger.info(
-                f"Qwen3 model loaded: {self.model} "
-                f"(max_seq_length: {self._model.max_seq_length})"
+                f"Qwen3 model loaded: {self.model} (max_seq_length: {self._model.max_seq_length})"
             )
 
         # 분산 락을 사용한 모델 로딩

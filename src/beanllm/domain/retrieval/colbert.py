@@ -381,7 +381,7 @@ class ColPaliRetriever:
             from byaldi import RAGMultiModalModel
         except ImportError:
             raise ImportError(
-                "byaldi is required for ColPaliRetriever. " "Install it with: pip install byaldi"
+                "byaldi is required for ColPaliRetriever. Install it with: pip install byaldi"
             )
 
         if self._model is None:

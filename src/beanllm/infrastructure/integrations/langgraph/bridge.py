@@ -64,8 +64,7 @@ class LangGraphBridge:
             from langgraph.graph import MessagesState
         except ImportError:
             raise ImportError(
-                "langgraph is required for LangGraphBridge. "
-                "Install it with: pip install langgraph"
+                "langgraph is required for LangGraphBridge. Install it with: pip install langgraph"
             )
 
         # State 필드 추출

@@ -86,7 +86,7 @@ def validate_url(
         # 스키마 검증
         if parsed.scheme not in allowed_schemes:
             raise ValueError(
-                f"URL scheme '{parsed.scheme}' not allowed. " f"Allowed schemes: {allowed_schemes}"
+                f"URL scheme '{parsed.scheme}' not allowed. Allowed schemes: {allowed_schemes}"
             )
 
         # 호스트명 추출
