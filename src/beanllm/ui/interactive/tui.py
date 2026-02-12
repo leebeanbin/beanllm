@@ -181,26 +181,31 @@ def _create_prompt_session(
     # prompt_toolkit 스타일 (테마에서 가져옴)
     pt_style = Style.from_dict(theme.prompt_toolkit_style)
 
-    # 상태바 콜백
+    # 상태바 콜백 — 매 렌더마다 호출되므로 경량화
+    _toolbar_cache: dict[str, object] = {"last_msg_count": 0, "total_chars": 0}
+
     def _bottom_toolbar() -> HTML:
         if session_ref is None:
             return HTML("<b>beanllm</b>")
 
         t = get_theme()
         p = t.palette
-        role_name = getattr(session_ref, "role_name", "default")
-        msg_count = len(session_ref.messages)
-        total_chars = sum(len(m.content) for m in session_ref.messages)
-        mode = session_ref.mode
-        model = session_ref.model
-        is_shell = shell_mode_ref.get("active", False) if shell_mode_ref else False
 
+        # 메시지 수 변경 시에만 total_chars 재계산 (캐싱)
+        msg_count = len(session_ref.messages)
+        if msg_count != _toolbar_cache["last_msg_count"]:
+            _toolbar_cache["total_chars"] = sum(len(m.content) for m in session_ref.messages)
+            _toolbar_cache["last_msg_count"] = msg_count
+        total_chars = _toolbar_cache["total_chars"]
+
+        role_name = getattr(session_ref, "role_name", "default")
+        is_shell = shell_mode_ref.get("active", False) if shell_mode_ref else False
         shell_indicator = " <ansiyellow>$ shell</ansiyellow>" if is_shell else ""
 
         parts = [
-            f"<b>{t.icons['model']} {model}</b>",
+            f"<b>{t.icons['model']} {session_ref.model}</b>",
             f"<style fg='{p.brand_accent}'>{role_name}</style>",
-            f"{mode}",
+            f"{session_ref.mode}",
             f"{msg_count} msgs",
             f"~{total_chars:,} chars",
         ]
@@ -246,13 +251,16 @@ _ARTIFACT_PATTERNS = [
 ]
 
 
+_TRAILING_HR_PATTERN = re.compile(r"\n\s*---\s*$")
+
+
 def _clean_response(text: str) -> str:
     for pat in _ARTIFACT_PATTERNS:
         m = pat.search(text)
         if m:
             text = text[: m.start()]
     text = _remove_duplicate_blocks(text)
-    text = re.sub(r"\n\s*---\s*$", "", text)
+    text = _TRAILING_HR_PATTERN.sub("", text)
     return text.rstrip()
 
 
@@ -282,11 +290,11 @@ def _get_default_model() -> str:
 
         registry = get_model_registry()
         models = registry.get_available_models()
-        active = [
-            m for m in models if m.provider in [p.name for p in registry.get_active_providers()]
-        ]
-        if active:
-            return active[0].model_name
+        # O(n+m) — set으로 사전 변환하여 O(n×m) 순회 회피
+        active_providers = {p.name for p in registry.get_active_providers()}
+        for m in models:
+            if m.provider in active_providers:
+                return m.model_name
     except Exception:
         pass
     return "gpt-4o-mini"
