@@ -8,13 +8,14 @@ Provides a thread-safe LRU cache with:
 - Thread safety for concurrent access
 """
 
-import logging
 import threading
 import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 K = TypeVar("K")  # Key type
 V = TypeVar("V")  # Value type

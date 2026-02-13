@@ -11,16 +11,16 @@ Features:
 - 언어 조합별 모델 lazy loading
 """
 
-import logging
 from typing import Any, Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.utils.logging import get_logger
 
 from .base import BaseOCREngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # 언어별 EasyOCR 코드 매핑

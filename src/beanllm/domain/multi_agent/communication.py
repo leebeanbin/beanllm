@@ -151,8 +151,6 @@ class CommunicationBus:
         # 분산 모드: Kafka에 메시지 발행
         if self.use_kafka and self.kafka_producer:
             try:
-                import json
-
                 message_data = {
                     "id": message.id,
                     "sender": message.sender,

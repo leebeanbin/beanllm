@@ -5,12 +5,13 @@ Path Traversal 방지를 위한 경로 검증 유틸리티
 파일 크기 제한 검증
 """
 
-import logging
 import os
 from pathlib import Path
 from typing import Union
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 # 보안: Path Traversal 방지를 위한 허용 디렉토리 설정

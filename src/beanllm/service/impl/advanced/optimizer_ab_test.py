@@ -1,9 +1,10 @@
 """Optimizer service - A/B test methods (mixin)."""
+
 from __future__ import annotations
 
 import uuid
 
-from beanllm.domain.optimizer import ABTester, ABTestResult
+from beanllm.domain.optimizer import ABTestResult
 from beanllm.dto.request.advanced.optimizer_request import ABTestRequest
 from beanllm.dto.response.advanced.optimizer_response import ABTestResponse
 from beanllm.utils.logging import get_logger
@@ -36,7 +37,9 @@ class OptimizerABTestMixin:
                 sample_size_b=request.num_queries or 50,
             )
             self._ab_tests[test_id] = result
-            logger.info(f"A/B test completed: {test_id}, winner={result.winner}, lift={result.lift:.1f}%")
+            logger.info(
+                f"A/B test completed: {test_id}, winner={result.winner}, lift={result.lift:.1f}%"
+            )
             return ABTestResponse(
                 test_id=test_id,
                 config_a_id=request.variant_a_name or "variant_a",

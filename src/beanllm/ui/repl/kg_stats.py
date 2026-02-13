@@ -1,6 +1,7 @@
 """
 Knowledge Graph stats display - statistics tables and distributions.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -58,8 +59,6 @@ def render_stats_tables(
         ):
             percentage = (count / total_relations) * 100
             bar = visualizer._create_bar(count, total_relations, 30, "green")
-            relation_table.add_row(
-                relation_type, f"{count:,}", f"{bar} {percentage:.1f}%"
-            )
+            relation_table.add_row(relation_type, f"{count:,}", f"{bar} {percentage:.1f}%")
         console.print(relation_table)
         console.print()

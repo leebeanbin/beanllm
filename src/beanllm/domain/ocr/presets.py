@@ -10,9 +10,11 @@ Features:
 """
 
 import json
-import logging
 from pathlib import Path
+
 from typing import Dict, List, Optional
+
+from beanllm.utils.logging import get_logger
 
 from .models import (
     BinarizeConfig,
@@ -24,7 +26,7 @@ from .models import (
     SharpenConfig,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ConfigPresets:

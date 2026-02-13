@@ -1,4 +1,5 @@
 """Pipeline decorators - Helper functions for cache, lock, events, execution."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,17 +9,19 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Union, cast
 
-from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper
 from beanllm.infrastructure.distributed.event_integration import get_event_logger
-from beanllm.infrastructure.distributed.factory import get_cache, get_rate_limiter
+from beanllm.infrastructure.distributed.factory import get_rate_limiter
 
 try:
     from beanllm.utils.logging import get_logger as _get_logger
+
     def get_logger(name: str) -> logging.Logger:
         return cast(logging.Logger, _get_logger(name))
 except ImportError:
+
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 
@@ -150,7 +153,9 @@ async def execute_with_features_async(
                     if result_key is None:
                         should_rate_limit = False
                     else:
-                        actual_rate_key_str = result_key if isinstance(result_key, str) else pipeline_type
+                        actual_rate_key_str = (
+                            result_key if isinstance(result_key, str) else pipeline_type
+                        )
                 except Exception:
                     actual_rate_key_str = pipeline_type
             if should_rate_limit and actual_rate_key_str:

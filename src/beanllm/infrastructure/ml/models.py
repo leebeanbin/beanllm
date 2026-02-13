@@ -4,7 +4,6 @@ ML Models Integration - TensorFlow, PyTorch, Scikit-learn 등 머신러닝 모�
 
 import hashlib
 import hmac
-import logging
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -18,7 +17,9 @@ except ImportError:
 # 보안: 모델 서명용 비밀 키 (환경변수에서 로드)
 MODEL_SIGNATURE_KEY = os.getenv("MODEL_SIGNATURE_KEY", "change-this-secret-key-in-production")
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class BaseMLModel(ABC):

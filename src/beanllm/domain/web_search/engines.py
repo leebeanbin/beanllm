@@ -15,6 +15,9 @@ from typing import Dict, Optional
 
 from beanllm.domain.web_search.security import validate_url
 from beanllm.domain.web_search.types import SearchResponse
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class SearchEngine(Enum):
@@ -118,9 +121,6 @@ class BaseSearchEngine(ABC):
             return validate_url(url)
         except ValueError as e:
             # URL 검증 실패 - 로그만 남기고 None 반환
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.warning(f"Search result URL validation failed: {url} - {e}")
             return None
 

@@ -8,13 +8,13 @@ SOLID 원칙:
 from __future__ import annotations
 
 import asyncio
-import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
+from beanllm.utils.logging import get_logger
 
-_logger = logging.getLogger(__name__)
+_logger = get_logger(__name__)
 
 from .client_facade import Client
 

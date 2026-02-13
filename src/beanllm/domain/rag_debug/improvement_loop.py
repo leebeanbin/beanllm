@@ -32,8 +32,6 @@ from beanllm.domain.rag_debug.loop_cycle import (
 from beanllm.domain.rag_debug.loop_phases import (
     add_comparison_feedback as _add_comparison_feedback_impl,
     add_human_feedback as _add_human_feedback_impl,
-    batch_evaluate as _batch_evaluate_impl,
-    evaluate_pipeline as _evaluate_pipeline_impl,
     get_improvement_plan as _get_improvement_plan_impl,
     run_initial_experiments as _run_initial_experiments_impl,
 )
@@ -218,9 +216,7 @@ class RAGImprovementLoop:
         winner: str,
     ) -> None:
         """Add A/B comparison feedback."""
-        _add_comparison_feedback_impl(
-            self.evaluator, query, response_a, response_b, winner
-        )
+        _add_comparison_feedback_impl(self.evaluator, query, response_a, response_b, winner)
 
     def get_improvement_plan(self) -> List[ImprovementPlan]:
         """Build improvement plan from evaluator and chunking suggestions."""
@@ -256,9 +252,7 @@ class RAGImprovementLoop:
         def chunking_report_fn() -> str:
             return self.chunking_experimenter.get_comparison_report()
 
-        evaluator_report_fn = (
-            self.evaluator.export_report if self.evaluator else None
-        )
+        evaluator_report_fn = self.evaluator.export_report if self.evaluator else None
 
         return _export_full_report_impl(
             format=format,

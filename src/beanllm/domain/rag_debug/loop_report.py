@@ -3,6 +3,7 @@ RAG Improvement Loop - Report generation.
 
 Extracted from improvement_loop.py for single responsibility.
 """
+
 from __future__ import annotations
 
 import json

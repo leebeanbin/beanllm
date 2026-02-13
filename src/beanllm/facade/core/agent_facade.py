@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from beanllm.domain.tools import Tool, ToolRegistry

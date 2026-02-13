@@ -11,7 +11,6 @@ Features:
 """
 
 import itertools
-import logging
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Union
@@ -29,8 +28,9 @@ from .models import (
     ResizeConfig,
     SharpenConfig,
 )
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GridSearchTuner:

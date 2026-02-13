@@ -10,16 +10,16 @@ Features:
 - Layout analysis + OCR 통합
 """
 
-import logging
 from typing import Any, Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.utils.logging import get_logger
 
 from .base import BaseOCREngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SuryaEngine(BaseOCREngine):

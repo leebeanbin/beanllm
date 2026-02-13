@@ -11,16 +11,16 @@ Features:
 - Fallback 용도로 적합
 """
 
-import logging
 from typing import Dict
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.utils.logging import get_logger
 
 from .base import BaseOCREngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 # 언어별 Tesseract 코드 매핑

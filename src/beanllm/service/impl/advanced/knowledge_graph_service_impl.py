@@ -13,7 +13,6 @@ SOLID:
 
 from __future__ import annotations
 
-import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -54,8 +53,9 @@ from beanllm.service.impl.advanced.kg_graph_operations import (
     visualize_graph as kg_visualize_graph,
 )
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
@@ -334,9 +334,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         Returns:
             Dict with 'entities' and 'relations' keys
         """
-        return await process_single_document(
-            self, doc, entity_types, relation_types
-        )
+        return await process_single_document(self, doc, entity_types, relation_types)
 
     @with_distributed_features(
         pipeline_type="knowledge_graph",

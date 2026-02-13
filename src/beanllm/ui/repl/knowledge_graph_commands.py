@@ -373,9 +373,7 @@ class KnowledgeGraphCommands:
             with self.console.status("[bold green]Calculating statistics..."):
                 stats = await self._kg.get_graph_stats(graph_id)
 
-            render_stats_tables(
-                self.console, stats, self._visualizer, show_distributions
-            )
+            render_stats_tables(self.console, stats, self._visualizer, show_distributions)
 
         except Exception as e:
             self.console.print(f"\n[red]❌ Failed to get statistics: {e}[/red]")
@@ -509,4 +507,3 @@ class KnowledgeGraphCommands:
         except Exception as e:
             self.console.print(f"\n[red]❌ Failed to list graphs: {e}[/red]")
             logger.error(f"Failed to list graphs: {e}", exc_info=True)
-

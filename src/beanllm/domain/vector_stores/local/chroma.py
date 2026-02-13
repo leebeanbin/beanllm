@@ -5,7 +5,7 @@ Open-source embedding database
 """
 
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Sequence, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Tuple, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document

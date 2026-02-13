@@ -1,10 +1,10 @@
 """
 CLI analyze - Model analysis with pattern inference.
 """
+
 from __future__ import annotations
 
 import sys
-from typing import Any
 
 from beanllm.utils.cli.cli_utils import (
     Panel,

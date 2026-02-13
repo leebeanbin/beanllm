@@ -1,6 +1,7 @@
 """
 RAG Debug display helpers - session, embedding, validation, tuning, summary.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -49,9 +50,7 @@ def display_embedding_analysis(console: Console, response: Any) -> None:
         "Silhouette Score",
         f"{response.silhouette_score:.4f}" if response.silhouette_score else "N/A",
     )
-    cluster_sizes_str = ", ".join(
-        f"C{k}: {v}" for k, v in sorted(response.cluster_sizes.items())
-    )
+    cluster_sizes_str = ", ".join(f"C{k}: {v}" for k, v in sorted(response.cluster_sizes.items()))
     table.add_row("Cluster Sizes", cluster_sizes_str)
     console.print()
     console.print(table)
@@ -97,20 +96,14 @@ def display_chunk_validation(console: Console, response: Any) -> None:
     console.print(table)
     if response.issues:
         console.print()
-        console.print(
-            f"{StatusIcon.warning()} [yellow bold]Issues Found:[/yellow bold]"
-        )
+        console.print(f"{StatusIcon.warning()} [yellow bold]Issues Found:[/yellow bold]")
         for issue in response.issues[:10]:
             console.print(f"  • [yellow]{issue}[/yellow]")
         if len(response.issues) > 10:
-            console.print(
-                f"  [dim]... and {len(response.issues) - 10} more[/dim]"
-            )
+            console.print(f"  [dim]... and {len(response.issues) - 10} more[/dim]")
     if response.recommendations:
         console.print()
-        console.print(
-            f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]"
-        )
+        console.print(f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]")
         for rec in response.recommendations:
             console.print(f"  💡 [cyan]{rec}[/cyan]")
     console.print()
@@ -133,13 +126,9 @@ def display_tuning_results(console: Console, response: Any) -> None:
         improvement = comparison.get("improvement_pct", 0.0)
         improvement_str = f"{improvement:+.2f}%"
         if improvement > 5:
-            improvement_str = (
-                f"[green]{improvement_str} {StatusIcon.SUCCESS}[/green]"
-            )
+            improvement_str = f"[green]{improvement_str} {StatusIcon.SUCCESS}[/green]"
         elif improvement < -5:
-            improvement_str = (
-                f"[red]{improvement_str} {StatusIcon.ERROR}[/red]"
-            )
+            improvement_str = f"[red]{improvement_str} {StatusIcon.ERROR}[/red]"
         else:
             improvement_str = f"[yellow]{improvement_str}[/yellow]"
         table.add_row("vs Baseline", improvement_str)
@@ -147,17 +136,13 @@ def display_tuning_results(console: Console, response: Any) -> None:
     console.print(table)
     if response.recommendations:
         console.print()
-        console.print(
-            f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]"
-        )
+        console.print(f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]")
         for rec in response.recommendations:
             console.print(f"  {rec}")
     console.print()
 
 
-def display_full_analysis_summary(
-    console: Console, results: Dict[str, Any]
-) -> None:
+def display_full_analysis_summary(console: Console, results: Dict[str, Any]) -> None:
     """전체 분석 요약 표시."""
     console.print()
     console.print(Divider.thick())

@@ -3,6 +3,7 @@ Chunking Experimenter - Report generation.
 
 Extracted from chunking_experimenter.py for single responsibility.
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable, Dict, List
@@ -23,9 +24,7 @@ def get_comparison_report(
     lines.append("| Strategy | Score | Chunks | Avg Size | Latency |")
     lines.append("|----------|-------|--------|----------|---------|")
 
-    for r in sorted(
-        results, key=lambda x: x.avg_retrieval_score, reverse=True
-    ):
+    for r in sorted(results, key=lambda x: x.avg_retrieval_score, reverse=True):
         lines.append(
             f"| {r.strategy_name} | {r.avg_retrieval_score:.4f} | "
             f"{r.chunk_count} | {r.avg_chunk_size:.0f} | {r.latency_ms:.1f}ms |"

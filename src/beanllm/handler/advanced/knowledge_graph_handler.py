@@ -3,7 +3,7 @@ KnowledgeGraphHandler - Knowledge Graph 핸들러
 
 책임:
 - 입력 검증
-- 에러 처리
+- 에러 처리 (@handle_errors 데코레이터)
 - DTO 변환
 
 SOLID:
@@ -13,9 +13,9 @@ SOLID:
 
 from __future__ import annotations
 
-import logging
 from typing import Any, Dict
 
+from beanllm.decorators.error_handler import handle_errors
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
     ExtractEntitiesRequest,
@@ -31,8 +31,65 @@ from beanllm.dto.response.graph.kg_response import (
 )
 from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+# 유효한 엔티티/관계 타입 상수
+_VALID_ENTITY_TYPES = frozenset(
+    {
+        "person",
+        "organization",
+        "location",
+        "event",
+        "product",
+        "concept",
+        "date",
+        "number",
+        "other",
+    }
+)
+
+_VALID_RELATION_TYPES = frozenset(
+    {
+        "founded",
+        "works_for",
+        "located_in",
+        "part_of",
+        "owns",
+        "created",
+        "produces",
+        "subsidiary_of",
+        "competitor",
+        "partner",
+        "acquired",
+        "invested_in",
+        "similar_to",
+        "causes",
+        "affects",
+        "other",
+    }
+)
+
+_VALID_QUERY_TYPES = frozenset(
+    {
+        "cypher",
+        "find_entities_by_type",
+        "find_entities_by_name",
+        "find_related_entities",
+        "find_shortest_path",
+        "get_entity_details",
+    }
+)
+
+# 쿼리 타입별 필수 파라미터
+_QUERY_TYPE_REQUIRED_PARAMS: Dict[str, list] = {
+    "find_entities_by_type": ["entity_type"],
+    "find_entities_by_name": ["name"],
+    "find_related_entities": ["entity_id"],
+    "find_shortest_path": ["source_id", "target_id"],
+    "get_entity_details": ["entity_id"],
+}
 
 
 class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
@@ -42,31 +99,20 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
     Example:
         ```python
         handler = KnowledgeGraphHandler(service=service)
-
-        # 엔티티 추출
         response = await handler.handle_extract_entities(
             ExtractEntitiesRequest(text="Apple was founded by Steve Jobs.")
-        )
-
-        # 그래프 구축
-        response = await handler.handle_build_graph(
-            BuildGraphRequest(
-                documents=["Apple was founded by Steve Jobs."]
-            )
         )
         ```
     """
 
     def __init__(self, service: IKnowledgeGraphService) -> None:
         """
-        초기화
-
         Args:
             service: Knowledge Graph Service
         """
         super().__init__(service)
-        logger.info("KnowledgeGraphHandler initialized")
 
+    @handle_errors(error_message="Failed to extract entities")
     async def handle_extract_entities(self, request: ExtractEntitiesRequest) -> EntitiesResponse:
         """
         엔티티 추출 핸들러
@@ -79,43 +125,15 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not request.text or not request.text.strip():
             raise ValueError("text is required and cannot be empty")
 
-        if request.entity_types:
-            valid_types = [
-                "person",
-                "organization",
-                "location",
-                "event",
-                "product",
-                "concept",
-                "date",
-                "number",
-                "other",
-            ]
-            for entity_type in request.entity_types:
-                if entity_type.lower() not in valid_types:
-                    raise ValueError(
-                        f"Invalid entity type: {entity_type}. Valid types: {', '.join(valid_types)}"
-                    )
+        self._validate_types(request.entity_types, _VALID_ENTITY_TYPES, "entity")
 
-        try:
-            response = await self._service.extract_entities(request)
-            logger.info(f"Entities extracted: {response.num_entities}")
-            return response
+        return await self._service.extract_entities(request)
 
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to extract entities: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to extract entities: {e}") from e
-
+    @handle_errors(error_message="Failed to extract relations")
     async def handle_extract_relations(self, request: ExtractRelationsRequest) -> RelationsResponse:
         """
         관계 추출 핸들러
@@ -128,61 +146,24 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not request.text or not request.text.strip():
             raise ValueError("text is required and cannot be empty")
 
         if not request.entities:
             raise ValueError("entities are required")
 
-        # 엔티티 검증
         for entity in request.entities:
             if not entity.get("name"):
                 raise ValueError("Entity must have 'name' field")
             if not entity.get("type"):
                 raise ValueError("Entity must have 'type' field")
 
-        if request.relation_types:
-            valid_types = [
-                "founded",
-                "works_for",
-                "located_in",
-                "part_of",
-                "owns",
-                "created",
-                "produces",
-                "subsidiary_of",
-                "competitor",
-                "partner",
-                "acquired",
-                "invested_in",
-                "similar_to",
-                "causes",
-                "affects",
-                "other",
-            ]
-            for relation_type in request.relation_types:
-                if relation_type.lower() not in valid_types:
-                    raise ValueError(
-                        f"Invalid relation type: {relation_type}. "
-                        f"Valid types: {', '.join(valid_types)}"
-                    )
+        self._validate_types(request.relation_types, _VALID_RELATION_TYPES, "relation")
 
-        try:
-            response = await self._service.extract_relations(request)
-            logger.info(f"Relations extracted: {response.num_relations}")
-            return response
+        return await self._service.extract_relations(request)
 
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to extract relations: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to extract relations: {e}") from e
-
+    @handle_errors(error_message="Failed to build graph")
     async def handle_build_graph(self, request: BuildGraphRequest) -> BuildGraphResponse:
         """
         그래프 구축 핸들러
@@ -195,9 +176,7 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not request.documents:
             raise ValueError("documents are required")
 
@@ -205,66 +184,12 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
             if not doc or not doc.strip():
                 raise ValueError("Documents cannot contain empty strings")
 
-        if request.entity_types:
-            valid_types = [
-                "person",
-                "organization",
-                "location",
-                "event",
-                "product",
-                "concept",
-                "date",
-                "number",
-                "other",
-            ]
-            for entity_type in request.entity_types:
-                if entity_type.lower() not in valid_types:
-                    raise ValueError(
-                        f"Invalid entity type: {entity_type}. Valid types: {', '.join(valid_types)}"
-                    )
+        self._validate_types(request.entity_types, _VALID_ENTITY_TYPES, "entity")
+        self._validate_types(request.relation_types, _VALID_RELATION_TYPES, "relation")
 
-        if request.relation_types:
-            valid_types = [
-                "founded",
-                "works_for",
-                "located_in",
-                "part_of",
-                "owns",
-                "created",
-                "produces",
-                "subsidiary_of",
-                "competitor",
-                "partner",
-                "acquired",
-                "invested_in",
-                "similar_to",
-                "causes",
-                "affects",
-                "other",
-            ]
-            for relation_type in request.relation_types:
-                if relation_type.lower() not in valid_types:
-                    raise ValueError(
-                        f"Invalid relation type: {relation_type}. "
-                        f"Valid types: {', '.join(valid_types)}"
-                    )
+        return await self._service.build_graph(request)
 
-        try:
-            response = await self._service.build_graph(request)
-            logger.info(
-                f"Graph built: {response.graph_id} "
-                f"({response.num_nodes} nodes, {response.num_edges} edges)"
-            )
-            return response
-
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to build graph: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to build graph: {e}") from e
-
+    @handle_errors(error_message="Failed to query graph")
     async def handle_query_graph(self, request: QueryGraphRequest) -> QueryGraphResponse:
         """
         그래프 쿼리 핸들러
@@ -277,70 +202,29 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not request.graph_id:
             raise ValueError("graph_id is required")
 
-        # 쿼리 타입별 검증
         query_type = request.query_type or "cypher"
-        valid_query_types = [
-            "cypher",
-            "find_entities_by_type",
-            "find_entities_by_name",
-            "find_related_entities",
-            "find_shortest_path",
-            "get_entity_details",
-        ]
-
-        if query_type not in valid_query_types:
+        if query_type not in _VALID_QUERY_TYPES:
             raise ValueError(
-                f"Invalid query type: {query_type}. Valid types: {', '.join(valid_query_types)}"
+                f"Invalid query type: {query_type}. "
+                f"Valid types: {', '.join(sorted(_VALID_QUERY_TYPES))}"
             )
 
-        # 쿼리 타입별 파라미터 검증
-        if query_type == "find_entities_by_type":
-            if not request.params or "entity_type" not in request.params:
-                raise ValueError("find_entities_by_type requires 'entity_type' parameter")
+        # 쿼리 타입별 필수 파라미터 검증
+        required_params = _QUERY_TYPE_REQUIRED_PARAMS.get(query_type, [])
+        for param in required_params:
+            if not request.params or param not in request.params:
+                raise ValueError(f"{query_type} requires '{param}' parameter")
 
-        elif query_type == "find_entities_by_name":
-            if not request.params or "name" not in request.params:
-                raise ValueError("find_entities_by_name requires 'name' parameter")
+        if query_type == "cypher" and not request.query:
+            raise ValueError("Cypher query type requires 'query' field")
 
-        elif query_type == "find_related_entities":
-            if not request.params or "entity_id" not in request.params:
-                raise ValueError("find_related_entities requires 'entity_id' parameter")
+        return await self._service.query_graph(request)
 
-        elif query_type == "find_shortest_path":
-            if not request.params or "source_id" not in request.params:
-                raise ValueError("find_shortest_path requires 'source_id' parameter")
-            if "target_id" not in request.params:
-                raise ValueError("find_shortest_path requires 'target_id' parameter")
-
-        elif query_type == "get_entity_details":
-            if not request.params or "entity_id" not in request.params:
-                raise ValueError("get_entity_details requires 'entity_id' parameter")
-
-        elif query_type == "cypher":
-            if not request.query:
-                raise ValueError("Cypher query type requires 'query' field")
-
-        try:
-            response = await self._service.query_graph(request)
-            logger.info(
-                f"Graph query executed: {response.graph_id} ({response.num_results} results)"
-            )
-            return response
-
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to query graph: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to query graph: {e}") from e
-
+    @handle_errors(error_message="Failed to execute graph RAG")
     async def handle_graph_rag(self, query: str, graph_id: str) -> GraphRAGResponse:
         """
         그래프 기반 RAG 핸들러
@@ -354,31 +238,16 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not query or not query.strip():
             raise ValueError("query is required and cannot be empty")
 
         if not graph_id:
             raise ValueError("graph_id is required")
 
-        try:
-            response = await self._service.graph_rag(
-                query=query,
-                graph_id=graph_id,
-            )
-            logger.info(f"Graph RAG executed: {response.graph_id} ({response.num_results} results)")
-            return response
+        return await self._service.graph_rag(query=query, graph_id=graph_id)
 
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to execute graph RAG: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to execute graph RAG: {e}") from e
-
+    @handle_errors(error_message="Failed to visualize graph")
     async def handle_visualize_graph(self, graph_id: str) -> str:
         """
         그래프 시각화 핸들러
@@ -391,25 +260,13 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not graph_id:
             raise ValueError("graph_id is required")
 
-        try:
-            ascii_diagram = await self._service.visualize_graph(graph_id)
-            logger.info(f"Graph visualized: {graph_id}")
-            return ascii_diagram
+        return await self._service.visualize_graph(graph_id)
 
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Failed to visualize graph: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to visualize graph: {e}") from e
-
+    @handle_errors(error_message="Failed to get graph stats")
     async def handle_get_graph_stats(self, graph_id: str) -> Dict[str, Any]:
         """
         그래프 통계 핸들러
@@ -422,21 +279,25 @@ class KnowledgeGraphHandler(BaseHandler[IKnowledgeGraphService]):
 
         Raises:
             ValueError: 입력 검증 실패
-            RuntimeError: 서비스 실행 실패
         """
-        # 입력 검증
         if not graph_id:
             raise ValueError("graph_id is required")
 
-        try:
-            stats = await self._service.get_graph_stats(graph_id)
-            logger.info(f"Graph stats retrieved: {graph_id}")
-            return stats
+        return await self._service.get_graph_stats(graph_id)
 
-        except ValueError as e:
-            logger.error(f"Validation error: {e}")
-            raise
+    # ===== Private validation helpers =====
 
-        except Exception as e:
-            logger.error(f"Failed to get graph stats: {e}", exc_info=True)
-            raise RuntimeError(f"Failed to get graph stats: {e}") from e
+    @staticmethod
+    def _validate_types(
+        types: Any,
+        valid_set: frozenset,
+        type_label: str,
+    ) -> None:
+        """타입 목록 검증 헬퍼"""
+        if not types:
+            return
+        for t in types:
+            if t.lower() not in valid_set:
+                raise ValueError(
+                    f"Invalid {type_label} type: {t}. Valid types: {', '.join(sorted(valid_set))}"
+                )

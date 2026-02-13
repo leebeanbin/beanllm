@@ -12,7 +12,6 @@ standalone functions in knowledge_graph_standalone.py (re-exported below).
 
 from __future__ import annotations
 
-import logging
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -33,8 +32,9 @@ from beanllm.facade.advanced.knowledge_graph_convenience import (
     KnowledgeGraphConvenienceMixin,
 )
 from beanllm.handler.advanced.knowledge_graph_handler import KnowledgeGraphHandler
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class KnowledgeGraph(KnowledgeGraphConvenienceMixin):

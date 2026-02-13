@@ -37,6 +37,7 @@ class SigLIPEmbedding(BaseEmbedding):
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         self._load_model()
         import torch
+
         assert self._processor is not None
         assert self._model is not None
         inputs = self._processor(text=texts, return_tensors="pt", padding=True, truncation=True)

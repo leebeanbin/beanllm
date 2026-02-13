@@ -25,15 +25,15 @@ Example:
     ```
 """
 
-import logging
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Union
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class SQLiteLoader(BaseDocumentLoader):

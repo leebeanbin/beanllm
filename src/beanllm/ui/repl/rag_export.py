@@ -1,9 +1,10 @@
 """
 RAG Debug export - report export and export results display.
 """
+
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Dict
 
 from rich import box
 from rich.console import Console

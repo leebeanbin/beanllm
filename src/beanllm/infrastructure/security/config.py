@@ -4,11 +4,12 @@ Secure configuration management with API key masking
 Prevents accidental exposure of sensitive credentials in logs and exceptions.
 """
 
-import logging
 import re
 from typing import Any, Dict, Optional
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class SecureConfig:

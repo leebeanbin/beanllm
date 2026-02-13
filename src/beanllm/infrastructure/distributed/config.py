@@ -4,12 +4,13 @@
 각 파이프라인별로 분산 시스템 파라미터를 자유롭게 수정하고 적용할 수 있도록 설정 구조 제공
 """
 
-import logging
 import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass

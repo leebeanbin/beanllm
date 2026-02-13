@@ -10,12 +10,13 @@ Features:
 - 저장/표시 옵션
 """
 
-import logging
 from pathlib import Path
 from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 from PIL import Image
+
+from beanllm.utils.logging import get_logger
 
 from .models import (
     BinarizeConfig,
@@ -31,7 +32,7 @@ from .models import (
 # Type alias for image input
 ImageInput = Union[np.ndarray, str, Path]
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # matplotlib 설치 여부 체크
 try:

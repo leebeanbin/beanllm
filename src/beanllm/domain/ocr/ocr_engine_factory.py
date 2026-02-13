@@ -1,6 +1,7 @@
 """
 OCR Engine Factory - Engine creation logic for beanOCR.
 """
+
 from __future__ import annotations
 
 from beanllm.domain.ocr.engines.base import BaseOCREngine
@@ -106,8 +107,7 @@ def create_ocr_engine(engine_name: str, use_gpu: bool = False) -> BaseOCREngine:
             return CloudOCREngine(provider="aws")
         except ImportError as e:
             raise ImportError(
-                f"boto3 is required for engine '{engine_name}'. "
-                f"Install it with: pip install boto3"
+                f"boto3 is required for engine '{engine_name}'. Install it with: pip install boto3"
             ) from e
 
     elif engine_name in ["qwen2vl", "qwen2vl-2b"]:

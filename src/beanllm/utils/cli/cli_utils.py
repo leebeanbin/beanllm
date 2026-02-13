@@ -1,6 +1,7 @@
 """
 CLI utilities - Console, Rich optional imports, registry and hybrid manager helpers.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Type
@@ -45,12 +46,7 @@ Table = _Table
 Tree = _Tree
 
 if TYPE_CHECKING:
-    from rich.panel import Panel as PanelType
-    from rich.progress import Progress as ProgressType, SpinnerColumn as SpinnerColumnType
-    from rich.progress import TextColumn as TextColumnType
-    from rich.syntax import Syntax as SyntaxType
-    from rich.table import Table as TableType
-    from rich.tree import Tree as TreeType
+    pass
 
 # Infrastructure imports with fallback
 _console_getter: Any = None

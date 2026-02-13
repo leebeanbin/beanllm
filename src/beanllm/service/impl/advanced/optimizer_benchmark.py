@@ -1,10 +1,11 @@
 """
 Optimizer service - Benchmark methods (mixin).
 """
+
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from beanllm.domain.optimizer import (
     Benchmarker,
@@ -38,7 +39,9 @@ class OptimizerBenchmarkMixin:
         Raises:
             RuntimeError: If benchmarking fails.
         """
-        logger.info(f"Starting benchmark: system_id={request.system_id}, num_queries={request.num_queries}")
+        logger.info(
+            f"Starting benchmark: system_id={request.system_id}, num_queries={request.num_queries}"
+        )
         benchmark_id = str(uuid.uuid4())
         try:
             benchmarker: Benchmarker = self._benchmarker
@@ -46,9 +49,7 @@ class OptimizerBenchmarkMixin:
             if request.test_queries or request.queries:
                 qlist = request.test_queries or request.queries or []
                 for q in qlist[: request.num_queries]:
-                    queries.append(
-                        BenchmarkQuery(query=q, type=QueryType.SIMPLE, metadata={})
-                    )
+                    queries.append(BenchmarkQuery(query=q, type=QueryType.SIMPLE, metadata={}))
             if not queries and request.synthetic:
                 queries = benchmarker.generate_queries(
                     num_queries=request.num_queries,

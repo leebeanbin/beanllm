@@ -1,6 +1,7 @@
 """
 Orchestrator monitor - real-time monitoring display logic.
 """
+
 from __future__ import annotations
 
 from typing import Any, Optional

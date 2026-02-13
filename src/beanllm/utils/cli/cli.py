@@ -2,6 +2,7 @@
 CLI Tool - Beautiful Terminal UI (main entry point).
 터미널 디자인 시스템 적용
 """
+
 from __future__ import annotations
 
 import asyncio

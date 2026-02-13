@@ -11,16 +11,16 @@ Features:
 - 다국어 지원
 """
 
-import logging
 from typing import Dict, Optional
 
 import numpy as np
 
 from beanllm.domain.ocr.models import BoundingBox, OCRConfig, OCRTextLine
+from beanllm.utils.logging import get_logger
 
 from .base import BaseOCREngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class CloudOCREngine(BaseOCREngine):

@@ -8,7 +8,6 @@ Knowledge Graph 단일 문서 처리 (엔티티 + 관계 추출).
 
 from __future__ import annotations
 
-import logging
 import uuid
 from typing import Any, Dict, List, Optional
 

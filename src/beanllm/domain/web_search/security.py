@@ -5,12 +5,13 @@ SSRF (Server-Side Request Forgery) 방지를 위한 URL 검증 유틸리티
 """
 
 import ipaddress
-import logging
 import socket
 from typing import List, Optional
 from urllib.parse import urlparse
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 # 허용하지 않을 IP 범위 (Private/Reserved IP addresses)

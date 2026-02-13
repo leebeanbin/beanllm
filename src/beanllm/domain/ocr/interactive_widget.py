@@ -18,14 +18,15 @@ Features:
 - 설정 export/import
 """
 
-import logging
 from pathlib import Path
 from typing import Union
 
 import numpy as np
+
+from beanllm.utils.logging import get_logger
 from PIL import Image
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     import ipywidgets as widgets

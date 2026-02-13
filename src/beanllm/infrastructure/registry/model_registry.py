@@ -3,7 +3,6 @@ Model Registry
 모델 레지스트리 - 활성화된 모델 정보 관리
 """
 
-import logging
 from typing import Any, Dict, List, Optional
 
 from beanllm.infrastructure.models import (
@@ -16,8 +15,9 @@ from beanllm.infrastructure.models import (
     get_models_by_provider,
 )
 from beanllm.utils.config import Config
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ModelRegistry:

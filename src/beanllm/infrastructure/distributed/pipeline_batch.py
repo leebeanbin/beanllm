@@ -1,4 +1,5 @@
 """Pipeline decorators - Batch processing decorator."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,8 +13,10 @@ try:
     from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
+
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 
@@ -26,6 +29,7 @@ def with_batch_processing(
     """
     Batch processing decorator. Applies to functions that take a list of items.
     """
+
     def decorator(func: Callable) -> Callable:
         config = get_distributed_config()
         pipeline_config = getattr(config, pipeline_type, None)
@@ -50,16 +54,22 @@ def with_batch_processing(
                 processor = BatchProcessor(
                     task_type=f"{pipeline_type}.batch", max_concurrent=max_workers
                 )
+
                 async def _batch_async() -> List[Any]:
                     tasks_data = [{"item": item, "args": args, "kwargs": kwargs} for item in items]
+
                     def handler(task_data: dict[str, Any]) -> Any:
-                        return func(self, [task_data["item"]], *task_data["args"], **task_data["kwargs"])[0]
+                        return func(
+                            self, [task_data["item"]], *task_data["args"], **task_data["kwargs"]
+                        )[0]
+
                     results = await processor.process_batch(
                         task_name=f"{pipeline_type}.batch",
                         tasks_data=tasks_data,
                         handler=handler,
                     )
                     return [r for r in results if r is not None]
+
                 try:
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
@@ -74,14 +84,20 @@ def with_batch_processing(
             return results
 
         @functools.wraps(func)
-        async def async_wrapper(self: Any, items: List[Any], *args: Any, **kwargs: Any) -> List[Any]:
+        async def async_wrapper(
+            self: Any, items: List[Any], *args: Any, **kwargs: Any
+        ) -> List[Any]:
             if use_queue and len(items) > 1:
                 processor = BatchProcessor(
                     task_type=f"{pipeline_type}.batch", max_concurrent=max_workers
                 )
+
                 async def process_item(task_data: dict[str, Any]) -> Any:
-                    result = await func(self, [task_data["item"]], *task_data["args"], **task_data["kwargs"])
+                    result = await func(
+                        self, [task_data["item"]], *task_data["args"], **task_data["kwargs"]
+                    )
                     return result[0] if isinstance(result, list) and len(result) > 0 else result
+
                 tasks_data = [{"item": item, "args": args, "kwargs": kwargs} for item in items]
                 results = await processor.process_batch(
                     task_name=f"{pipeline_type}.batch",

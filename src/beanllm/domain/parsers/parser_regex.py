@@ -12,7 +12,7 @@ from beanllm.domain.parsers.exceptions import OutputParserException
 
 
 class RegexOutputParser(BaseOutputParser):
-    """
+    r"""
     정규식 기반 파서
 
     LLM 출력에서 정규식 패턴으로 매칭하여 값을 추출합니다.

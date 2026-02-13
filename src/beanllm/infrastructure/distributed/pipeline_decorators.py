@@ -3,12 +3,13 @@
 
 Helpers in pipeline_helpers.py, batch in pipeline_batch.py.
 """
+
 from __future__ import annotations
 
 import asyncio
 import functools
 import logging
-from typing import Any, Callable, List, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Optional, TypeVar, Union, cast
 
 from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper
 from beanllm.infrastructure.distributed.config import get_distributed_config
@@ -26,11 +27,14 @@ from beanllm.infrastructure.distributed.pipeline_batch import with_batch_process
 
 try:
     from beanllm.utils.logging import get_logger as _get_logger
+
     def get_logger(name: str) -> logging.Logger:
         return cast(logging.Logger, _get_logger(name))
 except ImportError:
+
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 T = TypeVar("T")

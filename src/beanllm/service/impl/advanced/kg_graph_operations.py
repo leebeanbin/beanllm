@@ -9,12 +9,13 @@ Knowledge Graph 그래프 연산: 시각화, 통계, 목록, 삭제.
 
 from __future__ import annotations
 
-import logging
 from typing import Any, Dict, List
 
 import networkx as nx  # type: ignore[import-untyped]
 
-logger = logging.getLogger(__name__)
+from beanllm.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def _get_graph(service: Any, graph_id: str) -> nx.DiGraph:
@@ -112,9 +113,7 @@ async def get_graph_stats(service: Any, graph_id: str) -> Dict[str, Any]:
     relation_type_counts: Dict[str, int] = {}
     for source, target, edge_data in graph.edges(data=True):
         relation_type = edge_data.get("type", "UNKNOWN")
-        relation_type_counts[relation_type] = (
-            relation_type_counts.get(relation_type, 0) + 1
-        )
+        relation_type_counts[relation_type] = relation_type_counts.get(relation_type, 0) + 1
     stats["relation_type_counts"] = relation_type_counts
 
     logger.info(f"Graph stats calculated: {graph_id}")

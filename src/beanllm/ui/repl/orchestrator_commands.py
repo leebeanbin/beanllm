@@ -499,4 +499,3 @@ class OrchestratorCommands:
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]Error: {e}[/red]")
             logger.error(f"Failed to visualize workflow: {e}")
-

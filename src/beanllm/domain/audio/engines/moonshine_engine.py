@@ -21,7 +21,6 @@ Requirements:
     pip install transformers torch torchaudio
 """
 
-import logging
 import time
 from pathlib import Path
 from typing import Dict, Union
@@ -29,10 +28,11 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
+from beanllm.utils.logging import get_logger
 
 from .base import BaseSTTEngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # transformers 설치 여부 체크
 try:

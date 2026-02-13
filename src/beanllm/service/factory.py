@@ -18,6 +18,7 @@ from .audio_service import IAudioService
 from .chain_service import IChainService
 from .chat_service import IChatService
 from .evaluation_service import IEvaluationService
+from .finetuning_service import IFinetuningService
 from .graph_service import IGraphService
 from .knowledge_graph_service import IKnowledgeGraphService
 from .multi_agent_service import IMultiAgentService
@@ -351,15 +352,23 @@ class ServiceFactory:
 
         return EvaluationServiceImpl(client=client, embedding_model=embedding_model)
 
-    def create_finetuning_service(self) -> Any:
+    def create_finetuning_service(self, provider: Optional[Any] = None) -> "IFinetuningService":
         """
         Fine-tuning 서비스 생성 (의존성 주입)
 
+        Args:
+            provider: BaseFineTuningProvider 인스턴스 (선택적, 없으면 기본 OpenAI 사용)
+
         Returns:
-            IFineTuningService: Fine-tuning 서비스 인스턴스
+            IFinetuningService: Fine-tuning 서비스 인스턴스
+
+        책임:
+            - 의존성 주입만
+            - 비즈니스 로직 없음
         """
-        # TODO: Implement Fine-tuning service
-        raise NotImplementedError("Fine-tuning service not yet implemented")
+        from .impl.ml.finetuning_service_impl import FinetuningServiceImpl
+
+        return FinetuningServiceImpl(provider=provider)
 
     def create_rag_debug_service(self) -> IRAGDebugService:
         """

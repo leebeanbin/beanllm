@@ -1,6 +1,7 @@
 """
 Orchestrator display helpers - workflow/execution/analytics formatting and tables.
 """
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,6 @@ from typing import Any, Dict, List
 
 from rich import box
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
 
 

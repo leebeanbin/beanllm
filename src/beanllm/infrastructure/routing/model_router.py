@@ -3,6 +3,7 @@ Model Router - Intelligent Model Selection (core router).
 
 Types and strategies are in router_types.py and router_strategies.py.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
@@ -11,8 +12,10 @@ try:
     from beanllm.utils.logging import get_logger
 except ImportError:
     import logging
+
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
+
 
 from beanllm.infrastructure.routing.router_strategies import (
     estimate_cost as _estimate_cost,

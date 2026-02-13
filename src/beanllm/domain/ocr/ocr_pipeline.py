@@ -1,6 +1,7 @@
 """
 OCR Pipeline - Image loading and recognition processing logic.
 """
+
 from __future__ import annotations
 
 import time

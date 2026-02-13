@@ -9,7 +9,6 @@ Features:
 - 최적 설정 추천 (신뢰도, 속도, 텍스트 길이 기준)
 """
 
-import logging
 import time
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Union, cast
@@ -17,10 +16,12 @@ from typing import Dict, List, Literal, Optional, Union, cast
 import numpy as np
 from PIL import Image
 
+from beanllm.utils.logging import get_logger
+
 from .bean_ocr import beanOCR
 from .models import OCRConfig
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class OCRExperiment:

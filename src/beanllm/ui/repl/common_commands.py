@@ -4,14 +4,14 @@ Common REPL Commands
 공통 명령어들 (help, exit, clear 등)
 """
 
-import logging
 from typing import Any, Callable, Dict, List, Optional
 
+from beanllm.utils.logging import get_logger
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 console = Console()
 

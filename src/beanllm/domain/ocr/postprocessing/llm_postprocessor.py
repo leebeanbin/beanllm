@@ -10,12 +10,12 @@ Features:
 - 신뢰도 낮은 부분 집중 보정
 """
 
-import logging
 from typing import List, Optional
 
 from beanllm.domain.ocr.models import OCRResult, OCRTextLine
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LLMPostprocessor:

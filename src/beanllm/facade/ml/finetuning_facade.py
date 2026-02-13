@@ -36,13 +36,11 @@ class FineTuningManagerFacade(AsyncHelperMixin):
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
+        """Service 및 Handler 초기화 (의존성 주입) - ServiceFactory 사용"""
+        from beanllm.service.factory import ServiceFactory
 
-        # FinetuningService 생성 (커스텀 의존성 - provider 필요)
-        finetuning_service = FinetuningServiceImpl(provider=self.provider)
-
-        # FinetuningHandler 생성 (직접 생성 - 커스텀 Service 사용)
+        service_factory = ServiceFactory()
+        finetuning_service = service_factory.create_finetuning_service(provider=self.provider)
         self._finetuning_handler = FinetuningHandler(finetuning_service)
 
     def prepare_and_upload(
@@ -155,10 +153,11 @@ def quick_finetune(
     Returns:
         파인튜닝 작업
     """
-    # Handler/Service 초기화 - DI Container 사용
-    from beanllm.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
+    # Handler/Service 초기화 - ServiceFactory 사용
+    from beanllm.service.factory import ServiceFactory
 
-    finetuning_service = FinetuningServiceImpl()
+    service_factory = ServiceFactory()
+    finetuning_service = service_factory.create_finetuning_service()
     handler = FinetuningHandler(finetuning_service)
 
     # 동기 메서드이지만 내부적으로는 비동기 사용

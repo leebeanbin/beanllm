@@ -1,6 +1,7 @@
 """
 Knowledge Graph display helpers - query results and quick commands.
 """
+
 from __future__ import annotations
 
 from typing import Any, Dict, List
@@ -22,9 +23,7 @@ def show_query_results(
         table.add_column("Name", style="yellow")
         table.add_column("Type", style="magenta")
         for result in results[:20]:
-            table.add_row(
-                result.get("id", ""), result.get("name", ""), result.get("type", "")
-            )
+            table.add_row(result.get("id", ""), result.get("name", ""), result.get("type", ""))
         console.print(table)
         if len(results) > 20:
             console.print(f"\n[dim]... and {len(results) - 20} more[/dim]")

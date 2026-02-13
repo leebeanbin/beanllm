@@ -3,6 +3,7 @@ Chunking Experimenter - Experiment execution logic.
 
 Extracted from chunking_experimenter.py for single responsibility.
 """
+
 from __future__ import annotations
 
 import time
@@ -148,11 +149,7 @@ def evaluate_retrieval(
                 reverse=True,
             )[:top_k]
         )
-        recall = (
-            len(gt_indices & top_k_indices) / len(gt_indices)
-            if gt_indices
-            else 0.0
-        )
+        recall = len(gt_indices & top_k_indices) / len(gt_indices) if gt_indices else 0.0
         return (avg_sim + recall) / 2
     return avg_sim
 
@@ -175,9 +172,7 @@ def run_experiment(
     chunks = chunk_documents(documents, config)
     retrieval_scores = []
     for query in test_queries:
-        score = evaluate_retrieval(
-            query, chunks, embedding_function, ground_truth
-        )
+        score = evaluate_retrieval(query, chunks, embedding_function, ground_truth)
         retrieval_scores.append(score)
 
     latency_ms = (time.time() - start_time) * 1000
@@ -191,9 +186,7 @@ def run_experiment(
         avg_chunk_size=avg_chunk_size,
         retrieval_scores=retrieval_scores,
         avg_retrieval_score=(
-            sum(retrieval_scores) / len(retrieval_scores)
-            if retrieval_scores
-            else 0
+            sum(retrieval_scores) / len(retrieval_scores) if retrieval_scores else 0
         ),
         latency_ms=latency_ms,
         metadata={

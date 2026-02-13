@@ -3,6 +3,7 @@ Chunking Experimenter - 청킹 전략 실험 및 개선 도구 (coordinator).
 
 Delegates to experiment_runner, experiment_feedback, experiment_report.
 """
+
 from __future__ import annotations
 
 import logging
@@ -11,8 +12,10 @@ from typing import Any, Callable, Dict, List, Optional
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+
     def get_logger(name: str) -> logging.Logger:
         return logging.getLogger(name)
+
 
 from beanllm.domain.rag_debug.experiment_feedback import (
     ChunkFeedback,
@@ -20,7 +23,9 @@ from beanllm.domain.rag_debug.experiment_feedback import (
     get_feedback_summary as _get_feedback_summary_impl,
     improve_from_feedback as _improve_from_feedback_impl,
 )
-from beanllm.domain.rag_debug.experiment_report import get_comparison_report as _get_comparison_report_impl
+from beanllm.domain.rag_debug.experiment_report import (
+    get_comparison_report as _get_comparison_report_impl,
+)
 from beanllm.domain.rag_debug.experiment_runner import (
     ChunkingResult,
     build_grid_configs as _build_grid_configs,

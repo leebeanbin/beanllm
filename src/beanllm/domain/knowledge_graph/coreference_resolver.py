@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Callable, Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from beanllm.domain.knowledge_graph.entity_models import Entity, EntityType
 from beanllm.domain.knowledge_graph.entity_patterns import PRONOUN_TO_ENTITY_TYPE

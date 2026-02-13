@@ -517,4 +517,3 @@ __all__ = [
     "visualize_embeddings_2d",
     "similarity_heatmap",
 ]
-

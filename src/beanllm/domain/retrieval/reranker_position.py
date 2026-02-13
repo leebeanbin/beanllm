@@ -48,7 +48,9 @@ class PositionEngineeringReranker(BaseReranker):
         scores: Optional[List[float]] = None,
     ) -> List[RerankResult]:
         if self.base_reranker is not None:
-            ranked_results = self.base_reranker.rerank(query=query, documents=documents, top_k=top_k)
+            ranked_results = self.base_reranker.rerank(
+                query=query, documents=documents, top_k=top_k
+            )
         elif scores is not None:
             if len(scores) != len(documents):
                 raise ValueError("scores와 documents의 길이가 일치하지 않습니다.")
@@ -67,7 +69,9 @@ class PositionEngineeringReranker(BaseReranker):
             if top_k is not None:
                 ranked_results = ranked_results[:top_k]
         reordered = self._apply_position_engineering(ranked_results)
-        logger.info(f"Position Engineering applied: strategy={self.strategy}, count={len(reordered)}")
+        logger.info(
+            f"Position Engineering applied: strategy={self.strategy}, count={len(reordered)}"
+        )
         return reordered
 
     def _apply_position_engineering(self, results: List[RerankResult]) -> List[RerankResult]:

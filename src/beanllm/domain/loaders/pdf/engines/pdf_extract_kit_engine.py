@@ -14,14 +14,15 @@ Requirements:
     pip install pdf-extract-kit torch pillow
 """
 
-import logging
 import time
 from pathlib import Path
 from typing import Dict, List, Union
 
+from beanllm.utils.logging import get_logger
+
 from .base import BasePDFEngine
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # PDF-Extract-Kit 설치 여부 체크
 try:

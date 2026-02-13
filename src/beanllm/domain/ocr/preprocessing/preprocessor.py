@@ -12,8 +12,6 @@ Features:
 - 선명화 (Sharpen)
 """
 
-import logging
-
 import numpy as np
 
 from beanllm.domain.ocr.models import (
@@ -25,8 +23,9 @@ from beanllm.domain.ocr.models import (
     ResizeConfig,
     SharpenConfig,
 )
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # opencv-python 설치 여부 체크
 try:

@@ -1,19 +1,18 @@
 """
 CLI command definitions - list, show, providers, export, summary, help.
 """
+
 from __future__ import annotations
 
 import json
 from typing import Any
 
 from beanllm.utils.cli.cli_utils import (
-    ErrorPattern,
     Panel,
     RICH_AVAILABLE,
     Syntax,
     Table,
     console,
-    get_model_registry,
     print_logo,
 )
 

@@ -1,15 +1,15 @@
 """
 Optimizer service - Optimize methods (mixin).
 """
+
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List
+from typing import List
 
 from beanllm.domain.optimizer import (
     OptimizationMethod,
     OptimizationResult,
-    OptimizerEngine,
     ParameterSpace,
     ParameterType,
 )

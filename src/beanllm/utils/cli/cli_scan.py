@@ -1,10 +1,10 @@
 """
 CLI scan - API scan and discovery logic.
 """
+
 from __future__ import annotations
 
 import sys
-from typing import Any
 
 from beanllm.utils.cli.cli_utils import (
     Panel,
