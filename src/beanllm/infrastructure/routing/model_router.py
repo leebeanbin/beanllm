@@ -8,15 +8,6 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-    import logging
-
-    def get_logger(name: str) -> logging.Logger:
-        return logging.getLogger(name)
-
-
 from beanllm.infrastructure.routing.router_strategies import (
     estimate_cost as _estimate_cost,
 )
@@ -36,6 +27,7 @@ from beanllm.infrastructure.routing.router_types import (
     RoutingDecision,
     RoutingStrategy,
 )
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

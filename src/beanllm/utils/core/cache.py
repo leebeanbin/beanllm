@@ -13,6 +13,7 @@ import time
 from collections import OrderedDict
 from typing import Any, Callable, Dict, Generic, Optional, TypeVar
 
+from beanllm.utils.constants import DEFAULT_CACHE_MAX_SIZE
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -49,8 +50,8 @@ class LRUCache(Generic[K, V]):
         ```python
         from beanllm.utils.cache import LRUCache
 
-        # Create cache with 1000 items max, 1 hour TTL
-        cache = LRUCache[str, list](max_size=1000, ttl=3600)
+        # Create cache with DEFAULT_CACHE_MAX_SIZE items max, 1 hour TTL
+        cache = LRUCache[str, list](max_size=DEFAULT_CACHE_MAX_SIZE, ttl=3600)
 
         # Set value
         cache.set("key1", [1, 2, 3])
@@ -76,7 +77,7 @@ class LRUCache(Generic[K, V]):
 
     def __init__(
         self,
-        max_size: int = 1000,
+        max_size: int = DEFAULT_CACHE_MAX_SIZE,
         ttl: Optional[int] = None,
         cleanup_interval: int = 60,
         on_evict: Optional[Callable[[K, V], None]] = None,

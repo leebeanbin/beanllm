@@ -94,6 +94,8 @@ class ExternalAPITool:
         self._setup_auth()
         self._last_request_time: float = 0.0
         self._token_bucket: Dict[str, float] = {}
+        # 비동기 클라이언트 공유 (연결 풀링)
+        self._async_client: Optional[Any] = None
 
     def _setup_auth(self) -> None:
         """인증 설정"""
@@ -236,30 +238,55 @@ class ExternalAPITool:
 
         url = f"{self.config.base_url.rstrip('/')}/{endpoint.lstrip('/')}"
 
-        async with _httpx.AsyncClient(timeout=self.config.timeout) as client:
-            # Setup auth headers
-            headers = dict(self.session.headers)
+        client = self._get_or_create_async_client()
+        # Setup auth headers
+        headers = dict(self.session.headers)
 
-            for attempt in range(self.config.max_retries):
-                try:
-                    response = await client.request(
-                        method=method, url=url, params=params, json=data, headers=headers, **kwargs
-                    )
-                    response.raise_for_status()
-                    result: Dict[str, Any] = response.json()
-                    return result
+        for attempt in range(self.config.max_retries):
+            try:
+                response = await client.request(
+                    method=method, url=url, params=params, json=data, headers=headers, **kwargs
+                )
+                response.raise_for_status()
+                result: Dict[str, Any] = response.json()
+                return result
 
-                except Exception as e:
-                    # Check if it's an httpx exception
-                    if _httpx is not None and isinstance(e, _httpx.HTTPError):
-                        if attempt == self.config.max_retries - 1:
-                            raise
-                        wait_time = min(30, 2**attempt)
-                        await asyncio.sleep(wait_time)
-                    else:
+            except Exception as e:
+                # Check if it's an httpx exception
+                if _httpx is not None and isinstance(e, _httpx.HTTPError):
+                    if attempt == self.config.max_retries - 1:
                         raise
+                    wait_time = min(30, 2**attempt)
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise
 
         raise RuntimeError("Unexpected error in retry logic")
+
+    def _get_or_create_async_client(self) -> Any:
+        """
+        비동기 HTTP 클라이언트를 생성하거나 기존 인스턴스를 반환합니다.
+
+        연결 풀링을 통해 TCP 핸드셰이크 오버헤드를 줄입니다.
+
+        Returns:
+            httpx.AsyncClient 인스턴스
+        """
+        if self._async_client is None or self._async_client.is_closed:
+            self._async_client = _httpx.AsyncClient(
+                timeout=self.config.timeout,
+                limits=_httpx.Limits(
+                    max_keepalive_connections=20,
+                    max_connections=100,
+                ),
+            )
+        return self._async_client
+
+    async def close(self) -> None:
+        """비동기 클라이언트 리소스 정리"""
+        if self._async_client is not None and not self._async_client.is_closed:
+            await self._async_client.aclose()
+            self._async_client = None
 
     def call_graphql(
         self, query: str, variables: Optional[Dict[str, Any]] = None

@@ -7,6 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
+import heapq
 import random
 from dataclasses import dataclass, field
 from enum import Enum
@@ -123,8 +124,7 @@ class OptimizationResult:
 
     def get_top_n(self, n: int = 5) -> List[Dict[str, Any]]:
         """상위 N개 결과 반환"""
-        sorted_history = sorted(self.history, key=lambda x: x["score"], reverse=True)
-        return sorted_history[:n]
+        return heapq.nlargest(n, self.history, key=lambda x: x["score"])
 
 
 class OptimizerEngine:

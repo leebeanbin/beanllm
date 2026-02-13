@@ -154,16 +154,33 @@ class HybridRetriever:
         logger.info("BM25 index created")
 
     def _init_embeddings(self):
-        """Dense 임베딩 생성"""
+        """Dense 임베딩 생성 (배치 처리)"""
+        import numpy as np
+
         logger.info("Generating dense embeddings...")
 
-        # 모든 문서 임베딩
-        self._document_embeddings = []
-        for doc in self.documents:
-            emb = self.embedding_function(doc)
-            self._document_embeddings.append(emb)
+        # 배치 임베딩: 한 번의 호출로 모든 문서 처리 (O(1) API 호출)
+        try:
+            embeddings = self.embedding_function(self.documents)
+            # 반환 타입이 리스트의 리스트인 경우 NumPy 행렬로 변환
+            if isinstance(embeddings, list) and embeddings:
+                self._document_embeddings_matrix = np.array(embeddings, dtype=np.float32)
+            else:
+                self._document_embeddings_matrix = np.array(embeddings, dtype=np.float32)
+        except TypeError:
+            # 배치 지원하지 않는 경우 개별 처리 폴백
+            logger.warning(
+                "Embedding function does not support batch input, falling back to sequential"
+            )
+            embs = [self.embedding_function(doc) for doc in self.documents]
+            self._document_embeddings_matrix = np.array(embs, dtype=np.float32)
 
-        logger.info(f"Dense embeddings created: {len(self._document_embeddings)} docs")
+        # L2 정규화 (코사인 유사도를 내적으로 계산하기 위해)
+        norms = np.linalg.norm(self._document_embeddings_matrix, axis=1, keepdims=True)
+        norms = np.where(norms == 0, 1e-8, norms)
+        self._document_embeddings_normalized = self._document_embeddings_matrix / norms
+
+        logger.info(f"Dense embeddings created: {self._document_embeddings_matrix.shape[0]} docs")
 
     def search(
         self,
@@ -254,20 +271,23 @@ class HybridRetriever:
         Returns:
             {문서 인덱스: 코사인 유사도}
         """
-        # 쿼리 임베딩
-        query_emb = self.embedding_function(query)
-
-        # 코사인 유사도 계산
-        similarities = []
-        for doc_emb in self._document_embeddings:
-            sim = self._cosine_similarity(query_emb, doc_emb)
-            similarities.append(sim)
-
-        # 상위 k개 선택
         import numpy as np
 
-        similarities = np.array(similarities)
-        top_indices = similarities.argsort()[::-1][:top_k]
+        # 쿼리 임베딩
+        query_emb = self.embedding_function(query)
+        query_vec = np.array(query_emb, dtype=np.float32)
+
+        # L2 정규화
+        query_norm = np.linalg.norm(query_vec)
+        if query_norm > 0:
+            query_vec = query_vec / query_norm
+
+        # NumPy 벡터화 코사인 유사도: 행렬-벡터 내적 (O(n) 벡터화)
+        similarities = self._document_embeddings_normalized @ query_vec
+
+        # 상위 k개 선택
+        top_indices = np.argpartition(similarities, -min(top_k, len(similarities)))[-top_k:]
+        top_indices = top_indices[np.argsort(similarities[top_indices])[::-1]]
 
         # 딕셔너리 생성
         dense_scores = {
@@ -454,10 +474,26 @@ class HybridRetriever:
         # BM25 재초기화
         self._init_bm25()
 
-        # Dense 임베딩 추가
-        for doc in new_documents:
-            emb = self.embedding_function(doc)
-            self._document_embeddings.append(emb)
+        # Dense 임베딩 추가 (배치 처리)
+        import numpy as np
+
+        try:
+            new_embs = self.embedding_function(new_documents)
+            new_matrix = np.array(new_embs, dtype=np.float32)
+        except TypeError:
+            embs = [self.embedding_function(doc) for doc in new_documents]
+            new_matrix = np.array(embs, dtype=np.float32)
+
+        # 정규화
+        norms = np.linalg.norm(new_matrix, axis=1, keepdims=True)
+        norms = np.where(norms == 0, 1e-8, norms)
+        new_normalized = new_matrix / norms
+
+        # 기존 행렬에 결합
+        self._document_embeddings_matrix = np.vstack([self._document_embeddings_matrix, new_matrix])
+        self._document_embeddings_normalized = np.vstack(
+            [self._document_embeddings_normalized, new_normalized]
+        )
 
         logger.info(f"Added {len(new_documents)} documents, total: {len(self.documents)}")
 

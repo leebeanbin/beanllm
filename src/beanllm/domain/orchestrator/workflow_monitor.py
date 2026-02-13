@@ -8,6 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import asyncio
+import heapq
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -530,7 +531,7 @@ class WorkflowMonitor:
         max_duration = max(durations) if durations else 0.0
 
         # Slowest nodes
-        slowest = sorted(completed_states, key=lambda s: s.duration_ms, reverse=True)[:5]
+        slowest = heapq.nlargest(5, completed_states, key=lambda s: s.duration_ms)
 
         return {
             "completed_nodes": len(completed_states),

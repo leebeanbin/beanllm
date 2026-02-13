@@ -4,18 +4,11 @@ LlamaIndex Query Engine - beanLLM 스타일 Query Engine
 LlamaIndex의 Query Engine을 beanLLM 인터페이스로 제공합니다.
 """
 
-import logging
 from typing import Any, Callable, Dict, List, Optional
 
+from beanllm.utils.logging import get_logger
+
 from .bridge import LlamaIndexBridge
-
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
-        return logging.getLogger(name)
-
 
 logger = get_logger(__name__)
 

@@ -483,7 +483,7 @@ class MetricsVisualizer(OptimizerMetricsMixin, GraphMetricsMixin):
 
         for query_id, scores in results.items():
             # Find best strategy
-            best_idx = scores.index(max(scores)) if scores else 0
+            best_idx = max(range(len(scores)), key=scores.__getitem__) if scores else 0
             best_strategy = strategies[best_idx] if best_idx < len(strategies) else "N/A"
 
             row = [f"Q{query_id}"]

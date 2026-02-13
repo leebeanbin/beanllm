@@ -7,6 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
+import heapq
 import json
 import re
 import time
@@ -318,8 +319,7 @@ Let's begin!
         # 상위 N%만 유지
         keep_count = max(1, int(len(steps) * self._compression_ratio))
         keep_indices = set(
-            idx
-            for idx, _ in sorted(importance_scores, key=lambda x: x[1], reverse=True)[:keep_count]
+            idx for idx, _ in heapq.nlargest(keep_count, importance_scores, key=lambda x: x[1])
         )
 
         return [steps[i] for i in sorted(keep_indices)]

@@ -27,18 +27,32 @@ except ImportError:
 logger = get_logger(__name__)
 
 
+def _file_hash(path: str) -> str:
+    """파일 해시를 청크 단위로 계산합니다 (대용량 파일 메모리 효율)."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(65536)  # 64KB chunks
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def generate_cache_key(prefix: str, args: tuple, kwargs: dict[str, Any]) -> str:
     """Generate cache key from prefix and arguments."""
     args_list: List[str] = []
     key_data: dict[str, Any] = {"args": args_list, "kwargs": kwargs}
     for arg in args:
         if isinstance(arg, (str, Path)):
-            try:
-                with open(str(arg), "rb") as f:
-                    file_hash = hashlib.sha256(f.read()).hexdigest()
-                args_list.append(f"file:{file_hash}")
-            except Exception:
-                args_list.append(str(arg))
+            path_str = str(arg)
+            if Path(path_str).is_file():
+                try:
+                    args_list.append(f"file:{_file_hash(path_str)}")
+                except Exception:
+                    args_list.append(path_str)
+            else:
+                args_list.append(path_str)
         elif hasattr(arg, "tobytes"):
             args_list.append(f"array:{hashlib.sha256(arg.tobytes()).hexdigest()}")
         else:

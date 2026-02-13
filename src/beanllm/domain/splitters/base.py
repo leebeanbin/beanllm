@@ -5,6 +5,11 @@ Splitters Base - 텍스트 분할 베이스 클래스
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Callable, List, Optional
 
+try:
+    from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
+except ImportError:
+    DEFAULT_CHUNK_SIZE = 1000
+
 if TYPE_CHECKING:
     from beanllm.domain.loaders.types import Document
 
@@ -14,7 +19,7 @@ class BaseTextSplitter(ABC):
 
     def __init__(
         self,
-        chunk_size: int = 1000,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = 200,
         length_function: Callable[[str], int] = len,
         keep_separator: bool = True,

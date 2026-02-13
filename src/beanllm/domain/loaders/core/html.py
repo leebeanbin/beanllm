@@ -4,7 +4,6 @@ HTML Loader
 HTML 파일 로더 (BeautifulSoup)
 """
 
-import logging
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -14,8 +13,9 @@ from beanllm.domain.loaders.types import Document
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+    import logging
 
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
         return logging.getLogger(name)
 
 

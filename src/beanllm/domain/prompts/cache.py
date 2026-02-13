@@ -11,11 +11,18 @@ if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol
 
 try:
+    from beanllm.utils.constants import DEFAULT_CACHE_MAX_SIZE
+except ImportError:
+    DEFAULT_CACHE_MAX_SIZE = 1000
+
+try:
     from beanllm.utils.core.cache import LRUCache
 except ImportError:
     # Fallback: simple dict-based cache without TTL
     class LRUCache:  # type: ignore[no-redef]
-        def __init__(self, max_size: int = 1000, ttl: Optional[int] = None, **kwargs):
+        def __init__(
+            self, max_size: int = DEFAULT_CACHE_MAX_SIZE, ttl: Optional[int] = None, **kwargs
+        ):
             self.cache: Dict = {}
             self.max_size = max_size
 
@@ -61,7 +68,7 @@ class PromptCache:
         from beanllm.domain.prompts import PromptCache
 
         # 캐시 생성 (1시간 TTL)
-        cache = PromptCache(max_size=1000, ttl=3600)
+        cache = PromptCache(max_size=DEFAULT_CACHE_MAX_SIZE, ttl=3600)
 
         # 캐시에 저장
         cache.set("prompt_key", "formatted prompt text")
@@ -80,7 +87,7 @@ class PromptCache:
 
     def __init__(
         self,
-        max_size: int = 1000,
+        max_size: int = DEFAULT_CACHE_MAX_SIZE,
         ttl: Optional[int] = None,
         cleanup_interval: int = 60,
         cache: Optional["CacheProtocol"] = None,

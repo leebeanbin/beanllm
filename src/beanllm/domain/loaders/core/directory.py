@@ -4,7 +4,6 @@ Directory Loader
 디렉토리 로더 (재귀 스캔)
 """
 
-import logging
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, Pattern, Union
@@ -18,8 +17,9 @@ from beanllm.domain.loaders.types import Document
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+    import logging
 
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
         return logging.getLogger(name)
 
 

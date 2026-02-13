@@ -6,12 +6,15 @@ from __future__ import annotations
 
 import re
 from dataclasses import replace
-from typing import Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from beanllm.domain.evaluation.base_metric import BaseMetric
 from beanllm.domain.evaluation.enums import MetricType
 from beanllm.domain.evaluation.metrics.llm_judge import LLMJudgeMetric
 from beanllm.domain.evaluation.results import EvaluationResult
+
+if TYPE_CHECKING:
+    from beanllm.domain.evaluation.protocols import LLMClientProtocol
 
 
 class AnswerRelevanceMetric(BaseMetric):
@@ -21,7 +24,7 @@ class AnswerRelevanceMetric(BaseMetric):
     생성된 답변이 질문과 얼마나 관련있는지 평가
     """
 
-    def __init__(self, client=None) -> None:
+    def __init__(self, client: Optional["LLMClientProtocol"] = None) -> None:
         super().__init__("answer_relevance", MetricType.RAG)
         self.client = client
 
@@ -106,7 +109,7 @@ class FaithfulnessMetric(BaseMetric):
     생성된 답변이 제공된 컨텍스트에 충실한지 평가 (환각 검출)
     """
 
-    def __init__(self, client=None) -> None:
+    def __init__(self, client: Optional["LLMClientProtocol"] = None) -> None:
         super().__init__("faithfulness", MetricType.RAG)
         self.client = client
 

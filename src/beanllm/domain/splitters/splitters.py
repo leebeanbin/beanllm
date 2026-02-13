@@ -86,10 +86,11 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
     Example:
         ```python
         from beanllm.domain.splitters import RecursiveCharacterTextSplitter
+        from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
 
         # 기본 구분자 (스마트!)
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1000,
+            chunk_size=DEFAULT_CHUNK_SIZE,
             chunk_overlap=200
         )
         chunks = splitter.split_documents(documents)
@@ -210,11 +211,12 @@ class TokenTextSplitter(BaseTextSplitter):
     Example:
         ```python
         from beanllm.domain.splitters import TokenTextSplitter
+        from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
 
         # OpenAI 토큰 기준
         splitter = TokenTextSplitter(
             encoding_name="cl100k_base",  # GPT-4
-            chunk_size=1000,
+            chunk_size=DEFAULT_CHUNK_SIZE,
             chunk_overlap=200
         )
         chunks = splitter.split_text(text)

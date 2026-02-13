@@ -32,7 +32,7 @@ from beanllm.service.evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
     from beanllm.domain.embeddings.base import Embedding
-    from beanllm.facade.core.client_facade import Client
+    from beanllm.domain.evaluation.protocols import LLMClientProtocol
 
 
 class EvaluationServiceImpl(IEvaluationService):
@@ -40,12 +40,12 @@ class EvaluationServiceImpl(IEvaluationService):
 
     def __init__(
         self,
-        client: Optional["Client"] = None,
+        client: Optional["LLMClientProtocol"] = None,
         embedding_model: Optional["Embedding"] = None,
     ):
         """
         Args:
-            client: LLM 클라이언트 (LLMJudgeMetric 등에서 사용)
+            client: LLM 클라이언트 프로토콜 (LLMJudgeMetric 등에서 사용)
             embedding_model: 임베딩 모델 (SemanticSimilarityMetric에서 사용)
         """
         self.client = client

@@ -21,7 +21,6 @@ from beanllm.utils.logging import get_logger
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
 
 if TYPE_CHECKING:
-    from beanllm.facade.core.client_facade import Client
     from beanllm.service.chat_service import IChatService
     from beanllm.service.types import VectorStoreProtocol
     from beanllm.vision_embeddings import CLIPEmbedding, MultimodalEmbedding
@@ -57,7 +56,6 @@ Answer:"""
         vector_store: "VectorStoreProtocol",
         vision_embedding: Optional[Union["CLIPEmbedding", "MultimodalEmbedding"]] = None,
         chat_service: Optional["IChatService"] = None,
-        llm: Optional["Client"] = None,
         prompt_template: Optional[str] = None,
     ) -> None:
         """
@@ -66,14 +64,12 @@ Answer:"""
         Args:
             vector_store: 벡터 스토어
             vision_embedding: Vision 임베딩 (선택적)
-            chat_service: 채팅 서비스 (선택적, llm이 없을 때 사용)
-            llm: LLM Client (선택적, chat_service가 없을 때 사용)
+            chat_service: 채팅 서비스 인터페이스 (LLM 호출에 사용)
             prompt_template: 프롬프트 템플릿 (선택적)
         """
         self._vector_store = vector_store
         self._vision_embedding = vision_embedding
         self._chat_service = chat_service
-        self._llm = llm
         self._prompt_template = prompt_template or self.DEFAULT_PROMPT_TEMPLATE
 
     @with_distributed_features(
@@ -202,37 +198,31 @@ Answer:"""
                 }
             ]
 
-            # LLM 호출 (기존과 동일)
-            if self._llm:
-                response = await self._llm.chat(messages)
-                answer = response.content
-            elif self._chat_service:
-                from beanllm.dto.request.core.chat_request import ChatRequest
+            # LLM 호출 (IChatService 인터페이스 사용)
+            if not self._chat_service:
+                raise ValueError("chat_service must be provided for query operations")
 
-                chat_request = ChatRequest(messages=messages, model=request.llm_model)
-                chat_response = await self._chat_service.chat(chat_request)
-                answer = chat_response.content
-            else:
-                raise ValueError("Either llm or chat_service must be provided")
+            from beanllm.dto.request.core.chat_request import ChatRequest
+
+            chat_request = ChatRequest(messages=messages, model=request.llm_model)
+            chat_response = await self._chat_service.chat(chat_request)
+            answer = chat_response.content
         else:
-            # 텍스트만 (기존과 동일)
+            # 텍스트만
             prompt = self._prompt_template.format(
                 context=context, question=request.question or request.query
             )
 
-            if self._llm:
-                response = await self._llm.chat(prompt)
-                answer = response.content
-            elif self._chat_service:
-                from beanllm.dto.request.core.chat_request import ChatRequest
+            if not self._chat_service:
+                raise ValueError("chat_service must be provided for query operations")
 
-                chat_request = ChatRequest(
-                    messages=[{"role": "user", "content": prompt}], model=request.llm_model
-                )
-                chat_response = await self._chat_service.chat(chat_request)
-                answer = chat_response.content
-            else:
-                raise ValueError("Either llm or chat_service must be provided")
+            from beanllm.dto.request.core.chat_request import ChatRequest
+
+            chat_request = ChatRequest(
+                messages=[{"role": "user", "content": prompt}], model=request.llm_model
+            )
+            chat_response = await self._chat_service.chat(chat_request)
+            answer = chat_response.content
 
         # 4. 반환 (기존과 동일)
         if request.include_sources:

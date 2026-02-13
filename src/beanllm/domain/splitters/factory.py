@@ -51,7 +51,8 @@ class TextSplitter:
         chunks = TextSplitter.split(documents)
 
         # 방법 2: 전략을 쉽게 선택 (추천!)
-        chunks = TextSplitter.recursive(chunk_size=1000).split_documents(docs)
+        from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
+        chunks = TextSplitter.recursive(chunk_size=DEFAULT_CHUNK_SIZE).split_documents(docs)
         chunks = TextSplitter.character(separator="\\n\\n").split_documents(docs)
         chunks = TextSplitter.token(chunk_size=500).split_documents(docs)
 
@@ -276,7 +277,8 @@ class TextSplitter:
         Example:
             ```python
             # GPT-4용 (기본)
-            splitter = TextSplitter.token(chunk_size=1000)
+            from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
+            splitter = TextSplitter.token(chunk_size=DEFAULT_CHUNK_SIZE)
 
             # 특정 모델용
             splitter = TextSplitter.token(

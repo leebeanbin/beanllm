@@ -72,11 +72,12 @@ def find_hard_negatives(
 
     # Positive 제외 (제공된 경우)
     if positive_vecs:
-        [
-            max(batch_cosine_similarity(query_vec, [pv])[0] for pv in positive_vecs)
-            for _ in candidate_vecs
-        ]
-        # Positive와 유사한 것 제외
+        # 각 후보가 positive 벡터와 너무 유사하면 제외
+        for i, cv in enumerate(candidate_vecs):
+            pos_sims = batch_cosine_similarity(cv, positive_vecs)
+            if pos_sims and max(pos_sims) > 0.7:
+                similarities[i] = -1.0
+        # 쿼리와 너무 유사한 것도 제외
         similarities = [s if s < 0.7 else -1.0 for s in similarities]
 
     # Hard Negative 찾기 (유사도 범위 내)
@@ -142,8 +143,12 @@ def mmr_search(
     query_similarities = batch_cosine_similarity(query_vec, candidate_vecs)
 
     # 첫 번째: 가장 관련성 높은 것
-    selected = [query_similarities.index(max(query_similarities))]
+    max_idx = max(range(len(query_similarities)), key=query_similarities.__getitem__)
+    selected = [max_idx]
     remaining = set(range(len(candidate_vecs))) - set(selected)
+
+    # 선택된 벡터 캐시 (매 반복마다 재생성 방지)
+    selected_vecs_cache: List[List[float]] = [candidate_vecs[max_idx]]
 
     # 나머지 k-1개 선택
     for _ in range(k - 1):
@@ -157,11 +162,10 @@ def mmr_search(
             # 관련성 점수
             relevance = query_similarities[idx]
 
-            # 다양성 점수 (이미 선택된 것과의 최대 유사도)
+            # 다양성 점수 (캐시된 선택 벡터 사용)
             diversity = 0.0
-            if selected:
-                selected_vecs = [candidate_vecs[i] for i in selected]
-                candidate_sims = batch_cosine_similarity(candidate_vecs[idx], selected_vecs)
+            if selected_vecs_cache:
+                candidate_sims = batch_cosine_similarity(candidate_vecs[idx], selected_vecs_cache)
                 diversity = max(candidate_sims) if candidate_sims else 0.0
 
             # MMR 점수
@@ -174,6 +178,7 @@ def mmr_search(
         if best_idx is not None:
             selected.append(best_idx)
             remaining.remove(best_idx)
+            selected_vecs_cache.append(candidate_vecs[best_idx])
 
     return selected
 

@@ -247,7 +247,6 @@ class ServiceFactory:
         self,
         vector_store: "VectorStoreProtocol",
         vision_embedding: Optional[Any] = None,
-        llm: Optional[Any] = None,
         chat_service: Optional[IChatService] = None,
         prompt_template: Optional[str] = None,
     ) -> IVisionRAGService:
@@ -257,8 +256,7 @@ class ServiceFactory:
         Args:
             vector_store: 벡터 스토어 (필수)
             vision_embedding: Vision 임베딩 (선택적)
-            llm: LLM Client (선택적)
-            chat_service: 채팅 서비스 (선택적, llm이 없을 때 사용)
+            chat_service: 채팅 서비스 인터페이스 (선택적, 없으면 자동 생성)
             prompt_template: 프롬프트 템플릿 (선택적)
 
         Returns:
@@ -271,14 +269,13 @@ class ServiceFactory:
         from .impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
 
         # chat_service 자동 생성
-        if not chat_service and not llm:
+        if not chat_service:
             chat_service = self.create_chat_service()
 
         return VisionRAGServiceImpl(
             vector_store=vector_store,
             vision_embedding=vision_embedding,
             chat_service=chat_service,
-            llm=llm,
             prompt_template=prompt_template,
         )
 

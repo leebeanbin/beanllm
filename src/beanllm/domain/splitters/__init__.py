@@ -16,10 +16,11 @@ Example:
     from beanllm.domain.splitters import SemanticTextSplitter
 
     # 의미 기반 분할 (가장 효과적)
+    from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
     splitter = SemanticTextSplitter(
         model="all-MiniLM-L6-v2",
         threshold=0.5,
-        max_chunk_size=1000
+        max_chunk_size=DEFAULT_CHUNK_SIZE
     )
     chunks = splitter.split_text(text)
 

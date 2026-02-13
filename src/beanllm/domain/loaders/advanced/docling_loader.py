@@ -4,7 +4,6 @@ Docling Loader
 Docling 고급 문서 로더
 """
 
-import logging
 import os
 from typing import Any, Dict, List
 
@@ -12,10 +11,16 @@ from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
 
 try:
+    from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
+except ImportError:
+    DEFAULT_CHUNK_SIZE = 1000
+
+try:
     from beanllm.utils.logging import get_logger
 except ImportError:
+    import logging
 
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
         return logging.getLogger(name)
 
 
@@ -228,7 +233,7 @@ class DoclingLoader(BaseDocumentLoader):
 
     def load_and_split(
         self,
-        chunk_size: int = 1000,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
         chunk_overlap: int = 200,
     ) -> List[Document]:
         """

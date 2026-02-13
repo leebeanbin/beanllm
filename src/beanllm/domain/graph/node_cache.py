@@ -12,11 +12,18 @@ if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol
 
 try:
+    from beanllm.utils.constants import DEFAULT_CACHE_MAX_SIZE
+except ImportError:
+    DEFAULT_CACHE_MAX_SIZE = 1000
+
+try:
     from beanllm.utils.core.cache import LRUCache
 except ImportError:
     # Fallback: simple dict-based cache without TTL
     class LRUCache:  # type: ignore[no-redef]
-        def __init__(self, max_size: int = 1000, ttl: Optional[int] = None, **kwargs):
+        def __init__(
+            self, max_size: int = DEFAULT_CACHE_MAX_SIZE, ttl: Optional[int] = None, **kwargs
+        ):
             self.cache: Dict = {}
             self.max_size = max_size
 
@@ -64,7 +71,7 @@ class NodeCache:
         from beanllm.domain.graph import NodeCache
 
         # 캐시 생성 (30분 TTL)
-        cache = NodeCache(max_size=1000, ttl=1800)
+        cache = NodeCache(max_size=DEFAULT_CACHE_MAX_SIZE, ttl=1800)
 
         # 노드 실행 전 캐시 확인
         cached_result = cache.get("process_node", current_state)
@@ -87,7 +94,7 @@ class NodeCache:
 
     def __init__(
         self,
-        max_size: int = 1000,
+        max_size: int = DEFAULT_CACHE_MAX_SIZE,
         ttl: Optional[int] = None,
         cleanup_interval: int = 60,
         cache: Optional["CacheProtocol"] = None,

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import functools
-import logging
 from typing import Any, Callable, List, Optional, TypeVar, Union, cast
 
 from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper
@@ -34,17 +33,8 @@ from beanllm.infrastructure.distributed.pipeline_helpers import (
 from beanllm.infrastructure.distributed.pipeline_helpers import (
     publish_event_async as _publish_event_async,
 )
-
-try:
-    from beanllm.utils.logging import get_logger as _get_logger
-
-    def get_logger(name: str) -> logging.Logger:
-        return cast(logging.Logger, _get_logger(name))
-except ImportError:
-
-    def get_logger(name: str) -> logging.Logger:
-        return logging.getLogger(name)
-
+from beanllm.utils.constants import DEFAULT_CACHE_MAX_SIZE
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 T = TypeVar("T")
@@ -141,7 +131,7 @@ def with_distributed_features(
 
                 # 캐시 확인
                 sync_cache: SyncCacheWrapper = SyncCacheWrapper(
-                    max_size=1000, ttl=pipeline_config.cache_ttl
+                    max_size=DEFAULT_CACHE_MAX_SIZE, ttl=pipeline_config.cache_ttl
                 )
                 try:
                     cached_result = sync_cache.get(cache_key)
@@ -228,7 +218,7 @@ def with_distributed_features(
             # 캐시 저장
             if pipeline_config.enable_cache and cache_key:
                 sync_cache_store: SyncCacheWrapper = SyncCacheWrapper(
-                    max_size=1000, ttl=pipeline_config.cache_ttl
+                    max_size=DEFAULT_CACHE_MAX_SIZE, ttl=pipeline_config.cache_ttl
                 )
                 try:
                     sync_cache_store.set(cache_key, result, ttl=pipeline_config.cache_ttl)

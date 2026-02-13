@@ -4,16 +4,9 @@ LlamaIndex Bridge - beanLLM ↔ LlamaIndex 브릿지
 beanLLM의 Document, Embeddings를 LlamaIndex 형식으로 변환합니다.
 """
 
-import logging
 from typing import Any, Callable, List
 
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
-        return logging.getLogger(name)
-
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

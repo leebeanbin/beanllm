@@ -22,8 +22,33 @@ from beanllm.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+_SUPPORTED_INDEX_TYPES = frozenset(
+    {
+        "IndexFlatL2",
+        "IndexFlatIP",
+        "IndexHNSWFlat",
+        "IndexIVFFlat",
+        "auto",
+    }
+)
+
+# 자동 인덱스 선택 임계값
+_ANN_THRESHOLD = 10_000
+_HNSW_DEFAULT_M = 32
+_IVF_DEFAULT_NLIST = 100
+
+
 class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
-    """FAISS vector store - 로컬, 매우 빠름"""
+    """
+    FAISS vector store - 로컬, 매우 빠름
+
+    index_type 옵션:
+        - "IndexFlatL2": 브루트포스 L2 거리 (기본, 정확도 100%)
+        - "IndexFlatIP": 브루트포스 내적 (코사인 유사도)
+        - "IndexHNSWFlat": HNSW 근사 검색 (빠름, n > 10K 추천)
+        - "IndexIVFFlat": IVF 근사 검색 (메모리 효율, n > 100K 추천)
+        - "auto": 문서 수에 따라 자동 선택
+    """
 
     def __init__(
         self,
@@ -40,18 +65,48 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         except ImportError:
             raise ImportError("FAISS not installed. pip install faiss-cpu  # or faiss-gpu")
 
+        if index_type not in _SUPPORTED_INDEX_TYPES:
+            raise ValueError(
+                f"Unknown index type: {index_type}. "
+                f"Supported: {', '.join(sorted(_SUPPORTED_INDEX_TYPES))}"
+            )
+
         self.faiss = faiss
         self.np = np
         self.dimension = dimension
         self.index_type = index_type
+        self._is_trained = False
 
         # FAISS 인덱스 생성
+        self.index = self._create_index(index_type, dimension)
+
+    def _create_index(self, index_type: str, dimension: int) -> Any:
+        """
+        인덱스 타입에 따라 FAISS 인덱스를 생성합니다.
+
+        Args:
+            index_type: 인덱스 타입 문자열
+            dimension: 벡터 차원
+
+        Returns:
+            FAISS 인덱스 객체
+        """
         if index_type == "IndexFlatL2":
-            self.index = faiss.IndexFlatL2(dimension)
+            return self.faiss.IndexFlatL2(dimension)
         elif index_type == "IndexFlatIP":
-            self.index = faiss.IndexFlatIP(dimension)
+            return self.faiss.IndexFlatIP(dimension)
+        elif index_type == "IndexHNSWFlat":
+            # HNSW: 그래프 기반 ANN (높은 recall, 빠른 검색)
+            return self.faiss.IndexHNSWFlat(dimension, _HNSW_DEFAULT_M)
+        elif index_type == "IndexIVFFlat":
+            # IVF: 역인덱스 기반 ANN (training 필요)
+            quantizer = self.faiss.IndexFlatL2(dimension)
+            index = self.faiss.IndexIVFFlat(quantizer, dimension, _IVF_DEFAULT_NLIST)
+            self._is_trained = False
+            return index
         else:
-            raise ValueError(f"Unknown index type: {index_type}")
+            # auto 또는 기타: 기본 Flat
+            return self.faiss.IndexFlatL2(dimension)
 
         self.documents = []  # 문서 저장
         self.ids_to_index = {}  # ID -> index 매핑
@@ -69,6 +124,29 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         # numpy array로 변환
         embeddings_array = self.np.array(embeddings).astype("float32")
 
+        # auto 모드: 문서 수에 따라 인덱스 업그레이드
+        total_docs = len(self.documents) + len(documents)
+        if (
+            self.index_type == "auto"
+            and total_docs >= _ANN_THRESHOLD
+            and not isinstance(self.index, self.faiss.IndexHNSWFlat)
+        ):
+            logger.info(f"Auto-upgrading FAISS index to HNSW (total docs: {total_docs})")
+            self._upgrade_to_hnsw(embeddings_array)
+
+        # IVF 인덱스인 경우 training 필요
+        if hasattr(self.index, "is_trained") and not self.index.is_trained:
+            if embeddings_array.shape[0] >= _IVF_DEFAULT_NLIST:
+                self.index.train(embeddings_array)
+                self._is_trained = True
+            else:
+                logger.warning(
+                    f"Not enough data to train IVF index "
+                    f"({embeddings_array.shape[0]} < {_IVF_DEFAULT_NLIST}). "
+                    f"Falling back to FlatL2."
+                )
+                self.index = self.faiss.IndexFlatL2(self.dimension)
+
         # ID 생성
         ids = [str(uuid.uuid4()) for _ in texts]
 
@@ -82,6 +160,21 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
             self.ids_to_index[id_] = start_idx + i
 
         return ids
+
+    def _upgrade_to_hnsw(self, new_embeddings: Any) -> None:
+        """기존 Flat 인덱스를 HNSW로 업그레이드합니다."""
+        new_index = self.faiss.IndexHNSWFlat(self.dimension, _HNSW_DEFAULT_M)
+
+        # 기존 벡터를 새 인덱스로 이동
+        if self.index.ntotal > 0:
+            existing = self.faiss.rev_swig_ptr(
+                self.index.get_xb(), self.index.ntotal * self.dimension
+            )
+            existing = self.np.array(existing).reshape(self.index.ntotal, self.dimension)
+            new_index.add(existing.astype("float32"))
+
+        self.index = new_index
+        self.index_type = "IndexHNSWFlat"
 
     def similarity_search(self, query: str, k: int = 4, **kwargs) -> List[VectorSearchResult]:
         """유사도 검색"""
@@ -134,15 +227,9 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
             del self.index
 
         # 새 인덱스 생성
-        if hasattr(self, "index_type"):
-            index_type = self.index_type
-        else:
-            index_type = "IndexFlatL2"
-
-        if index_type == "IndexFlatL2":
-            self.index = self.faiss.IndexFlatL2(self.dimension)
-        elif index_type == "IndexFlatIP":
-            self.index = self.faiss.IndexFlatIP(self.dimension)
+        index_type = getattr(self, "index_type", "IndexFlatL2")
+        self.index = self._create_index(index_type, self.dimension)
+        self._is_trained = False
 
         # 문서 및 매핑 초기화
         self.documents = []

@@ -8,15 +8,7 @@ from typing import Any, Callable, List, Optional
 
 from beanllm.infrastructure.distributed.config import get_distributed_config
 from beanllm.infrastructure.distributed.task_processor import BatchProcessor
-
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-    import logging
-
-    def get_logger(name: str) -> logging.Logger:
-        return logging.getLogger(name)
-
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

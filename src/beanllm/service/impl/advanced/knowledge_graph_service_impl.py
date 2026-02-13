@@ -21,14 +21,12 @@ import networkx as nx
 from beanllm.domain.knowledge_graph import (
     Entity,
     EntityExtractor,
-    EntityType,
     GraphBuilder,
     GraphQuerier,
     GraphRAG,
     Neo4jAdapter,
     Relation,
     RelationExtractor,
-    RelationType,
 )
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
@@ -46,6 +44,10 @@ from beanllm.dto.response.graph.kg_response import (
 from beanllm.infrastructure.distributed import with_distributed_features
 from beanllm.infrastructure.distributed.task_processor import BatchProcessor
 from beanllm.service.impl.advanced.kg_document_processor import process_single_document
+from beanllm.service.impl.advanced.kg_entity_extraction import (
+    extract_entities_logic,
+    extract_relations_logic,
+)
 from beanllm.service.impl.advanced.kg_graph_operations import (
     delete_graph as kg_delete_graph,
 )
@@ -172,59 +174,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             EntitiesResponse: 추출된 엔티티 목록
         """
         try:
-            # 엔티티 타입 필터
-            entity_types = None
-            if request.entity_types:
-                entity_types = [EntityType(et) for et in request.entity_types]
-
-            # 텍스트 검증
-            text = request.text or ""
-            if not text:
-                raise ValueError("text is required for entity extraction")
-
-            # 엔티티 추출
-            entities = self._entity_extractor.extract_entities(
-                text=text,
-                entity_types=entity_types,
-            )
-
-            # Coreference resolution
-            if request.resolve_coreferences:
-                entities = self._entity_extractor.resolve_coreferences(
-                    entities=entities,
-                    text=text,
-                )
-
-            # 직렬화
-            entities_list = [
-                {
-                    "id": entity.id,
-                    "name": entity.name,
-                    "type": entity.type.value,
-                    "description": entity.description,
-                    "properties": entity.properties,
-                    "aliases": entity.aliases,
-                    "confidence": entity.confidence,
-                    "mentions": entity.mentions,
-                }
-                for entity in entities
-            ]
-
-            logger.info(f"Extracted {len(entities)} entities from text")
-
-            # Count by type
-            entity_counts_by_type: Dict[str, int] = {}
-            for entity in entities:
-                etype = entity.type.value
-                entity_counts_by_type[etype] = entity_counts_by_type.get(etype, 0) + 1
-
-            return EntitiesResponse(
-                document_id=request.document_id,
-                entities=entities_list,
-                num_entities=len(entities),
-                entity_counts_by_type=entity_counts_by_type,
-            )
-
+            return extract_entities_logic(self._entity_extractor, request)
         except Exception as e:
             logger.error(f"Failed to extract entities: {e}", exc_info=True)
             raise RuntimeError(f"Failed to extract entities: {e}") from e
@@ -249,76 +199,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             RelationsResponse: 추출된 관계 목록
         """
         try:
-            # DTO → Domain Entity 변환
-            # 엔티티 검증
-            if not request.entities:
-                raise ValueError("entities is required for relation extraction")
-
-            entities = [
-                Entity(
-                    id=e.get("id", str(uuid.uuid4())),
-                    name=e["name"],
-                    type=EntityType(e["type"]),
-                    description=e.get("description", ""),
-                    properties=e.get("properties", {}),
-                    aliases=e.get("aliases", []),
-                    confidence=e.get("confidence", 1.0),
-                    mentions=e.get("mentions", []),
-                )
-                for e in request.entities
-            ]
-
-            # 텍스트 검증
-            text = request.text or ""
-            if not text:
-                raise ValueError("text is required for relation extraction")
-
-            # 관계 타입 필터
-            relation_types_list: Optional[List[RelationType]] = None
-            if request.relation_types:
-                relation_types_list = [RelationType(rt) for rt in request.relation_types]
-
-            # 관계 추출
-            relations = self._relation_extractor.extract_relations(
-                entities=entities,
-                text=text,
-            )
-
-            # 암시적 관계 추론
-            if request.infer_implicit:
-                implicit_relations = self._relation_extractor.infer_implicit_relations(
-                    relations=relations
-                )
-                relations.extend(implicit_relations)
-
-            # 직렬화
-            relations_list = [
-                {
-                    "source_id": relation.source_id,
-                    "target_id": relation.target_id,
-                    "type": relation.type.value,
-                    "properties": relation.properties,
-                    "confidence": relation.confidence,
-                    "bidirectional": relation.bidirectional,
-                }
-                for relation in relations
-            ]
-
-            logger.info(f"Extracted {len(relations)} relations from text")
-
-            # Count by type
-            relation_counts_by_type: Dict[str, int] = {}
-            for relation in relations:
-                rtype = relation.type.value
-                relation_counts_by_type[rtype] = relation_counts_by_type.get(rtype, 0) + 1
-
-            return RelationsResponse(
-                document_id=request.document_id,
-                relations=relations_list,
-                num_relations=len(relations),
-                relation_counts_by_type=relation_counts_by_type,
-            )
-
+            return extract_relations_logic(self._relation_extractor, request)
         except Exception as e:
             logger.error(f"Failed to extract relations: {e}", exc_info=True)
             raise RuntimeError(f"Failed to extract relations: {e}") from e

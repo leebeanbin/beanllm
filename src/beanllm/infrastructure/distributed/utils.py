@@ -6,17 +6,9 @@
 
 import asyncio
 import functools
-import logging
 from typing import Callable, Optional
 
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-    import logging
-
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
-        return logging.getLogger(name)
-
+from beanllm.utils.logging import get_logger
 
 try:
     from beanllm.utils.integration.security import sanitize_error_message

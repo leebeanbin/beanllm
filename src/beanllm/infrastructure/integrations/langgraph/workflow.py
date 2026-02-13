@@ -4,18 +4,11 @@ LangGraph Workflow - beanLLM 스타일 Workflow Builder
 LangGraph의 StateGraph를 beanLLM 인터페이스로 제공합니다.
 """
 
-import logging
 from typing import Any, Callable, Dict, List, Optional
 
+from beanllm.utils.logging import get_logger
+
 from .bridge import LangGraphBridge
-
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
-        return logging.getLogger(name)
-
 
 logger = get_logger(__name__)
 

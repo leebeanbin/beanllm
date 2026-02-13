@@ -5,11 +5,14 @@ LLM-as-Judge metric.
 from __future__ import annotations
 
 import re
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from beanllm.domain.evaluation.base_metric import BaseMetric
 from beanllm.domain.evaluation.enums import MetricType
 from beanllm.domain.evaluation.results import EvaluationResult
+
+if TYPE_CHECKING:
+    from beanllm.domain.evaluation.protocols import LLMClientProtocol
 
 
 class LLMJudgeMetric(BaseMetric):
@@ -21,7 +24,7 @@ class LLMJudgeMetric(BaseMetric):
 
     def __init__(
         self,
-        client=None,
+        client: Optional["LLMClientProtocol"] = None,
         criterion: str = "quality",
         use_reference: bool = True,
     ) -> None:

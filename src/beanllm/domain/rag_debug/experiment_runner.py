@@ -6,6 +6,7 @@ Extracted from chunking_experimenter.py for single responsibility.
 
 from __future__ import annotations
 
+import heapq
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -137,17 +138,17 @@ def evaluate_retrieval(
 ) -> float:
     """Evaluate retrieval quality for one query."""
     similarities = compute_similarity(query, chunks, embedding_function)
-    sorted_sims = sorted(similarities, reverse=True)[:top_k]
+    sorted_sims = heapq.nlargest(top_k, similarities)
     avg_sim = sum(sorted_sims) / len(sorted_sims) if sorted_sims else 0.0
 
     if query in ground_truth:
         gt_indices = set(ground_truth[query])
         top_k_indices = set(
-            sorted(
+            heapq.nlargest(
+                top_k,
                 range(len(similarities)),
                 key=lambda i: similarities[i],
-                reverse=True,
-            )[:top_k]
+            )
         )
         recall = len(gt_indices & top_k_indices) / len(gt_indices) if gt_indices else 0.0
         return (avg_sim + recall) / 2

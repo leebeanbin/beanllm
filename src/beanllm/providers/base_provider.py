@@ -3,7 +3,6 @@ Base LLM Provider
 LLM 제공자 추상화 인터페이스
 """
 
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, TypeVar
@@ -24,13 +23,7 @@ except ImportError:
         pass
 
 
-# logger 임포트 시도
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
-        return logging.getLogger(name)
+from beanllm.utils.logging import get_logger
 
 
 @dataclass

@@ -16,11 +16,12 @@ Example:
     from beanllm.domain.splitters import SemanticTextSplitter
 
     # 기본 사용 (sentence-transformers)
+    from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
     splitter = SemanticTextSplitter(
         model="all-MiniLM-L6-v2",
         threshold=0.5,
         min_chunk_size=100,
-        max_chunk_size=1000
+        max_chunk_size=DEFAULT_CHUNK_SIZE
     )
     chunks = splitter.split_text(text)
 
@@ -36,6 +37,11 @@ Example:
 import logging
 import re
 from typing import TYPE_CHECKING, Any, Callable, List, Optional
+
+try:
+    from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
+except ImportError:
+    DEFAULT_CHUNK_SIZE = 1000
 
 from beanllm.domain.splitters.base import BaseTextSplitter
 
@@ -102,7 +108,7 @@ class SemanticTextSplitter(BaseTextSplitter):
         model: str = "all-MiniLM-L6-v2",
         threshold: float = 0.5,
         min_chunk_size: int = 100,
-        max_chunk_size: int = 1000,
+        max_chunk_size: int = DEFAULT_CHUNK_SIZE,
         buffer_size: int = 1,
         embedding_function: Optional[Callable[[str], List[float]]] = None,
         use_semchunk: bool = False,
@@ -456,7 +462,7 @@ class CoherenceTextSplitter(BaseTextSplitter):
         model: str = "all-MiniLM-L6-v2",
         num_clusters: int | str = "auto",
         min_cluster_size: int = 2,
-        max_chunk_size: int = 1000,
+        max_chunk_size: int = DEFAULT_CHUNK_SIZE,
         **kwargs: Any,
     ):
         """
