@@ -94,3 +94,40 @@ HEALTH_CHECK_MAX_TOKENS: int = 5
 
 HEALTH_CHECK_MAX_TOKENS_LARGE: int = 10
 """Provider health check용 max_tokens (Perplexity/DeepSeek)"""
+
+# ============================================================
+# Optimizer 기본값
+# ============================================================
+
+DEFAULT_NUM_QUERIES: int = 50
+"""벤치마크 기본 쿼리 수"""
+
+DEFAULT_N_TRIALS: int = 50
+"""최적화 기본 시행 횟수"""
+
+# ============================================================
+# RAG 세부 설정
+# ============================================================
+
+DEFAULT_RAG_CHUNK_OVERLAP: int = 50
+"""RAG 파이프라인 기본 chunk overlap (문자)"""
+
+# ============================================================
+# ML / Vision
+# ============================================================
+
+DEFAULT_VLM_MAX_TOKENS: int = 1024
+"""Vision-Language 모델 기본 max_new_tokens"""
+
+DEFAULT_MAX_SEQ_LENGTH: int = 2048
+"""Fine-tuning 기본 시퀀스 길이"""
+
+# ============================================================
+# 파일 I/O
+# ============================================================
+
+MMAP_THRESHOLD_BYTES: int = 10 * 1024 * 1024
+"""mmap 사용 임계값 (10MB 이상 파일)"""
+
+DEFAULT_STREAMING_CHUNK_SIZE: int = 1024 * 1024
+"""스트리밍 읽기 청크 크기 (1MB)"""

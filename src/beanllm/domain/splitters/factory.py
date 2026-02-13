@@ -4,6 +4,8 @@ Splitters Factory - 텍스트 분할 팩토리
 
 from typing import TYPE_CHECKING, List, Optional
 
+from beanllm.utils.constants import DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
+
 from .base import BaseTextSplitter
 from .splitters import (
     CharacterTextSplitter,
@@ -75,8 +77,8 @@ class TextSplitter:
         cls,
         documents: List["Document"],
         strategy: str = "recursive",
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         separator: Optional[str] = None,
         separators: Optional[List[str]] = None,
         **kwargs,
@@ -136,7 +138,11 @@ class TextSplitter:
 
     @classmethod
     def create(
-        cls, strategy: str = "recursive", chunk_size: int = 1000, chunk_overlap: int = 200, **kwargs
+        cls,
+        strategy: str = "recursive",
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
+        **kwargs,
     ) -> BaseTextSplitter:
         """
         Splitter 생성
@@ -167,8 +173,8 @@ class TextSplitter:
     @classmethod
     def recursive(
         cls,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         separators: Optional[List[str]] = None,
         **kwargs,
     ) -> RecursiveCharacterTextSplitter:
@@ -207,7 +213,11 @@ class TextSplitter:
 
     @classmethod
     def character(
-        cls, separator: str = "\n\n", chunk_size: int = 1000, chunk_overlap: int = 200, **kwargs
+        cls,
+        separator: str = "\n\n",
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
+        **kwargs,
     ) -> CharacterTextSplitter:
         """
         Character 전략 (단순, 빠름)
@@ -242,8 +252,8 @@ class TextSplitter:
     @classmethod
     def token(
         cls,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         encoding_name: str = "cl100k_base",
         model_name: Optional[str] = None,
         **kwargs,
@@ -340,8 +350,8 @@ class TextSplitter:
 # 편의 함수
 def split_documents(
     documents: List["Document"],
-    chunk_size: int = 1000,
-    chunk_overlap: int = 200,
+    chunk_size: int = DEFAULT_CHUNK_SIZE,
+    chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
     strategy: str = "recursive",
     separator: Optional[str] = None,
     separators: Optional[List[str]] = None,

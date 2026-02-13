@@ -147,7 +147,7 @@ class Benchmarker:
 
     def generate_queries(
         self,
-        num_queries: int = 50,
+        num_queries: int = DEFAULT_NUM_QUERIES,
         query_types: Optional[List[QueryType]] = None,
         domain: Optional[str] = None,
         seed: Optional[int] = None,

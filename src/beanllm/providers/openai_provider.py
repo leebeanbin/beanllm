@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 from beanllm.utils.exceptions import ProviderError
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
@@ -294,7 +295,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         return strategy_config
 
-    @retry(max_retries=3, retry_on=(APITimeoutError, APIError, Exception))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(APITimeoutError, APIError, Exception))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APITimeoutError, APIError),

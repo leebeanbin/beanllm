@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES
+
 # Optional dependencies
 _httpx: Any = None
 _requests: Any = None
@@ -54,7 +56,7 @@ class APIConfig:
     auth_value: Optional[str] = None
     headers: Dict[str, str] = field(default_factory=dict)
     timeout: int = 30
-    max_retries: int = 3
+    max_retries: int = DEFAULT_MAX_RETRIES
     rate_limit: Optional[int] = None  # requests per minute
 
 

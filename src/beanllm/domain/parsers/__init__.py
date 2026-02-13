@@ -12,6 +12,7 @@ from .parsers import (
     JSONOutputParser,
     NumberedListOutputParser,
     PydanticOutputParser,
+    RegexOutputParser,
     RetryOutputParser,
 )
 from .utils import parse_bool, parse_json, parse_list
@@ -26,6 +27,7 @@ __all__ = [
     "DatetimeOutputParser",
     "EnumOutputParser",
     "BooleanOutputParser",
+    "RegexOutputParser",
     "RetryOutputParser",
     "parse_json",
     "parse_list",

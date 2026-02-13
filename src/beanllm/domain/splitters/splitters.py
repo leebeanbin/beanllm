@@ -4,6 +4,8 @@ Splitters Implementations - 텍스트 분할 구현체들
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
+from beanllm.utils.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+
 from .base import BaseTextSplitter
 
 if TYPE_CHECKING:
@@ -49,8 +51,8 @@ class CharacterTextSplitter(BaseTextSplitter):
     def __init__(
         self,
         separator: str = "\n\n",
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         length_function: Callable[[str], int] = len,
         keep_separator: bool = False,
     ):
@@ -103,8 +105,8 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
     def __init__(
         self,
         separators: Optional[List[str]] = None,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
         length_function: Callable[[str], int] = len,
         keep_separator: bool = True,
     ):
@@ -223,8 +225,8 @@ class TokenTextSplitter(BaseTextSplitter):
         self,
         encoding_name: str = "cl100k_base",
         model_name: Optional[str] = None,
-        chunk_size: int = 1000,
-        chunk_overlap: int = 200,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_CHUNK_OVERLAP,
     ):
         """
         Args:

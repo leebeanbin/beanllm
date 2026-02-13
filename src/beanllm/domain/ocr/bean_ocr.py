@@ -26,6 +26,9 @@ from beanllm.utils.logging import get_logger
 
 from .engines.base import BaseOCREngine
 from .models import OCRConfig, OCRResult
+from .ocr_engine_factory import create_ocr_engine
+from .ocr_pipeline import load_image as pipeline_load_image
+from .ocr_pipeline import run_recognize_pipeline
 
 logger = get_logger(__name__)
 
@@ -124,7 +127,7 @@ class beanOCR(AsyncHelperMixin):
     def _init_components(self) -> None:
         """컴포넌트 초기화"""
         # 엔진 초기화
-        self._engine = self._create_engine(self.config.engine)
+        self._engine = create_ocr_engine(self.config.engine, use_gpu=self.config.use_gpu)
 
         # 전처리기
         if self.config.enable_preprocessing:
@@ -138,209 +141,9 @@ class beanOCR(AsyncHelperMixin):
 
             self._postprocessor = LLMPostprocessor(model=self.config.llm_model)
 
-    def _create_engine(self, engine_name: str) -> BaseOCREngine:
-        """
-        OCR 엔진 생성
-
-        Args:
-            engine_name: 엔진 이름
-
-        Returns:
-            BaseOCREngine: OCR 엔진 인스턴스
-
-        Raises:
-            ImportError: 엔진 의존성이 설치되지 않은 경우
-            ValueError: 지원하지 않는 엔진
-        """
-        if engine_name == "paddleocr":
-            try:
-                from .engines.paddleocr_engine import PaddleOCREngine
-
-                return PaddleOCREngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"PaddleOCR is required for engine '{engine_name}'. "
-                    f"Install it with: pip install paddleocr"
-                ) from e
-
-        elif engine_name == "easyocr":
-            try:
-                from .engines.easyocr_engine import EasyOCREngine
-
-                return EasyOCREngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"EasyOCR is required for engine '{engine_name}'. "
-                    f"Install it with: pip install easyocr"
-                ) from e
-
-        elif engine_name == "tesseract":
-            try:
-                from .engines.tesseract_engine import TesseractEngine
-
-                return TesseractEngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"pytesseract is required for engine '{engine_name}'. "
-                    f"Install it with: pip install pytesseract\n"
-                    f"Also install Tesseract OCR: brew install tesseract (macOS)"
-                ) from e
-
-        elif engine_name == "trocr":
-            try:
-                from .engines.trocr_engine import TrOCREngine
-
-                return TrOCREngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch"
-                ) from e
-
-        elif engine_name == "nougat":
-            try:
-                from .engines.nougat_engine import NougatEngine
-
-                return NougatEngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch"
-                ) from e
-
-        elif engine_name == "surya":
-            try:
-                from .engines.surya_engine import SuryaEngine
-
-                return SuryaEngine()
-            except ImportError as e:
-                raise ImportError(
-                    f"surya-ocr and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install surya-ocr torch"
-                ) from e
-
-        elif engine_name == "cloud-google":
-            try:
-                from .engines.cloud_engine import CloudOCREngine
-
-                return CloudOCREngine(provider="google")
-            except ImportError as e:
-                raise ImportError(
-                    f"google-cloud-vision is required for engine '{engine_name}'. "
-                    f"Install it with: pip install google-cloud-vision"
-                ) from e
-
-        elif engine_name == "cloud-aws":
-            try:
-                from .engines.cloud_engine import CloudOCREngine
-
-                return CloudOCREngine(provider="aws")
-            except ImportError as e:
-                raise ImportError(
-                    f"boto3 is required for engine '{engine_name}'. "
-                    f"Install it with: pip install boto3"
-                ) from e
-
-        elif engine_name in ["qwen2vl", "qwen2vl-2b"]:
-            try:
-                from .engines.qwen2vl_engine import Qwen2VLEngine
-
-                return Qwen2VLEngine(model_size="2b", use_gpu=self.config.use_gpu)
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch pillow qwen-vl-utils"
-                ) from e
-
-        elif engine_name == "qwen2vl-7b":
-            try:
-                from .engines.qwen2vl_engine import Qwen2VLEngine
-
-                return Qwen2VLEngine(model_size="7b", use_gpu=self.config.use_gpu)
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch pillow qwen-vl-utils"
-                ) from e
-
-        elif engine_name == "qwen2vl-72b":
-            try:
-                from .engines.qwen2vl_engine import Qwen2VLEngine
-
-                return Qwen2VLEngine(model_size="72b", use_gpu=self.config.use_gpu)
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers and torch are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch pillow qwen-vl-utils"
-                ) from e
-
-        elif engine_name == "minicpm":
-            try:
-                from .engines.minicpm_engine import MiniCPMEngine
-
-                return MiniCPMEngine(use_gpu=self.config.use_gpu)
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers, torch, and pillow are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch pillow timm"
-                ) from e
-
-        elif engine_name == "deepseek-ocr":
-            try:
-                from .engines.deepseek_ocr_engine import DeepSeekOCREngine
-
-                return DeepSeekOCREngine(use_gpu=self.config.use_gpu)
-            except ImportError as e:
-                raise ImportError(
-                    f"transformers, torch, and pillow are required for engine '{engine_name}'. "
-                    f"Install them with: pip install transformers torch pillow"
-                ) from e
-
-        # 지원하지 않는 엔진
-        raise NotImplementedError(
-            f"Engine '{engine_name}' is not yet implemented. "
-            f"Currently supported: paddleocr, easyocr, tesseract, trocr, nougat, surya, "
-            f"cloud-google, cloud-aws, qwen2vl-2b, qwen2vl-7b, qwen2vl-72b, minicpm, deepseek-ocr"
-        )
-
     def _load_image(self, image_or_path: Union[str, Path, np.ndarray, Image.Image]) -> np.ndarray:
-        """
-        이미지 로드 및 numpy array로 변환
-
-        Args:
-            image_or_path: 이미지 경로, numpy array, 또는 PIL Image
-
-        Returns:
-            np.ndarray: 이미지 (numpy array)
-
-        Raises:
-            ValueError: 지원하지 않는 이미지 형식
-            FileNotFoundError: 이미지 파일을 찾을 수 없음
-        """
-        # 이미 numpy array인 경우
-        if isinstance(image_or_path, np.ndarray):
-            return image_or_path
-
-        # PIL Image인 경우
-        if isinstance(image_or_path, Image.Image):
-            # RGB로 변환 (RGBA, 그레이스케일 등 처리)
-            if image_or_path.mode != "RGB":
-                image_or_path = image_or_path.convert("RGB")
-            return np.array(image_or_path)
-
-        # 경로인 경우
-        path = Path(image_or_path)
-        if not path.exists():
-            raise FileNotFoundError(f"Image file not found: {path}")
-
-        # PIL로 이미지 로드
-        img: Image.Image = Image.open(path)
-
-        # RGB로 변환 (RGBA, 그레이스케일 등 처리)
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-
-        return np.array(img)
+        """이미지 로드 (ocr_pipeline.load_image 위임)."""
+        return pipeline_load_image(image_or_path)
 
     def recognize(
         self, image_or_path: Union[str, Path, np.ndarray, Image.Image], **kwargs
@@ -455,100 +258,27 @@ class beanOCR(AsyncHelperMixin):
         image_or_path: Union[str, Path, np.ndarray, Image.Image],
         start_time: float,
         cache_key: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> OCRResult:
-        """OCR 인식 실제 구현 (분산 시스템 적용)"""
+        """OCR 인식 실제 구현 (분산 시스템 적용)."""
         import asyncio
 
-        # 이벤트 발행 (시작, 옵션)
-        if self._event_logger is not None:
-            asyncio.run(
-                self._event_logger.log_event(
-                    "ocr.recognize.started",
-                    {"engine": self.config.engine, "language": self.config.language},
-                )
-            )
-
-        # 1. 이미지 로드
         image = self._load_image(image_or_path)
 
-        # 이벤트 발행 (이미지 로드 완료, 옵션)
-        if self._event_logger is not None:
-            asyncio.run(
-                self._event_logger.log_event(
-                    "ocr.recognize.image_loaded",
-                    {
-                        "engine": self.config.engine,
-                        "image_shape": str(image.shape) if hasattr(image, "shape") else "unknown",
-                    },
-                )
-            )
-
-        # 2. 전처리
-        if self._preprocessor:
-            image = self._preprocessor.process(image, self.config)
-
-            # 이벤트 발행 (전처리 완료, 옵션)
-            if self._event_logger is not None:
-                asyncio.run(
-                    self._event_logger.log_event(
-                        "ocr.recognize.preprocessing_completed", {"engine": self.config.engine}
-                    )
-                )
-
-        # 3. Rate Limiting (Cloud API 호출 시, 옵션)
-        if self._rate_limiter is not None and self.config.engine == "cloud":
-            asyncio.run(
-                self._rate_limiter.acquire(
-                    key=f"ocr:cloud:{self.config.engine}",
-                    max_requests=10,
-                    window=60,
-                )
-            )
-
-        # 4. OCR 실행
         if self._engine is None:
             raise RuntimeError("OCR engine not initialized")
 
-        raw_result = self._engine.recognize(image, self.config)
-
-        # 이벤트 발행 (OCR 실행 완료, 옵션)
-        if self._event_logger is not None:
-            asyncio.run(
-                self._event_logger.log_event(
-                    "ocr.recognize.ocr_completed",
-                    {
-                        "engine": self.config.engine,
-                        "text_length": len(raw_result.get("text", "")),
-                        "confidence": raw_result.get("confidence", 0.0),
-                    },
-                )
-            )
-
-        # 5. OCRResult 생성
-        result = OCRResult(
-            text=raw_result["text"],
-            lines=raw_result["lines"],
-            language=raw_result.get("language", self.config.language),
-            confidence=raw_result["confidence"],
-            engine=self.config.engine,
-            processing_time=time.time() - start_time,
-            metadata=raw_result.get("metadata", {}),
+        result = run_recognize_pipeline(
+            image=image,
+            engine=self._engine,
+            config=self.config,
+            start_time=start_time,
+            preprocessor=self._preprocessor,
+            postprocessor=self._postprocessor,
+            event_logger=self._event_logger,
+            rate_limiter=self._rate_limiter,
         )
 
-        # 6. 후처리 (LLM 보정)
-        if self._postprocessor:
-            result = self._postprocessor.process(result)
-
-            # 이벤트 발행 (후처리 완료, 옵션)
-            if self._event_logger is not None:
-                asyncio.run(
-                    self._event_logger.log_event(
-                        "ocr.recognize.postprocessing_completed", {"engine": self.config.engine}
-                    )
-                )
-
-        # 7. 캐싱 저장 (옵션)
         if self._cache is not None:
             try:
 
@@ -563,19 +293,6 @@ class beanOCR(AsyncHelperMixin):
                     asyncio.run(_set_cache())
             except Exception as e:
                 logger.debug(f"Cache storage failed (safe to ignore): {e}")
-
-        # 이벤트 발행 (완료, 옵션)
-        if self._event_logger is not None:
-            asyncio.run(
-                self._event_logger.log_event(
-                    "ocr.recognize.completed",
-                    {
-                        "engine": self.config.engine,
-                        "processing_time": result.processing_time,
-                        "confidence": result.confidence,
-                    },
-                )
-            )
 
         return result
 

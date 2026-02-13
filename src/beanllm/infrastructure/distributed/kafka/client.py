@@ -8,6 +8,8 @@ Kafka 클라이언트 관리
 import os
 from typing import Any, Optional
 
+from beanllm.utils.constants import KAFKA_DEFAULT_RETRIES
+
 try:
     from kafka import KafkaConsumer, KafkaProducer
     from kafka.admin import KafkaAdminClient
@@ -67,7 +69,7 @@ def get_kafka_client():
                 key_serializer=lambda k: k.encode("utf-8") if isinstance(k, str) else k,
                 request_timeout_ms=request_timeout_ms,
                 max_block_ms=max_block_ms,
-                retries=3,  # 재시도 횟수
+                retries=KAFKA_DEFAULT_RETRIES,  # 재시도 횟수
                 acks="all",  # 모든 replica 확인 (내구성)
             )
 

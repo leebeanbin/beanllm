@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 from beanllm.utils.logging import get_logger
 from beanllm.utils.resilience.retry import retry
 
@@ -118,7 +119,7 @@ class DeepSeekProvider(BaseLLMProvider):
             logger.error(f"DeepSeek stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=3, initial_delay=1.0)
+    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0)
     @provider_error_handler(
         operation="chat",
         api_error_types=(APIError, APITimeoutError),

@@ -2,7 +2,7 @@
 Metrics Visualizer - 성능 메트릭 시각화
 SOLID 원칙:
 - SRP: 메트릭 시각화만 담당
-- OCP: 새로운 메트릭 타입 추가 가능
+- OCP: 새로운 메트릭 타입 추가 가능 (Mixin으로 확장)
 """
 
 from __future__ import annotations
@@ -11,15 +11,15 @@ from typing import Any, Dict, List, Optional
 
 from rich import box
 from rich.console import Console
-from rich.panel import Panel
 from rich.table import Table
-from rich.tree import Tree
 
 from beanllm.ui.components import StatusIcon
 from beanllm.ui.console import get_console
+from beanllm.ui.visualizers.metrics_viz_graph import GraphMetricsMixin
+from beanllm.ui.visualizers.metrics_viz_optimizer import OptimizerMetricsMixin
 
 
-class MetricsVisualizer:
+class MetricsVisualizer(OptimizerMetricsMixin, GraphMetricsMixin):
     """
     성능 메트릭 시각화
 
@@ -27,6 +27,8 @@ class MetricsVisualizer:
     - 검색 성능 메트릭 표시
     - 파라미터 비교 대시보드
     - 청크 통계 시각화
+    - Optimizer 메트릭 (OptimizerMetricsMixin)
+    - Knowledge Graph 메트릭 (GraphMetricsMixin)
 
     Example:
         ```python
@@ -55,6 +57,8 @@ class MetricsVisualizer:
             console: Rich Console (optional)
         """
         self.console = console or get_console()
+
+    # ===== Search / Dashboard =====
 
     def show_search_dashboard(
         self,
@@ -156,6 +160,8 @@ class MetricsVisualizer:
         else:
             return f"{StatusIcon.error()} [red]Very Slow[/red]"
 
+    # ===== Parameter Comparison =====
+
     def compare_parameters(
         self,
         baseline: Dict[str, Any],
@@ -215,6 +221,8 @@ class MetricsVisualizer:
         self.console.print(table)
         self.console.print()
 
+    # ===== Chunk Statistics =====
+
     def show_chunk_statistics(
         self,
         stats: Dict[str, Any],
@@ -225,13 +233,6 @@ class MetricsVisualizer:
 
         Args:
             stats: 통계 딕셔너리
-                예: {
-                    "total_chunks": 500,
-                    "avg_size": 1200,
-                    "min_size": 100,
-                    "max_size": 2000,
-                    "duplicates": 10
-                }
             title: 제목
         """
         # Create stats table
@@ -312,6 +313,8 @@ class MetricsVisualizer:
 
         self.console.print()
 
+    # ===== Test Results =====
+
     def show_test_results(
         self,
         test_results: List[Dict[str, Any]],
@@ -322,13 +325,6 @@ class MetricsVisualizer:
 
         Args:
             test_results: 테스트 결과 리스트
-                예: [
-                    {
-                        "query": "...",
-                        "baseline": {"avg_score": 0.7, ...},
-                        "new": {"avg_score": 0.8, ...}
-                    }
-                ]
             show_queries: 쿼리 텍스트 표시 여부
         """
         if not test_results:
@@ -389,6 +385,8 @@ class MetricsVisualizer:
         self.console.print()
         self.console.print(table)
         self.console.print()
+
+    # ===== Misc =====
 
     def show_recommendations(
         self,
@@ -509,7 +507,6 @@ class MetricsVisualizer:
 
         Args:
             errors: 에러 목록
-                예: [{"type": "ValueError", "message": "...", "count": 5}]
             max_display: 최대 표시 개수
         """
         if not errors:
@@ -536,268 +533,7 @@ class MetricsVisualizer:
 
         self.console.print()
 
-    # ===== Optimizer-specific Methods =====
-
-    def show_latency_distribution(
-        self,
-        avg: float,
-        p50: float,
-        p95: float,
-        p99: float,
-        max_width: int = 50,
-    ) -> None:
-        """
-        Show latency distribution with percentiles
-
-        Args:
-            avg: Average latency (seconds)
-            p50: P50 latency (seconds)
-            p95: P95 latency (seconds)
-            p99: P99 latency (seconds)
-            max_width: Max bar width (default: 50)
-        """
-        max_latency = max(avg, p50, p95, p99)
-
-        # Create bars
-        avg_bar = self._create_bar(avg, max_latency, max_width, "green")
-        p50_bar = self._create_bar(p50, max_latency, max_width, "cyan")
-        p95_bar = self._create_bar(p95, max_latency, max_width, "yellow")
-        p99_bar = self._create_bar(p99, max_latency, max_width, "red")
-
-        # Table
-        table = Table(title="⏱️  Latency Distribution", box=box.ROUNDED)
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value (s)", style="yellow", justify="right")
-        table.add_column("Distribution", style="white")
-
-        table.add_row("Average", f"{avg:.3f}", avg_bar)
-        table.add_row("P50 (Median)", f"{p50:.3f}", p50_bar)
-        table.add_row("P95", f"{p95:.3f}", p95_bar)
-        table.add_row("P99", f"{p99:.3f}", p99_bar)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_component_breakdown(
-        self,
-        breakdown: Dict[str, float],
-        max_width: int = 40,
-    ) -> None:
-        """
-        Show component breakdown with bars
-
-        Args:
-            breakdown: {component_name: percentage}
-            max_width: Max bar width (default: 40)
-        """
-        if not breakdown:
-            self.console.print("[dim]No component data[/dim]")
-            return
-
-        # Sort by percentage (descending)
-        sorted_breakdown = sorted(breakdown.items(), key=lambda x: x[1], reverse=True)
-
-        # Table
-        table = Table(title="🔍 Component Breakdown", box=box.ROUNDED)
-        table.add_column("Component", style="cyan")
-        table.add_column("% of Total", style="yellow", justify="right")
-        table.add_column("Distribution", style="white")
-
-        for component, pct in sorted_breakdown:
-            bar = self._create_percentage_bar(pct, max_width)
-            table.add_row(component, f"{pct:.1f}%", bar)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_convergence(
-        self,
-        history: List[Dict[str, Any]],
-        max_points: int = 20,
-    ) -> None:
-        """
-        Show optimization convergence (ASCII sparkline)
-
-        Args:
-            history: Optimization history [{trial, score, params}, ...]
-            max_points: Max points to display (default: 20)
-        """
-        if not history:
-            self.console.print("[dim]No convergence data[/dim]")
-            return
-
-        # Sample if too many points
-        if len(history) > max_points:
-            step = len(history) // max_points
-            history = history[::step]
-
-        scores = [h.get("score", 0) for h in history]
-
-        # ASCII sparkline
-        sparkline = self._create_sparkline(scores)
-
-        # Stats
-        initial_score = scores[0]
-        final_score = scores[-1]
-        best_score = max(scores)
-        improvement = (
-            ((final_score - initial_score) / initial_score * 100) if initial_score > 0 else 0
-        )
-
-        # Display
-        self.console.print()
-        self.console.print(
-            Panel(
-                f"[bold]Convergence Progress:[/bold]\n\n"
-                f"{sparkline}\n\n"
-                f"[cyan]Initial:[/cyan] {initial_score:.4f}\n"
-                f"[cyan]Final:[/cyan] {final_score:.4f}\n"
-                f"[cyan]Best:[/cyan] {best_score:.4f}\n"
-                f"[cyan]Improvement:[/cyan] {improvement:+.1f}%",
-                title="📈 Optimization Convergence",
-                border_style="green",
-            )
-        )
-        self.console.print()
-
-    def show_pareto_frontier(
-        self,
-        pareto_solutions: List[Dict[str, Any]],
-        objectives: List[str],
-        max_items: int = 10,
-    ) -> None:
-        """
-        Show Pareto optimal solutions
-
-        Args:
-            pareto_solutions: List of Pareto optimal solutions
-            objectives: Objective names
-            max_items: Max solutions to display (default: 10)
-        """
-        if not pareto_solutions:
-            self.console.print("[dim]No Pareto solutions[/dim]")
-            return
-
-        # Limit
-        pareto_solutions = pareto_solutions[:max_items]
-
-        # Table
-        table = Table(
-            title=f"🎯 Pareto Frontier ({len(pareto_solutions)} solutions)", box=box.ROUNDED
-        )
-        table.add_column("#", style="dim", justify="right")
-
-        for obj in objectives:
-            table.add_column(obj.capitalize(), style="yellow", justify="right")
-
-        for i, solution in enumerate(pareto_solutions, 1):
-            scores = solution.get("scores", {})
-            row = [str(i)]
-
-            for obj in objectives:
-                score = scores.get(obj, 0)
-                row.append(f"{score:.4f}")
-
-            table.add_row(*row)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_ab_comparison(
-        self,
-        variant_a_name: str,
-        variant_b_name: str,
-        variant_a_mean: float,
-        variant_b_mean: float,
-        lift: float,
-        is_significant: bool,
-        max_width: int = 40,
-    ) -> None:
-        """
-        Show A/B test comparison
-
-        Args:
-            variant_a_name: Variant A name
-            variant_b_name: Variant B name
-            variant_a_mean: Variant A mean score
-            variant_b_mean: Variant B mean score
-            lift: Lift percentage
-            is_significant: Is statistically significant
-            max_width: Max bar width (default: 40)
-        """
-        max_val = max(variant_a_mean, variant_b_mean)
-
-        # Create bars
-        bar_a = self._create_bar(variant_a_mean, max_val, max_width, "yellow")
-        bar_b = self._create_bar(variant_b_mean, max_val, max_width, "green")
-
-        # Table
-        table = Table(title="🧪 A/B Comparison", box=box.ROUNDED)
-        table.add_column("Variant", style="cyan")
-        table.add_column("Mean Score", style="yellow", justify="right")
-        table.add_column("Distribution", style="white")
-
-        table.add_row(variant_a_name, f"{variant_a_mean:.4f}", bar_a)
-        table.add_row(variant_b_name, f"{variant_b_mean:.4f}", bar_b)
-
-        self.console.print()
-        self.console.print(table)
-
-        # Lift indicator
-        lift_color = "green" if lift > 0 else "red"
-        lift_emoji = "📈" if lift > 0 else "📉"
-        sig_emoji = "✅" if is_significant else "⚠️ "
-
-        self.console.print(
-            f"\n{lift_emoji} [bold {lift_color}]Lift: {lift:+.1f}%[/bold {lift_color}] "
-            f"{sig_emoji} {'Significant' if is_significant else 'Not significant'}"
-        )
-        self.console.print()
-
-    def show_priority_distribution(
-        self,
-        summary: Dict[str, int],
-    ) -> None:
-        """
-        Show recommendation priority distribution
-
-        Args:
-            summary: {"critical": 2, "high": 5, "medium": 3, "low": 1}
-        """
-        total = sum(summary.values())
-
-        if total == 0:
-            self.console.print("[dim]No recommendations[/dim]")
-            return
-
-        # Table
-        table = Table(title=f"💡 Recommendation Priorities (Total: {total})", box=box.ROUNDED)
-        table.add_column("Priority", style="cyan")
-        table.add_column("Count", style="yellow", justify="right")
-        table.add_column("% of Total", style="green", justify="right")
-        table.add_column("Distribution", style="white")
-
-        priorities = [
-            ("critical", "🔴", "red"),
-            ("high", "🟡", "yellow"),
-            ("medium", "🔵", "cyan"),
-            ("low", "⚪", "white"),
-        ]
-
-        for priority, emoji, color in priorities:
-            count = summary.get(priority, 0)
-            pct = (count / total * 100) if total > 0 else 0
-            bar = self._create_percentage_bar(pct, 30, color)
-            table.add_row(f"{emoji} {priority.capitalize()}", str(count), f"{pct:.1f}%", bar)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    # ===== Helper Methods for Optimizer =====
+    # ===== Helper Methods (used by Mixins) =====
 
     def _create_bar(
         self,
@@ -851,254 +587,3 @@ class MetricsVisualizer:
             sparkline += chars[index]
 
         return f"[cyan]{sparkline}[/cyan]"
-
-    # ===== Knowledge Graph Visualization =====
-
-    def show_graph_network(
-        self,
-        num_nodes: int,
-        num_edges: int,
-        density: float,
-        num_components: int,
-        avg_degree: float,
-    ) -> None:
-        """
-        Show graph network structure overview
-
-        Args:
-            num_nodes: Number of nodes
-            num_edges: Number of edges
-            density: Graph density
-            num_components: Number of connected components
-            avg_degree: Average node degree
-        """
-        table = Table(
-            title="📊 Graph Network Structure",
-            title_style="bold cyan",
-            box=box.ROUNDED,
-            show_header=False,
-        )
-
-        table.add_column("Metric", style="cyan", width=25)
-        table.add_column("Value", style="yellow")
-        table.add_column("Visualization", style="white")
-
-        # Nodes
-        table.add_row(
-            "Nodes", f"{num_nodes:,}", self._create_bar(num_nodes, max(num_nodes, 100), 20, "cyan")
-        )
-
-        # Edges
-        table.add_row(
-            "Edges", f"{num_edges:,}", self._create_bar(num_edges, max(num_edges, 200), 20, "green")
-        )
-
-        # Density
-        density_pct = density * 100
-        density_status = "🟢 High" if density > 0.5 else "🟡 Medium" if density > 0.2 else "🔴 Low"
-        table.add_row(
-            "Density",
-            f"{density:.4f}",
-            f"{self._create_percentage_bar(density_pct, 20, 'magenta')} {density_status}",
-        )
-
-        # Average degree
-        table.add_row(
-            "Average Degree",
-            f"{avg_degree:.2f}",
-            self._create_bar(avg_degree, max(avg_degree, 10), 20, "yellow"),
-        )
-
-        # Connected components
-        component_status = (
-            "✅ Connected" if num_components == 1 else f"⚠️  {num_components} components"
-        )
-        table.add_row("Connected Components", str(num_components), component_status)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_entity_distribution(
-        self,
-        entity_counts: Dict[str, int],
-        title: str = "Entity Type Distribution",
-        max_display: int = 15,
-    ) -> None:
-        """
-        Show entity type distribution
-
-        Args:
-            entity_counts: Entity type → count mapping
-            title: Table title
-            max_display: Maximum entity types to display
-        """
-        if not entity_counts:
-            self.console.print("[yellow]No entities found[/yellow]")
-            return
-
-        total = sum(entity_counts.values())
-
-        table = Table(
-            title=f"📊 {title} (Total: {total:,})",
-            title_style="bold cyan",
-            box=box.ROUNDED,
-        )
-
-        table.add_column("Rank", style="dim", width=5)
-        table.add_column("Entity Type", style="cyan", width=20)
-        table.add_column("Count", style="yellow", justify="right", width=10)
-        table.add_column("Percentage", style="white", justify="right", width=8)
-        table.add_column("Distribution", style="white", width=30)
-
-        # Sort by count descending
-        sorted_entities = sorted(
-            entity_counts.items(),
-            key=lambda x: x[1],
-            reverse=True,
-        )
-
-        for i, (entity_type, count) in enumerate(sorted_entities[:max_display], 1):
-            percentage = (count / total) * 100
-            bar = self._create_bar(count, total, 25, "cyan")
-
-            # Emoji for rank
-            rank_emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}"
-
-            table.add_row(rank_emoji, entity_type.upper(), f"{count:,}", f"{percentage:.1f}%", bar)
-
-        if len(sorted_entities) > max_display:
-            remaining = len(sorted_entities) - max_display
-            remaining_count = sum(count for _, count in sorted_entities[max_display:])
-            table.add_row(
-                "...",
-                f"Others ({remaining})",
-                f"{remaining_count:,}",
-                f"{(remaining_count / total) * 100:.1f}%",
-                "[dim]...[/dim]",
-            )
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_relation_distribution(
-        self,
-        relation_counts: Dict[str, int],
-        title: str = "Relation Type Distribution",
-        max_display: int = 15,
-    ) -> None:
-        """
-        Show relation type distribution
-
-        Args:
-            relation_counts: Relation type → count mapping
-            title: Table title
-            max_display: Maximum relation types to display
-        """
-        if not relation_counts:
-            self.console.print("[yellow]No relations found[/yellow]")
-            return
-
-        total = sum(relation_counts.values())
-
-        table = Table(
-            title=f"📊 {title} (Total: {total:,})",
-            title_style="bold green",
-            box=box.ROUNDED,
-        )
-
-        table.add_column("Rank", style="dim", width=5)
-        table.add_column("Relation Type", style="green", width=20)
-        table.add_column("Count", style="yellow", justify="right", width=10)
-        table.add_column("Percentage", style="white", justify="right", width=8)
-        table.add_column("Distribution", style="white", width=30)
-
-        # Sort by count descending
-        sorted_relations = sorted(
-            relation_counts.items(),
-            key=lambda x: x[1],
-            reverse=True,
-        )
-
-        for i, (relation_type, count) in enumerate(sorted_relations[:max_display], 1):
-            percentage = (count / total) * 100
-            bar = self._create_bar(count, total, 25, "green")
-
-            # Emoji for rank
-            rank_emoji = "🥇" if i == 1 else "🥈" if i == 2 else "🥉" if i == 3 else f"{i}"
-
-            table.add_row(
-                rank_emoji, relation_type.upper(), f"{count:,}", f"{percentage:.1f}%", bar
-            )
-
-        if len(sorted_relations) > max_display:
-            remaining = len(sorted_relations) - max_display
-            remaining_count = sum(count for _, count in sorted_relations[max_display:])
-            table.add_row(
-                "...",
-                f"Others ({remaining})",
-                f"{remaining_count:,}",
-                f"{(remaining_count / total) * 100:.1f}%",
-                "[dim]...[/dim]",
-            )
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
-
-    def show_path_visualization(
-        self,
-        path: List[str],
-        entity_names: Optional[Dict[str, str]] = None,
-        relation_types: Optional[List[str]] = None,
-    ) -> None:
-        """
-        Show path visualization
-
-        Args:
-            path: List of entity IDs in path
-            entity_names: Entity ID → name mapping (optional)
-            relation_types: List of relation types along path (optional)
-        """
-        if not path:
-            self.console.print("[yellow]No path found[/yellow]")
-            return
-
-        self.console.print()
-        self.console.print("[bold cyan]🛤️  Path Visualization[/bold cyan]")
-        self.console.print(f"[dim]Length: {len(path)} nodes[/dim]\n")
-
-        # Create path tree
-        tree = Tree("🏁 Start")
-
-        for i, entity_id in enumerate(path):
-            # Get entity name
-            name = entity_names.get(entity_id, entity_id) if entity_names else entity_id
-
-            # Get relation type
-            if relation_types and i < len(relation_types):
-                relation = relation_types[i]
-                label = f"--[{relation}]--> {name}"
-            else:
-                label = name
-
-            # Add to tree
-            if i == 0:
-                tree.label = f"🏁 [bold]{name}[/bold]"
-            elif i == len(path) - 1:
-                tree.add(f"🎯 [bold green]{label}[/bold green]")
-            else:
-                tree.add(f"📍 {label}")
-
-        self.console.print(tree)
-        self.console.print()
-
-        # Summary
-        summary = Panel(
-            f"[cyan]Path: {' → '.join([entity_names.get(eid, eid) if entity_names else eid for eid in path])}[/cyan]",
-            title="Summary",
-            border_style="cyan",
-        )
-        self.console.print(summary)
-        self.console.print()

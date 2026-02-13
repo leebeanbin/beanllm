@@ -16,6 +16,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any, Callable, Optional
 
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 from beanllm.utils.exceptions import MaxRetriesExceededError
 from beanllm.utils.logging import get_logger
 
@@ -35,7 +36,7 @@ class RetryStrategy(Enum):
 class RetryConfig:
     """재시도 설정"""
 
-    max_retries: int = 3
+    max_retries: int = DEFAULT_MAX_RETRIES
     initial_delay: float = 1.0
     max_delay: float = 60.0
     multiplier: float = 2.0
@@ -183,7 +184,7 @@ class RetryHandler:
 
 
 def retry(
-    max_retries: int = 3,
+    max_retries: int = DEFAULT_MAX_RETRIES,
     initial_delay: float = 1.0,
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
     retry_on: tuple = (Exception,),

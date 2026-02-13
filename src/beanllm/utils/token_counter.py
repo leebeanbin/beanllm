@@ -29,6 +29,8 @@ import warnings
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
+from beanllm.utils.constants import CLAUDE_DEFAULT_MAX_TOKENS
+
 try:
     import tiktoken
 
@@ -198,7 +200,7 @@ class ModelContextWindow:
                 return window
 
         # 기본값 (안전하게 작게)
-        return 4096
+        return CLAUDE_DEFAULT_MAX_TOKENS
 
 
 # ============================================================================

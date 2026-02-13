@@ -6,6 +6,8 @@ import re
 from datetime import datetime
 from typing import Any, Dict
 
+from beanllm.utils.constants import CLAUDE_DEFAULT_MAX_TOKENS
+
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
@@ -101,7 +103,7 @@ class MetadataInferrer:
                     "name": "Opus Tier",
                     "rules": {
                         "tier": "opus",
-                        "max_tokens": 4096,
+                        "max_tokens": CLAUDE_DEFAULT_MAX_TOKENS,
                         "description": "최고 성능 모델",
                     },
                 },
@@ -119,7 +121,7 @@ class MetadataInferrer:
                     "name": "Haiku Tier",
                     "rules": {
                         "tier": "haiku",
-                        "max_tokens": 4096,
+                        "max_tokens": CLAUDE_DEFAULT_MAX_TOKENS,
                         "description": "빠른 모델",
                     },
                 },

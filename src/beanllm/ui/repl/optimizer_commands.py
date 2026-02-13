@@ -16,9 +16,14 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.table import Table
-from rich.tree import Tree
 
 from beanllm.facade.advanced.optimizer_facade import Optimizer
+from beanllm.ui.repl.optimizer_display import (
+    show_ab_test_results,
+    show_benchmark_results,
+    show_optimize_parameter_table,
+    show_optimize_results,
+)
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
 from beanllm.utils.logging import get_logger
 
@@ -137,44 +142,9 @@ class OptimizerCommands:
                 )
 
                 progress.update(task, completed=True)
-
-                # Display results
-                self.console.print("\n[bold green]✅ Benchmark Complete![/bold green]\n")
-
-                # Summary table
-                table = Table(title=f"📊 Benchmark Results (ID: {result.benchmark_id})")
-                table.add_column("Metric", style="cyan")
-                table.add_column("Value", style="yellow")
-
-                table.add_row("Total Queries", str(result.num_queries))
-                table.add_row("Avg Latency", f"{result.avg_latency:.3f}s")
-                table.add_row("P50 Latency", f"{result.p50_latency:.3f}s")
-                table.add_row("P95 Latency", f"{result.p95_latency:.3f}s")
-                table.add_row("P99 Latency", f"{result.p99_latency:.3f}s")
-                table.add_row("Throughput", f"{result.throughput:.2f} q/s")
-                table.add_row("Avg Score", f"{result.avg_score:.3f}")
-                table.add_row("Min Score", f"{result.min_score:.3f}")
-                table.add_row("Max Score", f"{result.max_score:.3f}")
-                table.add_row("Total Duration", f"{result.total_duration:.2f}s")
-
-                self.console.print(table)
-
-                # Latency distribution
-                self._visualizer.show_latency_distribution(
-                    avg=result.avg_latency,
-                    p50=result.p50_latency,
-                    p95=result.p95_latency,
-                    p99=result.p99_latency,
+                show_benchmark_results(
+                    self.console, result, self._visualizer, show_queries=show_queries
                 )
-
-                # Show queries if requested
-                if show_queries and result.queries:
-                    self.console.print("\n[bold]Generated Queries:[/bold]")
-                    for i, query in enumerate(result.queries[:10], 1):
-                        self.console.print(f"  {i}. {query}")
-                    if len(result.queries) > 10:
-                        self.console.print(f"  ... and {len(result.queries) - 10} more")
-
             except Exception as e:
                 progress.update(task, completed=True)
                 self.console.print(f"\n[bold red]❌ Benchmark failed: {e}[/bold red]\n")
@@ -223,28 +193,7 @@ class OptimizerCommands:
             ```
         """
         self.console.print("\n[bold cyan]🎯 Running Optimization...[/bold cyan]\n")
-
-        # Parameter summary
-        param_table = Table(title="Parameters to Optimize")
-        param_table.add_column("Name", style="cyan")
-        param_table.add_column("Type", style="yellow")
-        param_table.add_column("Range/Categories", style="green")
-
-        for param in parameters:
-            name = param["name"]
-            param_type = param["type"]
-
-            if param_type in ["integer", "float"]:
-                range_str = f"[{param['low']}, {param['high']}]"
-            elif param_type == "categorical":
-                range_str = str(param["categories"])
-            else:
-                range_str = "boolean"
-
-            param_table.add_row(name, param_type, range_str)
-
-        self.console.print(param_table)
-
+        show_optimize_parameter_table(self.console, parameters)
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -267,45 +216,7 @@ class OptimizerCommands:
                 )
 
                 progress.update(task, completed=True)
-
-                # Display results
-                self.console.print("\n[bold green]✅ Optimization Complete![/bold green]\n")
-
-                # Best parameters
-                self.console.print(
-                    Panel(
-                        f"[bold yellow]Optimization ID:[/bold yellow] {result.optimization_id}\n"
-                        f"[bold yellow]Best Score:[/bold yellow] {result.best_score:.4f}\n"
-                        f"[bold yellow]Trials:[/bold yellow] {result.n_trials}",
-                        title="📈 Results",
-                        border_style="green",
-                    )
-                )
-
-                # Best parameters table
-                best_table = Table(title="🏆 Best Parameters")
-                best_table.add_column("Parameter", style="cyan")
-                best_table.add_column("Value", style="yellow")
-
-                best_params = result.best_params or {}
-                for param_name, param_value in best_params.items():
-                    if isinstance(param_value, float):
-                        value_str = f"{param_value:.4f}"
-                    else:
-                        value_str = str(param_value)
-                    best_table.add_row(param_name, value_str)
-
-                self.console.print(best_table)
-
-                # Convergence data (list of dicts - show summary)
-                if result.convergence_data:
-                    self.console.print("\n[bold]Convergence Info:[/bold]")
-                    self.console.print(f"  • Total trials: {len(result.convergence_data)}")
-                    if result.convergence_data:
-                        last_trial = result.convergence_data[-1]
-                        for key, value in last_trial.items():
-                            self.console.print(f"  • {key}: {value}")
-
+                show_optimize_results(self.console, result)
             except Exception as e:
                 progress.update(task, completed=True)
                 self.console.print(f"\n[bold red]❌ Optimization failed: {e}[/bold red]\n")
@@ -354,7 +265,8 @@ class OptimizerCommands:
                 self.console.print(
                     Panel(
                         f"[bold yellow]Profile ID:[/bold yellow] {result.profile_id}\n"
-                        f"[bold yellow]Total Duration:[/bold yellow] {result.total_duration_ms:.1f}ms\n"
+                        f"[bold yellow]Total Duration:[/bold yellow] "
+                        f"{result.total_duration_ms:.1f}ms\n"
                         f"[bold yellow]Total Tokens:[/bold yellow] {result.total_tokens}\n"
                         f"[bold yellow]Total Cost:[/bold yellow] ${result.total_cost:.4f}\n"
                         f"[bold yellow]Bottleneck:[/bold yellow] {result.bottleneck}",
@@ -452,62 +364,7 @@ class OptimizerCommands:
                 )
 
                 progress.update(task, completed=True)
-
-                # Display results
-                self.console.print("\n[bold green]✅ A/B Test Complete![/bold green]\n")
-
-                # Winner announcement
-                winner_emoji = "🏆" if result.winner != "tie" else "🤝"
-                winner_text = (
-                    f"[bold green]{result.winner}[/bold green]"
-                    if result.winner != "tie"
-                    else "[bold yellow]Tie (no significant difference)[/bold yellow]"
-                )
-
-                self.console.print(
-                    Panel(
-                        f"{winner_emoji} [bold]Winner:[/bold] {winner_text}\n\n"
-                        f"[bold yellow]Lift:[/bold yellow] {result.lift:+.1f}%\n"
-                        f"[bold yellow]P-value:[/bold yellow] {result.p_value:.4f}\n"
-                        f"[bold yellow]Significant:[/bold yellow] {'Yes ✅' if result.is_significant else 'No ❌'}\n"
-                        f"[bold yellow]Confidence:[/bold yellow] {result.confidence_level * 100:.0f}%",
-                        title="🧪 A/B Test Results",
-                        border_style="green" if result.is_significant else "yellow",
-                    )
-                )
-
-                # Comparison table
-                comp_table = Table(title="📊 Variant Comparison")
-                comp_table.add_column("Metric", style="cyan")
-                comp_table.add_column(f"Variant A ({variant_a_name})", style="yellow")
-                comp_table.add_column(f"Variant B ({variant_b_name})", style="green")
-
-                comp_table.add_row(
-                    "Mean Score", f"{result.variant_a_mean:.4f}", f"{result.variant_b_mean:.4f}"
-                )
-                comp_table.add_row(
-                    "Winner",
-                    "✅" if result.winner == "A" else "",
-                    "✅" if result.winner == "B" else "",
-                )
-
-                self.console.print(comp_table)
-
-                # Interpretation
-                if result.is_significant:
-                    if result.lift > 0:
-                        self.console.print(
-                            f"\n[bold green]📈 {variant_b_name} is {abs(result.lift):.1f}% better than {variant_a_name}[/bold green]"
-                        )
-                    else:
-                        self.console.print(
-                            f"\n[bold red]📉 {variant_b_name} is {abs(result.lift):.1f}% worse than {variant_a_name}[/bold red]"
-                        )
-                else:
-                    self.console.print(
-                        "\n[bold yellow]⚠️  No statistically significant difference detected[/bold yellow]"
-                    )
-
+                show_ab_test_results(self.console, result, variant_a_name, variant_b_name)
             except Exception as e:
                 progress.update(task, completed=True)
                 self.console.print(f"\n[bold red]❌ A/B test failed: {e}[/bold red]\n")
@@ -610,7 +467,8 @@ class OptimizerCommands:
             # Summary
             self.console.print(
                 Panel(
-                    f"[bold yellow]Total Configs:[/bold yellow] {result['summary']['total_configs']}\n"
+                    f"[bold yellow]Total Configs:[/bold yellow] "
+                    f"{result['summary']['total_configs']}\n"
                     f"[bold yellow]Found:[/bold yellow] {result['summary']['found']}",
                     title="📊 Comparison Summary",
                     border_style="cyan",
@@ -652,50 +510,3 @@ class OptimizerCommands:
         except Exception as e:
             self.console.print(f"\n[bold red]❌ Comparison failed: {e}[/bold red]\n")
             logger.error(f"Comparison error: {e}")
-
-    # ===== Helper Methods =====
-
-    def _show_string_recommendations(self, recommendations: List[str]) -> None:
-        """Show string recommendations as a simple list"""
-        if not recommendations:
-            self.console.print("[dim]No recommendations[/dim]")
-            return
-
-        tree = Tree("💡 [bold]Recommendations[/bold]")
-        for i, rec in enumerate(recommendations, 1):
-            tree.add(f"[{i}] {rec}")
-
-        self.console.print(tree)
-
-    def _show_recommendations_panel(self, recommendations: List[Dict[str, Any]]) -> None:
-        """Show recommendations in a tree panel"""
-        if not recommendations:
-            self.console.print("[dim]No recommendations[/dim]")
-            return
-
-        tree = Tree("💡 [bold]Recommendations[/bold]")
-
-        for i, rec in enumerate(recommendations, 1):
-            priority = rec["priority"]
-            title = rec["title"]
-            description = rec["description"]
-            action = rec.get("action", "")
-            impact = rec.get("expected_impact", "")
-
-            # Priority emoji
-            priority_emoji = {
-                "critical": "🔴",
-                "high": "🟡",
-                "medium": "🔵",
-                "low": "⚪",
-            }.get(priority, "⚪")
-
-            # Create branch
-            branch = tree.add(f"{priority_emoji} [{i}] [bold]{title}[/bold] ([{priority.upper()}])")
-            branch.add(f"[dim]{description}[/dim]")
-            if action:
-                branch.add(f"[cyan]Action:[/cyan] {action}")
-            if impact:
-                branch.add(f"[green]Impact:[/green] {impact}")
-
-        self.console.print(tree)

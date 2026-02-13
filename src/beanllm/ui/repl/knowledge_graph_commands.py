@@ -18,8 +18,10 @@ from rich.progress import (
 from rich.table import Table
 
 from beanllm.facade.advanced.knowledge_graph_facade import KnowledgeGraph
+from beanllm.ui.repl.kg_display import show_quick_commands, show_query_results
+from beanllm.ui.repl.kg_stats import render_stats_tables
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
-from beanllm.utils.core.logger import get_logger
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -178,7 +180,7 @@ class KnowledgeGraphCommands:
                 self.console.print()
 
                 # Show quick commands
-                self._show_quick_commands(response.graph_id)
+                show_quick_commands(self.console, response.graph_id)
 
             except Exception as e:
                 progress.stop()
@@ -305,7 +307,7 @@ class KnowledgeGraphCommands:
             self.console.print(f"[cyan]Results: {response.num_results}[/cyan]\n")
 
             if response.results:
-                self._show_query_results(response.results, query_type)
+                show_query_results(self.console, response.results, query_type)
             else:
                 self.console.print("[yellow]No results found[/yellow]")
 
@@ -371,62 +373,9 @@ class KnowledgeGraphCommands:
             with self.console.status("[bold green]Calculating statistics..."):
                 stats = await self._kg.get_graph_stats(graph_id)
 
-            # Basic statistics
-            stats_table = Table(title="Basic Statistics")
-            stats_table.add_column("Metric", style="cyan")
-            stats_table.add_column("Value", style="yellow")
-
-            stats_table.add_row("Graph ID", stats["graph_id"])
-            stats_table.add_row("Nodes", f"{stats['num_nodes']:,}")
-            stats_table.add_row("Edges", f"{stats['num_edges']:,}")
-            stats_table.add_row("Density", f"{stats['density']:.4f}")
-            stats_table.add_row("Average Degree", f"{stats['average_degree']:.2f}")
-            stats_table.add_row("Connected Components", str(stats["num_connected_components"]))
-
-            self.console.print(stats_table)
-            self.console.print()
-
-            # Entity type distribution
-            if show_distributions and "entity_type_counts" in stats:
-                entity_table = Table(title="Entity Type Distribution")
-                entity_table.add_column("Type", style="cyan")
-                entity_table.add_column("Count", style="yellow")
-                entity_table.add_column("Distribution", style="green")
-
-                total_entities = sum(stats["entity_type_counts"].values())
-
-                for entity_type, count in sorted(
-                    stats["entity_type_counts"].items(),
-                    key=lambda x: x[1],
-                    reverse=True,
-                ):
-                    percentage = (count / total_entities) * 100
-                    bar = self._visualizer._create_bar(count, total_entities, 30, "cyan")
-                    entity_table.add_row(entity_type, f"{count:,}", f"{bar} {percentage:.1f}%")
-
-                self.console.print(entity_table)
-                self.console.print()
-
-            # Relation type distribution
-            if show_distributions and "relation_type_counts" in stats:
-                relation_table = Table(title="Relation Type Distribution")
-                relation_table.add_column("Type", style="cyan")
-                relation_table.add_column("Count", style="yellow")
-                relation_table.add_column("Distribution", style="green")
-
-                total_relations = sum(stats["relation_type_counts"].values())
-
-                for relation_type, count in sorted(
-                    stats["relation_type_counts"].items(),
-                    key=lambda x: x[1],
-                    reverse=True,
-                ):
-                    percentage = (count / total_relations) * 100
-                    bar = self._visualizer._create_bar(count, total_relations, 30, "green")
-                    relation_table.add_row(relation_type, f"{count:,}", f"{bar} {percentage:.1f}%")
-
-                self.console.print(relation_table)
-                self.console.print()
+            render_stats_tables(
+                self.console, stats, self._visualizer, show_distributions
+            )
 
         except Exception as e:
             self.console.print(f"\n[red]❌ Failed to get statistics: {e}[/red]")
@@ -561,110 +510,3 @@ class KnowledgeGraphCommands:
             self.console.print(f"\n[red]❌ Failed to list graphs: {e}[/red]")
             logger.error(f"Failed to list graphs: {e}", exc_info=True)
 
-    # ===== Helper Methods =====
-
-    def _show_query_results(
-        self,
-        results: List[Dict[str, Any]],
-        query_type: str,
-    ) -> None:
-        """Show query results in formatted table"""
-
-        if query_type in ["find_entities_by_type", "find_entities_by_name"]:
-            # Entity results
-            table = Table(title="Entities")
-            table.add_column("ID", style="cyan")
-            table.add_column("Name", style="yellow")
-            table.add_column("Type", style="magenta")
-
-            for result in results[:20]:  # Show first 20
-                table.add_row(result.get("id", ""), result.get("name", ""), result.get("type", ""))
-
-            self.console.print(table)
-
-            if len(results) > 20:
-                self.console.print(f"\n[dim]... and {len(results) - 20} more[/dim]")
-
-        elif query_type == "find_related_entities":
-            # Related entities
-            table = Table(title="Related Entities")
-            table.add_column("ID", style="cyan")
-            table.add_column("Name", style="yellow")
-            table.add_column("Type", style="magenta")
-            table.add_column("Relation", style="green")
-
-            for result in results[:20]:
-                table.add_row(
-                    result.get("id", ""),
-                    result.get("name", ""),
-                    result.get("type", ""),
-                    result.get("relation_type", ""),
-                )
-
-            self.console.print(table)
-
-            if len(results) > 20:
-                self.console.print(f"\n[dim]... and {len(results) - 20} more[/dim]")
-
-        elif query_type == "find_shortest_path":
-            # Path results
-            if results:
-                path = results[0].get("path", [])
-                self.console.print(f"[cyan]Path length: {len(path)}[/cyan]\n")
-                self.console.print(" → ".join(path))
-
-        elif query_type == "get_entity_details":
-            # Entity details
-            if results:
-                details = results[0]
-
-                details_table = Table(title="Entity Details")
-                details_table.add_column("Field", style="cyan")
-                details_table.add_column("Value", style="yellow")
-
-                details_table.add_row("ID", details.get("id", ""))
-                details_table.add_row("Name", details.get("name", ""))
-                details_table.add_row("Type", details.get("type", ""))
-                details_table.add_row(
-                    "Outgoing Relations", str(len(details.get("outgoing_relations", [])))
-                )
-                details_table.add_row(
-                    "Incoming Relations", str(len(details.get("incoming_relations", [])))
-                )
-
-                self.console.print(details_table)
-
-        else:
-            # Generic results
-            self.console.print(results)
-
-    def _show_quick_commands(self, graph_id: str) -> None:
-        """Show quick follow-up commands"""
-
-        panel = Panel(
-            f"""[cyan]Quick Commands:[/cyan]
-
-1. Query entities:
-   await commands.cmd_query(
-       graph_id="{graph_id}",
-       query_type="find_entities_by_type",
-       entity_type="PERSON"
-   )
-
-2. Visualize graph:
-   await commands.cmd_visualize(graph_id="{graph_id}")
-
-3. Show statistics:
-   await commands.cmd_stats(graph_id="{graph_id}")
-
-4. Graph RAG:
-   await commands.cmd_graph_rag(
-       query="Your question here",
-       graph_id="{graph_id}"
-   )
-""",
-            title="[bold]Next Steps[/bold]",
-            border_style="green",
-        )
-
-        self.console.print(panel)

@@ -23,8 +23,10 @@ from PIL import Image as PILImage
 from .base_task_model import BaseVisionTaskModel
 
 try:
+    from beanllm.utils.constants import DEFAULT_VLM_MAX_TOKENS
     from beanllm.utils.logging import get_logger
 except ImportError:
+    DEFAULT_VLM_MAX_TOKENS = 1024
 
     def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
         return logging.getLogger(name)
@@ -169,7 +171,7 @@ class Florence2Wrapper(BaseVisionTaskModel):
         generated_ids = self._model.generate(
             input_ids=inputs["input_ids"],
             pixel_values=inputs["pixel_values"],
-            max_new_tokens=1024,
+            max_new_tokens=DEFAULT_VLM_MAX_TOKENS,
             num_beams=3,
         )
 

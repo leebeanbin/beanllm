@@ -22,6 +22,8 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Callable, List, Optional, Union
 
+from beanllm.utils.constants import DEFAULT_TEMPERATURE
+
 try:
     from beanllm.utils.logging import get_logger
 except ImportError:
@@ -106,7 +108,7 @@ class HyDEExpander(BaseQueryExpander):
         prompt_template: Optional[str] = None,
         num_documents: int = 1,
         max_tokens: Optional[int] = 512,
-        temperature: float = 0.7,
+        temperature: float = DEFAULT_TEMPERATURE,
         **kwargs,
     ):
         """

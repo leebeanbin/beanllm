@@ -45,62 +45,8 @@ class RAGASWrapper(BaseEvaluationFramework):
 
     RAGAS의 주요 메트릭을 beanLLM 스타일로 사용할 수 있게 합니다.
 
-    지원 메트릭 (2024-2025):
-    1. Component Metrics (개별 컴포넌트 평가):
-       - Faithfulness: 답변이 컨텍스트에 충실한지 (Hallucination 방지)
-       - Answer Relevancy: 답변이 질문과 관련있는지
-       - Context Precision: 검색된 컨텍스트의 정밀도
-       - Context Recall: 검색된 컨텍스트의 재현율
-       - Context Relevancy: 컨텍스트가 질문과 관련있는지
-       - Context Entity Recall: 엔티티 기반 재현율
-
-    2. End-to-End Metrics (전체 시스템 평가):
-       - Answer Similarity: 답변 유사도 (reference 필요)
-       - Answer Correctness: 답변 정확도 (reference 필요)
-
-    Example:
-        ```python
-        from beanllm.domain.evaluation import RAGASWrapper
-
-        # 기본 사용
-        evaluator = RAGASWrapper(
-            model="gpt-4o-mini",
-            embeddings="text-embedding-3-small"
-        )
-
-        # Faithfulness 평가 (Reference-free)
-        result = evaluator.evaluate_faithfulness(
-            question="What is Paris?",
-            answer="Paris is the capital of France.",
-            contexts=["Paris is the capital and largest city of France."]
-        )
-        print(result)  # {"faithfulness": 1.0}
-
-        # Answer Relevancy 평가 (Reference-free)
-        result = evaluator.evaluate_answer_relevancy(
-            question="What is the capital of France?",
-            answer="Paris is the capital of France.",
-            contexts=["Paris is a major European city."]
-        )
-        print(result)  # {"answer_relevancy": 0.95}
-
-        # 배치 평가 (DataFrame 사용)
-        import pandas as pd
-
-        data = {
-            "question": ["Q1", "Q2"],
-            "answer": ["A1", "A2"],
-            "contexts": [["C1"], ["C2"]],
-            "ground_truth": ["GT1", "GT2"]  # Optional
-        }
-        df = pd.DataFrame(data)
-
-        results = evaluator.evaluate_dataset(
-            dataset=df,
-            metrics=["faithfulness", "answer_relevancy"]
-        )
-        print(results)  # DataFrame with scores
-        ```
+    지원 메트릭: Faithfulness, Answer Relevancy, Context Precision/Recall/Relevancy,
+    Answer Similarity, Answer Correctness (일부는 ground_truth 필요).
     """
 
     def __init__(
@@ -186,6 +132,55 @@ class RAGASWrapper(BaseEvaluationFramework):
 
         return self._embeddings_model
 
+    def _evaluate_single_metric(
+        self,
+        metric_name: str,
+        data: Dict[str, List[Any]],
+        metric_obj: Any,
+    ) -> Dict[str, Any]:
+        """
+        Run RAGAS evaluate on a single-metric dataset.
+
+        Args:
+            metric_name: Key for the score in result (e.g. "faithfulness").
+            data: Dict with list values: question, answer, contexts; optional ground_truth.
+            metric_obj: RAGAS metric instance (e.g. faithfulness, answer_relevancy).
+
+        Returns:
+            {metric_name: float (0.0-1.0)}
+        """
+        self._check_dependencies()
+        from datasets import Dataset
+        from ragas import evaluate
+
+        dataset = Dataset.from_dict(data)
+        result = evaluate(
+            dataset,
+            metrics=[metric_obj],
+            llm=self._get_llm(),
+            embeddings=self._get_embeddings(),
+        )
+        score = result[metric_name]
+        logger.info(f"RAGAS {metric_name.replace('_', ' ').title()}: {score:.4f}")
+        return {metric_name: score}
+
+    def _single_row_data(
+        self,
+        question: str,
+        answer: str,
+        contexts: List[str],
+        ground_truth: Optional[str] = None,
+    ) -> Dict[str, List[Any]]:
+        """Build single-row dict for Dataset.from_dict (list values)."""
+        data: Dict[str, List[Any]] = {
+            "question": [question],
+            "answer": [answer],
+            "contexts": [contexts],
+        }
+        if ground_truth is not None:
+            data["ground_truth"] = [ground_truth]
+        return data
+
     def evaluate_faithfulness(
         self,
         question: str,
@@ -194,57 +189,20 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Faithfulness 평가 (Reference-free)
-
-        답변이 제공된 컨텍스트에 충실한지 평가합니다.
-        LLM을 사용하여 답변의 각 문장이 컨텍스트에서 지원되는지 확인합니다.
+        Faithfulness 평가 (Reference-free). 답변이 컨텍스트에 충실한지 평가.
 
         Args:
             question: 질문
             answer: 답변
             contexts: 검색된 컨텍스트 리스트
-            **kwargs: 추가 파라미터
 
         Returns:
             {"faithfulness": float (0.0-1.0)}
-
-        Example:
-            ```python
-            result = evaluator.evaluate_faithfulness(
-                question="What is Paris?",
-                answer="Paris is the capital of France and home to the Eiffel Tower.",
-                contexts=["Paris is the capital of France."]
-            )
-            # {"faithfulness": 0.5}  # 절반만 지원됨 (Eiffel Tower는 컨텍스트에 없음)
-            ```
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import faithfulness
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[faithfulness],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["faithfulness"]
-
-        logger.info(f"RAGAS Faithfulness: {score:.4f}")
-
-        return {"faithfulness": score}
+        data = self._single_row_data(question, answer, contexts)
+        return self._evaluate_single_metric("faithfulness", data, faithfulness)
 
     def evaluate_answer_relevancy(
         self,
@@ -254,58 +212,20 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Answer Relevancy 평가 (Reference-free)
-
-        답변이 질문과 얼마나 관련있는지 평가합니다.
-        LLM을 사용하여 답변에서 역으로 질문을 생성하고,
-        원래 질문과의 유사도를 측정합니다.
+        Answer Relevancy 평가 (Reference-free). 답변이 질문과 관련있는지 평가.
 
         Args:
             question: 질문
             answer: 답변
             contexts: 검색된 컨텍스트 리스트
-            **kwargs: 추가 파라미터
 
         Returns:
             {"answer_relevancy": float (0.0-1.0)}
-
-        Example:
-            ```python
-            result = evaluator.evaluate_answer_relevancy(
-                question="What is the capital of France?",
-                answer="Paris is the capital of France.",
-                contexts=["Paris is a city in France."]
-            )
-            # {"answer_relevancy": 0.95}
-            ```
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import answer_relevancy
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[answer_relevancy],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["answer_relevancy"]
-
-        logger.info(f"RAGAS Answer Relevancy: {score:.4f}")
-
-        return {"answer_relevancy": score}
+        data = self._single_row_data(question, answer, contexts)
+        return self._evaluate_single_metric("answer_relevancy", data, answer_relevancy)
 
     def evaluate_context_precision(
         self,
@@ -316,60 +236,21 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Context Precision 평가 (Requires ground truth)
-
-        검색된 컨텍스트의 정밀도를 평가합니다.
-        관련있는 컨텍스트가 상위에 랭크되어 있는지 확인합니다.
+        Context Precision 평가 (Requires ground truth). 검색 컨텍스트 정밀도.
 
         Args:
             question: 질문
-            answer: 답변 (사용 안 함, RAGAS API 호환용)
+            answer: 답변 (RAGAS API 호환용)
             contexts: 검색된 컨텍스트 리스트 (순서 중요)
             ground_truth: 정답
-            **kwargs: 추가 파라미터
 
         Returns:
             {"context_precision": float (0.0-1.0)}
-
-        Example:
-            ```python
-            result = evaluator.evaluate_context_precision(
-                question="What is the capital of France?",
-                answer="Paris",
-                contexts=["Paris is the capital.", "France is in Europe."],
-                ground_truth="Paris is the capital of France."
-            )
-            # {"context_precision": 1.0}  # 관련 컨텍스트가 첫 번째
-            ```
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import context_precision
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-            "ground_truth": [ground_truth],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[context_precision],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["context_precision"]
-
-        logger.info(f"RAGAS Context Precision: {score:.4f}")
-
-        return {"context_precision": score}
+        data = self._single_row_data(question, answer, contexts, ground_truth)
+        return self._evaluate_single_metric("context_precision", data, context_precision)
 
     def evaluate_context_recall(
         self,
@@ -380,60 +261,21 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Context Recall 평가 (Requires ground truth)
-
-        검색된 컨텍스트의 재현율을 평가합니다.
-        ground truth를 생성하는 데 필요한 모든 정보가 검색되었는지 확인합니다.
+        Context Recall 평가 (Requires ground truth). 검색 컨텍스트 재현율.
 
         Args:
             question: 질문
-            answer: 답변 (사용 안 함, RAGAS API 호환용)
+            answer: 답변 (RAGAS API 호환용)
             contexts: 검색된 컨텍스트 리스트
             ground_truth: 정답
-            **kwargs: 추가 파라미터
 
         Returns:
             {"context_recall": float (0.0-1.0)}
-
-        Example:
-            ```python
-            result = evaluator.evaluate_context_recall(
-                question="What is the capital of France?",
-                answer="Paris",
-                contexts=["Paris is the capital of France."],
-                ground_truth="Paris is the capital of France."
-            )
-            # {"context_recall": 1.0}  # 모든 정보가 검색됨
-            ```
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import context_recall
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-            "ground_truth": [ground_truth],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[context_recall],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["context_recall"]
-
-        logger.info(f"RAGAS Context Recall: {score:.4f}")
-
-        return {"context_recall": score}
+        data = self._single_row_data(question, answer, contexts, ground_truth)
+        return self._evaluate_single_metric("context_recall", data, context_recall)
 
     def evaluate_context_relevancy(
         self,
@@ -443,21 +285,17 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Context Relevancy 평가 (Reference-free)
-
-        검색된 컨텍스트가 질문과 얼마나 관련있는지 평가합니다.
+        Context Relevancy 평가 (Reference-free). 컨텍스트가 질문과 관련있는지 평가.
 
         Args:
             question: 질문
             answer: 답변 (사용 안 함)
             contexts: 검색된 컨텍스트 리스트
-            **kwargs: 추가 파라미터
 
         Returns:
             {"context_relevancy": float (0.0-1.0)}
         """
         self._check_dependencies()
-
         try:
             from ragas.metrics import context_relevancy
         except ImportError:
@@ -466,31 +304,8 @@ class RAGASWrapper(BaseEvaluationFramework):
                 "Please upgrade: pip install ragas --upgrade"
             )
             return {"context_relevancy": 0.0, "error": "Metric not available"}
-
-        from datasets import Dataset
-        from ragas import evaluate
-
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[context_relevancy],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["context_relevancy"]
-
-        logger.info(f"RAGAS Context Relevancy: {score:.4f}")
-
-        return {"context_relevancy": score}
+        data = self._single_row_data(question, answer, contexts)
+        return self._evaluate_single_metric("context_relevancy", data, context_relevancy)
 
     def evaluate_answer_similarity(
         self,
@@ -501,48 +316,21 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Answer Similarity 평가 (Requires ground truth)
-
-        생성된 답변과 정답의 의미적 유사도를 평가합니다.
+        Answer Similarity 평가 (Requires ground truth). 답변과 정답의 의미적 유사도.
 
         Args:
             question: 질문 (사용 안 함)
             answer: 답변
             contexts: 컨텍스트 (사용 안 함)
             ground_truth: 정답
-            **kwargs: 추가 파라미터
 
         Returns:
             {"answer_similarity": float (0.0-1.0)}
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import answer_similarity
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-            "ground_truth": [ground_truth],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[answer_similarity],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["answer_similarity"]
-
-        logger.info(f"RAGAS Answer Similarity: {score:.4f}")
-
-        return {"answer_similarity": score}
+        data = self._single_row_data(question, answer, contexts, ground_truth)
+        return self._evaluate_single_metric("answer_similarity", data, answer_similarity)
 
     def evaluate_answer_correctness(
         self,
@@ -553,96 +341,39 @@ class RAGASWrapper(BaseEvaluationFramework):
         **kwargs,
     ) -> Dict[str, Any]:
         """
-        Answer Correctness 평가 (Requires ground truth)
-
-        답변의 정확도를 평가합니다.
-        Factual similarity와 Semantic similarity를 모두 고려합니다.
+        Answer Correctness 평가 (Requires ground truth). 답변 정확도.
 
         Args:
             question: 질문 (사용 안 함)
             answer: 답변
             contexts: 컨텍스트 (사용 안 함)
             ground_truth: 정답
-            **kwargs: 추가 파라미터
 
         Returns:
             {"answer_correctness": float (0.0-1.0)}
         """
-        self._check_dependencies()
-
-        from datasets import Dataset
-        from ragas import evaluate
         from ragas.metrics import answer_correctness
 
-        # Dataset 생성
-        data = {
-            "question": [question],
-            "answer": [answer],
-            "contexts": [contexts],
-            "ground_truth": [ground_truth],
-        }
-        dataset = Dataset.from_dict(data)
-
-        # 평가
-        result = evaluate(
-            dataset,
-            metrics=[answer_correctness],
-            llm=self._get_llm(),
-            embeddings=self._get_embeddings(),
-        )
-
-        score = result["answer_correctness"]
-
-        logger.info(f"RAGAS Answer Correctness: {score:.4f}")
-
-        return {"answer_correctness": score}
+        data = self._single_row_data(question, answer, contexts, ground_truth)
+        return self._evaluate_single_metric("answer_correctness", data, answer_correctness)
 
     def evaluate_dataset(
         self,
-        dataset,
+        dataset: Any,
         metrics: Optional[List[str]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """
-        데이터셋 배치 평가
+        데이터셋 배치 평가.
 
         Args:
             dataset: pandas DataFrame 또는 HuggingFace Dataset
-                필수 컬럼: question, answer, contexts
-                선택 컬럼: ground_truth (일부 메트릭 필요)
-            metrics: 평가할 메트릭 리스트
-                - Reference-free: ["faithfulness", "answer_relevancy"]
-                - With reference: ["context_precision", "context_recall",
-                                   "answer_similarity", "answer_correctness"]
-            **kwargs: 추가 파라미터
+                (question, answer, contexts; 선택 ground_truth).
+            metrics: 메트릭 리스트 (기본: ["faithfulness", "answer_relevancy"]).
+            **kwargs: 추가 파라미터.
 
         Returns:
-            평가 결과 (DataFrame 형태)
-
-        Example:
-            ```python
-            import pandas as pd
-
-            data = {
-                "question": ["What is AI?", "What is ML?"],
-                "answer": ["AI is...", "ML is..."],
-                "contexts": [["Context 1"], ["Context 2"]],
-                "ground_truth": ["GT 1", "GT 2"]  # Optional
-            }
-            df = pd.DataFrame(data)
-
-            # Reference-free 평가
-            results = evaluator.evaluate_dataset(
-                dataset=df,
-                metrics=["faithfulness", "answer_relevancy"]
-            )
-
-            # Reference 필요한 평가
-            results = evaluator.evaluate_dataset(
-                dataset=df,
-                metrics=["context_precision", "answer_correctness"]
-            )
-            ```
+            평가 결과 (DataFrame 형태).
         """
         self._check_dependencies()
 
@@ -705,37 +436,19 @@ class RAGASWrapper(BaseEvaluationFramework):
 
     # BaseEvaluationFramework 추상 메서드 구현
 
-    def evaluate(self, metric: str, data: Union[Dict[str, Any], Any], **kwargs) -> Dict[str, Any]:
+    def evaluate(
+        self, metric: str, data: Union[Dict[str, Any], Any], **kwargs: Any
+    ) -> Dict[str, Any]:
         """
-        평가 실행 (BaseEvaluationFramework 인터페이스)
+        평가 실행 (BaseEvaluationFramework 인터페이스).
 
         Args:
-            metric: 메트릭 이름 (faithfulness, answer_relevancy 등)
-            data: 평가 데이터 (dict 또는 DataFrame)
-            **kwargs: 메트릭별 추가 파라미터
+            metric: 메트릭 이름 (faithfulness, answer_relevancy 등) 또는 "dataset".
+            data: 평가 데이터 (dict 또는 DataFrame).
+            **kwargs: 메트릭별 추가 파라미터.
 
         Returns:
-            평가 결과
-
-        Example:
-            ```python
-            # 단일 평가
-            result = evaluator.evaluate(
-                metric="faithfulness",
-                data={
-                    "question": "What is AI?",
-                    "answer": "AI is...",
-                    "contexts": ["Context 1"]
-                }
-            )
-
-            # 배치 평가
-            result = evaluator.evaluate(
-                metric="dataset",
-                data=df,  # pandas DataFrame
-                metrics=["faithfulness", "answer_relevancy"]
-            )
-            ```
+            평가 결과.
         """
         # 데이터셋 배치 평가
         if metric == "dataset":
@@ -762,23 +475,7 @@ class RAGASWrapper(BaseEvaluationFramework):
             )
 
     def list_tasks(self) -> Dict[str, str]:
-        """
-        사용 가능한 메트릭 목록 (BaseEvaluationFramework 인터페이스)
-
-        Returns:
-            {"metric_name": "description", ...}
-
-        Example:
-            ```python
-            metrics = evaluator.list_tasks()
-            print(metrics)
-            # {
-            #     "faithfulness": "답변이 컨텍스트에 충실한지 (Reference-free)",
-            #     "answer_relevancy": "답변이 질문과 관련있는지 (Reference-free)",
-            #     ...
-            # }
-            ```
-        """
+        """사용 가능한 메트릭 목록 (BaseEvaluationFramework 인터페이스)."""
         return {
             "faithfulness": "답변이 컨텍스트에 충실한지 (Reference-free)",
             "answer_relevancy": "답변이 질문과 관련있는지 (Reference-free)",

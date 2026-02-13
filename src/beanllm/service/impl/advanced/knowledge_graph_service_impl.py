@@ -46,6 +46,13 @@ from beanllm.dto.response.graph.kg_response import (
 )
 from beanllm.infrastructure.distributed import with_distributed_features
 from beanllm.infrastructure.distributed.task_processor import BatchProcessor
+from beanllm.service.impl.advanced.kg_document_processor import process_single_document
+from beanllm.service.impl.advanced.kg_graph_operations import (
+    delete_graph as kg_delete_graph,
+    get_graph_stats as kg_get_graph_stats,
+    list_graphs as kg_list_graphs,
+    visualize_graph as kg_visualize_graph,
+)
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
 
 logger = logging.getLogger(__name__)
@@ -327,65 +334,9 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         Returns:
             Dict with 'entities' and 'relations' keys
         """
-        try:
-            # Generate a document ID
-            doc_id = str(uuid.uuid4())
-
-            # 엔티티 추출
-            entities_response = await self.extract_entities(
-                ExtractEntitiesRequest(
-                    document_id=doc_id,
-                    text=doc,
-                    entity_types=entity_types,
-                    resolve_coreferences=True,
-                )
-            )
-
-            # Domain Entity로 변환
-            entities = [
-                Entity(
-                    id=e["id"],
-                    name=e["name"],
-                    type=EntityType(e["type"]),
-                    description=e.get("description", ""),
-                    properties=e.get("properties", {}),
-                    aliases=e.get("aliases", []),
-                    confidence=e.get("confidence", 1.0),
-                    mentions=e.get("mentions", []),
-                )
-                for e in entities_response.entities
-            ]
-
-            # 관계 추출
-            relations: List[Relation] = []
-            if entities:
-                relations_response = await self.extract_relations(
-                    ExtractRelationsRequest(
-                        document_id=doc_id,
-                        text=doc,
-                        entities=entities_response.entities,
-                        relation_types=relation_types,
-                        infer_implicit=True,
-                    )
-                )
-
-                # Domain Relation으로 변환
-                relations = [
-                    Relation(
-                        source_id=r["source_id"],
-                        target_id=r["target_id"],
-                        type=RelationType(r["type"]),
-                        properties=r.get("properties", {}),
-                        confidence=r.get("confidence", 1.0),
-                        bidirectional=r.get("bidirectional", False),
-                    )
-                    for r in relations_response.relations
-                ]
-
-            return {"entities": entities, "relations": relations}
-        except Exception as e:
-            logger.error(f"Failed to process document: {e}", exc_info=True)
-            return {"entities": [], "relations": [], "error": str(e)}
+        return await process_single_document(
+            self, doc, entity_types, relation_types
+        )
 
     @with_distributed_features(
         pipeline_type="knowledge_graph",
@@ -710,51 +661,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             str: ASCII 그래프 다이어그램
         """
         try:
-            # 그래프 확인
-            if graph_id not in self._graphs:
-                raise ValueError(f"Graph not found: {graph_id}")
-
-            graph = self._graphs[graph_id]
-
-            # ASCII 시각화 (간단한 구현)
-            lines = []
-            lines.append(f"Graph: {graph_id}")
-            lines.append("=" * 50)
-            lines.append(f"Nodes: {graph.number_of_nodes()}")
-            lines.append(f"Edges: {graph.number_of_edges()}")
-            lines.append("")
-            lines.append("Entities:")
-            lines.append("-" * 50)
-
-            # 노드 (최대 20개)
-            for i, (node_id, node_data) in enumerate(list(graph.nodes(data=True))[:20]):
-                name = node_data.get("name", node_id)
-                entity_type = node_data.get("type", "UNKNOWN")
-                lines.append(f"  [{entity_type}] {name} (id: {node_id})")
-
-            if graph.number_of_nodes() > 20:
-                lines.append(f"  ... and {graph.number_of_nodes() - 20} more")
-
-            lines.append("")
-            lines.append("Relations:")
-            lines.append("-" * 50)
-
-            # 엣지 (최대 20개)
-            for i, (source, target, edge_data) in enumerate(list(graph.edges(data=True))[:20]):
-                source_name = graph.nodes[source].get("name", source)
-                target_name = graph.nodes[target].get("name", target)
-                relation_type = edge_data.get("type", "UNKNOWN")
-                lines.append(f"  {source_name} --[{relation_type}]--> {target_name}")
-
-            if graph.number_of_edges() > 20:
-                lines.append(f"  ... and {graph.number_of_edges() - 20} more")
-
-            ascii_diagram = "\n".join(lines)
-
-            logger.info(f"Graph visualized: {graph_id}")
-
-            return ascii_diagram
-
+            return await kg_visualize_graph(self, graph_id)
         except Exception as e:
             logger.error(f"Failed to visualize graph: {e}", exc_info=True)
             raise RuntimeError(f"Failed to visualize graph: {e}") from e
@@ -770,62 +677,10 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             Dict: 그래프 통계
         """
         try:
-            # 그래프 확인
-            if graph_id not in self._graphs:
-                raise ValueError(f"Graph not found: {graph_id}")
-
-            graph = self._graphs[graph_id]
-
-            # 통계 계산
-            stats = self._graph_builder.get_graph_statistics(graph)
-
-            # 추가 통계
-            stats["graph_id"] = graph_id
-
-            # 메타데이터
-            if graph_id in self._graph_metadata:
-                stats["metadata"] = self._graph_metadata[graph_id]
-
-            # 엔티티 타입별 개수
-            entity_type_counts: Dict[str, int] = {}
-            for node_id, node_data in graph.nodes(data=True):
-                entity_type = node_data.get("type", "UNKNOWN")
-                entity_type_counts[entity_type] = entity_type_counts.get(entity_type, 0) + 1
-            stats["entity_type_counts"] = entity_type_counts
-
-            # 관계 타입별 개수
-            relation_type_counts: Dict[str, int] = {}
-            for source, target, edge_data in graph.edges(data=True):
-                relation_type = edge_data.get("type", "UNKNOWN")
-                relation_type_counts[relation_type] = relation_type_counts.get(relation_type, 0) + 1
-            stats["relation_type_counts"] = relation_type_counts
-
-            logger.info(f"Graph stats calculated: {graph_id}")
-
-            return stats
-
+            return await kg_get_graph_stats(self, graph_id)
         except Exception as e:
             logger.error(f"Failed to get graph stats: {e}", exc_info=True)
             raise RuntimeError(f"Failed to get graph stats: {e}") from e
-
-    # --- Helper Methods ---
-
-    def _get_graph(self, graph_id: str) -> nx.DiGraph:
-        """
-        그래프 가져오기
-
-        Args:
-            graph_id: 그래프 ID
-
-        Returns:
-            nx.DiGraph: NetworkX 그래프
-
-        Raises:
-            ValueError: 그래프가 없는 경우
-        """
-        if graph_id not in self._graphs:
-            raise ValueError(f"Graph not found: {graph_id}")
-        return self._graphs[graph_id]
 
     async def list_graphs(self) -> List[Dict[str, Any]]:
         """
@@ -834,19 +689,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         Returns:
             List[Dict]: 그래프 목록 [{id, name, num_nodes, num_edges, ...}]
         """
-        graphs: List[Dict[str, Any]] = []
-        for graph_id, graph in self._graphs.items():
-            metadata = self._graph_metadata.get(graph_id, {})
-            graphs.append(
-                {
-                    "id": graph_id,
-                    "name": metadata.get("name", graph_id),
-                    "num_nodes": graph.number_of_nodes(),
-                    "num_edges": graph.number_of_edges(),
-                    "metadata": metadata,
-                }
-            )
-        return graphs
+        return await kg_list_graphs(self)
 
     def delete_graph(self, graph_id: str) -> None:
         """
@@ -855,9 +698,4 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
         Args:
             graph_id: 그래프 ID
         """
-        if graph_id in self._graphs:
-            del self._graphs[graph_id]
-            logger.info(f"Graph deleted: {graph_id}")
-
-        if graph_id in self._graph_metadata:
-            del self._graph_metadata[graph_id]
+        kg_delete_graph(self, graph_id)

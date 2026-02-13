@@ -52,6 +52,8 @@ htmlcov/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 
 # OS
 .DS_Store

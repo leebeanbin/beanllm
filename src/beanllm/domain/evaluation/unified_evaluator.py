@@ -44,12 +44,15 @@ Example:
     ```
 """
 
-import json
+from __future__ import annotations
+
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
+
+from beanllm.domain.evaluation.unified_auto_metrics import AutoMetricsMixin
+from beanllm.domain.evaluation.unified_models import EvalRecord, ImprovementSuggestion
+from beanllm.domain.evaluation.unified_persistence import PersistenceMixin
 
 try:
     from beanllm.utils.logging import get_logger
@@ -61,47 +64,11 @@ except ImportError:
 
 logger = get_logger(__name__)
 
-
-@dataclass
-class EvalRecord:
-    """평가 기록"""
-
-    record_id: str
-    query: str
-    response: str
-    contexts: List[str]
-
-    # 자동 평가 결과
-    auto_scores: Dict[str, float] = field(default_factory=dict)
-    auto_avg_score: float = 0.0
-
-    # Human 피드백
-    human_ratings: List[float] = field(default_factory=list)
-    human_avg_rating: float = 0.0
-    human_feedback_count: int = 0
-    human_comments: List[str] = field(default_factory=list)
-
-    # 통합 점수
-    unified_score: float = 0.0
-
-    # 메타데이터
-    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
-    metadata: Dict[str, Any] = field(default_factory=dict)
+# Re-export for backward compatibility
+__all__ = ["EvalRecord", "ImprovementSuggestion", "UnifiedEvaluator"]
 
 
-@dataclass
-class ImprovementSuggestion:
-    """개선 제안"""
-
-    category: str  # "chunking", "retrieval", "generation", "prompt"
-    priority: str  # "high", "medium", "low"
-    issue: str
-    suggestion: str
-    affected_queries: List[str] = field(default_factory=list)
-    expected_improvement: float = 0.0
-
-
-class UnifiedEvaluator:
+class UnifiedEvaluator(AutoMetricsMixin, PersistenceMixin):
     """
     Human-in-the-Loop + Automatic Evaluation 통합 시스템
 
@@ -276,141 +243,6 @@ class UnifiedEvaluator:
 
         return scores
 
-    def _compute_metric(self, metric: str, query: str, response: str, contexts: List[str]) -> float:
-        """개별 메트릭 계산"""
-        context_text = " ".join(contexts)
-
-        if metric == "faithfulness":
-            return self._compute_faithfulness(response, context_text)
-
-        elif metric == "relevance":
-            return self._compute_relevance(query, response)
-
-        elif metric == "context_precision":
-            return self._compute_context_precision(query, contexts)
-
-        elif metric == "context_recall":
-            return self._compute_context_recall(query, response, contexts)
-
-        elif metric == "coherence":
-            return self._compute_coherence(response)
-
-        elif metric == "completeness":
-            return self._compute_completeness(query, response)
-
-        return 0.5  # 기본값
-
-    def _compute_faithfulness(self, response: str, context: str) -> float:
-        """Faithfulness 계산 (환각 감지)"""
-        if self.llm_judge:
-            prompt = f"""
-            Context: {context[:2000]}
-            Response: {response}
-
-            Is the response faithful to the context? (0.0-1.0)
-            Only return a number.
-            """
-            try:
-                return float(self.llm_judge(prompt, "", []))
-            except (ValueError, TypeError):
-                pass
-
-        # 간단한 단어 겹침 기반
-        response_words = set(response.lower().split())
-        context_words = set(context.lower().split())
-        overlap = len(response_words & context_words)
-        return min(1.0, overlap / len(response_words)) if response_words else 0.0
-
-    def _compute_relevance(self, query: str, response: str) -> float:
-        """Relevance 계산"""
-        if self.embedding_function:
-            import math
-
-            query_emb = self.embedding_function(query)
-            response_emb = self.embedding_function(response)
-
-            dot = sum(a * b for a, b in zip(query_emb, response_emb))
-            mag1 = math.sqrt(sum(a * a for a in query_emb))
-            mag2 = math.sqrt(sum(b * b for b in response_emb))
-
-            if mag1 > 0 and mag2 > 0:
-                return (dot / (mag1 * mag2) + 1) / 2  # 0-1 범위로 정규화
-
-        # 단어 겹침 기반
-        query_words = set(query.lower().split())
-        response_words = set(response.lower().split())
-        overlap = len(query_words & response_words)
-        return overlap / len(query_words) if query_words else 0.0
-
-    def _compute_context_precision(self, query: str, contexts: List[str]) -> float:
-        """Context Precision 계산"""
-        if not contexts:
-            return 0.0
-
-        query_words = set(query.lower().split())
-        relevant_count = 0
-
-        for ctx in contexts:
-            ctx_words = set(ctx.lower().split())
-            overlap = len(query_words & ctx_words)
-            if overlap / len(query_words) > 0.2:  # 20% 이상 겹치면 관련
-                relevant_count += 1
-
-        return relevant_count / len(contexts)
-
-    def _compute_context_recall(self, query: str, response: str, contexts: List[str]) -> float:
-        """Context Recall 계산"""
-        if not contexts:
-            return 0.0
-
-        # 응답에서 사용된 컨텍스트 비율
-        response_words = set(response.lower().split())
-        used_contexts = 0
-
-        for ctx in contexts:
-            ctx_words = set(ctx.lower().split())
-            overlap = len(response_words & ctx_words)
-            if overlap > 5:  # 5개 이상 단어 겹치면 사용된 것으로 간주
-                used_contexts += 1
-
-        return used_contexts / len(contexts)
-
-    def _compute_coherence(self, response: str) -> float:
-        """Coherence 계산 (문장 연결성)"""
-        sentences = response.split(".")
-        if len(sentences) < 2:
-            return 1.0  # 단일 문장은 일관성 있음
-
-        # 간단한 휴리스틱: 문장 길이 일관성
-        lengths = [len(s.split()) for s in sentences if s.strip()]
-        if not lengths:
-            return 0.5
-
-        avg_len = sum(lengths) / len(lengths)
-        variance = sum((length - avg_len) ** 2 for length in lengths) / len(lengths)
-
-        # 분산이 작을수록 일관성 높음
-        return max(0.0, 1.0 - variance / 100)
-
-    def _compute_completeness(self, query: str, response: str) -> float:
-        """Completeness 계산"""
-        # 질문 유형 감지 및 응답 완전성 평가
-        query_lower = query.lower()
-
-        # WH-질문 감지
-        wh_words = ["what", "why", "how", "when", "where", "who", "which"]
-        is_wh_question = any(w in query_lower for w in wh_words)
-
-        # 응답 길이 기반 완전성
-        response_words = len(response.split())
-
-        if is_wh_question:
-            # WH-질문은 최소 10단어 이상 답변 기대
-            return min(1.0, response_words / 20)
-        else:
-            # 일반 질문은 최소 5단어
-            return min(1.0, response_words / 10)
-
     # ==================== Human 피드백 ====================
 
     def collect_human_feedback(
@@ -478,7 +310,7 @@ class UnifiedEvaluator:
 
     # ==================== 통합 점수 ====================
 
-    def _update_unified_score(self, record: EvalRecord):
+    def _update_unified_score(self, record: EvalRecord) -> None:
         """통합 점수 업데이트"""
         auto_score = record.auto_avg_score
         human_score = record.human_avg_rating
@@ -652,79 +484,6 @@ class UnifiedEvaluator:
             }
 
         return {"detected": False, "old_score": old_avg, "new_score": new_avg}
-
-    # ==================== 저장/로드 ====================
-
-    def _save_history(self):
-        """평가 히스토리 저장"""
-        if not self.persist_path:
-            return
-
-        history_file = self.persist_path / "eval_history.json"
-
-        data = {
-            "records": [
-                {
-                    "record_id": r.record_id,
-                    "query": r.query,
-                    "response": r.response[:500],  # 응답 일부만 저장
-                    "auto_scores": r.auto_scores,
-                    "auto_avg_score": r.auto_avg_score,
-                    "human_ratings": r.human_ratings,
-                    "human_avg_rating": r.human_avg_rating,
-                    "human_feedback_count": r.human_feedback_count,
-                    "human_comments": r.human_comments,
-                    "unified_score": r.unified_score,
-                    "timestamp": r.timestamp.isoformat(),
-                }
-                for r in self._records.values()
-            ],
-            "saved_at": datetime.now(timezone.utc).isoformat(),
-        }
-
-        with open(history_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-
-        logger.debug(f"Saved {len(self._records)} records to {history_file}")
-
-    def _load_history(self):
-        """평가 히스토리 로드"""
-        if not self.persist_path:
-            return
-
-        history_file = self.persist_path / "eval_history.json"
-
-        if not history_file.exists():
-            return
-
-        try:
-            with open(history_file, "r", encoding="utf-8") as f:
-                data = json.load(f)
-
-            for r in data.get("records", []):
-                record = EvalRecord(
-                    record_id=r["record_id"],
-                    query=r["query"],
-                    response=r.get("response", ""),
-                    contexts=[],
-                    auto_scores=r.get("auto_scores", {}),
-                    auto_avg_score=r.get("auto_avg_score", 0.0),
-                    human_ratings=r.get("human_ratings", []),
-                    human_avg_rating=r.get("human_avg_rating", 0.0),
-                    human_feedback_count=r.get("human_feedback_count", 0),
-                    human_comments=r.get("human_comments", []),
-                    unified_score=r.get("unified_score", 0.0),
-                    timestamp=datetime.fromisoformat(
-                        r.get("timestamp", datetime.now(timezone.utc).isoformat())
-                    ),
-                )
-                self._records[record.record_id] = record
-                self._query_to_record[record.query] = record.record_id
-
-            logger.info(f"Loaded {len(self._records)} records from {history_file}")
-
-        except Exception as e:
-            logger.error(f"Failed to load history: {e}")
 
     # ==================== 유틸리티 ====================
 

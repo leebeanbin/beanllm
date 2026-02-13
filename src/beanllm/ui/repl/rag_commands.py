@@ -16,8 +16,16 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from beanllm.facade.advanced.rag_debug_facade import RAGDebug
-from beanllm.ui.components import Badge, Divider, StatusIcon
+from beanllm.ui.components import StatusIcon
 from beanllm.ui.console import get_console
+from beanllm.ui.repl.rag_display import (
+    display_chunk_validation,
+    display_embedding_analysis,
+    display_full_analysis_summary,
+    display_session_info,
+    display_tuning_results,
+)
+from beanllm.ui.repl.rag_export import display_export_results
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -118,35 +126,11 @@ class RAGDebugCommands:
             self._session_active = True
 
             # Display session info
-            self._display_session_info(response)
+            display_session_info(self.console, response)
 
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]세션 시작 실패: {e}[/red]")
             logger.error(f"Failed to start debug session: {e}")
-
-    def _display_session_info(self, response: Any) -> None:
-        """세션 정보 표시"""
-        # Create info table
-        table = Table(
-            title=f"🔍 RAG Debug Session: {response.session_name or 'Unnamed'}",
-            title_style="bold cyan",
-            box=box.ROUNDED,
-            show_header=False,
-        )
-
-        table.add_column("Key", style="bold cyan", width=20)
-        table.add_column("Value", style="white")
-
-        table.add_row("Session ID", response.session_id[:12] + "...")
-        table.add_row("Status", f"{Badge.success('ACTIVE')}")
-        table.add_row("Documents", f"{response.num_documents:,}")
-        table.add_row("Embeddings", f"{response.num_embeddings:,}")
-        table.add_row("Embedding Dim", str(response.embedding_dim))
-        table.add_row("Created At", response.created_at)
-
-        self.console.print()
-        self.console.print(table)
-        self.console.print()
 
     # ========================================
     # Command: Analyze Embeddings
@@ -197,7 +181,7 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            self._display_embedding_analysis(response)
+            display_embedding_analysis(self.console, response)
 
         except ImportError:
             self.console.print(
@@ -207,61 +191,6 @@ class RAGDebugCommands:
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]분석 실패: {e}[/red]")
             logger.error(f"Embedding analysis failed: {e}")
-
-    def _display_embedding_analysis(self, response: Any) -> None:
-        """Embedding 분석 결과 표시"""
-        # Summary table
-        table = Table(
-            title=f"📊 Embedding Analysis ({response.method.upper()})",
-            title_style="bold green",
-            box=box.ROUNDED,
-            show_header=False,
-        )
-
-        table.add_column("Metric", style="bold cyan", width=25)
-        table.add_column("Value", style="white")
-
-        table.add_row("Clusters Found", str(response.num_clusters))
-        table.add_row("Outliers Detected", str(len(response.outliers)))
-        table.add_row(
-            "Silhouette Score",
-            f"{response.silhouette_score:.4f}" if response.silhouette_score else "N/A",
-        )
-
-        # Cluster sizes
-        cluster_sizes_str = ", ".join(
-            f"C{k}: {v}" for k, v in sorted(response.cluster_sizes.items())
-        )
-        table.add_row("Cluster Sizes", cluster_sizes_str)
-
-        self.console.print()
-        self.console.print(table)
-
-        # Quality assessment
-        if response.silhouette_score:
-            self._display_quality_assessment(response.silhouette_score)
-
-        self.console.print()
-
-    def _display_quality_assessment(self, silhouette_score: float) -> None:
-        """클러스터링 품질 평가 표시"""
-        self.console.print()
-        self.console.print("[bold]Clustering Quality:[/bold]")
-
-        if silhouette_score > 0.7:
-            assessment = f"{StatusIcon.success()} Excellent (강력한 클러스터 구조)"
-            color = "green"
-        elif silhouette_score > 0.5:
-            assessment = f"{StatusIcon.success()} Good (명확한 클러스터)"
-            color = "cyan"
-        elif silhouette_score > 0.25:
-            assessment = f"{StatusIcon.warning()} Fair (약한 클러스터 구조)"
-            color = "yellow"
-        else:
-            assessment = f"{StatusIcon.error()} Poor (클러스터가 불명확)"
-            color = "red"
-
-        self.console.print(f"  [{color}]{assessment}[/{color}]")
 
     # ========================================
     # Command: Validate Chunks
@@ -313,50 +242,11 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            self._display_chunk_validation(response)
+            display_chunk_validation(self.console, response)
 
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]검증 실패: {e}[/red]")
             logger.error(f"Chunk validation failed: {e}")
-
-    def _display_chunk_validation(self, response: Any) -> None:
-        """청크 검증 결과 표시"""
-        # Summary table
-        table = Table(
-            title="📝 Chunk Validation Results",
-            title_style="bold blue",
-            box=box.ROUNDED,
-            show_header=False,
-        )
-
-        table.add_column("Metric", style="bold cyan", width=25)
-        table.add_column("Value", style="white")
-
-        table.add_row("Total Chunks", f"{response.total_chunks:,}")
-        table.add_row("Valid Chunks", f"{response.valid_chunks:,}")
-        table.add_row("Issues Found", str(len(response.issues)))
-        table.add_row("Duplicate Chunks", str(len(response.duplicate_chunks)))
-
-        self.console.print()
-        self.console.print(table)
-
-        # Issues
-        if response.issues:
-            self.console.print()
-            self.console.print(f"{StatusIcon.warning()} [yellow bold]Issues Found:[/yellow bold]")
-            for issue in response.issues[:10]:  # Show first 10
-                self.console.print(f"  • [yellow]{issue}[/yellow]")
-            if len(response.issues) > 10:
-                self.console.print(f"  [dim]... and {len(response.issues) - 10} more[/dim]")
-
-        # Recommendations
-        if response.recommendations:
-            self.console.print()
-            self.console.print(f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]")
-            for rec in response.recommendations:
-                self.console.print(f"  💡 [cyan]{rec}[/cyan]")
-
-        self.console.print()
 
     # ========================================
     # Command: Tune Parameters
@@ -402,54 +292,11 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            self._display_tuning_results(response)
+            display_tuning_results(self.console, response)
 
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]튜닝 실패: {e}[/red]")
             logger.error(f"Parameter tuning failed: {e}")
-
-    def _display_tuning_results(self, response: Any) -> None:
-        """파라미터 튜닝 결과 표시"""
-        # Summary table
-        table = Table(
-            title="⚙️  Parameter Tuning Results",
-            title_style="bold magenta",
-            box=box.ROUNDED,
-            show_header=False,
-        )
-
-        table.add_column("Metric", style="bold cyan", width=25)
-        table.add_column("Value", style="white")
-
-        table.add_row("New Parameters", str(response.parameters))
-        table.add_row("Average Score", f"{response.avg_score:.4f}")
-
-        # Comparison
-        if response.comparison_with_baseline:
-            comparison = response.comparison_with_baseline
-            improvement = comparison.get("improvement_pct", 0.0)
-
-            improvement_str = f"{improvement:+.2f}%"
-            if improvement > 5:
-                improvement_str = f"[green]{improvement_str} {StatusIcon.SUCCESS}[/green]"
-            elif improvement < -5:
-                improvement_str = f"[red]{improvement_str} {StatusIcon.ERROR}[/red]"
-            else:
-                improvement_str = f"[yellow]{improvement_str}[/yellow]"
-
-            table.add_row("vs Baseline", improvement_str)
-
-        self.console.print()
-        self.console.print(table)
-
-        # Recommendations
-        if response.recommendations:
-            self.console.print()
-            self.console.print(f"{StatusIcon.info()} [cyan bold]Recommendations:[/cyan bold]")
-            for rec in response.recommendations:
-                self.console.print(f"  {rec}")
-
-        self.console.print()
 
     # ========================================
     # Command: Export Report
@@ -496,35 +343,11 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            self._display_export_results(results)
+            display_export_results(self.console, results)
 
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]내보내기 실패: {e}[/red]")
             logger.error(f"Report export failed: {e}")
-
-    def _display_export_results(self, results: Dict[str, str]) -> None:
-        """리포트 내보내기 결과 표시"""
-        self.console.print()
-        self.console.print(
-            f"{StatusIcon.success()} [green bold]리포트가 성공적으로 내보내졌습니다![/green bold]"
-        )
-        self.console.print()
-
-        # Files table
-        table = Table(
-            title="📁 Exported Files",
-            title_style="bold green",
-            box=box.ROUNDED,
-        )
-
-        table.add_column("Format", style="bold cyan")
-        table.add_column("File Path", style="white")
-
-        for fmt, path in results.items():
-            table.add_row(fmt.upper(), path)
-
-        self.console.print(table)
-        self.console.print()
 
     # ========================================
     # Command: Full Analysis (One-Stop)
@@ -582,33 +405,11 @@ class RAGDebugCommands:
             )
 
             # Display summary
-            self._display_full_analysis_summary(results)
+            display_full_analysis_summary(self.console, results)
 
         except Exception as e:
             self.console.print(f"{StatusIcon.error()} [red]전체 분석 실패: {e}[/red]")
             logger.error(f"Full analysis failed: {e}")
-
-    def _display_full_analysis_summary(self, results: Dict[str, Any]) -> None:
-        """전체 분석 요약 표시"""
-        self.console.print()
-        self.console.print(Divider.thick())
-        self.console.print("[bold green]✅ 전체 분석 완료![/bold green]")
-        self.console.print(Divider.thick())
-        self.console.print()
-
-        # Summary
-        completed = []
-        if "embedding_analysis" in results:
-            completed.append("📊 Embedding Analysis")
-        if "chunk_validation" in results:
-            completed.append("📝 Chunk Validation")
-        if "parameter_tuning" in results:
-            completed.append("⚙️  Parameter Tuning")
-
-        for item in completed:
-            self.console.print(f"{StatusIcon.success()} {item}")
-
-        self.console.print()
 
     # ========================================
     # Utilities
