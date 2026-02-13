@@ -46,7 +46,13 @@ Table = _Table
 Tree = _Tree
 
 if TYPE_CHECKING:
-    pass
+    from rich.panel import Panel as PanelType
+    from rich.progress import Progress as ProgressType
+    from rich.progress import SpinnerColumn as SpinnerColumnType
+    from rich.progress import TextColumn as TextColumnType
+    from rich.syntax import Syntax as SyntaxType
+    from rich.table import Table as TableType
+    from rich.tree import Tree as TreeType
 
 # Infrastructure imports with fallback
 _console_getter: Any = None

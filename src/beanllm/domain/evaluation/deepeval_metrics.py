@@ -1,32 +1,56 @@
 """
-DeepEval Metrics - 메트릭 생성 및 설정
+DeepEval metric creation and factory logic.
 
-DeepEval 메트릭의 팩토리 로직과 설정 상수를 제공합니다.
-deepeval_wrapper.py에서 평가 실행 시 이 모듈을 사용합니다.
+Provides functions and configuration to create DeepEval metric instances
+(Answer Relevancy, Faithfulness, Contextual Precision/Recall, Hallucination,
+Toxicity, Bias, Summarization, G-Eval). Used by DeepEvalWrapper for
+evaluation execution.
+
+Requirements:
+    pip install deepeval
+
+References:
+    - https://github.com/confident-ai/deepeval
+    - https://docs.confident-ai.com/
 """
 
-from typing import Any, Dict, Type
+from __future__ import annotations
 
-# DeepEval 메트릭 이름 → 설명 (list_tasks 등에서 사용)
-DEEPEVAL_METRIC_DESCRIPTIONS: Dict[str, str] = {
-    "answer_relevancy": "답변이 질문과 얼마나 관련있는지",
-    "faithfulness": "답변이 컨텍스트에 충실한지 (Hallucination 방지)",
-    "contextual_precision": "검색된 컨텍스트의 정밀도",
-    "contextual_recall": "검색된 컨텍스트의 재현율",
-    "hallucination": "환각 감지",
-    "toxicity": "독성 평가",
-    "bias": "편향 평가",
-    "summarization": "요약 품질",
-    "geval": "커스텀 평가 기준",
-}
+import logging
+from typing import Any, Dict, List, Type
+
+try:
+    from beanllm.utils.logging import get_logger
+except ImportError:
+
+    def get_logger(name: str) -> logging.Logger:  # type: ignore[misc]
+        return logging.getLogger(name)
 
 
-def get_deepeval_metric_map() -> Dict[str, Type[Any]]:
+logger = get_logger(__name__)
+
+# Metric names supported by this module (no deepeval import required)
+AVAILABLE_METRICS: List[str] = [
+    "answer_relevancy",
+    "faithfulness",
+    "contextual_precision",
+    "contextual_recall",
+    "hallucination",
+    "toxicity",
+    "bias",
+    "summarization",
+    "geval",
+]
+
+
+def _get_metric_map() -> Dict[str, Type[Any]]:
     """
-    DeepEval 메트릭 클래스 매핑 반환.
+    Return mapping of metric name -> DeepEval metric class.
+
+    Lazy-imports deepeval.metrics to avoid requiring deepeval at import time.
 
     Returns:
-        metric_name → Metric class 매핑
+        Dict mapping metric name to metric class.
     """
     from deepeval.metrics import (  # type: ignore[import-untyped]
         AnswerRelevancyMetric,
@@ -53,43 +77,65 @@ def get_deepeval_metric_map() -> Dict[str, Type[Any]]:
     }
 
 
-def create_deepeval_metric(
+def get_metric_class(metric_name: str) -> Type[Any]:
+    """
+    Get the DeepEval metric class for a given metric name.
+
+    Args:
+        metric_name: One of answer_relevancy, faithfulness, contextual_precision,
+            contextual_recall, hallucination, toxicity, bias, summarization, geval.
+
+    Returns:
+        The DeepEval metric class (not an instance).
+
+    Raises:
+        ValueError: If metric_name is not supported.
+    """
+    metric_map = _get_metric_map()
+    if metric_name not in metric_map:
+        raise ValueError(f"Unknown metric: {metric_name}. Available: {list(metric_map.keys())}")
+    return metric_map[metric_name]
+
+
+def create_metric(
     metric_name: str,
-    model: str = "gpt-4o-mini",
-    threshold: float = 0.5,
-    include_reason: bool = True,
-    async_mode: bool = True,
+    model: str,
+    threshold: float,
+    include_reason: bool,
+    async_mode: bool,
     **kwargs: Any,
 ) -> Any:
     """
-    DeepEval 메트릭 인스턴스 생성.
+    Create a DeepEval metric instance.
 
     Args:
-        metric_name: 메트릭 이름 (answer_relevancy, faithfulness 등)
-        model: LLM 모델
-        threshold: 통과 임계값
-        include_reason: 평가 이유 포함 여부
-        async_mode: 비동기 모드 사용
-        **kwargs: 메트릭별 추가 파라미터
+        metric_name: Metric identifier (e.g. "answer_relevancy", "faithfulness").
+        model: LLM model for the metric (e.g. "gpt-4o-mini").
+        threshold: Pass/fail threshold.
+        include_reason: Whether to include reason in results.
+        async_mode: Whether to use async mode.
+        **kwargs: Additional arguments passed to the metric constructor.
 
     Returns:
-        DeepEval Metric 인스턴스
-
-    Raises:
-        ImportError: deepeval 미설치 시
-        ValueError: 알 수 없는 메트릭 이름
+        An instantiated DeepEval metric object.
     """
-    metric_map = get_deepeval_metric_map()
-
-    if metric_name not in metric_map:
-        raise ValueError(f"Unknown metric: {metric_name}. Available: {list(metric_map.keys())}")
-
-    metric_class = metric_map[metric_name]
-
-    return metric_class(
+    metric_class = get_metric_class(metric_name)
+    metric = metric_class(
         model=model,
         threshold=threshold,
         include_reason=include_reason,
         async_mode=async_mode,
         **kwargs,
     )
+    logger.info(f"DeepEval metric created: {metric_name}")
+    return metric
+
+
+def list_metric_names() -> List[str]:
+    """
+    Return the list of supported metric names.
+
+    Returns:
+        List of metric name strings.
+    """
+    return list(AVAILABLE_METRICS)

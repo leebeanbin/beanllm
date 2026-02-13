@@ -6,7 +6,7 @@ OpenAI API 통합 (최신 SDK: AsyncOpenAI 사용)
 # 독립적인 utils 사용
 import sys
 from pathlib import Path
-from typing import Any, AsyncGenerator, Dict, List, Optional
+from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 # 선택적 의존성
 try:

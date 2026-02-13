@@ -8,11 +8,13 @@ import json
 from typing import Any
 
 from beanllm.utils.cli.cli_utils import (
-    Panel,
     RICH_AVAILABLE,
+    ErrorPattern,
+    Panel,
     Syntax,
     Table,
     console,
+    get_model_registry,
     print_logo,
 )
 

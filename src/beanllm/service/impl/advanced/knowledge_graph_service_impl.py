@@ -48,8 +48,14 @@ from beanllm.infrastructure.distributed.task_processor import BatchProcessor
 from beanllm.service.impl.advanced.kg_document_processor import process_single_document
 from beanllm.service.impl.advanced.kg_graph_operations import (
     delete_graph as kg_delete_graph,
+)
+from beanllm.service.impl.advanced.kg_graph_operations import (
     get_graph_stats as kg_get_graph_stats,
+)
+from beanllm.service.impl.advanced.kg_graph_operations import (
     list_graphs as kg_list_graphs,
+)
+from beanllm.service.impl.advanced.kg_graph_operations import (
     visualize_graph as kg_visualize_graph,
 )
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService

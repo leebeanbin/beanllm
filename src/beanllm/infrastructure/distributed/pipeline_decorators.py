@@ -9,21 +9,31 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-from typing import Any, Callable, Optional, TypeVar, Union, cast
+from typing import Any, Callable, List, Optional, TypeVar, Union, cast
 
 from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper
 from beanllm.infrastructure.distributed.config import get_distributed_config
 from beanllm.infrastructure.distributed.factory import get_cache
 from beanllm.infrastructure.distributed.lock_integration import get_lock_manager
+from beanllm.infrastructure.distributed.pipeline_batch import with_batch_processing
+from beanllm.infrastructure.distributed.pipeline_helpers import (
+    execute_with_features as _execute_with_features,
+)
 from beanllm.infrastructure.distributed.pipeline_helpers import (
     execute_with_features_async as _execute_with_features_async,
-    execute_with_features as _execute_with_features,
+)
+from beanllm.infrastructure.distributed.pipeline_helpers import (
     generate_cache_key as _generate_cache_key,
+)
+from beanllm.infrastructure.distributed.pipeline_helpers import (
     generate_lock_key as _generate_lock_key,
+)
+from beanllm.infrastructure.distributed.pipeline_helpers import (
     publish_event as _publish_event,
+)
+from beanllm.infrastructure.distributed.pipeline_helpers import (
     publish_event_async as _publish_event_async,
 )
-from beanllm.infrastructure.distributed.pipeline_batch import with_batch_processing
 
 try:
     from beanllm.utils.logging import get_logger as _get_logger

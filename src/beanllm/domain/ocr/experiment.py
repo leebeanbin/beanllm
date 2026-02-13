@@ -16,10 +16,17 @@ from typing import Dict, List, Literal, Optional, Union, cast
 import numpy as np
 from PIL import Image
 
-from beanllm.utils.logging import get_logger
-
 from .bean_ocr import beanOCR
 from .models import OCRConfig
+
+try:
+    from beanllm.utils.logging import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:  # type: ignore[misc]
+        return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 

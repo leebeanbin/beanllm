@@ -19,8 +19,8 @@ from beanllm.utils.cli.cli_commands import (
 )
 from beanllm.utils.cli.cli_scan import scan_models
 from beanllm.utils.cli.cli_utils import (
-    ErrorPattern,
     RICH_AVAILABLE,
+    ErrorPattern,
     console,
     create_hybrid_manager,
     get_console,

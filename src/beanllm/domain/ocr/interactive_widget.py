@@ -22,9 +22,16 @@ from pathlib import Path
 from typing import Union
 
 import numpy as np
-
-from beanllm.utils.logging import get_logger
 from PIL import Image
+
+try:
+    from beanllm.utils.logging import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
+        return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 

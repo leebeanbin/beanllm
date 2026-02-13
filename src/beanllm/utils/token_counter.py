@@ -1,39 +1,25 @@
 """
-Token Counting & Cost Estimation
+Token Counting
 
-tiktoken 기반 정확한 토큰 계산 및 비용 추정
+tiktoken 기반 정확한 토큰 계산.
 
 Mathematical Foundations:
-=======================
-
-1. Token Counting:
-   tokens(text) = |tokenizer.encode(text)|
-
-   where tokenizer is BPE (Byte-Pair Encoding)
-
-2. Cost Estimation:
-   cost = (input_tokens × input_price + output_tokens × output_price) / 1M
-
-3. Context Window Management:
-   available_tokens = model_limit - (system_tokens + user_tokens + reserved_tokens)
+========================
+tokens(text) = |tokenizer.encode(text)|
+where tokenizer is BPE (Byte-Pair Encoding)
 
 References:
 ----------
 - OpenAI Tokenizer: https://github.com/openai/tiktoken
-- Token Pricing: https://openai.com/pricing
 
-Author: LLMKit Team
+Pricing/cost symbols (ModelPricing, CostEstimate, etc.) are re-exported from
+beanllm.utils.token_pricing for backward compatibility.
 """
 
-import warnings
-from typing import Dict, List, Optional
+from __future__ import annotations
 
-from beanllm.utils.token_pricing import (
-    CostEstimate,
-    ModelContextWindow,
-    ModelPricing,
-    get_context_window,
-)
+import warnings
+from typing import Dict, List
 
 try:
     import tiktoken
@@ -42,6 +28,31 @@ try:
 except ImportError:
     TIKTOKEN_AVAILABLE = False
     tiktoken = None
+
+# Re-export pricing symbols for backward compatibility (e.g. from beanllm.utils.token_counter import ModelPricing)
+from beanllm.utils.token_pricing import (
+    CostEstimate,
+    CostEstimator,
+    ModelContextWindow,
+    ModelPricing,
+    estimate_cost,
+    get_cheapest_model,
+    get_context_window,
+)
+
+__all__ = [
+    "TokenCounter",
+    "count_tokens",
+    "count_message_tokens",
+    # Re-exports for backward compatibility
+    "ModelPricing",
+    "ModelContextWindow",
+    "CostEstimate",
+    "CostEstimator",
+    "estimate_cost",
+    "get_cheapest_model",
+    "get_context_window",
+]
 
 
 # ============================================================================
@@ -71,7 +82,7 @@ class TokenCounter:
         "gemini": "cl100k_base",
     }
 
-    def __init__(self, model: str = "gpt-4o"):
+    def __init__(self, model: str = "gpt-4o") -> None:
         """
         Args:
             model: 모델 이름
@@ -208,107 +219,7 @@ class TokenCounter:
 
 
 # ============================================================================
-# Cost Estimator
-# ============================================================================
-
-
-class CostEstimator:
-    """비용 추정기"""
-
-    def __init__(self, model: str = "gpt-4o"):
-        """
-        Args:
-            model: 모델 이름
-        """
-        self.model = model
-        self.counter = TokenCounter(model)
-
-    def estimate_cost(
-        self,
-        input_text: Optional[str] = None,
-        output_text: Optional[str] = None,
-        input_tokens: Optional[int] = None,
-        output_tokens: Optional[int] = None,
-        messages: Optional[List[Dict[str, str]]] = None,
-    ) -> CostEstimate:
-        """
-        비용 추정
-
-        Args:
-            input_text: 입력 텍스트
-            output_text: 출력 텍스트
-            input_tokens: 입력 토큰 수 (직접 제공)
-            output_tokens: 출력 토큰 수 (직접 제공)
-            messages: 메시지 리스트 (채팅)
-
-        Returns:
-            CostEstimate
-        """
-        # 토큰 수 계산
-        if input_tokens is None:
-            if messages is not None:
-                input_tokens = self.counter.count_tokens_from_messages(messages)
-            elif input_text is not None:
-                input_tokens = self.counter.count_tokens(input_text)
-            else:
-                input_tokens = 0
-
-        if output_tokens is None:
-            if output_text is not None:
-                output_tokens = self.counter.count_tokens(output_text)
-            else:
-                output_tokens = 0
-
-        # 가격 정보 조회
-        pricing = ModelPricing.get_pricing(self.model)
-
-        if pricing is None:
-            warnings.warn(f"Pricing not found for model: {self.model}. Using default.")
-            pricing = {"input": 0.0, "output": 0.0}
-
-        # 비용 계산 (per 1M tokens)
-        input_cost = (input_tokens / 1_000_000) * pricing["input"]
-        output_cost = (output_tokens / 1_000_000) * pricing["output"]
-        total_cost = input_cost + output_cost
-
-        return CostEstimate(
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
-            input_cost=input_cost,
-            output_cost=output_cost,
-            total_cost=total_cost,
-            model=self.model,
-        )
-
-    def compare_models(
-        self, models: List[str], input_text: str, output_tokens: int = 1000
-    ) -> List[CostEstimate]:
-        """
-        여러 모델의 비용 비교
-
-        Args:
-            models: 모델 리스트
-            input_text: 입력 텍스트
-            output_tokens: 예상 출력 토큰 수
-
-        Returns:
-            모델별 비용 추정 리스트
-        """
-        estimates = []
-
-        for model in models:
-            estimator = CostEstimator(model)
-            estimate = estimator.estimate_cost(input_text=input_text, output_tokens=output_tokens)
-            estimates.append(estimate)
-
-        # 비용 순으로 정렬
-        estimates.sort(key=lambda x: x.total_cost)
-
-        return estimates
-
-
-# ============================================================================
-# Convenience Functions
+# Convenience Functions (token counting only)
 # ============================================================================
 
 
@@ -352,68 +263,3 @@ def count_message_tokens(messages: List[Dict[str, str]], model: str = "gpt-4o") 
     """
     counter = TokenCounter(model)
     return counter.count_tokens_from_messages(messages)
-
-
-def estimate_cost(input_text: str, output_text: str = "", model: str = "gpt-4o") -> CostEstimate:
-    """
-    간편한 비용 추정 함수
-
-    Args:
-        input_text: 입력 텍스트
-        output_text: 출력 텍스트
-        model: 모델 이름
-
-    Returns:
-        CostEstimate
-
-    Example:
-        >>> cost = estimate_cost("Hello", "Hi there!", model="gpt-4o")
-        >>> print(f"Total cost: ${cost.total_cost:.6f}")
-    """
-    estimator = CostEstimator(model)
-    return estimator.estimate_cost(input_text=input_text, output_text=output_text)
-
-
-def get_cheapest_model(
-    input_text: str, output_tokens: int = 1000, models: Optional[List[str]] = None
-) -> str:
-    """
-    가장 저렴한 모델 찾기
-
-    Args:
-        input_text: 입력 텍스트
-        output_tokens: 예상 출력 토큰 수
-        models: 비교할 모델 리스트 (None이면 주요 모델)
-
-    Returns:
-        가장 저렴한 모델 이름
-
-    Example:
-        >>> cheapest = get_cheapest_model("Long text...", output_tokens=1000)
-        >>> print(f"Cheapest model: {cheapest}")
-    """
-    if models is None:
-        models = ["gpt-4o-mini", "gpt-3.5-turbo", "claude-3-5-haiku-20241022", "gemini-1.5-flash"]
-
-    estimator = CostEstimator(models[0])
-    estimates = estimator.compare_models(models, input_text, output_tokens)
-
-    return estimates[0].model if estimates else models[0]
-
-
-# ============================================================================
-# Backward Compatibility: Re-export from token_pricing
-# ============================================================================
-
-__all__ = [
-    "CostEstimate",
-    "CostEstimator",
-    "ModelContextWindow",
-    "ModelPricing",
-    "TokenCounter",
-    "count_message_tokens",
-    "count_tokens",
-    "estimate_cost",
-    "get_cheapest_model",
-    "get_context_window",
-]

@@ -5,7 +5,7 @@ RAG Debug Utils - RAG 파이프라인 디버깅 및 검증 도구
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from beanllm.utils.rag_debug.debug_models import EmbeddingInfo, SimilarityInfo
 from beanllm.utils.rag_debug.debug_visualization import (

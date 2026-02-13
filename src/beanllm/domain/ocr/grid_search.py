@@ -18,6 +18,8 @@ from typing import Any, Dict, List, Literal, Optional, Union
 import numpy as np
 from PIL import Image
 
+from beanllm.utils.logging import get_logger
+
 from .bean_ocr import beanOCR
 from .models import (
     BinarizeConfig,
@@ -28,7 +30,6 @@ from .models import (
     ResizeConfig,
     SharpenConfig,
 )
-from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

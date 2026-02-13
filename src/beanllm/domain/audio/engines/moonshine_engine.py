@@ -28,9 +28,17 @@ from typing import Dict, Union
 import numpy as np
 
 from beanllm.domain.audio.models import STTConfig
-from beanllm.utils.logging import get_logger
 
 from .base import BaseSTTEngine
+
+try:
+    from beanllm.utils.logging import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
+        return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 

@@ -19,9 +19,16 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Union
 
-from beanllm.utils.logging import get_logger
-
 from .base import BasePDFEngine
+
+try:
+    from beanllm.utils.logging import get_logger
+except ImportError:
+    import logging
+
+    def get_logger(name: str, level: str = "INFO", secure: bool = True) -> logging.Logger:
+        return logging.getLogger(name)
+
 
 logger = get_logger(__name__)
 

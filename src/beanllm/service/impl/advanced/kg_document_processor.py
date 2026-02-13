@@ -22,8 +22,9 @@ from beanllm.dto.request.graph.kg_request import (
     ExtractRelationsRequest,
 )
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
+from beanllm.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 async def process_single_document(

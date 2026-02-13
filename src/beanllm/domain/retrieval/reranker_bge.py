@@ -102,7 +102,10 @@ class BGEReranker(BaseReranker):
 
         try:
             import torch  # type: ignore[import-untyped]
-            from transformers import AutoModelForSequenceClassification, AutoTokenizer  # type: ignore[import-untyped]
+            from transformers import (  # type: ignore[import-untyped]
+                AutoModelForSequenceClassification,
+                AutoTokenizer,
+            )
         except ImportError:
             raise ImportError(
                 "transformers and torch required for BGEReranker. "

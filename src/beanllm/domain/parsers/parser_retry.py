@@ -6,10 +6,9 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from beanllm.utils.constants import DEFAULT_MAX_RETRIES
-
 from beanllm.domain.parsers.base import BaseOutputParser
 from beanllm.domain.parsers.exceptions import OutputParserException
+from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 
 
 class RetryOutputParser(BaseOutputParser):

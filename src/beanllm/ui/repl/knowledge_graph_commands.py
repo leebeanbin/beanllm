@@ -18,7 +18,7 @@ from rich.progress import (
 from rich.table import Table
 
 from beanllm.facade.advanced.knowledge_graph_facade import KnowledgeGraph
-from beanllm.ui.repl.kg_display import show_quick_commands, show_query_results
+from beanllm.ui.repl.kg_display import show_query_results, show_quick_commands
 from beanllm.ui.repl.kg_stats import render_stats_tables
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
 from beanllm.utils.logging import get_logger

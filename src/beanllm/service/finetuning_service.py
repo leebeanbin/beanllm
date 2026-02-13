@@ -1,9 +1,8 @@
 """
 Finetuning Service Interface
 
-파인튜닝 관련 비즈니스 로직의 계약을 정의합니다.
-Handler 레이어는 이 인터페이스에만 의존하며,
-실제 구현체는 service/impl/ml/ 에 위치합니다.
+파인튜닝 작업의 전체 수명주기를 관리하는 서비스 인터페이스.
+데이터 준비, 작업 생성/조회/취소, 메트릭 모니터링을 포함합니다.
 """
 
 from __future__ import annotations
@@ -35,139 +34,160 @@ if TYPE_CHECKING:
 
 
 class IFinetuningService(ABC):
-    """파인튜닝 서비스 인터페이스
+    """
+    파인튜닝 서비스 인터페이스
 
-    LLM 모델 파인튜닝의 전체 라이프사이클을 관리합니다.
-    데이터 준비, 작업 생성/조회/취소, 훈련 시작 및 완료 대기를 포함합니다.
+    LLM 모델의 파인튜닝 워크플로우를 추상화합니다.
+    데이터 준비 → 작업 생성 → 훈련 → 모니터링 → 완료의 전체 흐름을 지원합니다.
 
     Example:
         >>> service: IFinetuningService = factory.create_finetuning_service()
-        >>> response = await service.prepare_data(
-        ...     PrepareDataRequest(examples=examples, output_path="train.jsonl")
-        ... )
-        >>> job = await service.start_training(
-        ...     StartTrainingRequest(model="gpt-3.5-turbo", training_file=response.file_id)
-        ... )
+        >>> data_resp = await service.prepare_data(PrepareDataRequest(...))
+        >>> job_resp = await service.start_training(StartTrainingRequest(...))
+        >>> await service.wait_for_completion(WaitForCompletionRequest(job_id=...))
     """
 
     @abstractmethod
     async def prepare_data(self, request: "PrepareDataRequest") -> "PrepareDataResponse":
-        """훈련 데이터를 JSONL 형식으로 준비하고 업로드합니다.
+        """
+        훈련 데이터를 준비하고 프로바이더에 업로드합니다.
 
         Args:
-            request: 훈련 예제 목록, 출력 경로, 검증 여부를 포함하는 요청
+            request: 훈련 예제, 출력 경로, 검증 여부가 포함된 요청
 
         Returns:
-            PrepareDataResponse: 업로드된 파일 ID 및 검증 결과
+            PrepareDataResponse: 업로드된 파일 ID가 포함된 응답
 
         Raises:
-            ValueError: 데이터 검증 실패 시
+            ValueError: 훈련 데이터가 유효하지 않은 경우
+            RuntimeError: 파일 업로드 실패 시
         """
+        pass
 
     @abstractmethod
     async def create_job(self, request: "CreateJobRequest") -> "CreateJobResponse":
-        """파인튜닝 작업을 생성합니다.
-
-        Args:
-            request: 모델명, 훈련 파일 ID, 하이퍼파라미터를 포함하는 요청
-
-        Returns:
-            CreateJobResponse: 생성된 작업 ID 및 상태
-
-        Raises:
-            RuntimeError: 작업 생성 실패 시
         """
-
-    @abstractmethod
-    async def get_job(self, request: "GetJobRequest") -> "GetJobResponse":
-        """작업 상태를 조회합니다.
+        파인튜닝 작업을 생성합니다.
 
         Args:
-            request: 조회할 작업 ID를 포함하는 요청
-
-        Returns:
-            GetJobResponse: 작업 상태 및 메타데이터
-
-        Raises:
-            ValueError: 존재하지 않는 작업 ID
-        """
-
-    @abstractmethod
-    async def list_jobs(self, request: "ListJobsRequest") -> "ListJobsResponse":
-        """파인튜닝 작업 목록을 조회합니다.
-
-        Args:
-            request: 필터 및 페이지네이션 옵션을 포함하는 요청
-
-        Returns:
-            ListJobsResponse: 작업 목록 및 페이지네이션 정보
-        """
-
-    @abstractmethod
-    async def cancel_job(self, request: "CancelJobRequest") -> "CancelJobResponse":
-        """진행 중인 파인튜닝 작업을 취소합니다.
-
-        Args:
-            request: 취소할 작업 ID를 포함하는 요청
-
-        Returns:
-            CancelJobResponse: 취소 결과 및 최종 상태
-
-        Raises:
-            ValueError: 이미 완료/취소된 작업
-        """
-
-    @abstractmethod
-    async def get_metrics(self, request: "GetMetricsRequest") -> "GetMetricsResponse":
-        """훈련 메트릭(loss, accuracy 등)을 조회합니다.
-
-        Args:
-            request: 작업 ID를 포함하는 요청
-
-        Returns:
-            GetMetricsResponse: 훈련 스텝별 메트릭 목록
-        """
-
-    @abstractmethod
-    async def start_training(self, request: "StartTrainingRequest") -> "StartTrainingResponse":
-        """데이터 준비 없이 즉시 훈련을 시작합니다.
-
-        Args:
-            request: 모델명, 훈련 파일, 검증 파일 등을 포함하는 요청
-
-        Returns:
-            StartTrainingResponse: 생성된 작업 정보
-
-        Raises:
-            RuntimeError: 훈련 시작 실패 시
-        """
-
-    @abstractmethod
-    async def wait_for_completion(self, request: "WaitForCompletionRequest") -> "GetJobResponse":
-        """작업이 완료될 때까지 폴링하며 대기합니다.
-
-        Args:
-            request: 작업 ID, 폴링 간격, 타임아웃을 포함하는 요청
-
-        Returns:
-            GetJobResponse: 완료된 작업 상태
-
-        Raises:
-            TimeoutError: 타임아웃 초과 시
-            RuntimeError: 작업 실패 시
-        """
-
-    @abstractmethod
-    async def quick_finetune(self, request: "QuickFinetuneRequest") -> "CreateJobResponse":
-        """데이터 준비부터 훈련 시작까지 한 번에 실행합니다.
-
-        Args:
-            request: 훈련 데이터, 모델, 에폭 수 등을 포함하는 요청
+            request: 모델명, 훈련 파일 ID 등이 포함된 요청
 
         Returns:
             CreateJobResponse: 생성된 작업 정보
 
         Raises:
-            ValueError: 데이터 검증 실패 시
-            RuntimeError: 작업 생성 실패 시
+            ValueError: 요청 파라미터가 유효하지 않은 경우
         """
+        pass
+
+    @abstractmethod
+    async def get_job(self, request: "GetJobRequest") -> "GetJobResponse":
+        """
+        파인튜닝 작업 상태를 조회합니다.
+
+        Args:
+            request: 조회할 작업 ID가 포함된 요청
+
+        Returns:
+            GetJobResponse: 작업 상태, 진행률 등의 정보
+
+        Raises:
+            ValueError: 작업 ID가 존재하지 않는 경우
+        """
+        pass
+
+    @abstractmethod
+    async def list_jobs(self, request: "ListJobsRequest") -> "ListJobsResponse":
+        """
+        파인튜닝 작업 목록을 조회합니다.
+
+        Args:
+            request: 필터 조건이 포함된 요청
+
+        Returns:
+            ListJobsResponse: 작업 목록
+        """
+        pass
+
+    @abstractmethod
+    async def cancel_job(self, request: "CancelJobRequest") -> "CancelJobResponse":
+        """
+        진행 중인 파인튜닝 작업을 취소합니다.
+
+        Args:
+            request: 취소할 작업 ID가 포함된 요청
+
+        Returns:
+            CancelJobResponse: 취소 결과
+
+        Raises:
+            ValueError: 작업이 이미 완료되었거나 존재하지 않는 경우
+        """
+        pass
+
+    @abstractmethod
+    async def get_metrics(self, request: "GetMetricsRequest") -> "GetMetricsResponse":
+        """
+        훈련 메트릭(loss, accuracy 등)을 조회합니다.
+
+        Args:
+            request: 작업 ID가 포함된 요청
+
+        Returns:
+            GetMetricsResponse: 훈련 메트릭 목록
+
+        Raises:
+            ValueError: 작업 ID가 존재하지 않는 경우
+        """
+        pass
+
+    @abstractmethod
+    async def start_training(self, request: "StartTrainingRequest") -> "StartTrainingResponse":
+        """
+        파인튜닝 훈련을 시작합니다.
+
+        Args:
+            request: 모델, 훈련 파일, 하이퍼파라미터가 포함된 요청
+
+        Returns:
+            StartTrainingResponse: 훈련 작업 정보
+
+        Raises:
+            ValueError: 요청 파라미터가 유효하지 않은 경우
+            RuntimeError: 훈련 시작 실패 시
+        """
+        pass
+
+    @abstractmethod
+    async def wait_for_completion(self, request: "WaitForCompletionRequest") -> "GetJobResponse":
+        """
+        파인튜닝 작업이 완료될 때까지 대기합니다.
+
+        Args:
+            request: 작업 ID, 폴링 간격, 타임아웃, 콜백이 포함된 요청
+
+        Returns:
+            GetJobResponse: 완료된 작업 정보
+
+        Raises:
+            TimeoutError: 타임아웃 초과 시
+            RuntimeError: 작업이 실패한 경우
+        """
+        pass
+
+    @abstractmethod
+    async def quick_finetune(self, request: "QuickFinetuneRequest") -> "CreateJobResponse":
+        """
+        빠른 파인튜닝을 시작합니다 (데이터 준비 → 훈련 → 완료 대기를 한번에).
+
+        Args:
+            request: 훈련 데이터, 모델, 하이퍼파라미터가 포함된 요청
+
+        Returns:
+            CreateJobResponse: 완료된 작업 정보
+
+        Raises:
+            ValueError: 요청 파라미터가 유효하지 않은 경우
+            RuntimeError: 파인튜닝 프로세스 실패 시
+        """
+        pass

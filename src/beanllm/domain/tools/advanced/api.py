@@ -8,7 +8,7 @@ import asyncio
 import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from beanllm.domain.optimizer import ABTestResult
+from beanllm.domain.optimizer import ABTester, ABTestResult
 from beanllm.dto.request.advanced.optimizer_request import ABTestRequest
 from beanllm.dto.response.advanced.optimizer_response import ABTestResponse
 from beanllm.utils.logging import get_logger

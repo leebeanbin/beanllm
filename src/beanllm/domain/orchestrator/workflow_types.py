@@ -7,10 +7,11 @@ WorkflowNode, WorkflowEdge, ExecutionResult 데이터 클래스를 정의.
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class NodeType(Enum):

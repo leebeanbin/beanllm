@@ -1,9 +1,8 @@
 """
 Evaluation Service Interface
 
-LLM 출력 품질 평가의 계약을 정의합니다.
-텍스트 유사도, RAG 정확도, 배치 평가 등을 지원합니다.
-Handler 레이어는 이 인터페이스에만 의존합니다.
+LLM 출력의 품질을 평가하는 서비스 인터페이스.
+텍스트 품질, RAG 성능 (Faithfulness, Relevance 등) 평가를 지원합니다.
 """
 
 from __future__ import annotations
@@ -27,18 +26,19 @@ if TYPE_CHECKING:
 
 
 class IEvaluationService(ABC):
-    """평가 서비스 인터페이스
+    """
+    평가 서비스 인터페이스
 
-    LLM 출력의 품질을 다양한 메트릭으로 측정합니다.
-    BLEU, ROUGE, F1, Semantic Similarity, LLM Judge 등을 지원합니다.
+    LLM 응답 품질을 다양한 메트릭으로 평가합니다.
+    단일/배치 평가, 텍스트 평가, RAG 전용 평가를 지원합니다.
 
     Example:
-        >>> service: IEvaluationService = factory.create_evaluation_service()
+        >>> service: IEvaluationService = factory.create_evaluation_service(client)
         >>> result = await service.evaluate_text(
         ...     TextEvaluationRequest(
-        ...         prediction="Paris is the capital of France.",
-        ...         reference="The capital of France is Paris.",
-        ...         metrics=["bleu", "rouge", "semantic_similarity"],
+        ...         text="Paris is the capital of France.",
+        ...         reference="Paris is the capital of France.",
+        ...         metrics=["exact_match", "bleu"],
         ...     )
         ... )
         >>> print(result.scores)
@@ -46,71 +46,87 @@ class IEvaluationService(ABC):
 
     @abstractmethod
     async def evaluate(self, request: "EvaluationRequest") -> "EvaluationResponse":
-        """단일 평가를 실행합니다.
+        """
+        단일 평가를 실행합니다.
 
         Args:
-            request: 예측값, 참조값, 메트릭 목록을 포함하는 요청
+            request: 평가 대상 텍스트, 참조 텍스트, 메트릭 설정이 포함된 요청
 
         Returns:
-            EvaluationResponse: 메트릭별 점수 및 요약
+            EvaluationResponse: 메트릭별 점수가 포함된 평가 결과
 
         Raises:
-            ValueError: 지원하지 않는 메트릭 지정 시
+            ValueError: 메트릭이 유효하지 않은 경우
+            RuntimeError: 평가 실행 실패 시
         """
+        pass
 
     @abstractmethod
     async def batch_evaluate(self, request: "BatchEvaluationRequest") -> "BatchEvaluationResponse":
-        """여러 샘플에 대한 배치 평가를 실행합니다.
+        """
+        여러 샘플에 대해 배치 평가를 실행합니다.
 
         Args:
-            request: 평가 샘플 목록 및 메트릭 설정
+            request: 여러 평가 항목이 포함된 요청
 
         Returns:
-            BatchEvaluationResponse: 개별 결과 및 전체 평균 점수
+            BatchEvaluationResponse: 전체 평가 결과 및 집계 통계
 
         Raises:
-            ValueError: 빈 샘플 목록
+            ValueError: 요청이 비어있거나 형식이 잘못된 경우
         """
+        pass
 
     @abstractmethod
     async def evaluate_text(self, request: "TextEvaluationRequest") -> "EvaluationResponse":
-        """텍스트 품질을 평가합니다 (편의 메서드).
+        """
+        텍스트 품질을 평가합니다 (편의 함수).
 
-        예측 텍스트와 참조 텍스트 간의 유사도를 측정합니다.
+        BLEU, ROUGE, F1, Exact Match 등의 메트릭을 사용합니다.
 
         Args:
-            request: 예측 텍스트, 참조 텍스트, 메트릭 목록
+            request: 평가 대상 텍스트, 참조 텍스트, 메트릭 목록이 포함된 요청
 
         Returns:
-            EvaluationResponse: 메트릭별 점수
+            EvaluationResponse: 평가 결과
+
+        Raises:
+            ValueError: 텍스트 또는 참조가 비어있는 경우
         """
+        pass
 
     @abstractmethod
     async def evaluate_rag(self, request: "RAGEvaluationRequest") -> "EvaluationResponse":
-        """RAG 파이프라인의 품질을 평가합니다.
+        """
+        RAG 파이프라인 품질을 평가합니다.
 
         Faithfulness, Answer Relevance, Context Precision 등
-        RAG 전용 메트릭을 측정합니다.
+        RAG 전용 메트릭을 사용하여 검색 및 생성 품질을 평가합니다.
 
         Args:
-            request: 질문, 답변, 컨텍스트, 참조 답변을 포함하는 요청
+            request: 질의, 응답, 컨텍스트, 참조 답변이 포함된 요청
 
         Returns:
-            EvaluationResponse: RAG 메트릭별 점수
+            EvaluationResponse: RAG 평가 결과
 
         Raises:
-            ValueError: 필수 필드 누락 시
+            ValueError: 필수 필드가 누락된 경우
+            RuntimeError: 평가 프레임워크 실행 실패 시
         """
+        pass
 
     @abstractmethod
     async def create_evaluator(self, request: "CreateEvaluatorRequest") -> "Evaluator":
-        """커스텀 Evaluator 인스턴스를 생성합니다.
-
-        재사용 가능한 평가기를 설정하여 여러 평가에 활용합니다.
+        """
+        커스텀 설정의 Evaluator 인스턴스를 생성합니다.
 
         Args:
-            request: 메트릭 설정, LLM 클라이언트, 임베딩 모델을 포함하는 요청
+            request: 메트릭 설정, LLM 클라이언트, 임베딩 모델이 포함된 요청
 
         Returns:
             Evaluator: 설정된 평가기 인스턴스
+
+        Raises:
+            ValueError: 설정이 유효하지 않은 경우
         """
+        pass

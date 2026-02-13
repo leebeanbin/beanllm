@@ -5,7 +5,7 @@ Optimizer service - Benchmark methods (mixin).
 from __future__ import annotations
 
 import uuid
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from beanllm.domain.optimizer import (
     Benchmarker,

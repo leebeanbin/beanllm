@@ -6,10 +6,11 @@ Common REPL Commands
 
 from typing import Any, Callable, Dict, List, Optional
 
-from beanllm.utils.logging import get_logger
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

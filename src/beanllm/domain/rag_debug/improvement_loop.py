@@ -25,14 +25,32 @@ from beanllm.domain.rag_debug.chunking_experimenter import (
 from beanllm.domain.rag_debug.loop_cycle import (
     ImprovementCycle,
     ImprovementPlan,
+)
+from beanllm.domain.rag_debug.loop_cycle import (
     get_current_score as _get_current_score_impl,
+)
+from beanllm.domain.rag_debug.loop_cycle import (
     run_full_cycle as _run_full_cycle_impl,
+)
+from beanllm.domain.rag_debug.loop_cycle import (
     run_improvement_cycle_step as _run_improvement_cycle_step_impl,
 )
 from beanllm.domain.rag_debug.loop_phases import (
     add_comparison_feedback as _add_comparison_feedback_impl,
+)
+from beanllm.domain.rag_debug.loop_phases import (
     add_human_feedback as _add_human_feedback_impl,
+)
+from beanllm.domain.rag_debug.loop_phases import (
+    batch_evaluate as _batch_evaluate_impl,
+)
+from beanllm.domain.rag_debug.loop_phases import (
+    evaluate_pipeline as _evaluate_pipeline_impl,
+)
+from beanllm.domain.rag_debug.loop_phases import (
     get_improvement_plan as _get_improvement_plan_impl,
+)
+from beanllm.domain.rag_debug.loop_phases import (
     run_initial_experiments as _run_initial_experiments_impl,
 )
 from beanllm.domain.rag_debug.loop_report import (

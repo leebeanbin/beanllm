@@ -20,14 +20,13 @@ References:
     - https://docs.confident-ai.com/
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Optional, Union
 
 from beanllm.domain.evaluation.base_framework import BaseEvaluationFramework
-from beanllm.domain.evaluation.deepeval_metrics import (
-    DEEPEVAL_METRIC_DESCRIPTIONS,
-    create_deepeval_metric,
-)
+from beanllm.domain.evaluation.deepeval_metrics import create_metric
 
 try:
     from beanllm.utils.logging import get_logger
@@ -38,13 +37,6 @@ except ImportError:
 
 
 logger = get_logger(__name__)
-
-# DeepEval 설치 여부 체크
-try:
-    HAS_DEEPEVAL = True
-    # 실제 import는 사용 시점에 수행
-except ImportError:
-    HAS_DEEPEVAL = False
 
 
 class DeepEvalWrapper(BaseEvaluationFramework):
@@ -139,7 +131,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
         self._deepeval = deepeval
 
-    def _get_metric(self, metric_name: str, **metric_kwargs):
+    def _get_metric(self, metric_name: str, **metric_kwargs: Any) -> Any:
         """
         DeepEval 메트릭 가져오기 (lazy loading + caching)
 
@@ -152,13 +144,11 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         """
         self._check_dependencies()
 
-        # 캐시 키
         cache_key = f"{metric_name}_{str(metric_kwargs)}"
         if cache_key in self._metrics_cache:
             return self._metrics_cache[cache_key]
 
-        # 메트릭 인스턴스 생성 (deepeval_metrics 모듈 사용)
-        metric = create_deepeval_metric(
+        metric = create_metric(
             metric_name=metric_name,
             model=self.model,
             threshold=self.threshold,
@@ -167,12 +157,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             **metric_kwargs,
             **self.kwargs,
         )
-
-        # 캐시 저장
         self._metrics_cache[cache_key] = metric
-
-        logger.info(f"DeepEval metric loaded: {metric_name}")
-
         return metric
 
     def evaluate_answer_relevancy(
@@ -552,7 +537,17 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             # }
             ```
         """
-        return dict(DEEPEVAL_METRIC_DESCRIPTIONS)
+        return {
+            "answer_relevancy": "답변이 질문과 얼마나 관련있는지",
+            "faithfulness": "답변이 컨텍스트에 충실한지 (Hallucination 방지)",
+            "contextual_precision": "검색된 컨텍스트의 정밀도",
+            "contextual_recall": "검색된 컨텍스트의 재현율",
+            "hallucination": "환각 감지",
+            "toxicity": "독성 평가",
+            "bias": "편향 평가",
+            "summarization": "요약 품질",
+            "geval": "커스텀 평가 기준",
+        }
 
     def __repr__(self) -> str:
         return (

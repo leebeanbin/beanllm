@@ -18,7 +18,6 @@ from .audio_service import IAudioService
 from .chain_service import IChainService
 from .chat_service import IChatService
 from .evaluation_service import IEvaluationService
-from .finetuning_service import IFinetuningService
 from .graph_service import IGraphService
 from .knowledge_graph_service import IKnowledgeGraphService
 from .multi_agent_service import IMultiAgentService
@@ -31,6 +30,7 @@ from .vision_rag_service import IVisionRAGService
 from .web_search_service import IWebSearchService
 
 if TYPE_CHECKING:
+    from .finetuning_service import IFinetuningService
     from .types import (
         EmbeddingServiceProtocol,
         ProviderFactoryProtocol,
@@ -357,7 +357,7 @@ class ServiceFactory:
         Fine-tuning 서비스 생성 (의존성 주입)
 
         Args:
-            provider: BaseFineTuningProvider 인스턴스 (선택적, 없으면 기본 OpenAI 사용)
+            provider: 파인튜닝 프로바이더 (없으면 OpenAIFineTuningProvider 사용)
 
         Returns:
             IFinetuningService: Fine-tuning 서비스 인스턴스

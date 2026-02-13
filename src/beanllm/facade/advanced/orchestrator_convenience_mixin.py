@@ -1,70 +1,44 @@
 """
-OrchestratorConvenienceMixin - 오케스트레이터 편의 메서드 모음
+Orchestrator Convenience Mixin - quick_* 원스톱 워크플로우 메서드
 
-quick_research_write, quick_parallel_consensus, quick_debate 등
-자주 사용하는 워크플로우 패턴을 원스톱으로 제공합니다.
+이 mixin은 Orchestrator Facade에 혼합되어 사용됩니다.
+create_and_execute를 활용한 quick_research_write, quick_parallel_consensus,
+quick_debate 등 짧은 이름의 편의 메서드를 제공합니다.
+
+호스트 클래스는 create_and_execute 메서드를 제공해야 합니다.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from beanllm.dto.response.advanced.orchestrator_response import ExecuteWorkflowResponse
-from beanllm.utils.logging import get_logger
 
-logger = get_logger(__name__)
+if TYPE_CHECKING:
+    from typing import Protocol
+
+    class _OrchestratorConvenienceHost(Protocol):
+        """Protocol for host class: must provide create_and_execute."""
+
+        async def create_and_execute(
+            self,
+            name: str,
+            strategy: str,
+            agents: Dict[str, Any],
+            task: str,
+            config: Optional[Dict[str, Any]] = None,
+            tools: Optional[Dict[str, Any]] = None,
+        ) -> Dict[str, Any]: ...
 
 
 class OrchestratorConvenienceMixin:
-    """오케스트레이터 편의 메서드 Mixin
-
-    Orchestrator 클래스에 믹스인되어 `quick_*` 계열 편의 메서드를 제공합니다.
-    본 클래스 단독으로는 사용할 수 없으며, ``create_workflow`` / ``execute`` /
-    ``monitor`` / ``analyze`` 를 제공하는 클래스와 함께 사용해야 합니다.
     """
+    Orchestrator Facade용 편의 mixin.
 
-    async def create_and_execute(
-        self,
-        name: str,
-        strategy: str,
-        agents: Dict[str, Any],
-        task: str,
-        config: Optional[Dict[str, Any]] = None,
-        tools: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        워크플로우 생성 및 실행 (원스톱)
-
-        Args:
-            name: 워크플로우 이름
-            strategy: 전략
-            agents: Agent 인스턴스 딕셔너리
-            task: 실행할 태스크
-            config: 전략별 설정
-            tools: 사용 가능한 도구
-
-        Returns:
-            Dict: 생성 및 실행 결과 (``workflow``, ``execution`` 키)
-        """
-        logger.info(f"Creating and executing workflow: {name}")
-
-        workflow = await self.create_workflow(  # type: ignore[attr-defined]
-            name=name,
-            strategy=strategy,
-            config=config,
-        )
-
-        execution = await self.execute(  # type: ignore[attr-defined]
-            workflow_id=workflow.workflow_id,
-            agents=agents,
-            task=task,
-            tools=tools,
-        )
-
-        return {
-            "workflow": workflow,
-            "execution": execution,
-        }
+    quick_* 메서드는 내부적으로 self.create_and_execute를 호출하므로,
+    이 mixin을 사용하는 클래스는 create_workflow, execute, create_and_execute 및
+    _ensure_handler() (및 self._handler)를 제공해야 합니다.
+    """
 
     async def quick_research_write(
         self,
@@ -86,6 +60,16 @@ class OrchestratorConvenienceMixin:
 
         Returns:
             ExecuteWorkflowResponse: 실행 결과
+
+        Example:
+            ```python
+            result = await orchestrator.quick_research_write(
+                researcher_agent=researcher,
+                writer_agent=writer,
+                task="The future of AI in healthcare",
+                reviewer_agent=reviewer
+            )
+            ```
         """
         agents: Dict[str, Any] = {
             "researcher": researcher_agent,
@@ -94,7 +78,7 @@ class OrchestratorConvenienceMixin:
         if reviewer_agent:
             agents["reviewer"] = reviewer_agent
 
-        config: Dict[str, Any] = {
+        config: Dict[str, str] = {
             "researcher_id": "researcher",
             "writer_id": "writer",
         }
@@ -129,6 +113,15 @@ class OrchestratorConvenienceMixin:
 
         Returns:
             ExecuteWorkflowResponse: 실행 결과
+
+        Example:
+            ```python
+            result = await orchestrator.quick_parallel_consensus(
+                agents=[agent1, agent2, agent3],
+                task="Evaluate this proposal",
+                aggregation="vote"
+            )
+            ```
         """
         agents_dict = {f"agent{i}": agent for i, agent in enumerate(agents)}
         agent_ids = list(agents_dict.keys())
@@ -166,10 +159,18 @@ class OrchestratorConvenienceMixin:
 
         Returns:
             ExecuteWorkflowResponse: 실행 결과
+
+        Example:
+            ```python
+            result = await orchestrator.quick_debate(
+                debater_agents=[debater1, debater2],
+                judge_agent=judge,
+                task="Should AI be regulated?",
+                rounds=3
+            )
+            ```
         """
-        agents_dict: Dict[str, Any] = {
-            f"debater{i}": agent for i, agent in enumerate(debater_agents)
-        }
+        agents_dict = {f"debater{i}": agent for i, agent in enumerate(debater_agents)}
         agents_dict["judge"] = judge_agent
 
         debater_ids = [f"debater{i}" for i in range(len(debater_agents))]
@@ -187,50 +188,3 @@ class OrchestratorConvenienceMixin:
         )
 
         return result["execution"]
-
-    async def run_full_workflow(
-        self,
-        workflow_id: str,
-        agents: Dict[str, Any],
-        task: str,
-        tools: Optional[Dict[str, Any]] = None,
-        monitor: bool = True,
-        analyze: bool = True,
-    ) -> Dict[str, Any]:
-        """
-        전체 워크플로우 실행 (실행 + 모니터링 + 분석)
-
-        Args:
-            workflow_id: 워크플로우 ID
-            agents: Agent 인스턴스 딕셔너리
-            task: 실행할 태스크
-            tools: 사용 가능한 도구
-            monitor: 모니터링 실행 여부
-            analyze: 분석 실행 여부
-
-        Returns:
-            Dict: 실행, 모니터링, 분석 결과
-        """
-        logger.info(f"Running full workflow: {workflow_id}")
-
-        execution = await self.execute(  # type: ignore[attr-defined]
-            workflow_id=workflow_id,
-            agents=agents,
-            task=task,
-            tools=tools,
-        )
-
-        results: Dict[str, Any] = {"execution": execution}
-
-        if monitor and execution.execution_id:
-            results["monitor"] = await self.monitor(  # type: ignore[attr-defined]
-                workflow_id=workflow_id,
-                execution_id=execution.execution_id,
-            )
-
-        if analyze:
-            results["analytics"] = await self.analyze(workflow_id)  # type: ignore[attr-defined]
-
-        logger.info("Full workflow completed")
-
-        return results

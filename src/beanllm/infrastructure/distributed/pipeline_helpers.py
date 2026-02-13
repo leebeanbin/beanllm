@@ -9,8 +9,9 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, List, Optional, Union, cast
 
+from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper
 from beanllm.infrastructure.distributed.event_integration import get_event_logger
-from beanllm.infrastructure.distributed.factory import get_rate_limiter
+from beanllm.infrastructure.distributed.factory import get_cache, get_rate_limiter
 
 try:
     from beanllm.utils.logging import get_logger as _get_logger

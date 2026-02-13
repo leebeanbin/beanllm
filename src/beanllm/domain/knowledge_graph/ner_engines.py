@@ -35,12 +35,12 @@ Example:
 
 from __future__ import annotations
 
+from beanllm.domain.knowledge_graph.ner_base import BaseNEREngine
 from beanllm.domain.knowledge_graph.ner_benchmark import (
-    NERBenchmark,
     SAMPLE_TEST_DATA,
+    NERBenchmark,
     quick_benchmark,
 )
-from beanllm.domain.knowledge_graph.ner_base import BaseNEREngine
 from beanllm.domain.knowledge_graph.ner_factory import NEREngineFactory
 from beanllm.domain.knowledge_graph.ner_flair import FlairNEREngine
 from beanllm.domain.knowledge_graph.ner_gliner import GLiNEREngine

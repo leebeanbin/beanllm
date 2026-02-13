@@ -4,7 +4,7 @@ Splitters Factory - 텍스트 분할 팩토리
 
 from typing import TYPE_CHECKING, List, Optional
 
-from beanllm.utils.constants import DEFAULT_CHUNK_SIZE, DEFAULT_CHUNK_OVERLAP
+from beanllm.utils.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
 
 from .base import BaseTextSplitter
 from .splitters import (

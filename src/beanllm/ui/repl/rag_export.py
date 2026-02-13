@@ -4,7 +4,7 @@ RAG Debug export - report export and export results display.
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Any, Dict
 
 from rich import box
 from rich.console import Console
