@@ -177,24 +177,9 @@ class ParameterAdapter:
         - "ClaudeProvider" → "anthropic"
         - "OllamaProvider" → "ollama"
         """
-        provider_lower = provider.lower()
+        from beanllm.providers.provider_registry import normalize_provider_name
 
-        # Provider 클래스 이름 매핑
-        if "deepseek" in provider_lower:
-            return "deepseek"
-        elif "perplexity" in provider_lower:
-            return "perplexity"
-        elif "openai" in provider_lower:
-            return "openai"
-        elif "gemini" in provider_lower or "google" in provider_lower:
-            return "google"
-        elif "claude" in provider_lower or "anthropic" in provider_lower:
-            return "anthropic"
-        elif "ollama" in provider_lower:
-            return "ollama"
-
-        # 이미 정규화된 이름이면 그대로 반환
-        return provider_lower
+        return normalize_provider_name(provider)
 
     def _is_parameter_supported(
         self, model_config: Optional[Dict], param_name: str, model: str

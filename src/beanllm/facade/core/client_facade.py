@@ -161,52 +161,26 @@ class Client:
 
         우선순위:
         1. Registry에서 모델 찾기 (가장 정확함 - 등록된 provider 사용)
-        2. Ollama 모델 패턴 확인 (콜론 포함 모델)
-        3. 패턴 기반 감지 (API provider)
-        4. 기본값 (ollama)
+        2. 패턴 기반 감지 (provider_registry 활용)
 
         참고: Registry에 등록된 모델은 그 provider를 우선 사용합니다.
         예: deepseek-chat은 Registry에 DEEPSEEK provider로 등록되어 있으므로
         처음부터 올바른 provider를 사용합니다.
         """
+        from beanllm.providers.provider_registry import detect_provider_from_model
+
         registry = get_model_registry()
-        model_lower = model.lower()
 
         # 1. Registry에서 모델 찾기 (가장 우선)
-        # Registry에 등록된 모델은 정확한 provider 정보를 가지고 있음
         try:
             model_info = registry.get_model_info(model)
             if model_info:
-                # Registry에 등록된 provider 사용 (예: deepseek-chat → "deepseek")
-                # ModelCapabilityInfo.provider는 이미 str 타입
                 return model_info.provider
         except Exception as e:
-            logger.debug(f"Failed to get provider from registry (using fallback): {e}")
+            logger.debug("Failed to get provider from registry (using fallback): %s", e)
 
-        # 2. Ollama 모델 패턴 확인 (콜론 포함 모델)
-        # 이미 Ollama로 등록된 모델들 (qwen, llama, phi 등)
-        ollama_registered_patterns = ["qwen", "llama", "phi", "ax:"]
-        is_ollama_pattern = (
-            ":" in model  # Ollama 모델 형식 (예: llama3.3:70b)
-            or any(pattern in model_lower for pattern in ollama_registered_patterns)
-        )
-
-        if is_ollama_pattern:
-            return "ollama"
-
-        # 3. 패턴 기반 감지 (API provider)
-        if any(x in model_lower for x in ["gpt", "o1", "o3", "o4"]):
-            return "openai"
-        elif "claude" in model_lower:
-            return "anthropic"
-        elif "gemini" in model_lower:
-            return "google"
-        elif "deepseek" in model_lower:
-            return "deepseek"
-        elif "perplexity" in model_lower or "sonar" in model_lower:
-            return "perplexity"
-        else:
-            return "ollama"  # 기본값
+        # 2. 중앙 Registry 기반 패턴 감지
+        return detect_provider_from_model(model)
 
     def __repr__(self) -> str:
         return f"Client(provider={self.provider!r}, model={self.model!r})"
@@ -289,20 +263,14 @@ class SourceProviderFactoryAdapter:
         return provider
 
     def _detect_provider_from_model(self, model: str) -> str:
-        """모델 이름으로부터 Provider 감지"""
-        model_lower = model.lower()
-        if any(x in model_lower for x in ["gpt", "o1", "o3", "o4"]):
-            return "openai"
-        elif "claude" in model_lower:
-            return "claude"
-        elif "gemini" in model_lower:
-            return "gemini"
-        elif "deepseek" in model_lower:
-            return "deepseek"
-        elif "perplexity" in model_lower or "sonar" in model_lower:
-            return "perplexity"
-        else:
-            return "ollama"
+        """모델 이름으로부터 Provider 감지 (ProviderFactory용 이름 반환)"""
+        from beanllm.providers.provider_registry import (
+            PROVIDER_FACTORY_NAME_MAP,
+            detect_provider_from_model,
+        )
+
+        detected = detect_provider_from_model(model)
+        return PROVIDER_FACTORY_NAME_MAP.get(detected, detected)
 
 
 # 편의 함수 (기존 API 유지)

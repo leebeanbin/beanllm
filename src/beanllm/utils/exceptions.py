@@ -94,3 +94,46 @@ class InvalidParameterError(LLMManagerError):
     """잘못된 파라미터"""
 
     pass
+
+
+# ===== Domain Exceptions =====
+
+
+class VectorStoreError(LLMKitError):
+    """Vector Store 작업 관련 에러 (인덱싱, 검색, 연결 실패 등)"""
+
+    pass
+
+
+class DocumentLoadError(LLMKitError):
+    """문서 로딩 에러 (파일 파싱, 포맷 미지원 등)"""
+
+    def __init__(self, message: str, source: Optional[str] = None):
+        self.source = source
+        super().__init__(message)
+
+
+class RAGPipelineError(LLMKitError):
+    """RAG 파이프라인 에러 (임베딩, 검색, 생성 실패 등)"""
+
+    pass
+
+
+class KnowledgeGraphError(LLMKitError):
+    """Knowledge Graph 작업 에러 (엔티티 추출, 그래프 구축, 쿼리 실패 등)"""
+
+    pass
+
+
+class EmbeddingError(LLMKitError):
+    """임베딩 생성 에러"""
+
+    def __init__(self, message: str, model: Optional[str] = None):
+        self.model = model
+        super().__init__(message)
+
+
+class ChainExecutionError(LLMKitError):
+    """Chain/Pipeline 실행 에러"""
+
+    pass

@@ -130,7 +130,7 @@ def handle_errors(
                     return default_return
 
             # async 함수인지 확인
-            if hasattr(func, "__code__") and "coroutine" in str(type(func)):
+            if inspect.iscoroutinefunction(func):
                 return async_wrapper
             return sync_wrapper
 
@@ -170,6 +170,6 @@ def log_errors(func: Callable[..., T]) -> Callable[..., T]:
             raise
 
     # async 함수인지 확인
-    if hasattr(func, "__code__") and "coroutine" in str(type(func)):
+    if inspect.iscoroutinefunction(func):
         return async_wrapper
     return sync_wrapper

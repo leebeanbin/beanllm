@@ -96,26 +96,15 @@ class ProviderFactory:
         Returns:
             제공자 이름 리스트
         """
-        available = []
+        from beanllm.providers.provider_registry import is_provider_env_available
 
-        for name, provider_class, env_key in cls._get_provider_priority():
+        available = []
+        for name, _provider_class, _env_key in cls._get_provider_priority():
             try:
-                # 환경 변수 확인 (EnvConfig 사용)
-                if name == "ollama":
-                    # Ollama는 API 키가 없어도 사용 가능
-                    available.append(name)
-                elif env_key == "OPENAI_API_KEY" and EnvConfig.OPENAI_API_KEY:
-                    available.append(name)
-                elif env_key == "ANTHROPIC_API_KEY" and EnvConfig.ANTHROPIC_API_KEY:
-                    available.append(name)
-                elif env_key == "GEMINI_API_KEY" and EnvConfig.GEMINI_API_KEY:
-                    available.append(name)
-                elif env_key == "DEEPSEEK_API_KEY" and EnvConfig.DEEPSEEK_API_KEY:
-                    available.append(name)
-                elif env_key == "PERPLEXITY_API_KEY" and EnvConfig.PERPLEXITY_API_KEY:
+                if is_provider_env_available(name):
                     available.append(name)
             except Exception as e:
-                logger.debug(f"Provider {name} not available: {e}")
+                logger.debug("Provider %s not available: %s", name, e)
 
         return available
 
@@ -177,37 +166,16 @@ class ProviderFactory:
             providers_to_try = cls._get_provider_priority()
 
         # 제공자 생성 시도
+        from beanllm.providers.provider_registry import is_provider_env_available
+
         last_error = None
         for name, provider_class, env_key in providers_to_try:
             try:
-                # 환경 변수 확인 (EnvConfig 사용)
-                if name == "ollama":
-                    # Ollama는 항상 시도 (로컬 서버)
-                    pass
-                elif env_key == "OPENAI_API_KEY" and not EnvConfig.OPENAI_API_KEY:
+                # 환경 변수 확인 (Registry 사용)
+                if not is_provider_env_available(name):
+                    logger.debug("Provider %s not available (missing %s)", name, env_key)
                     if not fallback:
                         continue
-                    logger.debug(f"Provider {name} not available (missing {env_key})")
-                    continue
-                elif env_key == "ANTHROPIC_API_KEY" and not EnvConfig.ANTHROPIC_API_KEY:
-                    if not fallback:
-                        continue
-                    logger.debug(f"Provider {name} not available (missing {env_key})")
-                    continue
-                elif env_key == "GEMINI_API_KEY" and not EnvConfig.GEMINI_API_KEY:
-                    if not fallback:
-                        continue
-                    logger.debug(f"Provider {name} not available (missing {env_key})")
-                    continue
-                elif env_key == "DEEPSEEK_API_KEY" and not EnvConfig.DEEPSEEK_API_KEY:
-                    if not fallback:
-                        continue
-                    logger.debug(f"Provider {name} not available (missing {env_key})")
-                    continue
-                elif env_key == "PERPLEXITY_API_KEY" and not EnvConfig.PERPLEXITY_API_KEY:
-                    if not fallback:
-                        continue
-                    logger.debug(f"Provider {name} not available (missing {env_key})")
                     continue
 
                 # 제공자 인스턴스 생성

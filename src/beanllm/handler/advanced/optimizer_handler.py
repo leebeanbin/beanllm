@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from beanllm.decorators.error_handler import handle_errors
 from beanllm.dto.request.advanced.optimizer_request import (
     ABTestRequest,
     BenchmarkRequest,
@@ -30,6 +31,25 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+# 유효한 상수 (Magic Number 방지)
+_VALID_QUERY_TYPES = frozenset({"simple", "complex", "edge_case", "multi_hop", "aggregation"})
+_VALID_OPTIMIZATION_METHODS = frozenset({"bayesian", "grid", "random", "genetic"})
+_VALID_PARAM_TYPES = frozenset({"integer", "float", "categorical", "boolean"})
+_NUMERIC_PARAM_TYPES = frozenset({"integer", "float"})
+_VALID_PROFILE_COMPONENTS = frozenset(
+    {
+        "embedding",
+        "retrieval",
+        "reranking",
+        "generation",
+        "preprocessing",
+        "postprocessing",
+        "total",
+    }
+)
+_MIN_OBJECTIVES_FOR_MULTI = 2
+_MIN_CONFIGS_FOR_COMPARISON = 2
+
 
 class OptimizerHandler(BaseHandler["IOptimizerService"]):
     """
@@ -37,12 +57,8 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
     책임:
     - 요청 검증
-    - 에러 처리
+    - 에러 처리 (@handle_errors 데코레이터)
     - 응답 포매팅
-
-    SOLID:
-    - SRP: 검증 및 에러 처리만
-    - DIP: 인터페이스에 의존
     """
 
     def __init__(self, service: "IOptimizerService") -> None:
@@ -52,6 +68,7 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
         """
         super().__init__(service)
 
+    @handle_errors(error_message="Failed to run benchmark")
     async def handle_benchmark(self, request: BenchmarkRequest) -> BenchmarkResponse:
         """
         벤치마크 실행
@@ -64,9 +81,7 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if not request.queries and not request.num_queries:
             raise ValueError("Either queries or num_queries must be provided")
 
@@ -74,24 +89,13 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             raise ValueError("num_queries must be positive")
 
         if request.query_types:
-            valid_types = ["simple", "complex", "edge_case", "multi_hop", "aggregation"]
             for qt in request.query_types:
-                if qt.lower() not in valid_types:
+                if qt.lower() not in _VALID_QUERY_TYPES:
                     raise ValueError(f"Invalid query type: {qt}")
 
-        # Service call with error handling
-        try:
-            response = await self._service.benchmark(request)
-            return response
+        return await self._service.benchmark(request)
 
-        except ValueError as e:
-            logger.error(f"Validation error in benchmark: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error running benchmark: {e}")
-            raise RuntimeError(f"Failed to run benchmark: {e}") from e
-
+    @handle_errors(error_message="Failed to optimize parameters")
     async def handle_optimize(self, request: OptimizeRequest) -> OptimizeResponse:
         """
         파라미터 최적화
@@ -104,72 +108,26 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if not request.parameters:
             raise ValueError("parameters are required")
 
         if request.n_trials and request.n_trials <= 0:
             raise ValueError("n_trials must be positive")
 
-        # Validate method
-        valid_methods = ["bayesian", "grid", "random", "genetic"]
         method = request.method or request.optimization_method
-        if method.lower() not in valid_methods:
+        if method.lower() not in _VALID_OPTIMIZATION_METHODS:
             raise ValueError(
-                f"Invalid optimization method: {request.method}. Must be one of {valid_methods}"
+                f"Invalid optimization method: {method}. "
+                f"Must be one of {sorted(_VALID_OPTIMIZATION_METHODS)}"
             )
 
-        # Validate parameters
-        for param in request.parameters:
-            if "name" not in param:
-                raise ValueError("Parameter must have 'name' field")
+        self._validate_parameters(request.parameters)
+        self._validate_multi_objective(request)
 
-            if "type" not in param:
-                raise ValueError(f"Parameter {param['name']} must have 'type' field")
+        return await self._service.optimize(request)
 
-            param_type = str(param["type"]).lower()
-            if param_type not in ["integer", "float", "categorical", "boolean"]:
-                raise ValueError(f"Invalid parameter type: {param_type} for {param['name']}")
-
-            # Type-specific validation
-            if param_type in ["integer", "float"]:
-                if "low" not in param or "high" not in param:
-                    raise ValueError(f"Parameter {param['name']} must have 'low' and 'high' fields")
-                low = float(str(param["low"]))
-                high = float(str(param["high"]))
-                if low >= high:
-                    raise ValueError(f"Parameter {param['name']}: low must be less than high")
-
-            elif param_type == "categorical":
-                if "categories" not in param or not param["categories"]:
-                    raise ValueError(
-                        f"Parameter {param['name']} must have non-empty 'categories' field"
-                    )
-
-        # Validate multi-objective
-        if request.multi_objective:
-            if not request.objectives or len(request.objectives) < 2:
-                raise ValueError("multi_objective requires at least 2 objectives")
-
-            for obj in request.objectives:
-                if "name" not in obj:
-                    raise ValueError("Objective must have 'name' field")
-
-        # Service call with error handling
-        try:
-            response = await self._service.optimize(request)
-            return response
-
-        except ValueError as e:
-            logger.error(f"Validation error in optimize: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error optimizing parameters: {e}")
-            raise RuntimeError(f"Failed to optimize parameters: {e}") from e
-
+    @handle_errors(error_message="Failed to profile system")
     async def handle_profile(self, request: ProfileRequest) -> ProfileResponse:
         """
         시스템 프로파일링
@@ -182,36 +140,15 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if request.components:
-            valid_components = [
-                "embedding",
-                "retrieval",
-                "reranking",
-                "generation",
-                "preprocessing",
-                "postprocessing",
-                "total",
-            ]
             for component in request.components:
-                if component.lower() not in valid_components:
+                if component.lower() not in _VALID_PROFILE_COMPONENTS:
                     raise ValueError(f"Invalid component: {component}")
 
-        # Service call with error handling
-        try:
-            response = await self._service.profile(request)
-            return response
+        return await self._service.profile(request)
 
-        except ValueError as e:
-            logger.error(f"Validation error in profile: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error profiling system: {e}")
-            raise RuntimeError(f"Failed to profile system: {e}") from e
-
+    @handle_errors(error_message="Failed to run A/B test")
     async def handle_ab_test(self, request: ABTestRequest) -> ABTestResponse:
         """
         A/B 테스트 실행
@@ -224,9 +161,7 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if not request.variant_a_name:
             raise ValueError("variant_a_name is required")
 
@@ -240,19 +175,9 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             if not (0 < request.confidence_level < 1):
                 raise ValueError("confidence_level must be between 0 and 1")
 
-        # Service call with error handling
-        try:
-            response = await self._service.ab_test(request)
-            return response
+        return await self._service.ab_test(request)
 
-        except ValueError as e:
-            logger.error(f"Validation error in ab_test: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error running A/B test: {e}")
-            raise RuntimeError(f"Failed to run A/B test: {e}") from e
-
+    @handle_errors(error_message="Failed to get recommendations")
     async def handle_get_recommendations(self, profile_id: str) -> RecommendationResponse:
         """
         권장사항 조회
@@ -265,25 +190,13 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if not profile_id:
             raise ValueError("profile_id is required")
 
-        # Service call with error handling
-        try:
-            response = await self._service.get_recommendations(profile_id)
-            return response
+        return await self._service.get_recommendations(profile_id)
 
-        except ValueError as e:
-            logger.error(f"Validation error in get_recommendations: {e}")
-            raise
-
-        except Exception as e:
-            logger.error(f"Error getting recommendations: {e}")
-            raise RuntimeError(f"Failed to get recommendations: {e}") from e
-
+    @handle_errors(error_message="Failed to compare configs")
     async def handle_compare_configs(self, config_ids: List[str]) -> Dict[str, Any]:
         """
         설정 비교
@@ -296,24 +209,56 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
 
         Raises:
             ValueError: 검증 실패
-            RuntimeError: 실행 실패
         """
-        # Validation
         if not config_ids:
             raise ValueError("config_ids is required")
 
-        if len(config_ids) < 2:
-            raise ValueError("At least 2 config IDs required for comparison")
+        if len(config_ids) < _MIN_CONFIGS_FOR_COMPARISON:
+            raise ValueError(
+                f"At least {_MIN_CONFIGS_FOR_COMPARISON} config IDs required for comparison"
+            )
 
-        # Service call with error handling
-        try:
-            response = await self._service.compare_configs(config_ids)
-            return response
+        return await self._service.compare_configs(config_ids)
 
-        except ValueError as e:
-            logger.error(f"Validation error in compare_configs: {e}")
-            raise
+    # ===== Private validation helpers =====
 
-        except Exception as e:
-            logger.error(f"Error comparing configs: {e}")
-            raise RuntimeError(f"Failed to compare configs: {e}") from e
+    @staticmethod
+    def _validate_parameters(parameters: List[Dict[str, Any]]) -> None:
+        """파라미터 목록 검증"""
+        for param in parameters:
+            if "name" not in param:
+                raise ValueError("Parameter must have 'name' field")
+
+            if "type" not in param:
+                raise ValueError(f"Parameter {param['name']} must have 'type' field")
+
+            param_type = str(param["type"]).lower()
+            if param_type not in _VALID_PARAM_TYPES:
+                raise ValueError(f"Invalid parameter type: {param_type} for {param['name']}")
+
+            if param_type in _NUMERIC_PARAM_TYPES:
+                if "low" not in param or "high" not in param:
+                    raise ValueError(f"Parameter {param['name']} must have 'low' and 'high' fields")
+                low = float(str(param["low"]))
+                high = float(str(param["high"]))
+                if low >= high:
+                    raise ValueError(f"Parameter {param['name']}: low must be less than high")
+
+            elif param_type == "categorical":
+                if "categories" not in param or not param["categories"]:
+                    raise ValueError(
+                        f"Parameter {param['name']} must have non-empty 'categories' field"
+                    )
+
+    @staticmethod
+    def _validate_multi_objective(request: OptimizeRequest) -> None:
+        """멀티 오브젝티브 검증"""
+        if request.multi_objective:
+            if not request.objectives or len(request.objectives) < _MIN_OBJECTIVES_FOR_MULTI:
+                raise ValueError(
+                    f"multi_objective requires at least {_MIN_OBJECTIVES_FOR_MULTI} objectives"
+                )
+
+            for obj in request.objectives:
+                if "name" not in obj:
+                    raise ValueError("Objective must have 'name' field")

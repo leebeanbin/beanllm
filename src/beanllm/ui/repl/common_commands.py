@@ -4,11 +4,14 @@ Common REPL Commands
 공통 명령어들 (help, exit, clear 등)
 """
 
+import logging
 from typing import Any, Callable, Dict, List, Optional
 
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+
+logger = logging.getLogger(__name__)
 
 console = Console()
 
@@ -115,7 +118,7 @@ class CommonCommands:
             import beanllm
 
             version = getattr(beanllm, "__version__", "unknown")
-        except:
+        except ImportError:
             version = "unknown"
 
         info_panel = Panel(
@@ -143,7 +146,8 @@ class CommonCommands:
 
             redis_status = "✅ Connected" if check_redis_health() else "❌ Disconnected"
             kafka_status = "✅ Connected" if check_kafka_health() else "❌ Disconnected"
-        except:
+        except (ImportError, Exception) as e:
+            logger.debug("Distributed feature check failed: %s", e)
             redis_status = "⚠️  Not configured"
             kafka_status = "⚠️  Not configured"
 

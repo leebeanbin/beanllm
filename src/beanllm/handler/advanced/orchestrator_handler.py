@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict
 
+from beanllm.decorators.error_handler import handle_errors
 from beanllm.dto.request.advanced.orchestrator_request import (
     CreateWorkflowRequest,
     ExecuteWorkflowRequest,
@@ -35,7 +36,7 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
     책임:
     - 요청 검증
-    - 에러 처리
+    - 에러 처리 (@handle_errors 데코레이터)
     - 응답 포매팅
     """
 
@@ -46,6 +47,7 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
         """
         super().__init__(service)
 
+    @handle_errors(error_message="Failed to create workflow")
     async def handle_create_workflow(
         self, request: CreateWorkflowRequest
     ) -> CreateWorkflowResponse:
@@ -60,9 +62,7 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
         Raises:
             ValueError: Validation 실패 시
-            RuntimeError: Service 에러 시
         """
-        # Validation
         if not request.workflow_name:
             raise ValueError("workflow_name is required")
 
@@ -72,17 +72,9 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             if not request.edges:
                 raise ValueError("edges are required for custom workflow")
 
-        # Service 호출
-        try:
-            response = await self._service.create_workflow(request)
-            return response
-        except ValueError as e:
-            logger.error(f"Validation error in create_workflow: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in create_workflow: {e}")
-            raise RuntimeError(f"Failed to create workflow: {e}") from e
+        return await self._service.create_workflow(request)
 
+    @handle_errors(error_message="Failed to execute workflow")
     async def handle_execute_workflow(
         self, request: ExecuteWorkflowRequest
     ) -> ExecuteWorkflowResponse:
@@ -97,26 +89,16 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
         Raises:
             ValueError: Validation 실패 시
-            RuntimeError: Service 에러 시
         """
-        # Validation
         if not request.workflow_id:
             raise ValueError("workflow_id is required")
 
         if not request.input_data:
             raise ValueError("input_data is required")
 
-        # Service 호출
-        try:
-            response = await self._service.execute_workflow(request)
-            return response
-        except ValueError as e:
-            logger.error(f"Validation error in execute_workflow: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in execute_workflow: {e}")
-            raise RuntimeError(f"Failed to execute workflow: {e}") from e
+        return await self._service.execute_workflow(request)
 
+    @handle_errors(error_message="Failed to monitor workflow")
     async def handle_monitor_workflow(
         self, request: MonitorWorkflowRequest
     ) -> MonitorWorkflowResponse:
@@ -131,26 +113,16 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
         Raises:
             ValueError: Validation 실패 시
-            RuntimeError: Service 에러 시
         """
-        # Validation
         if not request.workflow_id:
             raise ValueError("workflow_id is required")
 
         if not request.execution_id:
             raise ValueError("execution_id is required")
 
-        # Service 호출
-        try:
-            response = await self._service.monitor_workflow(request)
-            return response
-        except ValueError as e:
-            logger.error(f"Validation error in monitor_workflow: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in monitor_workflow: {e}")
-            raise RuntimeError(f"Failed to monitor workflow: {e}") from e
+        return await self._service.monitor_workflow(request)
 
+    @handle_errors(error_message="Failed to get analytics")
     async def handle_get_analytics(self, workflow_id: str) -> AnalyticsResponse:
         """
         분석 결과 조회 처리
@@ -163,23 +135,13 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
         Raises:
             ValueError: Validation 실패 시
-            RuntimeError: Service 에러 시
         """
-        # Validation
         if not workflow_id:
             raise ValueError("workflow_id is required")
 
-        # Service 호출
-        try:
-            response = await self._service.get_analytics(workflow_id)
-            return response
-        except ValueError as e:
-            logger.error(f"Validation error in get_analytics: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in get_analytics: {e}")
-            raise RuntimeError(f"Failed to get analytics: {e}") from e
+        return await self._service.get_analytics(workflow_id)
 
+    @handle_errors(error_message="Failed to visualize workflow")
     async def handle_visualize_workflow(self, workflow_id: str) -> str:
         """
         워크플로우 시각화 처리
@@ -192,37 +154,18 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
 
         Raises:
             ValueError: Validation 실패 시
-            RuntimeError: Service 에러 시
         """
-        # Validation
         if not workflow_id:
             raise ValueError("workflow_id is required")
 
-        # Service 호출
-        try:
-            diagram = await self._service.visualize_workflow(workflow_id)
-            return diagram
-        except ValueError as e:
-            logger.error(f"Validation error in visualize_workflow: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"Error in visualize_workflow: {e}")
-            raise RuntimeError(f"Failed to visualize workflow: {e}") from e
+        return await self._service.visualize_workflow(workflow_id)
 
+    @handle_errors(error_message="Failed to get templates")
     async def handle_get_templates(self) -> Dict[str, Any]:
         """
         템플릿 목록 조회 처리
 
         Returns:
             Dict: 템플릿 목록
-
-        Raises:
-            RuntimeError: Service 에러 시
         """
-        # Service 호출
-        try:
-            templates = await self._service.get_templates()
-            return templates
-        except Exception as e:
-            logger.error(f"Error in get_templates: {e}")
-            raise RuntimeError(f"Failed to get templates: {e}") from e
+        return await self._service.get_templates()

@@ -215,23 +215,29 @@ class AudioServiceImpl(IAudioService):
         api_key = request.api_key or self._tts_api_key
         kwargs = request.extra_params or {}
 
-        # Provider별 합성 (기존과 동일)
-        if self._tts_provider == TTSProvider.OPENAI:
-            audio_segment = await self._synthesize_openai(
-                text, voice, speed, api_key, request.tts_model, **kwargs
-            )
-        elif self._tts_provider == TTSProvider.GOOGLE:
-            audio_segment = await self._synthesize_google(text, voice, speed, api_key, **kwargs)
-        elif self._tts_provider == TTSProvider.AZURE:
-            audio_segment = await self._synthesize_azure(text, voice, speed, api_key, **kwargs)
-        elif self._tts_provider == TTSProvider.ELEVENLABS:
-            audio_segment = await self._synthesize_elevenlabs(
+        # Provider별 합성 (Registry 기반)
+        synthesizer = self._get_tts_synthesizer_registry().get(self._tts_provider)
+        if synthesizer is None:
+            raise ValueError(f"Unsupported TTS provider: {self._tts_provider}")
+
+        # model 인자가 필요한 provider와 아닌 provider 구분
+        if self._tts_provider in (TTSProvider.OPENAI, TTSProvider.ELEVENLABS):
+            audio_segment = await synthesizer(
                 text, voice, speed, api_key, request.tts_model, **kwargs
             )
         else:
-            raise ValueError(f"Unsupported provider: {self._tts_provider}")
+            audio_segment = await synthesizer(text, voice, speed, api_key, **kwargs)
 
         return AudioResponse(audio_segment=audio_segment)
+
+    def _get_tts_synthesizer_registry(self) -> Dict:
+        """TTS Provider → 합성 메서드 매핑 Registry"""
+        return {
+            TTSProvider.OPENAI: self._synthesize_openai,
+            TTSProvider.GOOGLE: self._synthesize_google,
+            TTSProvider.AZURE: self._synthesize_azure,
+            TTSProvider.ELEVENLABS: self._synthesize_elevenlabs,
+        }
 
     async def _synthesize_openai(
         self,

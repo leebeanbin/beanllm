@@ -188,7 +188,9 @@ class LRUCache(Generic[K, V]):
                     try:
                         self.on_evict(key, value)
                     except Exception:
-                        pass
+                        logger.debug(
+                            "Cache eviction callback failed for key=%s", key, exc_info=True
+                        )
 
                 return default
 
@@ -221,7 +223,9 @@ class LRUCache(Generic[K, V]):
                     try:
                         self.on_evict(evicted_key, evicted_value)
                     except Exception:
-                        pass
+                        logger.debug(
+                            "Cache eviction callback failed for key=%s", evicted_key, exc_info=True
+                        )
 
             # Set value with current timestamp
             self._cache[key] = (value, time.time())
@@ -248,7 +252,9 @@ class LRUCache(Generic[K, V]):
                     try:
                         self.on_evict(key, value)
                     except Exception:
-                        pass
+                        logger.debug(
+                            "Cache eviction callback failed for key=%s", key, exc_info=True
+                        )
 
                 return True
             return False
@@ -262,7 +268,9 @@ class LRUCache(Generic[K, V]):
                     try:
                         self.on_evict(key, value)
                     except Exception:
-                        pass
+                        logger.debug(
+                            "Cache eviction callback failed for key=%s", key, exc_info=True
+                        )
 
             self._cache.clear()
 

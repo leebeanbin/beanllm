@@ -8,10 +8,13 @@ SOLID 원칙:
 from __future__ import annotations
 
 import asyncio
+import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
 
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
+
+_logger = logging.getLogger(__name__)
 
 from .client_facade import Client
 
@@ -32,7 +35,7 @@ def _safe_log_event(
         log_method = getattr(event_logger, level, event_logger.info)
         log_method(event_type, data)
     except Exception:
-        pass  # 로깅 실패는 무시
+        _logger.debug("Event logging failed for %s", event_type, exc_info=True)
 
 
 class RAGChain(AsyncHelperMixin):
