@@ -196,7 +196,7 @@ class TesseractEngine(BaseOCREngine):
             }
         """
         # 라인별로 텍스트 그룹화
-        lines_dict = {}  # {line_num: [(text, bbox, conf), ...]}
+        lines_dict: dict = {}  # {line_num: [(text, bbox, conf), ...]}
 
         n_boxes = len(data["text"])
         for i in range(n_boxes):

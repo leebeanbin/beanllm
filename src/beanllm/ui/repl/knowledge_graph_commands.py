@@ -4,7 +4,7 @@ KnowledgeGraphCommands - Rich CLI interface for Knowledge Graph Builder
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from rich.console import Console
 from rich.panel import Panel
@@ -449,10 +449,11 @@ class KnowledgeGraphCommands:
                     results_table.add_column("Score", style="green")
 
                     for i, result in enumerate(response.hybrid_results[:10], 1):
-                        entity = result.get("entity", {})
+                        res = cast(Dict[str, Any], result)
+                        entity = cast(Dict[str, Any], res.get("entity", {}))
                         name = entity.get("name", "Unknown")
                         entity_type = entity.get("type", "UNKNOWN")
-                        score = result.get("score", 0.0)
+                        score = res.get("score", 0.0)
 
                         results_table.add_row(str(i), name, entity_type, f"{score:.3f}")
 

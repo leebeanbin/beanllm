@@ -186,7 +186,7 @@ class HybridModelManager:
         if not self._loaded:
             raise RuntimeError("Manager not loaded. Call await load() first.")
 
-        result = []
+        result: List[HybridModelInfo] = []
         for provider_models in self.models.values():
             result.extend(provider_models.values())
         return result

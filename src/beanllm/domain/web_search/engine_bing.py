@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
@@ -56,7 +56,8 @@ class BingSearch(BaseSearchEngine):
 
         start_time = time.time()
 
-        headers = {"Ocp-Apim-Subscription-Key": self.api_key}
+        api_key_val = self.api_key or ""
+        headers: Dict[str, str] = {"Ocp-Apim-Subscription-Key": api_key_val}
         params = {
             "q": query,
             "count": self.max_results,
@@ -130,7 +131,8 @@ class BingSearch(BaseSearchEngine):
 
         start_time = time.time()
 
-        headers = {"Ocp-Apim-Subscription-Key": self.api_key}
+        api_key_val = self.api_key or ""
+        headers_async: Dict[str, str] = {"Ocp-Apim-Subscription-Key": api_key_val}
         params = {
             "q": query,
             "count": self.max_results,
@@ -141,7 +143,7 @@ class BingSearch(BaseSearchEngine):
 
         async with httpx.AsyncClient(timeout=self.timeout) as client:
             try:
-                response = await client.get(self.base_url, headers=headers, params=params)
+                response = await client.get(self.base_url, headers=headers_async, params=params)
                 response.raise_for_status()
                 data = response.json()
 

@@ -222,6 +222,7 @@ dev = [
     "black>=23.0.0,<26.0.0",
     "ruff>=0.1.0,<1.0.0",
     "mypy>=1.0.0,<2.0.0",
+    "types-PyYAML>=6.0.0",  # type stubs for yaml (finetuning/provider_axolotl)
     "bandit>=1.7.0,<2.0.0",  # 보안 검사 (pre-commit)
     "pre-commit>=3.0.0,<4.0.0",  # pre-commit 훅
     "faker>=20.0.0,<25.0.0",  # 테스트 데이터 생성
@@ -285,7 +286,127 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = "prompt_toolkit.*"
+module = [
+    # CLI / REPL
+    "prompt_toolkit.*",
+    # AI / ML frameworks
+    "torch.*",
+    "transformers.*",
+    "sentence_transformers.*",
+    "tensorflow.*",
+    # Computer Vision
+    "cv2.*",
+    "ultralytics.*",
+    "segment_anything.*",
+    "sam2.*",
+    "sam3.*",
+    "surya.*",
+    "easyocr.*",
+    "paddleocr.*",
+    "pytesseract.*",
+    # NLP / NER
+    "spacy.*",
+    "flair.*",
+    "gliner.*",
+    # Document / PDF processing
+    "pypdf.*",
+    "fitz.*",
+    "docling.*",
+    "marker.*",
+    "nbformat.*",
+    "readability.*",
+    "trafilatura.*",
+    # RAG / Retrieval
+    "faiss.*",
+    "ragatouille.*",
+    "byaldi.*",
+    "rank_bm25.*",
+    "semchunk.*",
+    "cohere.*",
+    # Evaluation frameworks
+    "deepeval.*",
+    "ragas.*",
+    "lm_eval.*",
+    "trulens_eval.*",
+    "datasets.*",
+    # LLM providers
+    "anthropic.*",
+    "mistralai.*",
+    "voyageai.*",
+    "google.*",
+    "google.cloud.*",
+    "google.generativeai.*",
+    # Vector stores
+    "pinecone.*",
+    "qdrant_client.*",
+    "pymilvus.*",
+    "weaviate.*",
+    "lancedb.*",
+    "pgvector.*",
+    "chromadb.*",
+    # Databases
+    "pymongo.*",
+    "motor.*",
+    "psycopg2.*",
+    "asyncpg.*",
+    "neo4j.*",
+    # Distributed / Messaging
+    "redis.*",
+    "kafka.*",
+    # Data Science
+    "numpy.*",
+    "pandas.*",
+    "scipy.*",
+    "sklearn.*",
+    "matplotlib.*",
+    "plotly.*",
+    "seaborn.*",
+    "networkx.*",
+    "hdbscan.*",
+    "umap.*",
+    "joblib.*",
+    "cupy.*",
+    # Visualization / UI
+    "graphviz.*",
+    "streamlit.*",
+    "ipywidgets.*",
+    "IPython.*",
+    # Templating
+    "jinja2.*",
+    # Optimization
+    "bayes_opt.*",
+    # LangChain / LangGraph
+    "langgraph.*",
+    "langchain_openai.*",
+    "llama_index.*",
+    # Fine-tuning
+    "axolotl.*",
+    # Audio
+    "funasr.*",
+    "nemo.*",
+    # AWS
+    "boto3.*",
+    # Scheduler
+    "apscheduler.*",
+    # Search
+    "duckduckgo_search.*",
+    # Fine-tuning (additional)
+    "unsloth.*",
+    # Audio
+    "whisper.*",
+    # Cloud providers
+    "azure.*",
+    # Internal modules without py.typed
+    "beanllm.utils.logger",
+    "beanllm.domain.loaders.splitters",
+    "beanllm.domain.loaders.core.factory",
+    "beanllm.domain.tools.web_search",
+    "beanllm.vision_embeddings",
+    "beanllm.vision_loaders",
+    "beanllm.handler.ml.knowledge_graph_handler",
+    "beanllm.facade.service.types",
+    "beanllm.facade.vector_stores",
+]
 ignore_missing_imports = true
 
 # Pytest 설정

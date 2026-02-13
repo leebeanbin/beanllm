@@ -4,7 +4,7 @@ OptimizerCommands - Rich CLI interface for Auto-Optimizer
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from rich.console import Console
 from rich.panel import Panel
@@ -23,6 +23,8 @@ from beanllm.ui.repl.optimizer_display import (
     show_benchmark_results,
     show_optimize_parameter_table,
     show_optimize_results,
+    show_recommendations_panel,
+    show_string_recommendations,
 )
 from beanllm.ui.visualizers.metrics_viz import MetricsVisualizer
 from beanllm.utils.logging import get_logger
@@ -284,12 +286,13 @@ class OptimizerCommands:
                     comp_table.add_column("Cost ($)", style="magenta")
                     comp_table.add_column("% of Total", style="blue")
 
-                    breakdown = result.breakdown or {}
+                    breakdown = cast(Dict[str, Any], result.breakdown or {})
                     for component in result.components:
-                        name = component.get("name", "unknown")
-                        duration = component.get("duration_ms", 0)
-                        tokens = component.get("tokens", 0)
-                        cost = component.get("cost", 0)
+                        comp = cast(Dict[str, Any], component)
+                        name = comp.get("name", "unknown")
+                        duration = comp.get("duration_ms", 0)
+                        tokens = comp.get("tokens", 0)
+                        cost = comp.get("cost", 0)
                         pct = breakdown.get(name, 0)
 
                         comp_table.add_row(
@@ -303,12 +306,12 @@ class OptimizerCommands:
                     self.console.print(comp_table)
 
                 # Breakdown visualization
-                if result.breakdown:
+                if result.breakdown and self._visualizer is not None:
                     self._visualizer.show_component_breakdown(result.breakdown)
 
                 # Recommendations (List[str] - convert to display format)
                 if show_recommendations and result.recommendations:
-                    self._show_string_recommendations(result.recommendations)
+                    show_string_recommendations(self.console, result.recommendations)
 
             except Exception as e:
                 progress.update(task, completed=True)
@@ -431,7 +434,7 @@ class OptimizerCommands:
             )
 
             # Recommendations
-            self._show_recommendations_panel(recommendations)
+            show_recommendations_panel(self.console, recommendations)
 
         except Exception as e:
             self.console.print(f"\n[bold red]❌ Failed to get recommendations: {e}[/bold red]\n")

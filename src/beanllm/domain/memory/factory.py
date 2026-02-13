@@ -2,8 +2,10 @@
 Memory Factory
 """
 
-from .base import BaseMemory
-from .implementations import (
+from typing import cast
+
+from beanllm.domain.memory.base import BaseMemory
+from beanllm.domain.memory.implementations import (
     BufferMemory,
     ConversationMemory,
     SummaryMemory,
@@ -49,4 +51,4 @@ def create_memory(memory_type: str = "buffer", **kwargs) -> BaseMemory:
     if not memory_class:
         raise ValueError(f"Unknown memory type: {memory_type}")
 
-    return memory_class(**kwargs)
+    return cast(BaseMemory, memory_class(**kwargs))

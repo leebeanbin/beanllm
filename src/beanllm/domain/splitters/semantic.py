@@ -36,7 +36,7 @@ Example:
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Callable, List, Optional
+from typing import TYPE_CHECKING, Any, Callable, List, Optional, cast
 
 try:
     from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
@@ -331,7 +331,7 @@ class SemanticTextSplitter(BaseTextSplitter):
         """
         # semchunk 사용
         if self.use_semchunk:
-            return self._chunker(text)
+            return cast(List[str], self._chunker(text))
 
         # 1. 문장 분할
         sentences = self._split_into_sentences(text)

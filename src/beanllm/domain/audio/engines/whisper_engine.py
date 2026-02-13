@@ -17,7 +17,7 @@ Requirements:
 
 import time
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 
@@ -148,7 +148,7 @@ class WhisperEngine(BaseSTTEngine):
             audio_path = str(audio_path)
 
         # Pipeline 옵션 설정
-        generate_kwargs = {
+        generate_kwargs: Dict[str, Any] = {
             "task": config.task,
             "language": None if config.language == "auto" else config.language,
         }

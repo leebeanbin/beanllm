@@ -5,7 +5,7 @@ Base classes for vector stores
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 # 순환 참조 방지를 위해 TYPE_CHECKING 사용
 if TYPE_CHECKING:
@@ -30,7 +30,7 @@ class VectorSearchResult:
 
     document: Any  # type: ignore  # Document 타입
     score: float
-    metadata: Dict[str, Any] = None
+    metadata: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if self.metadata is None:
@@ -224,18 +224,21 @@ class BaseVectorStore(ABC):
     async def _batch_embed(self, queries: List[str]) -> List[List[float]]:
         """배치 임베딩"""
         if hasattr(self.embedding_function, "embed_sync"):
-            return self.embedding_function.embed_sync(queries)
+            return cast(List[List[float]], self.embedding_function.embed_sync(queries))
         elif hasattr(self.embedding_function, "__call__"):
             # 동기 함수
             result = self.embedding_function(queries)
             if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
-                return result
+                return cast(List[List[float]], result)
             else:
                 # 단일 벡터 반환 시 리스트로 변환
-                return [result] if not isinstance(result, list) else result
+                return cast(
+                    List[List[float]],
+                    [result] if not isinstance(result, list) else result,
+                )
         else:
             # 비동기 함수
-            return await self.embedding_function(queries)
+            return cast(List[List[float]], await self.embedding_function(queries))
 
     async def _cpu_batch_search(
         self, query_vecs: List[List[float]], k: int, **kwargs

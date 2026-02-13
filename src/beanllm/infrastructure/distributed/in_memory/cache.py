@@ -2,7 +2,7 @@
 인메모리 Cache (기존 LRUCache 래핑)
 """
 
-from typing import Any, Generic, Optional, TypeVar
+from typing import Any, Generic, Optional, TypeVar, cast
 
 from beanllm.infrastructure.distributed.interfaces import CacheInterface
 
@@ -70,7 +70,7 @@ class InMemoryCache(CacheInterface[K, V], Generic[K, V]):
 
     async def get(self, key: K) -> Optional[V]:
         """값 조회"""
-        return self._cache.get(key)
+        return cast(Optional[V], self._cache.get(key))
 
     async def set(self, key: K, value: V, ttl: Optional[int] = None):
         """값 저장"""

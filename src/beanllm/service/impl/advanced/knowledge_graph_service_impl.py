@@ -14,7 +14,7 @@ SOLID:
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import networkx as nx
 
@@ -276,7 +276,7 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                     )
 
                 # 병렬 처리
-                results = await self._batch_processor.process_batch(
+                results = await self._batch_processor.process_items(
                     items=documents,
                     handler=process_doc_wrapper,
                 )
@@ -409,7 +409,8 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
                 relation_type = (
                     str(params.get("relation_type", "")) if params.get("relation_type") else None
                 )
-                max_hops = int(params.get("max_hops", 1))
+                max_hops_val = params.get("max_hops", 1)
+                max_hops = int(max_hops_val) if isinstance(max_hops_val, (int, float, str)) else 1
                 results = querier.find_related_entities(
                     entity_id=entity_id,
                     relation_type=relation_type,

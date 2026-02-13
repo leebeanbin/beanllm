@@ -72,18 +72,24 @@ class Tool:
 
     def to_anthropic_format(self) -> Dict:
         """Anthropic Tool 형식으로 변환"""
-        input_schema = {"type": "object", "properties": {}, "required": []}
+        properties: Dict[str, Any] = {}
+        required: List[str] = []
+        input_schema: Dict[str, Any] = {
+            "type": "object",
+            "properties": properties,
+            "required": required,
+        }
 
         for param in self.parameters:
-            input_schema["properties"][param.name] = {
+            properties[param.name] = {
                 "type": param.type,
                 "description": param.description,
             }
             if param.enum:
-                input_schema["properties"][param.name]["enum"] = param.enum
+                properties[param.name]["enum"] = param.enum
 
             if param.required:
-                input_schema["required"].append(param.name)
+                required.append(param.name)
 
         return {"name": self.name, "description": self.description, "input_schema": input_schema}
 

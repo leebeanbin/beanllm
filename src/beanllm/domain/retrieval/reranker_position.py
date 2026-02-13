@@ -4,7 +4,7 @@ Position Engineering Reranker implementation.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from beanllm.domain.retrieval.base import BaseReranker
 from beanllm.domain.retrieval.types import RerankResult
@@ -87,7 +87,7 @@ class PositionEngineeringReranker(BaseReranker):
             right = [r for i, r in enumerate(results) if i % 2 == 1]
             return left + right[::-1]
         if self.strategy == "side":
-            reordered = [None] * n
+            reordered: List[Optional[RerankResult]] = [None] * n
             front_idx, back_idx = 0, n - 1
             for i, result in enumerate(results):
                 if i % 2 == 0:
@@ -96,7 +96,7 @@ class PositionEngineeringReranker(BaseReranker):
                 else:
                     reordered[back_idx] = result
                     back_idx -= 1
-            return reordered
+            return cast(List[RerankResult], reordered)
         return results
 
     def __repr__(self) -> str:

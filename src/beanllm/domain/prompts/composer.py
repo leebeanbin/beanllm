@@ -2,10 +2,10 @@
 Prompts Composer - 프롬프트 조합 도구
 """
 
-from typing import List
+from typing import List, cast
 
-from .base import BasePromptTemplate
-from .templates import PromptTemplate
+from beanllm.domain.prompts.base import BasePromptTemplate
+from beanllm.domain.prompts.templates import PromptTemplate
 
 
 class PromptComposer:
@@ -39,7 +39,7 @@ class PromptComposer:
             filtered_kwargs = {k: v for k, v in kwargs.items() if k in required_vars}
             parts.append(template.format(**filtered_kwargs))
 
-        return self.separator.join(parts)
+        return cast(str, self.separator.join(parts))
 
     def set_separator(self, separator: str) -> "PromptComposer":
         """구분자 설정"""

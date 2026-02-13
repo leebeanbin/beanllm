@@ -497,4 +497,4 @@ class Benchmarker:
             bucket_idx = min(bucket_idx, num_buckets - 1)
             counts[bucket_idx] += 1
 
-        return {"buckets": buckets, "counts": counts}
+        return {"buckets": buckets, "counts": [float(c) for c in counts]}

@@ -75,7 +75,7 @@ class DeepSeekOCREngine(BaseOCREngine):
         Args:
             use_gpu: GPU 사용 여부
         """
-        super().__init__()
+        super().__init__(name="DeepSeekOCR")
 
         if not HAS_DEEPSEEK_OCR:
             raise ImportError(
@@ -159,6 +159,7 @@ class DeepSeekOCREngine(BaseOCREngine):
         ]
 
         # 템플릿 적용
+        assert self._tokenizer is not None and self._model is not None, "Model not initialized"
         text_prompt = self._tokenizer.apply_chat_template(
             conversation,
             add_generation_prompt=True,

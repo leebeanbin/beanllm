@@ -8,13 +8,16 @@ KnowledgeGraphServiceImpl에서 extract_entities 비즈니스 로직을 분리�
 from __future__ import annotations
 
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from beanllm.domain.knowledge_graph import Entity, EntityType
 from beanllm.dto.request.graph.kg_request import ExtractEntitiesRequest, ExtractRelationsRequest
 from beanllm.dto.response.graph.kg_response import EntitiesResponse, RelationsResponse
-
-from .kg_serialization import count_by_type, serialize_entity, serialize_relation
+from beanllm.service.impl.advanced.kg_serialization import (
+    count_by_type,
+    serialize_entity,
+    serialize_relation,
+)
 
 if TYPE_CHECKING:
     from beanllm.domain.knowledge_graph import (
@@ -107,14 +110,14 @@ def extract_relations_logic(
 
     entities = [
         Entity(
-            id=e.get("id", str(uuid.uuid4())),
-            name=e["name"],
-            type=EntityType(e["type"]),
-            description=e.get("description", ""),
-            properties=e.get("properties", {}),
-            aliases=e.get("aliases", []),
-            confidence=e.get("confidence", 1.0),
-            mentions=e.get("mentions", []),
+            id=cast(str, e.get("id", str(uuid.uuid4()))),
+            name=cast(str, e["name"]),
+            type=EntityType(cast(str, e["type"])),
+            description=cast(str, e.get("description", "")),
+            properties=cast(Dict[str, Any], e.get("properties", {})),
+            aliases=cast(List[str], e.get("aliases", [])),
+            confidence=cast(float, e.get("confidence", 1.0)),
+            mentions=cast(List[Dict[str, Any]], e.get("mentions", [])),
         )
         for e in request.entities
     ]

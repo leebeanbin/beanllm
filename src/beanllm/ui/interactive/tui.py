@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, cast
 
 
 async def run_interactive_tui(working_dir: Optional[Path] = None) -> None:
@@ -35,7 +35,7 @@ async def run_interactive_tui(working_dir: Optional[Path] = None) -> None:
 
     engine = TUIEngine(
         config=config,
-        backend=BeanllmBackend(),
+        backend=cast(Any, BeanllmBackend()),
         working_dir=working_dir,
     )
     await engine.run_async()

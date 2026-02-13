@@ -4,7 +4,7 @@ Metadata Inferrer - 메타데이터 추론기 구현
 
 import re
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 try:
     from beanllm.utils.logging import get_logger
@@ -212,7 +212,9 @@ class MetadataInferrer:
         base_model = self._extract_base_model(model_id)
 
         # Provider 설정 가져오기
-        provider_config = self.INFERENCE_RULES.get(provider, {})
+        provider_config: Dict[str, Any] = cast(
+            Dict[str, Any], self.INFERENCE_RULES.get(provider, {})
+        )
 
         # 기본 메타데이터
         metadata: Dict[str, Any] = {
@@ -280,20 +282,21 @@ class MetadataInferrer:
 
         return base
 
-    def get_inference_rules(self, provider: str) -> Dict:
+    def get_inference_rules(self, provider: str) -> Dict[str, Any]:
         """특정 Provider의 추론 규칙 조회"""
-        return self.INFERENCE_RULES.get(provider, {})
+        return cast(Dict[str, Any], self.INFERENCE_RULES.get(provider, {}))
 
-    def add_inference_rule(self, provider: str, pattern: str, name: str, rules: Dict):
+    def add_inference_rule(
+        self, provider: str, pattern: str, name: str, rules: Dict[str, Any]
+    ) -> None:
         """추론 규칙 동적 추가"""
         if provider not in self.INFERENCE_RULES:
             self.INFERENCE_RULES[provider] = {"patterns": [], "defaults": {}}
 
-        if "patterns" not in self.INFERENCE_RULES[provider]:
-            self.INFERENCE_RULES[provider]["patterns"] = []
+        provider_entry = cast(Dict[str, Any], self.INFERENCE_RULES[provider])
+        if "patterns" not in provider_entry:
+            provider_entry["patterns"] = []
 
-        self.INFERENCE_RULES[provider]["patterns"].append(
-            {"match": pattern, "name": name, "rules": rules}
-        )
+        provider_entry["patterns"].append({"match": pattern, "name": name, "rules": rules})
 
         logger.info(f"Added inference rule for {provider}: {name}")

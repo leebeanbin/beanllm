@@ -31,7 +31,7 @@ Example:
     ```
 """
 
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator, List, Optional, cast
 
 from beanllm.domain.loaders.base import BaseDocumentLoader
 from beanllm.domain.loaders.types import Document
@@ -175,7 +175,7 @@ class MongoDBLoader(BaseDocumentLoader):
             필드 값 (없으면 None)
         """
         keys = field.split(".")
-        value = doc
+        value: Any = doc
 
         for key in keys:
             if isinstance(value, dict):
@@ -348,7 +348,7 @@ class MongoDBLoader(BaseDocumentLoader):
         """쿼리에 해당하는 문서 수 반환"""
         try:
             collection = self._get_connection()
-            return collection.count_documents(self.query)
+            return cast(int, collection.count_documents(self.query))
         finally:
             self._close_connection()
 

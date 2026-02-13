@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
@@ -103,7 +103,7 @@ class EmbeddingAnalyzer:
         reduced = reducer.fit_transform(embeddings_array)
         logger.info(f"UMAP completed: output shape {reduced.shape}")
 
-        return reduced
+        return cast(np.ndarray, reduced)
 
     def reduce_dimensions_tsne(
         self,
@@ -154,7 +154,7 @@ class EmbeddingAnalyzer:
         reduced = tsne.fit_transform(embeddings_array)
         logger.info(f"t-SNE completed: output shape {reduced.shape}")
 
-        return reduced
+        return cast(np.ndarray, reduced)
 
     def cluster_hdbscan(
         self,
@@ -241,7 +241,7 @@ class EmbeddingAnalyzer:
 
         logger.info(f"Detected {len(outlier_indices)} outliers")
 
-        return outlier_indices
+        return cast(List[int], outlier_indices)
 
     def compute_silhouette_score(
         self, embeddings: np.ndarray, labels: np.ndarray

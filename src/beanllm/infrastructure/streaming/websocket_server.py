@@ -20,12 +20,12 @@ from typing import Any, Dict, List, Optional
 
 try:
     import websockets
-    from websockets.server import WebSocketServerProtocol
+    from websockets.legacy.server import WebSocketServerProtocol as _WebSocketServerProtocol
 
     WEBSOCKETS_AVAILABLE = True
 except ImportError:
     WEBSOCKETS_AVAILABLE = False
-    WebSocketServerProtocol = Any
+    _WebSocketServerProtocol = object  # type: ignore[assignment,misc]
 
 try:
     from beanllm.utils.logging import get_logger
@@ -46,7 +46,7 @@ class StreamingMessage:
     type: str  # "progress", "result", "error", "complete"
     session_id: str
     data: Dict[str, Any]
-    timestamp: str = None
+    timestamp: Optional[str] = None
 
     def __post_init__(self):
         if self.timestamp is None:
@@ -64,7 +64,7 @@ class StreamingSession:
     단일 WebSocket 연결과 관련 작업을 관리
     """
 
-    def __init__(self, session_id: str, websocket: WebSocketServerProtocol):
+    def __init__(self, session_id: str, websocket: _WebSocketServerProtocol):
         self.session_id = session_id
         self.websocket = websocket
         self.created_at = datetime.utcnow()
@@ -179,7 +179,7 @@ class WebSocketServer:
         self.server = None
         self._is_running = False
 
-    async def _handle_connection(self, websocket: WebSocketServerProtocol, path: str):
+    async def _handle_connection(self, websocket: _WebSocketServerProtocol, path: str):
         """
         새로운 WebSocket 연결 처리
 

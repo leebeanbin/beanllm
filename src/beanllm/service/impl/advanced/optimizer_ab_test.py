@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any, Dict
 
 from beanllm.domain.optimizer import ABTester, ABTestResult
 from beanllm.dto.request.advanced.optimizer_request import ABTestRequest
@@ -14,6 +15,8 @@ logger = get_logger(__name__)
 
 class OptimizerABTestMixin:
     """Mixin providing ab_test() for OptimizerServiceImpl."""
+
+    _ab_tests: Dict[str, Any]
 
     async def ab_test(self, request: ABTestRequest) -> ABTestResponse:
         """Run A/B test."""

@@ -19,15 +19,17 @@ beanllm.utils.token_pricing for backward compatibility.
 from __future__ import annotations
 
 import warnings
-from typing import Dict, List
+from types import ModuleType
+from typing import Dict, List, Optional
 
+tiktoken: Optional[ModuleType] = None
 try:
-    import tiktoken
+    import tiktoken as _tiktoken
 
+    tiktoken = _tiktoken
     TIKTOKEN_AVAILABLE = True
 except ImportError:
     TIKTOKEN_AVAILABLE = False
-    tiktoken = None
 
 # Re-export pricing symbols for backward compatibility (e.g. from beanllm.utils.token_counter import ModelPricing)
 from beanllm.utils.token_pricing import (

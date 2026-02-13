@@ -304,8 +304,8 @@ class EmbeddingVisualizer:
             return
 
         # Project 3D -> 2D (use x, y coordinates, ignore z)
-        coords_2d = [
-            (emb[0], emb[1]) if len(emb) >= 2 else (emb[0] if len(emb) >= 1 else 0.0, 0.0)
+        coords_2d: List[List[float]] = [
+            [emb[0], emb[1]] if len(emb) >= 2 else [emb[0] if len(emb) >= 1 else 0.0, 0.0]
             for emb in reduced_embeddings
         ]
 

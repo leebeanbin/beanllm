@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from beanllm.domain.parsers.base import BaseOutputParser
 from beanllm.domain.parsers.exceptions import OutputParserException
@@ -48,7 +48,7 @@ class JSONOutputParser(BaseOutputParser):
             json_text = self._extract_json(text)
 
             # 파싱
-            return json.loads(json_text)
+            return cast(Dict[str, Any], json.loads(json_text))
 
         except json.JSONDecodeError as e:
             raise OutputParserException(f"Failed to parse JSON: {e}", llm_output=text)

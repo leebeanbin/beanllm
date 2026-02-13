@@ -191,14 +191,14 @@ class ParameterAdapter:
 
         # temperature 체크
         if param_name == "temperature":
-            return model_config.get("supports_temperature", True)
+            return bool(model_config.get("supports_temperature", True))
 
         # max_tokens 체크
         if param_name == "max_tokens":
             # uses_max_completion_tokens가 True면 변환할 것이므로 지원함
             if model_config.get("uses_max_completion_tokens"):
                 return True
-            return model_config.get("supports_max_tokens", True)
+            return bool(model_config.get("supports_max_tokens", True))
 
         # 기타 파라미터는 지원
         return True

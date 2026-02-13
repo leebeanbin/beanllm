@@ -9,7 +9,8 @@ import logging
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from types import ModuleType
+from typing import Any, Dict, List, Optional, Union, cast
 
 from beanllm.domain.finetuning.enums import FineTuningStatus
 from beanllm.domain.finetuning.providers import BaseFineTuningProvider
@@ -94,6 +95,15 @@ class AxolotlProvider(BaseFineTuningProvider):
         except ImportError:
             logger.warning("axolotl not installed. Install it with: pip install axolotl-core")
 
+    def _get_yaml(self) -> ModuleType:
+        """Return yaml module; raises ImportError if not installed."""
+        try:
+            import yaml  # type: ignore[import-untyped]
+
+            return cast(ModuleType, yaml)
+        except ImportError:
+            raise ImportError("PyYAML required. Install with: pip install pyyaml")
+
     def prepare_data(self, examples: List[TrainingExample], output_path: str) -> str:
         """훈련 데이터 준비 (Alpaca JSONL)."""
         output_file = Path(output_path)
@@ -162,8 +172,8 @@ class AxolotlProvider(BaseFineTuningProvider):
         if job_id not in self._jobs:
             raise ValueError(f"Job {job_id} not found")
         job = self._jobs[job_id]
-        job.status = FineTuningStatus.CANCELLED
-        job.finished_at = int(time.time())
+        object.__setattr__(job, "status", FineTuningStatus.CANCELLED)
+        object.__setattr__(job, "finished_at", int(time.time()))
         logger.info(f"Job {job_id} cancelled")
         return job
 
@@ -217,13 +227,13 @@ class AxolotlProvider(BaseFineTuningProvider):
             with open(log_file, "r", encoding="utf-8") as f:
                 log_content = f.read()
             if "Training completed" in log_content:
-                job.status = FineTuningStatus.SUCCEEDED
-                job.finished_at = int(time.time())
+                object.__setattr__(job, "status", FineTuningStatus.SUCCEEDED)
+                object.__setattr__(job, "finished_at", int(time.time()))
             elif "Error" in log_content or "Failed" in log_content:
-                job.status = FineTuningStatus.FAILED
-                job.finished_at = int(time.time())
+                object.__setattr__(job, "status", FineTuningStatus.FAILED)
+                object.__setattr__(job, "finished_at", int(time.time()))
             else:
-                job.status = FineTuningStatus.RUNNING
+                object.__setattr__(job, "status", FineTuningStatus.RUNNING)
         except Exception as e:
             logger.warning(f"Failed to update job from log: {e}")
         return job
@@ -260,16 +270,16 @@ class AxolotlProvider(BaseFineTuningProvider):
         else:
             cmd = ["python", "-m", "axolotl.cli.train", config_path]
         logger.info(f"Running Axolotl training: {' '.join(cmd)}")
-        job.status = FineTuningStatus.RUNNING
+        object.__setattr__(job, "status", FineTuningStatus.RUNNING)
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode == 0:
-            job.status = FineTuningStatus.SUCCEEDED
+            object.__setattr__(job, "status", FineTuningStatus.SUCCEEDED)
             logger.info("Axolotl training completed successfully")
         else:
-            job.status = FineTuningStatus.FAILED
-            job.error = result.stderr
+            object.__setattr__(job, "status", FineTuningStatus.FAILED)
+            object.__setattr__(job, "error", result.stderr)
             logger.error(f"Axolotl training failed: {result.stderr}")
-        job.finished_at = int(time.time())
+        object.__setattr__(job, "finished_at", int(time.time()))
         return result
 
     def __repr__(self) -> str:

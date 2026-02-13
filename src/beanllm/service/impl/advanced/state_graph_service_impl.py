@@ -18,6 +18,7 @@ from typing import (
     Optional,
     Type,
     Union,
+    cast,
     get_args,
     get_origin,
     get_type_hints,
@@ -82,12 +83,13 @@ class StateGraphServiceImpl(IStateGraphService):
         execution = GraphExecution(execution_id=execution_id, start_time=datetime.now())
 
         # 상태 복사 (원본 보존) - 최적화: GraphState.copy() 사용
+        state: Dict[str, Any]
         if isinstance(request.initial_state, GraphState):
-            state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
+            state = cast(Dict[str, Any], request.initial_state.copy())
         elif isinstance(request.initial_state, dict):
-            state = dict(request.initial_state)  # Dict는 얕은 복사
+            state = cast(Dict[str, Any], dict(request.initial_state))
         else:
-            state = copy.deepcopy(request.initial_state)  # 기타 타입은 깊은 복사
+            state = cast(Dict[str, Any], copy.deepcopy(request.initial_state))
 
         # Checkpoint 생성 (기존과 동일)
         checkpoint: Optional[Checkpoint] = None
@@ -95,10 +97,11 @@ class StateGraphServiceImpl(IStateGraphService):
             checkpoint = Checkpoint(request.checkpoint_dir)
 
         # 체크포인트에서 복원 (기존과 동일)
+        current_node: Optional[Union[str, Type[END]]]
         if request.resume_from and checkpoint:
             restored_state = checkpoint.load(execution_id, request.resume_from)
             if restored_state:
-                state = restored_state
+                state = cast(Dict[str, Any], restored_state)
                 current_node = request.resume_from
             else:
                 current_node = request.entry_point
@@ -113,22 +116,22 @@ class StateGraphServiceImpl(IStateGraphService):
                     logger.debug(f"[{iteration}] Executing node: {current_node}")
 
                 # 노드 실행
-                node_func = request.nodes[current_node]
+                node_func = request.nodes[cast(str, current_node)]
                 node_start = datetime.now()
 
                 try:
                     # 노드 함수 실행 - 최적화: 실행 기록용으로만 복사
                     if isinstance(state, GraphState):
-                        input_state = state.copy()  # GraphState.copy() 사용
+                        input_state = cast(Dict[str, Any], state.copy())
                     elif isinstance(state, dict):
-                        input_state = dict(state)  # Dict는 얕은 복사
+                        input_state = cast(Dict[str, Any], dict(state))
                     else:
-                        input_state = copy.deepcopy(state)  # 기타 타입은 깊은 복사
-                    state = node_func(state)
+                        input_state = cast(Dict[str, Any], copy.deepcopy(state))
+                    state = cast(Dict[str, Any], node_func(state))
 
                     # 노드 실행 기록 (기존과 동일)
                     node_execution = NodeExecution(
-                        node_name=current_node,
+                        node_name=cast(str, current_node),
                         input_state=input_state,
                         output_state=state,
                         timestamp=node_start,
@@ -137,12 +140,12 @@ class StateGraphServiceImpl(IStateGraphService):
 
                     # 체크포인트 저장 (기존과 동일)
                     if checkpoint:
-                        checkpoint.save(execution_id, state, current_node)
+                        checkpoint.save(execution_id, state, cast(str, current_node))
 
                 except Exception as e:
                     # 노드 실행 에러 (기존과 동일)
                     node_execution = NodeExecution(
-                        node_name=current_node,
+                        node_name=cast(str, current_node),
                         input_state=state,
                         output_state={},
                         timestamp=node_start,
@@ -153,7 +156,7 @@ class StateGraphServiceImpl(IStateGraphService):
 
                 # 다음 노드 결정 (기존과 동일)
                 current_node = self._get_next_node(
-                    current_node,
+                    cast(str, current_node),
                     state,
                     request.edges or {},
                     request.conditional_edges or {},
@@ -206,14 +209,15 @@ class StateGraphServiceImpl(IStateGraphService):
             execution_id = request.execution_id
 
         # 상태 복사 - 최적화: GraphState.copy() 사용
+        state: Dict[str, Any]
         if isinstance(request.initial_state, GraphState):
-            state = request.initial_state.copy()  # 얕은 복사 (GraphState 메서드 사용)
+            state = cast(Dict[str, Any], request.initial_state.copy())
         elif isinstance(request.initial_state, dict):
-            state = dict(request.initial_state)  # Dict는 얕은 복사
+            state = cast(Dict[str, Any], dict(request.initial_state))
         else:
-            state = copy.deepcopy(request.initial_state)  # 기타 타입은 깊은 복사
+            state = cast(Dict[str, Any], copy.deepcopy(request.initial_state))
 
-        current_node = request.entry_point
+        current_node: Optional[Union[str, Type[END]]] = request.entry_point
 
         checkpoint: Optional[Checkpoint] = None
         if request.enable_checkpointing:
@@ -222,26 +226,27 @@ class StateGraphServiceImpl(IStateGraphService):
         iteration = 0
         while current_node != END and iteration < request.max_iterations:
             # 노드 실행
-            node_func = request.nodes[current_node]
-            state = node_func(state)
+            node_func = request.nodes[cast(str, current_node)]
+            state = cast(Dict[str, Any], node_func(state))
 
             # 상태 반환 - 최적화: GraphState.copy() 사용
+            state_copy: Dict[str, Any]
             if isinstance(state, GraphState):
-                state_copy = state.copy()  # GraphState.copy() 사용
+                state_copy = cast(Dict[str, Any], state.copy())
             elif isinstance(state, dict):
-                state_copy = dict(state)  # Dict는 얕은 복사
+                state_copy = cast(Dict[str, Any], dict(state))
             else:
-                state_copy = copy.deepcopy(state)  # 기타 타입은 깊은 복사
+                state_copy = cast(Dict[str, Any], copy.deepcopy(state))
 
-            yield (current_node, state_copy)
+            yield (cast(str, current_node), state_copy)
 
             # 체크포인트 (기존과 동일)
             if checkpoint:
-                checkpoint.save(execution_id, state, current_node)
+                checkpoint.save(execution_id, state, cast(str, current_node))
 
             # 다음 노드 (기존과 동일)
             current_node = self._get_next_node(
-                current_node,
+                cast(str, current_node),
                 state,
                 request.edges or {},
                 request.conditional_edges or {},
@@ -297,10 +302,16 @@ class StateGraphServiceImpl(IStateGraphService):
             result = condition_func(state)
 
             if edge_mapping:
-                return edge_mapping.get(result, END)
+                return cast(
+                    Optional[Union[str, Type[END]]],
+                    edge_mapping.get(result, END),
+                )
             else:
                 # 직접 노드 이름 반환 (기존과 동일)
-                return result if result in nodes else END
+                return cast(
+                    Optional[Union[str, Type[END]]],
+                    result if result in nodes else END,
+                )
 
         # 고정 엣지 (기존과 동일)
         if current_node in edges:

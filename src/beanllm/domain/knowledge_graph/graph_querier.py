@@ -6,7 +6,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import networkx as nx
 
@@ -125,7 +125,8 @@ class GraphQuerier:
             return None
 
         try:
-            return nx.shortest_path(self.graph, source_id, target_id)
+            path = nx.shortest_path(self.graph, source_id, target_id)
+            return cast(List[str], path)
         except nx.NetworkXNoPath:
             return None
 
@@ -172,4 +173,4 @@ class GraphQuerier:
                     }
                 )
 
-        return data
+        return cast(Dict[str, Any], data)

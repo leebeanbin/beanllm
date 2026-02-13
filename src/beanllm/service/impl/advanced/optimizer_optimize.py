@@ -5,7 +5,7 @@ Optimizer service - Optimize methods (mixin).
 from __future__ import annotations
 
 import uuid
-from typing import List
+from typing import Any, Dict, List, cast
 
 from beanllm.domain.optimizer import (
     OptimizationMethod,
@@ -22,6 +22,9 @@ logger = get_logger(__name__)
 
 class OptimizerOptimizeMixin:
     """Mixin providing optimize() for OptimizerServiceImpl."""
+
+    _optimizer_engine: Any
+    _optimizations: Dict[str, Any]
 
     async def optimize(self, request: OptimizeRequest) -> OptimizeResponse:
         """
@@ -46,7 +49,7 @@ class OptimizerOptimizeMixin:
             param_spaces: List[ParameterSpace] = []
             parameters = request.parameters or []
             for param in parameters:
-                ptype_str = (param.get("type") or "float").lower()
+                ptype_str = (cast(str, param.get("type") or "float")).lower()
                 try:
                     param_type = ParameterType[ptype_str.upper()]
                 except KeyError:
@@ -54,26 +57,26 @@ class OptimizerOptimizeMixin:
 
                 if param_type == ParameterType.INTEGER:
                     space = ParameterSpace(
-                        name=param["name"],
+                        name=cast(str, param["name"]),
                         type=param_type,
-                        low=param.get("low", 0),
-                        high=param.get("high", 100),
+                        low=cast(int, param.get("low", 0)),
+                        high=cast(int, param.get("high", 100)),
                     )
                 elif param_type == ParameterType.FLOAT:
                     space = ParameterSpace(
-                        name=param["name"],
+                        name=cast(str, param["name"]),
                         type=param_type,
-                        low=param.get("low", 0.0),
-                        high=param.get("high", 1.0),
+                        low=cast(float, param.get("low", 0.0)),
+                        high=cast(float, param.get("high", 1.0)),
                     )
                 elif param_type == ParameterType.CATEGORICAL:
                     space = ParameterSpace(
-                        name=param["name"],
+                        name=cast(str, param["name"]),
                         type=param_type,
-                        categories=param.get("categories", []),
+                        categories=cast(List[str], param.get("categories", [])),
                     )
                 elif param_type == ParameterType.BOOLEAN:
-                    space = ParameterSpace(name=param["name"], type=param_type)
+                    space = ParameterSpace(name=cast(str, param["name"]), type=param_type)
                 else:
                     continue
                 param_spaces.append(space)

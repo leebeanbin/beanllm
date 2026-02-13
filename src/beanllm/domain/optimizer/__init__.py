@@ -24,13 +24,7 @@ from .optimizer_engine import (
     ParameterSpace,
     ParameterType,
 )
-from .parameter_search import (
-    MultiObjectiveResult,
-    Objective,
-    ParameterSearch,
-    SearchResult,
-    find_balanced_solution,
-)
+from .parameter_search import MetadataInferrer
 from .profiler import (
     ComponentMetrics,
     ComponentType,
@@ -66,12 +60,8 @@ __all__ = [
     "ComponentMetrics",
     "ComponentType",
     "profile_rag_pipeline",
-    # Parameter Search
-    "ParameterSearch",
-    "Objective",
-    "SearchResult",
-    "MultiObjectiveResult",
-    "find_balanced_solution",
+    # Parameter Search / Metadata
+    "MetadataInferrer",
     # A/B Tester
     "ABTester",
     "ABTestResult",

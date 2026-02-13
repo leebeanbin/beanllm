@@ -9,7 +9,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, Dict, List, cast
 
 if TYPE_CHECKING:
     from beanllm.service.types import VectorStoreProtocol
@@ -88,7 +88,7 @@ class SearchStrategyFactory:
     - OCP: 새 전략 추가 시 수정 불필요
     """
 
-    _strategies = {
+    _strategies: Dict[str, type] = {
         "similarity": SimilaritySearchStrategy,
         "hybrid": HybridSearchStrategy,
         "mmr": MMRSearchStrategy,
@@ -106,4 +106,4 @@ class SearchStrategyFactory:
             SearchStrategy: 검색 전략 인스턴스
         """
         strategy_class = cls._strategies.get(search_type, SimilaritySearchStrategy)
-        return strategy_class()
+        return cast(SearchStrategy, strategy_class())

@@ -21,11 +21,17 @@ from beanllm.utils.cli.cli_utils import (
 
 async def analyze_model(model_id: str) -> None:
     """특정 모델 분석 (패턴 기반 추론)."""
-    if RICH_AVAILABLE:
+    if RICH_AVAILABLE and console is not None:
         console.rule(f"[bold cyan]🔍 Analyzing Model: {model_id}[/bold cyan]")
 
     try:
-        if RICH_AVAILABLE:
+        if (
+            RICH_AVAILABLE
+            and console is not None
+            and Progress is not None
+            and SpinnerColumn is not None
+            and TextColumn is not None
+        ):
             with Progress(
                 SpinnerColumn(), TextColumn("[bold blue]{task.description}"), console=console
             ) as progress:
@@ -38,14 +44,20 @@ async def analyze_model(model_id: str) -> None:
 
         model = manager.get_model_info(model_id)
         if not model:
-            console.print(f"\n[red]❌ Model not found:[/red] {model_id}")
-            console.print("\n[dim]Try running 'beanllm scan' first to discover new models.[/dim]")
+            if console is not None:
+                console.print(f"\n[red]❌ Model not found:[/red] {model_id}")
+                console.print(
+                    "\n[dim]Try running 'beanllm scan' first to discover new models.[/dim]"
+                )
             sys.exit(1)
 
         if not RICH_AVAILABLE:
             print(f"Model: {model.model_id}")
             print(f"Provider: {model.provider}")
             print(f"Confidence: {model.inference_confidence:.2f}")
+            return
+
+        if console is None or Panel is None or Tree is None:
             return
 
         source_color = "green" if model.source == "local" else "yellow"
@@ -101,5 +113,6 @@ async def analyze_model(model_id: str) -> None:
         )
 
     except Exception as e:
-        console.print(f"\n[red]❌ Error analyzing model:[/red] {e}")
+        if console is not None:
+            console.print(f"\n[red]❌ Error analyzing model:[/red] {e}")
         sys.exit(1)

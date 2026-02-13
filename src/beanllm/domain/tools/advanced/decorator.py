@@ -8,8 +8,8 @@ import time
 from functools import wraps
 from typing import Any, Callable, Dict, Optional
 
-from .schema import SchemaGenerator
-from .validator import ToolValidator
+from beanllm.domain.tools.advanced.schema import SchemaGenerator
+from beanllm.domain.tools.advanced.validator import ToolValidator
 
 
 def tool(
@@ -54,10 +54,10 @@ def tool(
         func_description = description or func.__doc__ or ""
 
         # Cache storage
-        _cache = {} if cache else None
+        _cache: Dict[str, Any] = {} if cache else {}
 
         @wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Convert args to kwargs for validation
             sig = inspect.signature(func)
             bound = sig.bind(*args, **kwargs)
@@ -71,21 +71,20 @@ def tool(
                     raise ValueError(f"Tool validation failed: {error}")
 
             # Check cache
-            if cache:
-                cache_key = json.dumps(params, sort_keys=True)
-                if cache_key in _cache:
-                    cached_result, cached_time = _cache[cache_key]
-                    if time.time() - cached_time < cache_ttl:
-                        return cached_result
+            cache_key = json.dumps(params, sort_keys=True) if cache else ""
+            if cache and cache_key in _cache:
+                cached_result, cached_time = _cache[cache_key]
+                if time.time() - cached_time < cache_ttl:
+                    return cached_result
 
             # Execute with retry
-            last_exception = None
+            last_exception: Optional[Exception] = None
             for attempt in range(retry):
                 try:
                     result = func(**params)
 
                     # Store in cache
-                    if cache:
+                    if cache and cache_key:
                         _cache[cache_key] = (result, time.time())
 
                     return result
@@ -96,13 +95,15 @@ def tool(
                         wait_time = 2**attempt
                         time.sleep(wait_time)
 
-            raise last_exception
+            if last_exception is not None:
+                raise last_exception
+            raise RuntimeError("Retry loop exited without raising")
 
-        # Attach metadata
-        wrapper.schema = func_schema
-        wrapper.tool_name = func_name
-        wrapper.tool_description = func_description
-        wrapper.is_tool = True
+        # Attach metadata (setattr for mypy: dynamic attributes on wrapper)
+        setattr(wrapper, "schema", func_schema)
+        setattr(wrapper, "tool_name", func_name)
+        setattr(wrapper, "tool_description", func_description)
+        setattr(wrapper, "is_tool", True)
 
         return wrapper
 

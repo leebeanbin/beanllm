@@ -6,7 +6,7 @@ Redis 기반 분산 Cache
 
 import asyncio
 import json
-from typing import Generic, Optional, TypeVar
+from typing import Generic, Optional, TypeVar, cast
 
 from beanllm.infrastructure.distributed.interfaces import CacheInterface
 from beanllm.infrastructure.distributed.utils import check_redis_health
@@ -73,7 +73,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
             try:
                 if isinstance(value, bytes):
                     value = value.decode("utf-8")
-                return json.loads(value)
+                return cast(V, json.loads(value))
             except (json.JSONDecodeError, UnicodeDecodeError) as e:
                 logger.warning(f"Cache value decode error for key: {key}: {e}")
                 return None

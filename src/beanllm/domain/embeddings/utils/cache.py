@@ -4,7 +4,7 @@ Embeddings Cache - 임베딩 캐시
 Updated to use generic LRUCache with automatic TTL cleanup
 """
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol
@@ -136,7 +136,8 @@ class EmbeddingCache:
         Returns:
             임베딩 벡터 또는 None (캐시 미스 또는 만료)
         """
-        return self._cache.get(text)
+        result: Optional[List[float]] = cast(Optional[List[float]], self._cache.get(text))
+        return result
 
     def set(self, text: str, vector: List[float]):
         """
@@ -167,7 +168,8 @@ class EmbeddingCache:
                 - evictions: LRU 제거 수
                 - expirations: TTL 만료 수
         """
-        return self._cache.stats()
+        result: Dict[str, Any] = cast(Dict[str, Any], self._cache.stats())
+        return result
 
     def shutdown(self):
         """

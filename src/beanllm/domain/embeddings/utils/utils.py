@@ -2,11 +2,14 @@
 Embeddings Utils - 임베딩 유틸리티 함수들
 """
 
-from typing import List
+import types
+from typing import List, Optional, cast
 
+np: Optional[types.ModuleType] = None
 try:
-    import numpy as np
+    import numpy as _numpy
 
+    np = _numpy
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -70,9 +73,10 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
             return 0.0
 
         similarity = dot_product / (norm1 * norm2)
-        return max(-1.0, min(1.0, similarity))
+        return cast(float, max(-1.0, min(1.0, similarity)))
 
     try:
+        assert np is not None
         v1 = np.array(vec1, dtype=np.float32)
         v2 = np.array(vec2, dtype=np.float32)
 
@@ -95,7 +99,7 @@ def cosine_similarity(vec1: List[float], vec2: List[float]) -> float:
         similarity = np.dot(v1, v2) / (norm1 * norm2)
 
         # 수치 안정성을 위해 -1과 1 사이로 클리핑
-        return float(np.clip(similarity, -1.0, 1.0))
+        return cast(float, float(np.clip(similarity, -1.0, 1.0)))
 
     except Exception as e:
         logger.error(f"코사인 유사도 계산 중 오류: {e}")
@@ -137,9 +141,10 @@ def euclidean_distance(vec1: List[float], vec2: List[float]) -> float:
             raise ValueError(f"벡터 차원이 다릅니다: {len(vec1)} vs {len(vec2)}")
 
         distance = sum((a - b) ** 2 for a, b in zip(vec1, vec2)) ** 0.5
-        return distance
+        return cast(float, distance)
 
     try:
+        assert np is not None
         v1 = np.array(vec1, dtype=np.float32)
         v2 = np.array(vec2, dtype=np.float32)
 
@@ -148,7 +153,7 @@ def euclidean_distance(vec1: List[float], vec2: List[float]) -> float:
 
         # 유클리드 거리 = sqrt(sum((a_i - b_i)^2))
         distance = np.linalg.norm(v1 - v2)
-        return float(distance)
+        return cast(float, float(distance))
 
     except Exception as e:
         logger.error(f"유클리드 거리 계산 중 오류: {e}")
@@ -198,6 +203,7 @@ def normalize_vector(vec: List[float]) -> List[float]:
         return [x / norm for x in vec]
 
     try:
+        assert np is not None
         v = np.array(vec, dtype=np.float32)
         norm = np.linalg.norm(v)
 
@@ -206,7 +212,7 @@ def normalize_vector(vec: List[float]) -> List[float]:
             return vec
 
         normalized = v / norm
-        return normalized.tolist()
+        return cast(List[float], normalized.tolist())
 
     except Exception as e:
         logger.error(f"벡터 정규화 중 오류: {e}")
@@ -251,6 +257,7 @@ def batch_cosine_similarity(
         return [cosine_similarity(query_vec, candidate) for candidate in candidate_vecs]
 
     try:
+        assert np is not None
         query = np.array(query_vec, dtype=np.float32)
         candidates = np.array(candidate_vecs, dtype=np.float32)
 
@@ -272,7 +279,7 @@ def batch_cosine_similarity(
         # 클리핑
         similarities = np.clip(similarities, -1.0, 1.0)
 
-        return similarities.tolist()
+        return cast(List[float], similarities.tolist())
 
     except Exception as e:
         logger.error(f"배치 코사인 유사도 계산 중 오류: {e}")

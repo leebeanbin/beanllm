@@ -4,7 +4,9 @@ Vision Task Model Factory - 비전 태스크 모델 생성 함수
 비전 태스크 모델을 쉽게 생성할 수 있는 Factory 함수를 제공합니다.
 """
 
-from .base_task_model import BaseVisionTaskModel
+from typing import cast
+
+from beanllm.domain.vision.base_task_model import BaseVisionTaskModel
 
 try:
     from beanllm.utils.logging import get_logger
@@ -86,10 +88,10 @@ def create_vision_task_model(
 
     if model in ["sam", "sam2", "segment-anything"]:
         try:
-            from .models import SAMWrapper
+            from beanllm.domain.vision.sam import SAMWrapper
 
             logger.info("Creating SAM model")
-            return SAMWrapper(**kwargs)
+            return cast(BaseVisionTaskModel, SAMWrapper(**kwargs))
         except ImportError:
             raise ImportError(
                 "segment-anything or sam2 required. "
@@ -99,10 +101,10 @@ def create_vision_task_model(
 
     elif model in ["florence2", "florence-2", "florence"]:
         try:
-            from .models import Florence2Wrapper
+            from beanllm.domain.vision.florence import Florence2Wrapper
 
             logger.info("Creating Florence-2 model")
-            return Florence2Wrapper(**kwargs)
+            return cast(BaseVisionTaskModel, Florence2Wrapper(**kwargs))
         except ImportError:
             raise ImportError(
                 "transformers required for Florence-2. Install with: pip install transformers"
@@ -110,10 +112,10 @@ def create_vision_task_model(
 
     elif model in ["yolo", "yolov8", "yolov11", "yolov12"]:
         try:
-            from .models import YOLOWrapper
+            from beanllm.domain.vision.yolo import YOLOWrapper
 
             logger.info("Creating YOLO model")
-            return YOLOWrapper(**kwargs)
+            return cast(BaseVisionTaskModel, YOLOWrapper(**kwargs))
         except ImportError:
             raise ImportError(
                 "ultralytics required for YOLO. Install with: pip install ultralytics"
@@ -121,10 +123,10 @@ def create_vision_task_model(
 
     elif model in ["qwen3vl", "qwen-vl", "qwen3-vl"]:
         try:
-            from .models import Qwen3VLWrapper
+            from beanllm.domain.vision.models import Qwen3VLWrapper  # type: ignore[attr-defined]
 
             logger.info("Creating Qwen3-VL model")
-            return Qwen3VLWrapper(**kwargs)
+            return cast(BaseVisionTaskModel, Qwen3VLWrapper(**kwargs))
         except ImportError:
             raise ImportError(
                 "transformers required for Qwen3-VL. Install with: pip install transformers torch"

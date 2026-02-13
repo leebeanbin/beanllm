@@ -6,18 +6,16 @@
 
 import asyncio
 import functools
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 from beanllm.utils.logging import get_logger
 
 try:
     from beanllm.utils.integration.security import sanitize_error_message
 except ImportError:
-    # Fallback if security module not available
-    def sanitize_error_message(message: str) -> str:
-        if isinstance(message, Exception):
-            message = str(message)
-        return message
+    # Fallback if security module not available (signature matches security.sanitize_error_message)
+    def sanitize_error_message(error: Union[Exception, str]) -> str:
+        return str(error) if isinstance(error, Exception) else error
 
 
 logger = get_logger(__name__)

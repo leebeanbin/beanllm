@@ -3,11 +3,11 @@ Vector Store Factory - 벡터 스토어 팩토리
 """
 
 import os
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
-from .base import BaseVectorStore
-from .cloud import PineconeVectorStore, WeaviateVectorStore
-from .local import (
+from beanllm.domain.vector_stores.base import BaseVectorStore
+from beanllm.domain.vector_stores.cloud import PineconeVectorStore, WeaviateVectorStore
+from beanllm.domain.vector_stores.local import (
     ChromaVectorStore,
     FAISSVectorStore,
     QdrantVectorStore,
@@ -182,8 +182,13 @@ class VectorStoreBuilder:
 
     def build(self) -> BaseVectorStore:
         """Build vector store"""
-        return VectorStore(
-            provider=self.provider, embedding_function=self.embedding_function, **self.kwargs
+        return cast(
+            BaseVectorStore,
+            VectorStore(
+                provider=self.provider,
+                embedding_function=self.embedding_function,
+                **self.kwargs,
+            ),
         )
 
 
@@ -206,7 +211,10 @@ def create_vector_store(
         # 명시적 선택
         store = create_vector_store("chroma", embedding_function=embed_func)
     """
-    return VectorStore(provider=provider, embedding_function=embedding_function, **kwargs)
+    return cast(
+        BaseVectorStore,
+        VectorStore(provider=provider, embedding_function=embedding_function, **kwargs),
+    )
 
 
 def from_documents(
@@ -285,7 +293,7 @@ def from_documents(
                 # Event loop already running, skip logging
                 pass
 
-        return store
+        return cast(BaseVectorStore, store)
     except Exception as e:
         # 오류 이벤트 발행 (이벤트 로거가 제공된 경우에만)
         if event_logger is not None:

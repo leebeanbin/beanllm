@@ -240,7 +240,7 @@ class BatchProcessor:
             async with semaphore:
                 # 동시성 제어 (분산 또는 인메모리)
                 if self.concurrency_controller:
-                    async with self.concurrency_controller.with_concurrency_control(
+                    async with await self.concurrency_controller.with_concurrency_control(
                         f"{self.task_processor.task_type}:{task_name}",
                         max_concurrent=self.max_concurrent,
                     ):
@@ -263,7 +263,7 @@ class BatchProcessor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # 4. 결과 정리
-        final_results = []
+        final_results: List[Any] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 task_id = task_ids[i]
@@ -304,7 +304,7 @@ class BatchProcessor:
             """단일 항목 처리"""
             async with semaphore:
                 if self.concurrency_controller:
-                    async with self.concurrency_controller.with_concurrency_control(
+                    async with await self.concurrency_controller.with_concurrency_control(
                         f"{self.task_processor.task_type}:batch",
                         max_concurrent=max_concurrent,
                     ):
@@ -325,7 +325,7 @@ class BatchProcessor:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # 결과 정리
-        final_results = []
+        final_results: List[Any] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 await self.task_processor.error_handler.handle_error(

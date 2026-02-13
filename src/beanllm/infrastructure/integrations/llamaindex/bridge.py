@@ -105,10 +105,11 @@ class LlamaIndexBridge:
 
         for llama_doc in llama_documents:
             # beanLLM Document 생성
+            meta = llama_doc.metadata or {}
+            source = meta.get("source", "llamaindex")
             bean_doc = BeanDocument(
                 content=llama_doc.text,
-                metadata=llama_doc.metadata or {},
-                source=llama_doc.metadata.get("source", "llamaindex"),
+                metadata={**meta, "source": source},
             )
 
             bean_docs.append(bean_doc)

@@ -91,7 +91,6 @@ Answer:"""
         vision_rag_service = service_factory.create_vision_rag_service(
             vector_store=self.vector_store,
             vision_embedding=self.vision_embedding,
-            llm=self.llm,
             prompt_template=self.prompt_template,
         )
 

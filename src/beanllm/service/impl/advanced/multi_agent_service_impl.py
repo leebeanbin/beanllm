@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from beanllm.domain.multi_agent.strategies import (
     DebateStrategy,
@@ -109,21 +109,28 @@ class MultiAgentServiceImpl(IMultiAgentService):
                 batch_processor = BatchProcessor(task_type="multi_agent.tasks", max_concurrent=10)
                 concurrency_controller = ConcurrencyController()
 
-                async def process_agent(agent, task: str) -> Any:
+                async def process_agent(agent: Any, task: str) -> Any:
                     """단일 Agent 실행 (동시성 제어)"""
-                    async with concurrency_controller.with_concurrency_control(
+                    cm = await concurrency_controller.with_concurrency_control(
                         "multi_agent.parallel",
                         max_concurrent=10,
                         rate_limit_key="multi_agent:execute",
-                    ):
+                    )
+                    async with cm:
                         return await agent.run(task)
 
                 # 배치 처리
-                results = await batch_processor.process_items(
+                tasks_data = [
+                    {"agent": agent, "task": request.task or ""} for agent in (request.agents or [])
+                ]
+
+                async def run_agent(task_data: Any) -> Any:
+                    return await process_agent(task_data["agent"], cast(str, task_data["task"]))
+
+                results = await batch_processor.process_batch(
                     task_name="execute",
-                    items=request.agents or [],
-                    item_to_task_data=lambda agent: {"agent": agent, "task": request.task},
-                    handler=lambda task_data: process_agent(task_data["agent"], task_data["task"]),
+                    tasks_data=tasks_data,
+                    handler=run_agent,
                     priority=0,
                 )
 
@@ -165,7 +172,7 @@ class MultiAgentServiceImpl(IMultiAgentService):
 
                 return MultiAgentResponse(
                     final_result=result.get("final_result"),
-                    strategy=result.get("strategy", "parallel"),
+                    strategy=cast(str, result.get("strategy", "parallel")),
                     metadata=result,
                 )
             except Exception as e:
@@ -180,7 +187,7 @@ class MultiAgentServiceImpl(IMultiAgentService):
 
         return MultiAgentResponse(
             final_result=result.get("final_result"),
-            strategy=result.get("strategy", "parallel"),
+            strategy=cast(str, result.get("strategy", "parallel")),
             metadata=result,
         )
 

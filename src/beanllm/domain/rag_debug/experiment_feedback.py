@@ -6,15 +6,17 @@ Extracted from chunking_experimenter.py for single responsibility.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional
 
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
-    import logging
 
-    def get_logger(name: str) -> logging.Logger:  # type: ignore[no-redef]
+def get_logger(name: str) -> logging.Logger:
+    try:
+        from beanllm.utils.logging import get_logger as _get_logger
+
+        return _get_logger(name)
+    except ImportError:
         return logging.getLogger(name)
 
 

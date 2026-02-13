@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.domain.web_search import SearchEngine, SearchResponse, WebScraper
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
@@ -102,6 +102,10 @@ class WebSearch(AsyncHelperMixin):
         # WebSearchResponse를 SearchResponse로 변환 (기존 API 유지)
         from beanllm.domain.web_search import SearchResponse as DomainSearchResponse
 
+        if response is None:
+            return DomainSearchResponse(
+                query="", results=[], total_results=0, search_time=0.0, engine="", metadata={}
+            )
         return DomainSearchResponse(
             query=response.query,
             results=response.results,
@@ -144,6 +148,10 @@ class WebSearch(AsyncHelperMixin):
         # WebSearchResponse를 SearchResponse로 변환 (기존 API 유지)
         from beanllm.domain.web_search import SearchResponse as DomainSearchResponse
 
+        if response is None:
+            return DomainSearchResponse(
+                query="", results=[], total_results=0, search_time=0.0, engine="", metadata={}
+            )
         return DomainSearchResponse(
             query=response.query,
             results=response.results,
@@ -169,7 +177,7 @@ class WebSearch(AsyncHelperMixin):
         """
         # 동기 메서드이지만 내부적으로는 비동기 사용
 
-        return run_async_in_sync(
+        result = run_async_in_sync(
             self._web_search_handler.handle_search_and_scrape(
                 query=query,
                 engine=self.default_engine.value,
@@ -181,6 +189,7 @@ class WebSearch(AsyncHelperMixin):
                 **kwargs,
             )
         )
+        return result if result is not None else []
 
     async def search_and_scrape_async(
         self, query: str, max_scrape: int = 3, **kwargs
@@ -199,7 +208,7 @@ class WebSearch(AsyncHelperMixin):
             스크래핑된 콘텐츠 리스트
         """
         # Handler를 통한 처리
-        return await self._web_search_handler.handle_search_and_scrape(
+        result = await self._web_search_handler.handle_search_and_scrape(
             query=query,
             engine=self.default_engine.value,
             max_results=self.max_results,
@@ -209,6 +218,7 @@ class WebSearch(AsyncHelperMixin):
             bing_api_key=self.bing_api_key,
             **kwargs,
         )
+        return result if result is not None else []
 
 
 # 편의 함수
@@ -242,4 +252,4 @@ def search_web(
         max_results=max_results,
     )
 
-    return searcher.search(query)
+    return cast(SearchResponse, searcher.search(query))

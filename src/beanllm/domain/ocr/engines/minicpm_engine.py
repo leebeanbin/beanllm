@@ -75,7 +75,7 @@ class MiniCPMEngine(BaseOCREngine):
         Args:
             use_gpu: GPU 사용 여부
         """
-        super().__init__()
+        super().__init__(name="MiniCPM")
 
         if not HAS_MINICPM:
             raise ImportError(
@@ -155,6 +155,7 @@ class MiniCPMEngine(BaseOCREngine):
         msgs = [{"role": "user", "content": [pil_image, prompt]}]
 
         # 추론
+        assert self._model is not None and self._tokenizer is not None, "Model not initialized"
         with torch.no_grad():
             response = self._model.chat(
                 image=None,  # msgs에 이미지 포함

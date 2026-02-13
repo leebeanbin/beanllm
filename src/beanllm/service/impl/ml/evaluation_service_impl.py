@@ -4,7 +4,7 @@ Evaluation Service Implementation
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, cast
 
 from beanllm.domain.evaluation.evaluator import Evaluator
 from beanllm.domain.evaluation.metrics import (
@@ -31,7 +31,7 @@ from beanllm.dto.response.ml.evaluation_response import (
 from beanllm.service.evaluation_service import IEvaluationService
 
 if TYPE_CHECKING:
-    from beanllm.domain.embeddings.base import Embedding
+    from beanllm.domain.embeddings.base import BaseEmbedding
     from beanllm.domain.evaluation.protocols import LLMClientProtocol
 
 
@@ -41,7 +41,7 @@ class EvaluationServiceImpl(IEvaluationService):
     def __init__(
         self,
         client: Optional["LLMClientProtocol"] = None,
-        embedding_model: Optional["Embedding"] = None,
+        embedding_model: Optional["BaseEmbedding"] = None,
     ):
         """
         Args:
@@ -57,7 +57,7 @@ class EvaluationServiceImpl(IEvaluationService):
         result = evaluator.evaluate(
             prediction=request.prediction,
             reference=request.reference,
-            **request.kwargs,
+            **request.extra_params,
         )
         return EvaluationResponse(result=result)
 
@@ -67,10 +67,13 @@ class EvaluationServiceImpl(IEvaluationService):
 
         # 내부적으로 자동 병렬 처리 (사용자는 신경 쓸 필요 없음)
         # 기본 설정: max_concurrent=10, rate_limiter 자동 생성 (분산 아키텍처 사용)
+        from beanllm.domain.protocols import ConcurrencyControllerProtocol, RateLimiterProtocol
         from beanllm.infrastructure.distributed import ConcurrencyController, get_rate_limiter
 
-        rate_limiter = get_rate_limiter()
-        concurrency_controller = ConcurrencyController()
+        rate_limiter = cast(Optional["RateLimiterProtocol"], get_rate_limiter())
+        concurrency_controller = cast(
+            Optional["ConcurrencyControllerProtocol"], ConcurrencyController()
+        )
         max_concurrent = 10
 
         results = await evaluator.batch_evaluate_async(
@@ -79,7 +82,7 @@ class EvaluationServiceImpl(IEvaluationService):
             max_concurrent=max_concurrent,
             rate_limiter=rate_limiter,
             concurrency_controller=concurrency_controller,
-            **request.kwargs,
+            **request.extra_params,
         )
         return BatchEvaluationResponse(results=results)
 
@@ -104,7 +107,7 @@ class EvaluationServiceImpl(IEvaluationService):
         result = evaluator.evaluate(
             prediction=request.prediction,
             reference=request.reference,
-            **request.kwargs,
+            **request.extra_params,
         )
         return EvaluationResponse(result=result)
 
@@ -130,7 +133,7 @@ class EvaluationServiceImpl(IEvaluationService):
             prediction=request.answer,
             reference=request.ground_truth or request.question,
             contexts=request.contexts,
-            **request.kwargs,
+            **request.extra_params,
         )
         return EvaluationResponse(result=result)
 

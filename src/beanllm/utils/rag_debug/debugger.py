@@ -181,7 +181,7 @@ class RAGDebugger:
             return float(real_np.linalg.norm(a_arr - b_arr))
         else:
             # numpy 없이 계산
-            return sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5
+            return float(sum((x - y) ** 2 for x, y in zip(a, b)) ** 0.5)
 
     def _interpret_similarity(self, cosine_sim: float) -> str:
         """유사도 해석"""
@@ -307,7 +307,7 @@ class RAGDebugger:
         self._print("🔍 Vector Store 검사")
         self._print(f"{'=' * 60}")
 
-        results = {}
+        results: Dict[str, Optional[List[Any]]] = {}
 
         for query in sample_queries:
             self._print(f'\n쿼리: "{query}"')
@@ -372,7 +372,7 @@ class RAGDebugger:
         self._print("# RAG 파이프라인 전체 검증")
         self._print(f"{'#' * 60}\n")
 
-        report = {}
+        report: Dict[str, Any] = {}
 
         # 1. 문서 확인
         self._print("1️⃣  원본 문서 확인")

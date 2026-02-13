@@ -3,7 +3,7 @@
 """
 
 import asyncio
-from typing import Any, AsyncIterator, Dict
+from typing import Any, AsyncGenerator, Dict
 
 from beanllm.infrastructure.distributed.interfaces import (
     EventConsumerInterface,
@@ -52,7 +52,7 @@ class InMemoryEventBus(EventProducerInterface, EventConsumerInterface):
 
                     logging.error(f"Event handler error: {e}", exc_info=True)
 
-    async def subscribe(self, topic: str, handler: Any) -> AsyncIterator[Dict[str, Any]]:
+    async def subscribe(self, topic: str, handler: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """이벤트 구독"""
         # 구독자 등록
         async with self._lock:

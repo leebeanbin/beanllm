@@ -225,7 +225,7 @@ class OrchestratorCommands:
             # Show diagram
             if show_diagram and workflow.visualization:
                 self.console.print("\n[cyan]Workflow Diagram:[/cyan]")
-                self.console.print(OutputBlock(workflow.visualization))
+                OutputBlock.render(workflow.visualization, console=self.console)
 
             self.console.print(
                 f"\n{StatusIcon.success()} [green]Workflow ID: {workflow.workflow_id}[/green]\n"

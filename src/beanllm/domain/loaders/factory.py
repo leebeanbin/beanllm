@@ -3,11 +3,11 @@ Loaders Factory - 문서 로더 팩토리
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
-from .base import BaseDocumentLoader
-from .core import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
-from .types import Document
+from beanllm.domain.loaders.base import BaseDocumentLoader
+from beanllm.domain.loaders.core import CSVLoader, DirectoryLoader, PDFLoader, TextLoader
+from beanllm.domain.loaders.types import Document
 
 try:
     from beanllm.utils.logging import get_logger
@@ -70,7 +70,7 @@ class DocumentLoader:
     def _get_bean_pdf_loader(cls):
         """beanPDFLoader 가져오기 (선택적)"""
         try:
-            from .pdf import beanPDFLoader
+            from beanllm.domain.loaders.pdf import beanPDFLoader
 
             return beanPDFLoader
         except ImportError:
@@ -139,7 +139,7 @@ class DocumentLoader:
             if loader_type_lower in ["beanpdf", "bean-pdf", "advanced-pdf"]:
                 bean_loader = cls._get_bean_pdf_loader()
                 if bean_loader:
-                    return bean_loader(path, **kwargs)
+                    return cast(BaseDocumentLoader, bean_loader(path, **kwargs))
                 else:
                     logger.warning(
                         "beanPDFLoader not available, falling back to PDFLoader. "
@@ -150,7 +150,7 @@ class DocumentLoader:
 
             if loader_type_lower in cls.LOADER_TYPES:
                 loader_class = cls.LOADER_TYPES[loader_type_lower]
-                return loader_class(path, **kwargs)
+                return cast(BaseDocumentLoader, loader_class(path, **kwargs))
             else:
                 logger.warning(
                     f"Unknown loader type: {loader_type}, falling back to auto-detection"
@@ -181,7 +181,7 @@ class DocumentLoader:
                     bean_loader = cls._get_bean_pdf_loader()
                     if bean_loader:
                         logger.debug("Auto-detected beanPDFLoader (advanced options detected)")
-                        return bean_loader(path, **kwargs)
+                        return cast(BaseDocumentLoader, bean_loader(path, **kwargs))
                     else:
                         logger.warning(
                             "beanPDFLoader options detected but not available. "
@@ -193,7 +193,7 @@ class DocumentLoader:
 
             if suffix in cls.LOADERS:
                 loader_class = cls.LOADERS[suffix]
-                return loader_class(path, **kwargs)
+                return cast(BaseDocumentLoader, loader_class(path, **kwargs))
             else:
                 # 기본: TextLoader
                 logger.warning(f"Unknown file type: {suffix}, using TextLoader")

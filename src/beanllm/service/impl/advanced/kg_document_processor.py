@@ -9,7 +9,7 @@ Knowledge Graph 단일 문서 처리 (엔티티 + 관계 추출).
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.domain.knowledge_graph import (
     Entity,
@@ -48,48 +48,50 @@ async def process_single_document(
     try:
         doc_id = str(uuid.uuid4())
 
+        entity_types_list: List[str] = entity_types if entity_types is not None else []
         entities_response = await service.extract_entities(
             ExtractEntitiesRequest(
                 document_id=doc_id,
                 text=doc,
-                entity_types=entity_types,
+                entity_types=entity_types_list,
                 resolve_coreferences=True,
             )
         )
 
         entities = [
             Entity(
-                id=e["id"],
-                name=e["name"],
-                type=EntityType(e["type"]),
-                description=e.get("description", ""),
-                properties=e.get("properties", {}),
-                aliases=e.get("aliases", []),
-                confidence=e.get("confidence", 1.0),
-                mentions=e.get("mentions", []),
+                id=cast(str, e.get("id", "")),
+                name=cast(str, e.get("name", "")),
+                type=EntityType(cast(str, e.get("type", "ENTITY"))),
+                description=cast(str, e.get("description", "")),
+                properties=cast(Dict[str, Any], e.get("properties", {})),
+                aliases=cast(List[str], e.get("aliases", [])),
+                confidence=cast(float, e.get("confidence", 1.0)),
+                mentions=cast(List[Dict[str, Any]], e.get("mentions", [])),
             )
             for e in entities_response.entities
         ]
 
         relations: List[Relation] = []
         if entities:
+            relation_types_list: List[str] = relation_types if relation_types is not None else []
             relations_response = await service.extract_relations(
                 ExtractRelationsRequest(
                     document_id=doc_id,
                     text=doc,
                     entities=entities_response.entities,
-                    relation_types=relation_types,
+                    relation_types=relation_types_list,
                     infer_implicit=True,
                 )
             )
             relations = [
                 Relation(
-                    source_id=r["source_id"],
-                    target_id=r["target_id"],
-                    type=RelationType(r["type"]),
-                    properties=r.get("properties", {}),
-                    confidence=r.get("confidence", 1.0),
-                    bidirectional=r.get("bidirectional", False),
+                    source_id=cast(str, r["source_id"]),
+                    target_id=cast(str, r["target_id"]),
+                    type=RelationType(cast(str, r["type"])),
+                    properties=cast(Dict[str, Any], r.get("properties", {})),
+                    confidence=cast(float, r.get("confidence", 1.0)),
+                    bidirectional=cast(bool, r.get("bidirectional", False)),
                 )
                 for r in relations_response.relations
             ]

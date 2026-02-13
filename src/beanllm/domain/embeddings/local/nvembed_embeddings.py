@@ -4,7 +4,7 @@ NVIDIA NV-Embed-v2 embedding implementation.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from beanllm.domain.embeddings.base import BaseLocalEmbedding
 
@@ -139,6 +139,7 @@ class NVEmbedEmbedding(BaseLocalEmbedding):
         """텍스트들을 임베딩 (동기)"""
         # 모델 로드
         self._load_model()
+        assert self._model is not None
 
         try:
             # NV-Embed 포맷으로 준비
@@ -155,7 +156,8 @@ class NVEmbedEmbedding(BaseLocalEmbedding):
 
             self._log_embed_success(len(texts), f"prefix: {self.prefix}, shape: {embeddings.shape}")
 
-            return embeddings.tolist()
+            return cast(List[List[float]], embeddings.tolist())
 
         except Exception as e:
             self._handle_embed_error("NVIDIA NV-Embed", e)
+            raise

@@ -17,7 +17,7 @@ Requirements:
 
 import time
 from pathlib import Path
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 import numpy as np
 
@@ -136,7 +136,7 @@ class DistilWhisperEngine(BaseSTTEngine):
             audio_path = str(audio_path)
 
         # Pipeline 옵션 설정
-        generate_kwargs = {
+        generate_kwargs: Dict[str, Any] = {
             "task": config.task,
             "language": None if config.language == "auto" else config.language,
         }
@@ -146,6 +146,7 @@ class DistilWhisperEngine(BaseSTTEngine):
             generate_kwargs["num_beams"] = config.beam_size
 
         # 전사 실행
+        assert self._pipeline is not None, "Pipeline not initialized"
         if config.timestamp:
             result = self._pipeline(
                 audio_path,

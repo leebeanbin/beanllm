@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.domain.orchestrator import (
     NodeType,
@@ -72,15 +72,15 @@ class OrchestratorServiceImpl(IOrchestratorService):
             workflow = WorkflowGraph(name=request.workflow_name)
 
             # Add nodes
-            node_id_map = {}
+            node_id_map: Dict[str, str] = {}
             for node_def in request.nodes:
                 node_id = workflow.add_node(
-                    node_type=NodeType(node_def.get("type", "agent")),
-                    name=node_def.get("name", "node"),
-                    config=node_def.get("config", {}),
-                    position=node_def.get("position", (0, 0)),
+                    node_type=NodeType(cast(str, node_def.get("type", "agent"))),
+                    name=cast(str, node_def.get("name", "node")),
+                    config=cast(Optional[Dict[str, Any]], node_def.get("config")) or {},
+                    position=cast(Optional[tuple[int, int]], node_def.get("position")) or (0, 0),
                 )
-                node_id_map[node_def.get("name")] = node_id
+                node_id_map[cast(str, node_def.get("name", "node"))] = node_id
 
             # Add edges
             for edge_def in request.edges:
@@ -89,8 +89,8 @@ class OrchestratorServiceImpl(IOrchestratorService):
 
                 if source_name in node_id_map and target_name in node_id_map:
                     workflow.add_edge(
-                        source=node_id_map[source_name],
-                        target=node_id_map[target_name],
+                        source=node_id_map[cast(str, source_name)],
+                        target=node_id_map[cast(str, target_name)],
                     )
 
         # Store workflow
@@ -124,31 +124,31 @@ class OrchestratorServiceImpl(IOrchestratorService):
 
         if request.strategy == "research_write":
             workflow = WorkflowTemplates.research_and_write(
-                researcher_id=config.get("researcher_id", "researcher"),
-                writer_id=config.get("writer_id", "writer"),
-                reviewer_id=config.get("reviewer_id"),
+                researcher_id=cast(str, config.get("researcher_id", "researcher")),
+                writer_id=cast(str, config.get("writer_id", "writer")),
+                reviewer_id=cast(Optional[str], config.get("reviewer_id")),
             )
         elif request.strategy == "parallel":
             workflow = WorkflowTemplates.parallel_consensus(
-                agent_ids=config.get("agent_ids", ["agent1", "agent2"]),
-                aggregation=config.get("aggregation", "vote"),
+                agent_ids=cast(List[str], config.get("agent_ids", ["agent1", "agent2"])),
+                aggregation=cast(str, config.get("aggregation", "vote")),
             )
         elif request.strategy == "hierarchical":
             workflow = WorkflowTemplates.hierarchical_delegation(
-                manager_id=config.get("manager_id", "manager"),
-                worker_ids=config.get("worker_ids", ["worker1", "worker2"]),
+                manager_id=cast(str, config.get("manager_id", "manager")),
+                worker_ids=cast(List[str], config.get("worker_ids", ["worker1", "worker2"])),
             )
         elif request.strategy == "debate":
             workflow = WorkflowTemplates.debate_and_judge(
-                debater_ids=config.get("debater_ids", ["debater1", "debater2"]),
-                judge_id=config.get("judge_id", "judge"),
-                rounds=config.get("rounds", 3),
+                debater_ids=cast(List[str], config.get("debater_ids", ["debater1", "debater2"])),
+                judge_id=cast(str, config.get("judge_id", "judge")),
+                rounds=cast(int, config.get("rounds", 3)),
             )
         else:
             # Default: simple pipeline
             workflow = WorkflowTemplates.pipeline(
-                stages=config.get("stages", ["stage1", "stage2"]),
-                agent_ids=config.get("agent_ids"),
+                stages=cast(List[str], config.get("stages", ["stage1", "stage2"])),
+                agent_ids=cast(Optional[List[str]], config.get("agent_ids")),
             )
 
         return workflow
@@ -177,9 +177,9 @@ class OrchestratorServiceImpl(IOrchestratorService):
 
         try:
             # Execute workflow
-            task = request.input_data.get("task", "")
-            agents = request.input_data.get("agents", {})
-            tools = request.input_data.get("tools", {})
+            task = cast(str, request.input_data.get("task", ""))
+            agents = cast(Dict[str, Any], request.input_data.get("agents", {}))
+            tools = cast(Dict[str, Any], request.input_data.get("tools", {}))
 
             result = await workflow.execute(agents=agents, task=task, tools=tools)
 
@@ -315,9 +315,9 @@ class OrchestratorServiceImpl(IOrchestratorService):
         # Create response
         response = AnalyticsResponse(
             workflow_id=workflow_id,
-            total_executions=summary.get("total_executions", 0),
-            avg_execution_time=summary.get("avg_duration_ms", 0.0) / 1000,
-            success_rate=summary.get("avg_success_rate", 0.0),
+            total_executions=cast(int, summary.get("total_executions", 0)),
+            avg_execution_time=cast(float, summary.get("avg_duration_ms", 0.0)) / 1000,
+            success_rate=cast(float, summary.get("avg_success_rate", 0.0)),
             bottlenecks=bottlenecks,
             agent_utilization=agent_utilization,
             cost_breakdown=cost_breakdown,

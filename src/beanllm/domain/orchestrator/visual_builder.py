@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from .workflow_graph import NodeType, WorkflowGraph, WorkflowNode
 
@@ -358,7 +358,7 @@ class VisualBuilder:
 
         return "\n".join(lines)
 
-    def get_statistics(self) -> Dict[str, any]:
+    def get_statistics(self) -> Dict[str, Any]:
         """워크플로우 통계"""
         node_type_counts: Dict[str, int] = {}
         for node in self.workflow.nodes.values():

@@ -9,7 +9,7 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Any, AsyncIterator, Dict
+from typing import Any, AsyncGenerator, Dict
 
 from beanllm.infrastructure.distributed.interfaces import (
     EventConsumerInterface,
@@ -106,7 +106,7 @@ class KafkaEventConsumer(EventConsumerInterface):
             _, consumer = kafka_client
         self.consumer = consumer
 
-    async def subscribe(self, topic: str, handler: Any) -> AsyncIterator[Dict[str, Any]]:
+    async def subscribe(self, topic: str, handler: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """이벤트 구독"""
         # Topic 구독
         self.consumer.subscribe([topic])

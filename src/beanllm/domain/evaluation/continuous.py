@@ -317,6 +317,8 @@ class ContinuousEvaluator:
             trigger = CronTrigger.from_crontab(task.schedule)
 
             # 작업 등록
+            if self._scheduler is None:
+                raise RuntimeError("Scheduler not initialized. Call start_scheduler() first.")
             self._scheduler.add_job(
                 self.run_task,
                 trigger=trigger,

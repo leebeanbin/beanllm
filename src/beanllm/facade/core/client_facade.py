@@ -8,7 +8,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, cast
 
 from beanllm.dto.response.core.chat_response import ChatResponse
 from beanllm.infrastructure.registry import get_model_registry
@@ -106,7 +106,7 @@ class Client:
             ChatResponse: 응답
         """
         # Handler를 통한 처리 (기존 API 유지)
-        return await self._chat_handler.handle_chat(
+        result = await self._chat_handler.handle_chat(
             messages=messages,
             model=self.model,
             temperature=temperature,
@@ -117,6 +117,7 @@ class Client:
             provider=self.provider,
             **{**self.extra_kwargs, **kwargs},
         )
+        return cast(ChatResponse, result)
 
     async def stream_chat(
         self,
@@ -237,13 +238,15 @@ class SourceProviderFactoryAdapter:
         provider.name = normalized_name
 
         # chat 메서드가 dict를 반환하도록 래핑 (LLMResponse -> dict)
-        if not hasattr(provider, "_wrapped"):
+        if not getattr(provider, "_wrapped", None):
             from beanllm.providers.base_provider import LLMResponse
 
             original_chat = provider.chat
             original_stream_chat = provider.stream_chat
 
-            async def wrapped_chat(messages, model, system=None, **kwargs):
+            async def wrapped_chat(
+                messages: Any, model: str, system: Any = None, **kwargs: Any
+            ) -> Any:
                 """LLMResponse를 dict로 변환"""
                 response = await original_chat(messages, model, system, **kwargs)
                 # LLMResponse를 dict로 변환
@@ -256,9 +259,9 @@ class SourceProviderFactoryAdapter:
                 # 이미 dict인 경우
                 return response
 
-            provider.chat = wrapped_chat
-            provider.stream_chat = original_stream_chat  # 이미 str을 yield
-            provider._wrapped = True
+            setattr(provider, "chat", wrapped_chat)
+            setattr(provider, "stream_chat", original_stream_chat)
+            setattr(provider, "_wrapped", True)
 
         return provider
 

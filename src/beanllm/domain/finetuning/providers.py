@@ -3,7 +3,7 @@ Finetuning Providers - 파인튜닝 프로바이더
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from .enums import FineTuningStatus
 from .types import FineTuningConfig, FineTuningJob, FineTuningMetrics, TrainingExample
@@ -106,7 +106,7 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
         with open(file_path, "rb") as f:
             response = client.files.create(file=f, purpose=purpose)
 
-        return response.id
+        return cast(str, response.id)
 
     def create_job(self, config: FineTuningConfig) -> FineTuningJob:
         """
@@ -121,13 +121,13 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
         client = self._get_client()
 
         # Hyperparameters 구성
-        hyperparameters = {}
+        hyperparameters: Dict[str, Any] = {}
         if config.n_epochs:
             hyperparameters["n_epochs"] = config.n_epochs
         if config.batch_size:
-            hyperparameters["batch_size"] = config.batch_size
+            hyperparameters["batch_size"] = int(config.batch_size)
         if config.learning_rate_multiplier:
-            hyperparameters["learning_rate_multiplier"] = config.learning_rate_multiplier
+            hyperparameters["learning_rate_multiplier"] = float(config.learning_rate_multiplier)
 
         # 작업 생성
         response = client.fine_tuning.jobs.create(
@@ -192,8 +192,8 @@ class OpenAIFineTuningProvider(BaseFineTuningProvider):
             job_id=response.id,
             model=response.model,
             status=FineTuningStatus(response.status),
-            created_at=response.created_at,
-            finished_at=response.finished_at,
+            created_at=int(response.created_at) if response.created_at is not None else 0,
+            finished_at=int(response.finished_at) if response.finished_at is not None else None,
             fine_tuned_model=response.fine_tuned_model,
             training_file=response.training_file,
             validation_file=response.validation_file,

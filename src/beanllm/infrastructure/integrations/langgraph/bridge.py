@@ -4,7 +4,7 @@ LangGraph Bridge - beanLLM ↔ LangGraph 브릿지
 beanLLM의 State Graph를 LangGraph 형식으로 변환합니다.
 """
 
-from typing import Callable, Dict
+from typing import Callable, Dict, Tuple, Type, cast
 
 from beanllm.utils.logging import get_logger
 
@@ -72,8 +72,12 @@ class LangGraphBridge:
                 else:
                     state_fields[field_name] = field_type
 
-        # TypedDict 생성
-        LangGraphState = type("LangGraphState", (TypedDict,), state_fields)
+        # TypedDict 생성 (TypedDict is a typing special form; cast for type constructor)
+        LangGraphState = type(
+            "LangGraphState",
+            cast(Tuple[Type[object], ...], (TypedDict,)),
+            state_fields,
+        )
 
         logger.info(f"Created LangGraph State schema with fields: {list(state_fields.keys())}")
 

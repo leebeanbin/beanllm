@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from beanllm.utils.logging import get_logger
 
@@ -284,10 +284,7 @@ class ChunkValidator:
             )
 
         # Statistics
-        overlap_ratios: list[float] = [
-            o["overlap_ratio"]
-            for o in overlaps  # type: ignore[misc]
-        ]
+        overlap_ratios: List[float] = [float(cast(float, o["overlap_ratio"])) for o in overlaps]
         stats = {
             "num_pairs": len(overlaps),
             "avg_overlap_ratio": sum(overlap_ratios) / len(overlap_ratios)

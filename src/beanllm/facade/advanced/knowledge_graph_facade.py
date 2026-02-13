@@ -13,7 +13,7 @@ standalone functions in knowledge_graph_standalone.py (re-exported below).
 from __future__ import annotations
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.dto.request.graph.kg_request import (
     BuildGraphRequest,
@@ -133,7 +133,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
             entity_types=entity_types or [],
             resolve_coreferences=resolve_coreferences,
         )
-        return await self._handler.handle_extract_entities(request)
+        return cast(EntitiesResponse, await self._handler.handle_extract_entities(request))
 
     async def extract_relations(
         self,
@@ -180,7 +180,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
             relation_types=relation_types or [],
             infer_implicit=infer_implicit,
         )
-        return await self._handler.handle_extract_relations(request)
+        return cast(RelationsResponse, await self._handler.handle_extract_relations(request))
 
     async def build_graph(
         self,
@@ -229,7 +229,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
             persist_to_neo4j=persist_to_neo4j,
             clear_existing=clear_existing,
         )
-        return await self._handler.handle_build_graph(request)
+        return cast(BuildGraphResponse, await self._handler.handle_build_graph(request))
 
     async def query_graph(
         self,
@@ -286,7 +286,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
             query=query or "",
             params=params or {},
         )
-        return await self._handler.handle_query_graph(request)
+        return cast(QueryGraphResponse, await self._handler.handle_query_graph(request))
 
     async def graph_rag(
         self,
@@ -318,9 +318,12 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
                 print(f"  - {result['entity']['name']}: {result['score']}")
             ```
         """
-        return await self._handler.handle_graph_rag(
-            query=query,
-            graph_id=graph_id,
+        return cast(
+            GraphRAGResponse,
+            await self._handler.handle_graph_rag(
+                query=query,
+                graph_id=graph_id,
+            ),
         )
 
     async def visualize_graph(self, graph_id: str) -> str:
@@ -339,7 +342,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
             print(diagram)
             ```
         """
-        return await self._handler.handle_visualize_graph(graph_id)
+        return cast(str, await self._handler.handle_visualize_graph(graph_id))
 
     async def get_graph_stats(self, graph_id: str) -> Dict[str, Any]:
         """
@@ -365,7 +368,7 @@ class KnowledgeGraph(KnowledgeGraphConvenienceMixin):
                 print(f"  {entity_type}: {count}")
             ```
         """
-        return await self._handler.handle_get_graph_stats(graph_id)
+        return cast(Dict[str, Any], await self._handler.handle_get_graph_stats(graph_id))
 
 
 # Re-export standalone functions for backward compatibility

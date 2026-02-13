@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union, cast
 
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
@@ -171,8 +171,12 @@ Answer:"""
 
             # 3. 임베딩 및 Vector Store
             embed = Embedding(model=embedding_model)
-            embed_func = embed.embed_sync
-
+            _embed_sync = getattr(embed, "embed_sync", None)
+            embed_func = (
+                _embed_sync
+                if callable(_embed_sync)
+                else (lambda texts: run_async_in_sync(embed.embed(texts)))
+            )
             vector_store = from_documents(chunks, embed_func, provider=vector_store_provider)
 
             # 4. LLM
@@ -222,7 +226,7 @@ Answer:"""
             검색 결과 리스트
         """
         # Handler를 통한 처리
-        return run_async_in_sync(
+        result = run_async_in_sync(
             self._rag_handler.handle_retrieve(
                 query=query,
                 vector_store=self.vector_store,
@@ -233,6 +237,7 @@ Answer:"""
                 **kwargs,
             )
         )
+        return result if result is not None else []
 
     def query(
         self,
@@ -282,8 +287,11 @@ Answer:"""
         )
 
         if include_sources:
-            return response.answer, response.sources
-        return response.answer
+            return cast(
+                Tuple[str, List[Any]],
+                (response.answer, response.sources if response.sources is not None else []),
+            )
+        return cast(str, response.answer)
 
     def stream_query(
         self,
@@ -415,7 +423,7 @@ Answer:"""
                 await rate_limiter.wait(f"llm:{model or 'default'}", cost=1.0)
 
                 # 동시성 제어 (분산 또는 인메모리)
-                async with concurrency_controller.with_concurrency_control(
+                async with await concurrency_controller.with_concurrency_control(
                     "rag.query",
                     max_concurrent=max_concurrent,
                     rate_limit_key=f"llm:{model or 'default'}",
@@ -443,16 +451,17 @@ Answer:"""
             if loop.is_running():
                 # 이미 실행 중인 루프가 있으면 순차 처리로 폴백
                 # (중첩 이벤트 루프는 복잡하므로)
-                answers = []
-                for question in questions:
-                    answer = self.query(question, k=k, model=model, **kwargs)
-                    answers.append(answer)
-                return answers
+                answers_list: List[str] = []
+                for q in questions:
+                    ans = self.query(q, k=k, model=model, **kwargs)
+                    text = ans[0] if isinstance(ans, tuple) else ans
+                    answers_list.append(text if isinstance(text, str) else str(text))
+                return answers_list
             else:
-                return loop.run_until_complete(_batch_query_async())
+                return cast(List[str], loop.run_until_complete(_batch_query_async()))
         except RuntimeError:
             # 루프가 없으면 새로 생성
-            return run_async_in_sync(_batch_query_async())
+            return cast(List[str], run_async_in_sync(_batch_query_async()))
 
     async def aquery(
         self,
@@ -478,9 +487,10 @@ Answer:"""
         # 기존 rag_chain.py의 aquery 정확히 마이그레이션
 
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
+        result = await loop.run_in_executor(
             None, lambda: self.query(question, k, include_sources, model=model, **kwargs)
         )
+        return cast(Union[str, Tuple[str, List[Any]]], result)
 
 
 # Builder and convenience (backward compatibility)

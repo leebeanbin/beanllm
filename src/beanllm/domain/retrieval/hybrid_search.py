@@ -250,6 +250,8 @@ class HybridRetriever:
         query_tokens = query.lower().split()
 
         # BM25 점수 계산
+        if self._bm25 is None:
+            return {}
         scores = self._bm25.get_scores(query_tokens)
 
         # 상위 k개 선택
@@ -477,12 +479,9 @@ class HybridRetriever:
         # Dense 임베딩 추가 (배치 처리)
         import numpy as np
 
-        try:
-            new_embs = self.embedding_function(new_documents)
-            new_matrix = np.array(new_embs, dtype=np.float32)
-        except TypeError:
-            embs = [self.embedding_function(doc) for doc in new_documents]
-            new_matrix = np.array(embs, dtype=np.float32)
+        # Embedding function typically accepts a single document (str); embed per document
+        embs = [self.embedding_function(doc) for doc in new_documents]
+        new_matrix = np.array(embs, dtype=np.float32)
 
         # 정규화
         norms = np.linalg.norm(new_matrix, axis=1, keepdims=True)

@@ -5,7 +5,16 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, AsyncContextManager, AsyncIterator, Dict, Generic, Optional, TypeVar
+from typing import (
+    Any,
+    AsyncContextManager,
+    AsyncGenerator,
+    AsyncIterator,
+    Dict,
+    Generic,
+    Optional,
+    TypeVar,
+)
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -164,7 +173,7 @@ class EventConsumerInterface(ABC):
     """이벤트 구독자 추상 인터페이스"""
 
     @abstractmethod
-    async def subscribe(self, topic: str, handler: Any) -> AsyncIterator[Dict[str, Any]]:
+    def subscribe(self, topic: str, handler: Any) -> AsyncGenerator[Dict[str, Any], None]:
         """
         이벤트 구독
 

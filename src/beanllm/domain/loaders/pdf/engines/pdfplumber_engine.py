@@ -9,7 +9,7 @@ pdfplumber를 사용한 정확한 PDF 파싱 엔진
 
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from .base import BasePDFEngine
 
@@ -153,11 +153,12 @@ class PDFPlumberEngine(BasePDFEngine):
                         "layout_analysis", False
                     )
 
-                    chars_info = None
-                    words_info = None
+                    chars_info: Optional[List[Dict]] = None
+                    words_info: Optional[List[Dict]] = None
                     if extract_chars or extract_words:
                         try:
-                            # 문자 단위 정보 (위치, 폰트, 크기)
+                            # 문자 단위 정보 (위치, 폰트, 크기) - page.chars
+                            chars_list = getattr(page, "chars", None) or []
                             chars_info = [
                                 {
                                     "text": char["text"],
@@ -167,10 +168,14 @@ class PDFPlumberEngine(BasePDFEngine):
                                     "y1": char["y1"],
                                     "size": char.get("size", 0),
                                 }
-                                for char in page.chars[:1000]  # 최대 1000개만 (성능 고려)
+                                for char in list(chars_list)[:1000]  # 최대 1000개만 (성능 고려)
                             ]
 
-                            # 단어 단위 정보
+                            # 단어 단위 정보 - page.words 또는 extract_words()
+                            words_list: List[Any] = list(
+                                getattr(page, "words", None)
+                                or getattr(page, "extract_words", lambda: [])()
+                            )
                             words_info = [
                                 {
                                     "text": word["text"],
@@ -179,14 +184,14 @@ class PDFPlumberEngine(BasePDFEngine):
                                     "x1": word["x1"],
                                     "y1": word["y1"],
                                 }
-                                for word in page.words[:500]  # 최대 500개만
+                                for word in list(words_list)[:500]  # 최대 500개만
                             ]
                         except Exception as e:
                             logger.warning(f"Failed to extract chars/words: {e}")
 
                     # 페이지 메타데이터
                     page_rect = page.bbox
-                    page_metadata = {
+                    page_metadata: Dict[str, Any] = {
                         "page_number": page_num + 1,  # 1-based for user
                     }
 

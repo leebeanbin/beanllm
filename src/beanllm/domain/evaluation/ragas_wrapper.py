@@ -24,7 +24,7 @@ References:
 """
 
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from .base_framework import BaseEvaluationFramework
 
@@ -432,43 +432,44 @@ class RAGASWrapper(BaseEvaluationFramework):
 
         logger.info(f"RAGAS dataset evaluation completed: {len(dataset)} samples")
 
-        return result
+        return cast(Dict[str, Any], result)
 
     # BaseEvaluationFramework 추상 메서드 구현
 
-    def evaluate(
-        self, metric: str, data: Union[Dict[str, Any], Any], **kwargs: Any
-    ) -> Dict[str, Any]:
+    def evaluate(self, **kwargs: Any) -> Dict[str, Any]:
         """
         평가 실행 (BaseEvaluationFramework 인터페이스).
 
         Args:
-            metric: 메트릭 이름 (faithfulness, answer_relevancy 등) 또는 "dataset".
-            data: 평가 데이터 (dict 또는 DataFrame).
-            **kwargs: 메트릭별 추가 파라미터.
+            **kwargs: metric (메트릭 이름), data (평가 데이터), 메트릭별 추가 파라미터.
 
         Returns:
             평가 결과.
         """
+        metric: str = kwargs.pop("metric", "dataset")
+        data: Union[Dict[str, Any], Any] = kwargs.pop("data", {})
+
         # 데이터셋 배치 평가
         if metric == "dataset":
-            return self.evaluate_dataset(dataset=data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_dataset(dataset=data, **kwargs))
 
-        # 단일 평가
+        # 단일 평가 (data must be dict for **data)
+        if not isinstance(data, dict):
+            data = {}
         if metric == "faithfulness":
-            return self.evaluate_faithfulness(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_faithfulness(**data, **kwargs))
         elif metric == "answer_relevancy":
-            return self.evaluate_answer_relevancy(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_answer_relevancy(**data, **kwargs))
         elif metric == "context_precision":
-            return self.evaluate_context_precision(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_context_precision(**data, **kwargs))
         elif metric == "context_recall":
-            return self.evaluate_context_recall(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_context_recall(**data, **kwargs))
         elif metric == "context_relevancy":
-            return self.evaluate_context_relevancy(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_context_relevancy(**data, **kwargs))
         elif metric == "answer_similarity":
-            return self.evaluate_answer_similarity(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_answer_similarity(**data, **kwargs))
         elif metric == "answer_correctness":
-            return self.evaluate_answer_correctness(**data, **kwargs)
+            return cast(Dict[str, Any], self.evaluate_answer_correctness(**data, **kwargs))
         else:
             raise ValueError(
                 f"Unknown metric: {metric}. Available: {list(self.list_tasks().keys())}"

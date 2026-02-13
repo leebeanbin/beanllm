@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from beanllm.dto.request.ml.vision_rag_request import VisionRAGRequest
 from beanllm.dto.response.ml.vision_rag_response import VisionRAGResponse
@@ -204,7 +204,9 @@ Answer:"""
 
             from beanllm.dto.request.core.chat_request import ChatRequest
 
-            chat_request = ChatRequest(messages=messages, model=request.llm_model)
+            chat_request = ChatRequest(
+                messages=cast(List[Dict[str, str]], messages), model=request.llm_model
+            )
             chat_response = await self._chat_service.chat(chat_request)
             answer = chat_response.content
         else:
@@ -255,7 +257,7 @@ Answer:"""
                     """단일 질문 처리 (Rate Limiting + 동시성 제어)"""
                     await rate_limiter.wait(f"llm:{request.llm_model or 'default'}", cost=1.0)
 
-                    async with concurrency_controller.with_concurrency_control(
+                    async with await concurrency_controller.with_concurrency_control(
                         "vision_rag.query",
                         max_concurrent=10,
                         rate_limit_key=f"llm:{request.llm_model or 'default'}",
@@ -272,16 +274,12 @@ Answer:"""
                         return query_response.answer or ""
 
                 # 배치 처리
-                tasks_data = [{"question": q} for q in request.questions]
                 results = await batch_processor.process_items(
-                    task_name="query",
                     items=request.questions,
-                    item_to_task_data=lambda q: {"question": q},
-                    handler=lambda task_data: process_question(task_data["question"]),
-                    priority=0,
+                    handler=process_question,
                 )
 
-                answers = [r.get("result", "") if isinstance(r, dict) else str(r) for r in results]
+                answers = [str(r) for r in results]
 
                 # 이벤트 발행
                 event_logger = get_event_logger()

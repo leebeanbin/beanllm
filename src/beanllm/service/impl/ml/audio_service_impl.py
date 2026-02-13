@@ -10,7 +10,7 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union, cast
 
 from beanllm.domain.audio import (
     AudioSegment,
@@ -155,7 +155,10 @@ class AudioServiceImpl(IAudioService):
         # 전사 실행 (기존과 동일)
         options = {"language": language, "task": task, **kwargs}
 
-        result = self._whisper_model.transcribe(audio_path, **options)
+        model = self._whisper_model
+        if model is None:
+            raise RuntimeError("Whisper model failed to load")
+        result = model.transcribe(audio_path, **options)
 
         # 결과 변환 (기존과 동일)
         segments = []
@@ -364,10 +367,10 @@ class AudioServiceImpl(IAudioService):
 
         url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice}"
 
-        headers = {
+        headers: Dict[str, str] = {
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
-            "xi-api-key": api_key,
+            "xi-api-key": api_key or "",
         }
 
         data = {
@@ -447,7 +450,8 @@ class AudioServiceImpl(IAudioService):
                 )
                 documents.append(doc)
 
-            self._vector_store.add_documents(documents, self._embedding_model)
+            store = cast(Any, self._vector_store)
+            store.add_documents(documents, self._embedding_model)
 
         return AudioResponse(transcription=transcription_result)
 
@@ -476,7 +480,8 @@ class AudioServiceImpl(IAudioService):
             return AudioResponse(search_results=results[:top_k])
 
         # Vector search (기존과 동일)
-        search_results = self._vector_store.search(query, k=top_k, **kwargs)
+        store = cast(Any, self._vector_store)
+        search_results = store.search(query, k=top_k, **kwargs)
 
         results = []
         for result in search_results:

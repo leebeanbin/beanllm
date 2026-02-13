@@ -9,7 +9,7 @@ import json
 import time
 import traceback
 import uuid
-from typing import Any, AsyncIterator, Dict, Optional
+from typing import Any, AsyncIterator, Dict, Optional, cast
 
 from .factory import get_distributed_lock, get_event_bus, get_rate_limiter
 from .utils import sanitize_error_message
@@ -188,7 +188,7 @@ class ConcurrencyController:
             new_count = await self.redis.incr(key)
             await self.redis.expire(key, 300)  # 5분 TTL
 
-            return new_count <= max_concurrent
+            return cast(bool, new_count <= max_concurrent)
         except Exception as e:
             logger.warning(f"Failed to acquire concurrency slot: {sanitize_error_message(str(e))}")
             return True  # 오류 시 허용 (fallback)
@@ -340,7 +340,7 @@ class DistributedErrorHandler:
             if error_data:
                 if isinstance(error_data, bytes):
                     error_data = error_data.decode("utf-8")
-                return json.loads(error_data)
+                return cast(Dict[str, Any], json.loads(error_data))
         except Exception as e:
             logger.warning(f"Failed to get error log: {sanitize_error_message(str(e))}")
 
@@ -402,7 +402,7 @@ class RequestMonitor:
             if status:
                 if isinstance(status, bytes):
                     status = status.decode("utf-8")
-                return json.loads(status)
+                return cast(Dict[str, Any], json.loads(status))
         except Exception as e:
             logger.warning(f"Failed to get request status: {sanitize_error_message(str(e))}")
 
@@ -429,7 +429,7 @@ class RequestMonitor:
             if error_data:
                 if isinstance(error_data, bytes):
                     error_data = error_data.decode("utf-8")
-                return json.loads(error_data)
+                return cast(Dict[str, Any], json.loads(error_data))
         except Exception as e:
             logger.warning(f"Failed to get error log: {sanitize_error_message(str(e))}")
 

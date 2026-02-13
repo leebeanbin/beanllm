@@ -13,7 +13,6 @@ from beanllm.domain.optimizer import (
     BenchmarkResult,
     OptimizationResult,
     OptimizerEngine,
-    ParameterSearch,
     Profiler,
     ProfileResult,
     Recommender,
@@ -54,7 +53,6 @@ class OptimizerServiceImpl(
         self._profiler = Profiler()
         self._ab_tester = ABTester()
         self._recommender = Recommender()
-        self._param_search = ParameterSearch()
 
         # State storage
         self._benchmarks: Dict[str, BenchmarkResult] = {}

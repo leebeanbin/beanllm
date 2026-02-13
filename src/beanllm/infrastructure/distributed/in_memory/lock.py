@@ -4,7 +4,7 @@
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import AsyncContextManager, Dict
+from typing import AsyncGenerator, Dict
 
 from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
 
@@ -22,7 +22,7 @@ class InMemoryLock(DistributedLockInterface):
         self._lock = asyncio.Lock()  # _locks 딕셔너리 보호용
 
     @asynccontextmanager
-    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncContextManager:
+    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncGenerator[None, None]:
         """락 획득 (context manager)"""
         # 키에 해당하는 Lock 가져오기 또는 생성
         async with self._lock:

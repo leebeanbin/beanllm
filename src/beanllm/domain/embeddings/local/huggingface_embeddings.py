@@ -4,7 +4,7 @@ HuggingFace Sentence Transformers embedding implementation.
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, cast
 
 from beanllm.domain.embeddings.base import BaseLocalEmbedding
 
@@ -171,6 +171,7 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
         """
         # 모델 로드
         self._load_model()
+        assert self._model is not None
 
         try:
             # GPU 최적화: no_grad() context (메모리 절약)
@@ -190,10 +191,11 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
             )
 
             # Convert to list
-            return embeddings.tolist()
+            return cast(List[List[float]], embeddings.tolist())
 
         except Exception as e:
             self._handle_embed_error("HuggingFace", e)
+            raise
 
     def _encode_batch(self, texts: List[str]):
         """
@@ -205,6 +207,7 @@ class HuggingFaceEmbedding(BaseLocalEmbedding):
         Returns:
             numpy array of embeddings
         """
+        assert self._model is not None
         # sentence-transformers의 encode 메서드 사용
         # (내부적으로 배치 처리 및 GPU 최적화 수행)
         embeddings = self._model.encode(

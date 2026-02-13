@@ -135,7 +135,9 @@ class RetryHandler:
                 await asyncio.sleep(delay)
 
         # Should not reach here
-        raise last_exception
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError("Retry loop exited without raising")
 
     def execute(self, func: Callable, *args, **kwargs) -> Any:
         """
@@ -180,7 +182,9 @@ class RetryHandler:
                 time.sleep(delay)
 
         # Should not reach here
-        raise last_exception
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError("Retry loop exited without raising")
 
 
 def retry(

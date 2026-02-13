@@ -102,7 +102,7 @@ class EntityExtractor:
             try:
                 from beanllm.domain.knowledge_graph.ner_engines import NEREngineFactory
 
-                kwargs = {}
+                kwargs: Dict[str, Any] = {}
                 if model:
                     kwargs["model"] = model
                 if labels and engine == "gliner":
@@ -277,7 +277,7 @@ class EntityExtractor:
 
     def _parse_entity_json(self, response: str) -> List[Entity]:
         """LLM 응답에서 JSON 파싱하여 Entity 객체로 변환"""
-        entities = []
+        entities: List[Entity] = []
 
         # JSON 추출 (코드 블록 내에 있을 수 있음)
         json_match = re.search(r"\[[\s\S]*\]", response)
@@ -482,7 +482,7 @@ class EntityExtractor:
         entities: List[Entity],
     ) -> Dict[str, Any]:
         """엔티티 통계"""
-        type_counts = {}
+        type_counts: Dict[str, int] = {}
         for entity in entities:
             type_name = entity.type.value
             type_counts[type_name] = type_counts.get(type_name, 0) + 1

@@ -123,7 +123,9 @@ class RAGBuilder:
 
         # Vector Store 생성 (기존과 동일)
         if self.vector_store is None:
-            embed_func = self.embedding.embed_sync
+            embed_func = getattr(self.embedding, "embed_sync", None)
+            if embed_func is None or not callable(embed_func):
+                raise ValueError("embedding must provide embed_sync callable")
             self.vector_store = from_documents(self.chunks, embed_func)
         else:
             # Vector Store가 제공되었으면 문서 추가 (기존과 동일)

@@ -5,7 +5,7 @@ Updated to use generic LRUCache with TTL and automatic cleanup
 """
 
 import json
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol
@@ -45,9 +45,8 @@ except ImportError:
             pass
 
 
+from beanllm.domain.prompts.base import BasePromptTemplate
 from beanllm.utils.logging import get_logger
-
-from .base import BasePromptTemplate
 
 logger = get_logger(__name__)
 
@@ -130,7 +129,7 @@ class PromptCache:
         Returns:
             캐시된 값 또는 None (캐시 미스 또는 만료)
         """
-        return self._cache.get(key)
+        return cast(Optional[str], self._cache.get(key))
 
     def set(self, key: str, value: str) -> None:
         """
@@ -157,7 +156,7 @@ class PromptCache:
                 - evictions: LRU 제거 수
                 - expirations: TTL 만료 수
         """
-        return self._cache.stats()
+        return cast(Dict[str, Any], self._cache.stats())
 
     def clear(self) -> None:
         """캐시 초기화 (모든 항목 삭제)"""

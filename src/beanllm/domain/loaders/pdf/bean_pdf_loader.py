@@ -13,7 +13,7 @@ beanPDFLoader - 고급 PDF 로더
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from beanllm.domain.loaders.advanced.security import validate_file_path
 from beanllm.domain.loaders.base import BaseDocumentLoader
@@ -153,7 +153,7 @@ class beanPDFLoader(BaseDocumentLoader):
         )
 
         # 엔진 초기화
-        self._engines = {}
+        self._engines: Dict[str, Any] = {}
         self._init_engines()
 
         # 의존성 확인
@@ -412,7 +412,7 @@ class beanPDFLoader(BaseDocumentLoader):
             return "fast"
         else:
             # 사용 가능한 첫 번째 엔진
-            return list(self._engines.keys())[0]
+            return cast(str, list(self._engines.keys())[0])
 
     def _execute_strategy(self, strategy: str) -> dict:
         """
@@ -435,7 +435,7 @@ class beanPDFLoader(BaseDocumentLoader):
         # 엔진 실행
         result = engine.extract(self.file_path, config_dict)
 
-        return result
+        return cast(dict, result)
 
     def _convert_to_documents(self, result: dict) -> List[Document]:
         """
@@ -519,9 +519,9 @@ class beanPDFLoader(BaseDocumentLoader):
         Returns:
             str: Markdown 형식 텍스트
         """
-        from .utils import MarkdownConverter
+        from beanllm.domain.loaders.pdf.utils import MarkdownConverter
 
         converter = MarkdownConverter()
         markdown_text = converter.convert_to_markdown(result)
 
-        return markdown_text
+        return cast(str, markdown_text)

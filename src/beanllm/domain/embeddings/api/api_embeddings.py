@@ -13,7 +13,7 @@ API-Based Embeddings - API 기반 임베딩 Provider 구현체들
 Template Method Pattern을 사용하여 중복 코드 제거
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional, cast
 
 from beanllm.domain.embeddings.base import BaseAPIEmbedding
 
@@ -79,6 +79,7 @@ class OpenAIEmbedding(BaseAPIEmbedding):
 
         except Exception as e:
             self._handle_embed_error("OpenAI", e)
+            raise
 
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트들을 임베딩 (동기)"""
@@ -94,6 +95,7 @@ class OpenAIEmbedding(BaseAPIEmbedding):
 
         except Exception as e:
             self._handle_embed_error("OpenAI", e)
+            raise
 
 
 class GeminiEmbedding(BaseAPIEmbedding):
@@ -183,10 +185,11 @@ class GeminiEmbedding(BaseAPIEmbedding):
 
                 self._log_embed_success(len(texts), f"sequential mode, {len(texts)} API calls")
 
-            return embeddings
+            return cast(List[List[float]], embeddings)
 
         except Exception as e:
             self._handle_embed_error("Gemini", e)
+            raise
 
 
 class OllamaEmbedding(BaseAPIEmbedding):
@@ -270,7 +273,10 @@ class OllamaEmbedding(BaseAPIEmbedding):
 
                 embeddings = []
                 for text in texts:
-                    response = self.client.embeddings(model=self.model, prompt=text)
+                    response = cast(
+                        Any,
+                        self.client.embeddings(model=self.model, prompt=text),
+                    )
                     embeddings.append(response["embedding"])
 
                 self._log_embed_success(len(texts), f"sequential mode, {len(texts)} requests")
@@ -279,6 +285,7 @@ class OllamaEmbedding(BaseAPIEmbedding):
 
         except Exception as e:
             self._handle_embed_error("Ollama", e)
+            raise
 
 
 class VoyageEmbedding(BaseAPIEmbedding):
@@ -340,13 +347,13 @@ class VoyageEmbedding(BaseAPIEmbedding):
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트들을 임베딩 (동기)"""
         try:
-            response = self.client.embed(texts=texts, model=self.model, **self.kwargs)
-
+            response: Any = self.client.embed(texts=texts, model=self.model, **self.kwargs)
             self._log_embed_success(len(texts))
-            return response.embeddings
+            return cast(List[List[float]], response.embeddings)
 
         except Exception as e:
             self._handle_embed_error("Voyage AI", e)
+            raise
 
 
 class JinaEmbedding(BaseAPIEmbedding):
@@ -428,6 +435,7 @@ class JinaEmbedding(BaseAPIEmbedding):
 
         except Exception as e:
             self._handle_embed_error("Jina AI", e)
+            raise
 
 
 class MistralEmbedding(BaseAPIEmbedding):
@@ -470,10 +478,11 @@ class MistralEmbedding(BaseAPIEmbedding):
 
             embeddings = [item.embedding for item in response.data]
             self._log_embed_success(len(texts))
-            return embeddings
+            return cast(List[List[float]], embeddings)
 
         except Exception as e:
             self._handle_embed_error("Mistral AI", e)
+            raise
 
 
 class CohereEmbedding(BaseAPIEmbedding):
@@ -520,12 +529,18 @@ class CohereEmbedding(BaseAPIEmbedding):
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트들을 임베딩 (동기)"""
         try:
-            response = self.client.embed(
-                texts=texts, model=self.model, input_type=self.input_type, **self.kwargs
+            response = cast(
+                Any,
+                self.client.embed(
+                    texts=texts,
+                    model=self.model,
+                    input_type=self.input_type,
+                    **self.kwargs,
+                ),
             )
-
             self._log_embed_success(len(texts))
-            return response.embeddings
+            return cast(List[List[float]], response.embeddings)
 
         except Exception as e:
             self._handle_embed_error("Cohere", e)
+            raise

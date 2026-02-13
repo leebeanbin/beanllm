@@ -21,7 +21,7 @@ References:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from .base_framework import BaseEvaluationFramework
 
@@ -195,9 +195,9 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
 
         if pattern:
             filtered_tasks = [t for t in all_tasks if pattern.lower() in t.lower()]
-            return filtered_tasks
+            return cast(List[str], filtered_tasks)
 
-        return all_tasks
+        return cast(List[str], all_tasks)
 
     def get_popular_tasks(self) -> Dict[str, str]:
         """
@@ -208,13 +208,7 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
         """
         return self.POPULAR_TASKS.copy()
 
-    def evaluate(
-        self,
-        tasks: Union[str, List[str]],
-        num_fewshot: Optional[int] = None,
-        limit: Optional[int] = None,
-        **kwargs,
-    ) -> Dict[str, Any]:
+    def evaluate(self, **kwargs: Any) -> Dict[str, Any]:
         """
         벤치마크 평가 실행
 
@@ -253,13 +247,13 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
 
         from lm_eval import simple_evaluate
 
-        # 파라미터 준비
-        num_fewshot = num_fewshot if num_fewshot is not None else self.num_fewshot
-        limit = limit if limit is not None else self.limit
-
-        # tasks를 리스트로 변환
+        tasks = kwargs.get("tasks", [])
         if isinstance(tasks, str):
             tasks = [tasks]
+        num_fewshot = kwargs.get("num_fewshot")
+        limit = kwargs.get("limit")
+        num_fewshot = num_fewshot if num_fewshot is not None else self.num_fewshot
+        limit = limit if limit is not None else self.limit
 
         logger.info(
             f"LM Eval Harness: Evaluating {len(tasks)} tasks with "
@@ -286,7 +280,7 @@ class LMEvalHarnessWrapper(BaseEvaluationFramework):
             if self.output_path:
                 self._save_results(results, tasks)
 
-            return results
+            return cast(Dict[str, Any], results)
 
         except Exception as e:
             logger.error(f"LM Eval Harness evaluation failed: {e}")

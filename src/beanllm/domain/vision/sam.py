@@ -11,11 +11,11 @@ Requirements:
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 import numpy as np
 
-from .base_task_model import BaseVisionTaskModel
+from beanllm.domain.vision.base_task_model import BaseVisionTaskModel
 
 try:
     from beanllm.utils.logging import get_logger
@@ -235,6 +235,7 @@ class SAMWrapper(BaseVisionTaskModel):
             {"masks": np.ndarray, "scores": List[float], "logits": np.ndarray}
         """
         self._load_model()
+        assert self._predictor is not None, "Predictor not initialized"
 
         # 이미지 로드
         if isinstance(image, (str, Path)):
@@ -259,11 +260,14 @@ class SAMWrapper(BaseVisionTaskModel):
             multimask_output=multimask_output,
         )
 
-        return {
-            "masks": masks,
-            "scores": scores.tolist(),
-            "logits": logits,
-        }
+        return cast(
+            Dict[str, Any],
+            {
+                "masks": masks,
+                "scores": scores.tolist(),
+                "logits": logits,
+            },
+        )
 
     def segment_everything(
         self,
@@ -297,7 +301,7 @@ class SAMWrapper(BaseVisionTaskModel):
 
         logger.info(f"SAM generated {len(masks)} masks")
 
-        return masks
+        return cast(List[Dict[str, Any]], masks)
 
     def segment_by_text(
         self,
@@ -358,6 +362,8 @@ class SAMWrapper(BaseVisionTaskModel):
 
         # SAM 3 텍스트 기반 예측
         # Note: 실제 SAM 3 API에 따라 조정 필요
+        self._load_model()
+        assert self._predictor is not None, "Predictor not initialized"
         try:
             # SAM 3의 텍스트 프롬프트 API 사용
             predictions = self._predictor.predict_with_text(
@@ -371,7 +377,7 @@ class SAMWrapper(BaseVisionTaskModel):
                 f"prompt='{text_prompt}', found={len(predictions['masks'])} objects"
             )
 
-            return predictions
+            return cast(Dict[str, Any], predictions)
 
         except AttributeError:
             # Fallback: SAM 3 API가 다를 경우

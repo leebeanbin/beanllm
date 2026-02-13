@@ -159,6 +159,9 @@ class RAGDebugCommands:
         """
         if not self._check_session():
             return
+        if self._debug is None:
+            self.console.print("[red]RAG Debug not initialized[/red]")
+            return
 
         self.console.print(
             f"\n{StatusIcon.LOADING} [cyan]Embedding 분석 중... (method={method.upper()}, clusters={n_clusters})[/cyan]"
@@ -181,7 +184,8 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            display_embedding_analysis(self.console, response)
+            if self.console is not None:
+                display_embedding_analysis(self.console, response)
 
         except ImportError:
             self.console.print(
@@ -221,6 +225,9 @@ class RAGDebugCommands:
         """
         if not self._check_session():
             return
+        if self._debug is None:
+            self.console.print("[red]RAG Debug not initialized[/red]")
+            return
 
         self.console.print(f"\n{StatusIcon.LOADING} [cyan]청크 검증 중...[/cyan]")
 
@@ -242,10 +249,12 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            display_chunk_validation(self.console, response)
+            if self.console is not None:
+                display_chunk_validation(self.console, response)
 
         except Exception as e:
-            self.console.print(f"{StatusIcon.error()} [red]검증 실패: {e}[/red]")
+            if self.console is not None:
+                self.console.print(f"{StatusIcon.error()} [red]검증 실패: {e}[/red]")
             logger.error(f"Chunk validation failed: {e}")
 
     # ========================================
@@ -274,6 +283,9 @@ class RAGDebugCommands:
         """
         if not self._check_session():
             return
+        if self._debug is None:
+            self.console.print("[red]RAG Debug not initialized[/red]")
+            return
 
         self.console.print(f"\n{StatusIcon.LOADING} [cyan]파라미터 튜닝 중... {parameters}[/cyan]")
 
@@ -292,10 +304,12 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            display_tuning_results(self.console, response)
+            if self.console is not None:
+                display_tuning_results(self.console, response)
 
         except Exception as e:
-            self.console.print(f"{StatusIcon.error()} [red]튜닝 실패: {e}[/red]")
+            if self.console is not None:
+                self.console.print(f"{StatusIcon.error()} [red]튜닝 실패: {e}[/red]")
             logger.error(f"Parameter tuning failed: {e}")
 
     # ========================================
@@ -321,6 +335,9 @@ class RAGDebugCommands:
         """
         if not self._check_session():
             return
+        if self._debug is None:
+            self.console.print("[red]RAG Debug not initialized[/red]")
+            return
 
         formats = formats or ["json", "markdown", "html"]
 
@@ -343,10 +360,12 @@ class RAGDebugCommands:
                 )
 
             # Display results
-            display_export_results(self.console, results)
+            if self.console is not None:
+                display_export_results(self.console, results)
 
         except Exception as e:
-            self.console.print(f"{StatusIcon.error()} [red]내보내기 실패: {e}[/red]")
+            if self.console is not None:
+                self.console.print(f"{StatusIcon.error()} [red]내보내기 실패: {e}[/red]")
             logger.error(f"Report export failed: {e}")
 
     # ========================================
@@ -384,6 +403,9 @@ class RAGDebugCommands:
         """
         if not self._check_session():
             return
+        if self._debug is None:
+            self.console.print("[red]RAG Debug not initialized[/red]")
+            return
 
         self.console.print()
         self.console.print(
@@ -405,10 +427,12 @@ class RAGDebugCommands:
             )
 
             # Display summary
-            display_full_analysis_summary(self.console, results)
+            if self.console is not None:
+                display_full_analysis_summary(self.console, results)
 
         except Exception as e:
-            self.console.print(f"{StatusIcon.error()} [red]전체 분석 실패: {e}[/red]")
+            if self.console is not None:
+                self.console.print(f"{StatusIcon.error()} [red]전체 분석 실패: {e}[/red]")
             logger.error(f"Full analysis failed: {e}")
 
     # ========================================

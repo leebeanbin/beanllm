@@ -96,7 +96,7 @@ class DebugSession:
                 from beanllm.domain.loaders import Document
 
                 documents = [
-                    Document(page_content=text, metadata=meta or {})
+                    Document(content=text, metadata=meta or {})
                     for text, meta in zip(result.get("documents", []), result.get("metadatas", []))
                 ]
             else:

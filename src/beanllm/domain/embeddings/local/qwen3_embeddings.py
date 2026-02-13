@@ -4,7 +4,7 @@ Qwen3 embedding implementation.
 
 from __future__ import annotations
 
-from typing import List
+from typing import List, cast
 
 from beanllm.domain.embeddings.base import BaseLocalEmbedding
 
@@ -101,6 +101,7 @@ class Qwen3Embedding(BaseLocalEmbedding):
     def embed_sync(self, texts: List[str]) -> List[List[float]]:
         """텍스트들을 임베딩 (동기)"""
         self._load_model()
+        assert self._model is not None
 
         try:
             # Sentence Transformers로 임베딩
@@ -114,7 +115,8 @@ class Qwen3Embedding(BaseLocalEmbedding):
 
             self._log_embed_success(len(texts), f"shape: {embeddings.shape}")
 
-            return embeddings.tolist()
+            return cast(List[List[float]], embeddings.tolist())
 
         except Exception as e:
             self._handle_embed_error("Qwen3", e)
+            raise

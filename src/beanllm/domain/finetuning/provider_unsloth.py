@@ -122,8 +122,8 @@ class UnslothProvider(BaseFineTuningProvider):
         if job_id not in self._jobs:
             raise ValueError(f"Job {job_id} not found")
         job = self._jobs[job_id]
-        job.status = FineTuningStatus.CANCELLED
-        job.finished_at = int(time.time())
+        object.__setattr__(job, "status", FineTuningStatus.CANCELLED)
+        object.__setattr__(job, "finished_at", int(time.time()))
         logger.info(f"Job {job_id} cancelled")
         return job
 

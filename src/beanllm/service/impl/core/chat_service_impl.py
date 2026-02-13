@@ -9,7 +9,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, AsyncIterator, Optional
+from typing import TYPE_CHECKING, AsyncIterator, Optional, cast
 
 from beanllm.decorators.logger import log_service_call
 from beanllm.dto.request.core.chat_request import ChatRequest
@@ -84,10 +84,12 @@ class ChatServiceImpl(BaseService, IChatService):
         )
         if cached_response is not None:
             # 캐시 히트 - 응답 재사용
-            return cached_response
+            return cast(ChatResponse, cached_response)
 
         # 1. Provider 생성 (공통 로직 재사용)
-        provider = self._create_provider(request.model, request.extra_params.get("provider"))
+        provider = self._create_provider(
+            request.model, cast(Optional[str], request.extra_params.get("provider"))
+        )
 
         # 2. 파라미터 변환 (공통 로직 재사용)
         raw_params = {
@@ -140,7 +142,9 @@ class ChatServiceImpl(BaseService, IChatService):
             - if-else/try-catch 없음
         """
         # 1. Provider 생성 (공통 로직 재사용)
-        provider = self._create_provider(request.model, request.extra_params.get("provider"))
+        provider = self._create_provider(
+            request.model, cast(Optional[str], request.extra_params.get("provider"))
+        )
 
         # 2. 파라미터 변환 (공통 로직 재사용)
         raw_params = {

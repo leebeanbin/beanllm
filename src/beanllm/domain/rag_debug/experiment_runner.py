@@ -224,8 +224,8 @@ def compare_strategies(
 
 def build_grid_configs(
     splitter_type: str = "recursive",
-    chunk_sizes: List[int] = (256, 512, 1000, 2000),
-    chunk_overlaps: List[int] = (0, 50, 100, 200),
+    chunk_sizes: List[int] = [256, 512, 1000, 2000],
+    chunk_overlaps: List[int] = [0, 50, 100, 200],
     **fixed_params: Any,
 ) -> List[Dict[str, Any]]:
     """Build config list for grid search."""

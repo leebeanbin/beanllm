@@ -62,7 +62,7 @@ class ParameterTuner:
         """
         logger.info(f"Tuning top_k for query: '{query}' with values {k_values}")
 
-        results = {}
+        results: Dict[str, Any] = {}
 
         for k in k_values:
             try:

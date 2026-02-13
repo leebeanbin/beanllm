@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from beanllm.dto.request.advanced.orchestrator_request import (
     CreateWorkflowRequest,
@@ -86,7 +86,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
 
     def _init_handler(self) -> None:
         """Handler 초기화 (DI Container 사용)"""
-        from beanllm.utils.di_container import get_container
+        from beanllm.utils.core.di_container import get_container
 
         container = get_container()
         service_factory = container.get_service_factory()
@@ -169,7 +169,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
             f"{response.num_nodes} nodes, {response.num_edges} edges"
         )
 
-        return response
+        return cast(CreateWorkflowResponse, response)
 
     async def execute(
         self,
@@ -232,7 +232,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
             f"time={response.execution_time:.2f}s"
         )
 
-        return response
+        return cast(ExecuteWorkflowResponse, response)
 
     async def monitor(
         self,
@@ -278,7 +278,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
 
         response = await self._ensure_handler().handle_monitor_workflow(request)
 
-        return response
+        return cast(MonitorWorkflowResponse, response)
 
     async def analyze(self, workflow_id: str) -> AnalyticsResponse:
         """
@@ -322,7 +322,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
             f"success_rate={response.success_rate:.2%}"
         )
 
-        return response
+        return cast(AnalyticsResponse, response)
 
     async def visualize(
         self,
@@ -370,7 +370,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
 
         diagram = await self._ensure_handler().handle_visualize_workflow(workflow_id)
 
-        return diagram
+        return cast(str, diagram)
 
     async def get_templates(self) -> Dict[str, Any]:
         """
@@ -399,7 +399,7 @@ class Orchestrator(OrchestratorConvenienceMixin):
 
         templates = await self._ensure_handler().handle_get_templates()
 
-        return templates
+        return cast(Dict[str, Any], templates)
 
     # ==================== Convenience Methods ====================
 
@@ -511,7 +511,14 @@ class Orchestrator(OrchestratorConvenienceMixin):
             tools=tools,
         )
 
-        results = {"execution": execution}
+        results: Dict[
+            str,
+            Union[
+                ExecuteWorkflowResponse,
+                MonitorWorkflowResponse,
+                AnalyticsResponse,
+            ],
+        ] = {"execution": execution}
 
         # Monitor
         if monitor and execution.execution_id:
@@ -526,4 +533,4 @@ class Orchestrator(OrchestratorConvenienceMixin):
 
         logger.info("Full workflow completed")
 
-        return results
+        return cast(Dict[str, Any], results)

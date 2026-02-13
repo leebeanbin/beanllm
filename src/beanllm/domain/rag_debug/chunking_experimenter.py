@@ -9,11 +9,13 @@ from __future__ import annotations
 import logging
 from typing import Any, Callable, Dict, List, Optional
 
-try:
-    from beanllm.utils.logging import get_logger
-except ImportError:
 
-    def get_logger(name: str) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
+    try:
+        from beanllm.utils.logging import get_logger as _get_logger
+
+        return _get_logger(name)
+    except ImportError:
         return logging.getLogger(name)
 
 

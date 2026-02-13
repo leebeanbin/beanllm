@@ -3,9 +3,9 @@ Embeddings Factory - 임베딩 팩토리
 """
 
 import os
-from typing import List, Optional, Union
+from typing import List, Optional, Union, cast
 
-from .api.providers import (
+from beanllm.domain.embeddings.api.providers import (
     CohereEmbedding,
     GeminiEmbedding,
     JinaEmbedding,
@@ -14,7 +14,7 @@ from .api.providers import (
     OpenAIEmbedding,
     VoyageEmbedding,
 )
-from .base import BaseEmbedding
+from beanllm.domain.embeddings.base import BaseEmbedding
 
 try:
     from beanllm.utils.logging import get_logger
@@ -113,7 +113,7 @@ class Embedding:
         "cohere": "COHERE_API_KEY",
     }
 
-    def __new__(cls, model: str, provider: Optional[str] = None, **kwargs) -> BaseEmbedding:
+    def __new__(cls, model: str, provider: Optional[str] = None, **kwargs) -> "Embedding":
         """
         Embedding 인스턴스 생성 (자동 provider 감지)
 
@@ -144,7 +144,15 @@ class Embedding:
             )
 
         embedding_class = cls.PROVIDERS[provider]
-        return embedding_class(model=model, **kwargs)
+        return cast("Embedding", embedding_class(model=model, **kwargs))
+
+    async def embed(self, texts: List[str]) -> List[List[float]]:
+        """Not implemented; use Embedding(model=...) to get a concrete provider."""
+        raise NotImplementedError("Use Embedding(model=...) to get a concrete provider")
+
+    def embed_sync(self, texts: List[str]) -> List[List[float]]:
+        """Not implemented; use Embedding(model=...) to get a concrete provider."""
+        raise NotImplementedError("Use Embedding(model=...) to get a concrete provider")
 
     @classmethod
     def _detect_provider(cls, model: str) -> Optional[str]:
@@ -337,8 +345,8 @@ async def embed(
     if isinstance(texts, str):
         texts = [texts]
 
-    embedding = Embedding(model=model, **kwargs)
-    return await embedding.embed(texts)
+    embedding = cast(BaseEmbedding, Embedding(model=model, **kwargs))
+    return cast(List[List[float]], await embedding.embed(texts))
 
 
 def embed_sync(
@@ -370,5 +378,5 @@ def embed_sync(
     if isinstance(texts, str):
         texts = [texts]
 
-    embedding = Embedding(model=model, **kwargs)
-    return embedding.embed_sync(texts)
+    embedding = cast(BaseEmbedding, Embedding(model=model, **kwargs))
+    return cast(List[List[float]], embedding.embed_sync(texts))

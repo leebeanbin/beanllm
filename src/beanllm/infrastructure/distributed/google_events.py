@@ -44,7 +44,7 @@ async def log_google_export(
     }
 
     await event_logger.log_event(
-        event_type=f"google.export.{export_type}", data=event_data, level="info"
+        event_type=f"google.export.{export_type}", event_data=event_data, level="info"
     )
 
     logger.info(f"Google {export_type} export: user={user_id}, session={session_id}")
@@ -79,7 +79,7 @@ async def log_abnormal_activity(
     }
 
     await event_logger.log_event(
-        event_type="security.abnormal_activity", data=event_data, level="warning"
+        event_type="security.abnormal_activity", event_data=event_data, level="warning"
     )
 
     logger.warning(f"Abnormal activity detected: user={user_id}, reason={reason}")
@@ -118,7 +118,9 @@ async def log_admin_action(
         **(metadata or {}),
     }
 
-    await event_logger.log_event(event_type=f"admin.action.{action}", data=event_data, level="info")
+    await event_logger.log_event(
+        event_type=f"admin.action.{action}", event_data=event_data, level="info"
+    )
 
     logger.info(f"Admin action: admin={admin_id}, action={action}, target={target}")
 

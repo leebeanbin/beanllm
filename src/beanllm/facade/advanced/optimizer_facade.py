@@ -7,7 +7,7 @@ standalone functions in optimizer_standalone.py (re-exported below).
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from beanllm.dto.request.advanced.optimizer_request import (
     ABTestRequest,
@@ -164,7 +164,7 @@ class Optimizer(OptimizerConvenienceMixin):
             f"Benchmark completed: {response.num_queries} queries, "
             f"avg_latency={response.avg_latency:.3f}s"
         )
-        return response
+        return cast(BenchmarkResponse, response)
 
     async def optimize(
         self,
@@ -236,7 +236,7 @@ class Optimizer(OptimizerConvenienceMixin):
             f"Optimization completed: best_score={response.best_score:.4f}, "
             f"n_trials={response.n_trials}"
         )
-        return response
+        return cast(OptimizeResponse, response)
 
     async def profile(
         self,
@@ -288,7 +288,7 @@ class Optimizer(OptimizerConvenienceMixin):
             f"Profile completed: total_duration={response.total_duration_ms}ms, "
             f"bottleneck={response.bottleneck}"
         )
-        return response
+        return cast(ProfileResponse, response)
 
     async def ab_test(
         self,
@@ -346,7 +346,7 @@ class Optimizer(OptimizerConvenienceMixin):
             f"A/B test completed: winner={response.winner}, "
             f"lift={response.lift:.1f}%, significant={response.is_significant}"
         )
-        return response
+        return cast(ABTestResponse, response)
 
     async def get_recommendations(
         self,
@@ -387,7 +387,7 @@ class Optimizer(OptimizerConvenienceMixin):
         logger.info(
             f"Retrieved {len(response.recommendations)} recommendations for profile {profile_id}"
         )
-        return response
+        return cast(RecommendationResponse, response)
 
     async def compare_configs(
         self,
@@ -426,7 +426,7 @@ class Optimizer(OptimizerConvenienceMixin):
         """
         response = await self._optimizer.handle_compare_configs(config_ids)
         logger.info(f"Compared {len(config_ids)} configs")
-        return response
+        return cast(Dict[str, Any], response)
 
 
 # Re-export standalone functions for backward compatibility

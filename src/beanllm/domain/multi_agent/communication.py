@@ -172,7 +172,6 @@ class CommunicationBus:
                             "receiver": message.receiver or "broadcast",
                             "message_type": message.message_type.value,
                         },
-                        level="info",
                     )
             except Exception as e:
                 logger.warning(f"Failed to publish message to Kafka: {e}")

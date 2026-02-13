@@ -2,7 +2,7 @@
 Splitters Factory - 텍스트 분할 팩토리
 """
 
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, List, Optional, cast
 
 from beanllm.utils.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
 
@@ -165,9 +165,12 @@ class TextSplitter:
 
         # 마크다운은 다른 인터페이스
         if strategy == "markdown":
-            return splitter_class(**kwargs)
+            return cast(BaseTextSplitter, splitter_class(**kwargs))
 
-        return splitter_class(chunk_size=chunk_size, chunk_overlap=chunk_overlap, **kwargs)
+        return cast(
+            BaseTextSplitter,
+            splitter_class(chunk_size=chunk_size, chunk_overlap=chunk_overlap, **kwargs),
+        )
 
     # 전략별 팩토리 메서드 (쉬운 사용!)
 

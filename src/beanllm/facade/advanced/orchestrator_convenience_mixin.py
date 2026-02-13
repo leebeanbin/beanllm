@@ -10,7 +10,7 @@ quick_debate 등 짧은 이름의 편의 메서드를 제공합니다.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Dict, List, Optional, cast
 
 from beanllm.dto.response.advanced.orchestrator_response import ExecuteWorkflowResponse
 
@@ -85,15 +85,19 @@ class OrchestratorConvenienceMixin:
         if reviewer_agent:
             config["reviewer_id"] = "reviewer"
 
-        result = await self.create_and_execute(
+        create_and_execute = cast(
+            Callable[..., Awaitable[Dict[str, Any]]],
+            getattr(self, "create_and_execute"),
+        )
+        result = await create_and_execute(
             name=name,
             strategy="research_write",
             agents=agents,
             task=task,
             config=config,
         )
-
-        return result["execution"]
+        execution = result.get("execution")
+        return cast(ExecuteWorkflowResponse, execution)
 
     async def quick_parallel_consensus(
         self,
@@ -126,7 +130,11 @@ class OrchestratorConvenienceMixin:
         agents_dict = {f"agent{i}": agent for i, agent in enumerate(agents)}
         agent_ids = list(agents_dict.keys())
 
-        result = await self.create_and_execute(
+        create_and_execute = cast(
+            Callable[..., Awaitable[Dict[str, Any]]],
+            getattr(self, "create_and_execute"),
+        )
+        result = await create_and_execute(
             name=name,
             strategy="parallel",
             agents=agents_dict,
@@ -136,8 +144,8 @@ class OrchestratorConvenienceMixin:
                 "aggregation": aggregation,
             },
         )
-
-        return result["execution"]
+        execution = result.get("execution")
+        return cast(ExecuteWorkflowResponse, execution)
 
     async def quick_debate(
         self,
@@ -175,7 +183,11 @@ class OrchestratorConvenienceMixin:
 
         debater_ids = [f"debater{i}" for i in range(len(debater_agents))]
 
-        result = await self.create_and_execute(
+        create_and_execute = cast(
+            Callable[..., Awaitable[Dict[str, Any]]],
+            getattr(self, "create_and_execute"),
+        )
+        result = await create_and_execute(
             name=name,
             strategy="debate",
             agents=agents_dict,
@@ -186,5 +198,5 @@ class OrchestratorConvenienceMixin:
                 "rounds": rounds,
             },
         )
-
-        return result["execution"]
+        execution = result.get("execution")
+        return cast(ExecuteWorkflowResponse, execution)

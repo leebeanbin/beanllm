@@ -3,11 +3,11 @@ Prompts Templates - 프롬프트 템플릿 구현체
 """
 
 import re
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, cast
 
-from .base import BasePromptTemplate
-from .enums import TemplateFormat
-from .types import ChatMessage, PromptExample
+from beanllm.domain.prompts.base import BasePromptTemplate
+from beanllm.domain.prompts.enums import TemplateFormat
+from beanllm.domain.prompts.types import ChatMessage, PromptExample
 
 
 class PromptTemplate(BasePromptTemplate):
@@ -85,13 +85,13 @@ class PromptTemplate(BasePromptTemplate):
 
         # 포맷팅
         if self.template_format == TemplateFormat.F_STRING:
-            return self.template.format(**all_vars)
+            return cast(str, self.template.format(**all_vars))
         elif self.template_format == TemplateFormat.JINJA2:
             # Jinja2 지원 (선택적)
             try:
                 from jinja2 import Template
 
-                return Template(self.template).render(**all_vars)
+                return cast(str, Template(self.template).render(**all_vars))
             except ImportError:
                 # Jinja2 없으면 간단한 치환
                 result = self.template

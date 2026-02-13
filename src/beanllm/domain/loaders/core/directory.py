@@ -6,7 +6,7 @@ Directory Loader
 
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, Pattern, Union
+from typing import TYPE_CHECKING, List, Optional, Pattern, Union, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import BatchProcessorProtocol
@@ -130,12 +130,12 @@ class DirectoryLoader(BaseDocumentLoader):
         Note:
             Static method to be picklable for ProcessPoolExecutor
         """
-        from .factory import DocumentLoader
+        from beanllm.domain.loaders.factory import DocumentLoader
 
         try:
             loader = DocumentLoader.get_loader(file_path)
             if loader:
-                return loader.load()
+                return cast(List[Document], loader.load())
             return []
         except Exception as e:
             logger.error(f"Failed to load {file_path}: {e}")

@@ -2,9 +2,9 @@
 Tool Registry - 도구 레지스트리
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
-from .schema import SchemaGenerator
+from beanllm.domain.tools.advanced.schema import SchemaGenerator
 
 
 class ToolRegistry:
@@ -44,7 +44,7 @@ class ToolRegistry:
             schema: JSON Schema
             **metadata: 추가 메타데이터
         """
-        tool_name = name or getattr(func, "tool_name", func.__name__)
+        tool_name = cast(str, name or getattr(func, "tool_name", func.__name__))
         tool_schema = schema or getattr(func, "schema", SchemaGenerator.from_function(func))
 
         self._tools[tool_name] = func

@@ -23,7 +23,7 @@ def print_help() -> None:
     """Help 메시지 (디자인 시스템 적용)."""
     print_logo(style="ascii", color="magenta", show_motto=True, show_commands=True)
 
-    if not RICH_AVAILABLE:
+    if not RICH_AVAILABLE or Panel is None or console is None:
         print("Commands: list, show, providers, export, summary, scan, analyze, admin")
         return
 
@@ -70,10 +70,11 @@ def list_models(registry: Any) -> None:
     active_providers = registry.get_active_providers()
     active_names = [p.name for p in active_providers]
 
-    console.print(f"\n[bold]Active Providers:[/bold] {', '.join(active_names)}")
-    console.print(f"[bold]Total Models:[/bold] {len(models)}\n")
+    if console is not None:
+        console.print(f"\n[bold]Active Providers:[/bold] {', '.join(active_names)}")
+        console.print(f"[bold]Total Models:[/bold] {len(models)}\n")
 
-    if not RICH_AVAILABLE:
+    if not RICH_AVAILABLE or Table is None or console is None:
         for model in models:
             print(f"{model.model_name} ({model.provider})")
         return
@@ -93,11 +94,14 @@ def list_models(registry: Any) -> None:
         max_tokens = str(model.max_tokens) if model.max_tokens else "N/A"
         table.add_row(status, model.model_name, model.provider, stream, temp, max_tokens)
 
-    console.print(table)
+    if console is not None:
+        console.print(table)
 
 
 def show_model(registry: Any, model_name: str) -> None:
     """모델 상세 정보."""
+    if console is None or Panel is None or Table is None or Syntax is None:
+        return
     model = registry.get_model_info(model_name)
     if not model:
         console.print(f"[red]❌ Model not found:[/red] {model_name}")
@@ -150,6 +154,8 @@ def show_model(registry: Any, model_name: str) -> None:
 
 def list_providers(registry: Any) -> None:
     """Provider 목록."""
+    if console is None or Panel is None:
+        return
     providers = registry.get_all_providers()
     console.print("\n[bold]LLM Providers:[/bold]\n")
 
@@ -184,7 +190,7 @@ def export_models(registry: Any) -> None:
 def show_summary(registry: Any) -> None:
     """요약 정보."""
     summary = registry.get_summary()
-    if not RICH_AVAILABLE:
+    if not RICH_AVAILABLE or console is None or Panel is None or Table is None:
         print(f"Total Providers: {summary['total_providers']}")
         print(f"Total Models: {summary['total_models']}")
         return

@@ -11,7 +11,7 @@ import heapq
 import json
 import re
 import time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from beanllm.dto.request.core.agent_request import AgentRequest
 from beanllm.dto.response.core.agent_response import AgentResponse
@@ -56,6 +56,7 @@ class AgentServiceImpl(IAgentService):
         self._chat_service = chat_service
         self._tool_registry = tool_registry
         self._max_history_tokens = max_history_tokens
+        self._compression_ratio: float = 0.3
 
     async def run(self, request: AgentRequest) -> AgentResponse:
         """
@@ -84,7 +85,9 @@ class AgentServiceImpl(IAgentService):
         tool_registry = request.tool_registry or self._tool_registry
 
         # 도구 설명 생성 (기존: self._format_tools())
-        tools_description = self._format_tools(tool_registry)
+        tools_description = self._format_tools(
+            cast(Optional["ToolRegistryProtocol"], tool_registry)
+        )
 
         # 초기 프롬프트 (기존: self.REACT_PROMPT.format(...))
         initial_prompt = self.REACT_PROMPT.format(
@@ -119,7 +122,7 @@ class AgentServiceImpl(IAgentService):
             if parsed_step.get("is_final") and parsed_step.get("final_answer"):
                 return AgentResponse(
                     answer=parsed_step["final_answer"],
-                    steps=steps,
+                    steps=cast(List[object], steps),
                     total_steps=step_number,
                     success=True,
                 )
@@ -128,7 +131,11 @@ class AgentServiceImpl(IAgentService):
             action_name = parsed_step.get("action")
             action_input = parsed_step.get("action_input")
             if action_name and action_input:
-                observation = self._execute_tool(action_name, action_input, tool_registry)
+                observation = self._execute_tool(
+                    action_name,
+                    action_input,
+                    cast(Optional["ToolRegistryProtocol"], tool_registry),
+                )
                 parsed_step["observation"] = observation
 
                 # 히스토리 업데이트 (리스트로 관리)
@@ -151,7 +158,7 @@ class AgentServiceImpl(IAgentService):
         # 최대 반복 도달 (기존과 동일)
         return AgentResponse(
             answer="Maximum iterations reached without final answer",
-            steps=steps,
+            steps=cast(List[object], steps),
             total_steps=step_number,
             success=False,
             error="Max iterations exceeded",
@@ -317,8 +324,8 @@ Let's begin!
             importance_scores.append((i, importance))
 
         # 상위 N%만 유지
-        keep_count = max(1, int(len(steps) * self._compression_ratio))
-        keep_indices = set(
+        keep_count: int = max(1, int(len(steps) * self._compression_ratio))
+        keep_indices: set[int] = set(
             idx for idx, _ in heapq.nlargest(keep_count, importance_scores, key=lambda x: x[1])
         )
 
@@ -334,7 +341,7 @@ Let's begin!
         Returns:
             추정 토큰 수
         """
-        total = 0
+        total: float = 0.0
         for step in steps:
             total += len(step.get("content", "").split()) * 1.3
             total += len(step.get("observation", "").split()) * 1.3

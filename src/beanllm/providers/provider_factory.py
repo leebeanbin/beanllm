@@ -3,7 +3,7 @@ Provider Factory
 환경 변수 기반 LLM 제공자 자동 선택 및 생성 (dotenv 중앙 관리)
 """
 
-from typing import List, Optional
+from typing import List, Optional, cast
 
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.logging import get_logger
@@ -129,7 +129,7 @@ class ProviderFactory:
         """
         # 캐시된 인스턴스 반환
         if provider_name and provider_name in cls._instances:
-            return cls._instances[provider_name]
+            return cast(BaseLLMProvider, cls._instances[provider_name])
 
         # 제공자 선택
         if provider_name:
@@ -189,7 +189,7 @@ class ProviderFactory:
                 if provider.is_available():
                     logger.info(f"Using LLM provider: {name}")
                     cls._instances[name] = provider
-                    return provider
+                    return cast(BaseLLMProvider, provider)
                 else:
                     logger.debug(f"Provider {name} is not available")
                     continue
@@ -223,7 +223,7 @@ class ProviderFactory:
     @classmethod
     def get_default_provider(cls) -> BaseLLMProvider:
         """기본 제공자 반환 (자동 선택)"""
-        return cls.get_provider()
+        return cast(BaseLLMProvider, cls.get_provider())
 
     @classmethod
     def clear_cache(cls):

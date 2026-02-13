@@ -3,9 +3,9 @@ Advanced search algorithms
 Hybrid, MMR, Re-ranking 등
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, cast
 
-from .base import VectorSearchResult
+from beanllm.domain.vector_stores.base import VectorSearchResult
 
 
 class SearchAlgorithms:
@@ -67,12 +67,12 @@ class SearchAlgorithms:
         Returns:
             결합된 결과
         """
-        # 문서 ID -> (결과, 벡터 순위, 키워드 순위)
-        results_map: Dict[str, Tuple[VectorSearchResult, Optional[int], Optional[int]]] = {}
+        # 문서 ID (int from id()) -> (결과, 벡터 순위, 키워드 순위)
+        results_map: Dict[int, Tuple[VectorSearchResult, Optional[int], Optional[int]]] = {}
 
         # 벡터 검색 결과
         for rank, result in enumerate(vector_results, 1):
-            doc_id = id(result.document)
+            doc_id: int = id(result.document)
             results_map[doc_id] = (result, rank, None)
 
         # 키워드 검색 결과
@@ -152,8 +152,8 @@ class SearchAlgorithms:
         reranked_results.sort(key=lambda x: x.score, reverse=True)
 
         if top_k:
-            return reranked_results[:top_k]
-        return reranked_results
+            return cast(List[VectorSearchResult], reranked_results[:top_k])
+        return cast(List[VectorSearchResult], reranked_results)
 
     @staticmethod
     def mmr_search(
@@ -176,11 +176,11 @@ class SearchAlgorithms:
         candidates = vector_store.similarity_search(query, k=fetch_k, **kwargs)
 
         if not candidates or len(candidates) <= k:
-            return candidates
+            return cast(List[VectorSearchResult], candidates)
 
         # 임베딩 함수 체크
         if not vector_store.embedding_function:
-            return candidates[:k]
+            return cast(List[VectorSearchResult], candidates[:k])
 
         # 쿼리 임베딩
         query_vec = vector_store.embedding_function([query])[0]
@@ -191,7 +191,7 @@ class SearchAlgorithms:
         ]
 
         # MMR 알고리즘
-        selected_indices = []
+        selected_indices: List[int] = []
         remaining_indices = list(range(len(candidates)))
 
         for _ in range(min(k, len(candidates))):
@@ -224,7 +224,7 @@ class SearchAlgorithms:
                 selected_indices.append(best_idx)
                 remaining_indices.remove(best_idx)
 
-        return [candidates[idx] for idx in selected_indices]
+        return cast(List[VectorSearchResult], [candidates[idx] for idx in selected_indices])
 
 
 # Mixin class for vector stores

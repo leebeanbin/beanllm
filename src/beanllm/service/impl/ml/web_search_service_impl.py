@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union, cast
 
 from beanllm.domain.web_search import (
     BingSearch,
@@ -67,7 +67,7 @@ class WebSearchServiceImpl(IWebSearchService):
         engine_enum = SearchEngine(request.engine) if request.engine else SearchEngine.DUCKDUCKGO
 
         # 엔진 인스턴스 생성 (기존과 동일)
-        engine_instance = None
+        engine_instance: Union[GoogleSearch, BingSearch, DuckDuckGoSearch, None] = None
         if engine_enum == SearchEngine.GOOGLE:
             if not request.google_api_key or not request.google_search_engine_id:
                 raise ValueError("Google API key and search engine ID are required")
@@ -107,7 +107,7 @@ class WebSearchServiceImpl(IWebSearchService):
             if request.safe_search:
                 search_kwargs["safe_search"] = request.safe_search
 
-        search_kwargs.update(request.extra_params or {})
+        search_kwargs.update(cast(Dict[str, Any], request.extra_params or {}))
 
         # 비동기 검색 실행 (기존과 동일)
         search_response = await engine_instance.search_async(request.query, **search_kwargs)

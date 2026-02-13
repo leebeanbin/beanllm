@@ -4,7 +4,7 @@ Metadata Inferrer - 메타데이터 추론기 구현
 
 import re
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List, cast
 
 from beanllm.utils.constants import CLAUDE_DEFAULT_MAX_TOKENS
 
@@ -214,7 +214,7 @@ class MetadataInferrer:
         base_model = self._extract_base_model(model_id)
 
         # Provider 설정 가져오기
-        provider_config = self.INFERENCE_RULES.get(provider, {})
+        provider_config = cast(Dict[str, Any], self.INFERENCE_RULES.get(provider, {}))
 
         # 기본 메타데이터
         metadata: Dict[str, Any] = {
@@ -234,15 +234,16 @@ class MetadataInferrer:
 
         # 패턴 매칭
         patterns = provider_config.get("patterns", [])
-        matched_rules = []
+        matched_rules: List[Dict[str, Any]] = []
 
         for pattern_rule in patterns:
-            pattern = pattern_rule["match"]
+            rule = cast(Dict[str, Any], pattern_rule)
+            pattern = rule["match"]
             if re.match(pattern, base_model, re.IGNORECASE):
-                matched_rules.append(pattern_rule)
-                metadata["matched_patterns"].append(pattern_rule["name"])
+                matched_rules.append(rule)
+                metadata["matched_patterns"].append(rule["name"])
                 # 규칙 적용
-                metadata.update(pattern_rule["rules"])
+                metadata.update(rule["rules"])
 
         # 신뢰도 계산
         if matched_rules:
@@ -282,20 +283,21 @@ class MetadataInferrer:
 
         return base
 
-    def get_inference_rules(self, provider: str) -> Dict:
+    def get_inference_rules(self, provider: str) -> Dict[str, Any]:
         """특정 Provider의 추론 규칙 조회"""
-        return self.INFERENCE_RULES.get(provider, {})
+        return cast(Dict[str, Any], self.INFERENCE_RULES.get(provider, {}))
 
-    def add_inference_rule(self, provider: str, pattern: str, name: str, rules: Dict):
+    def add_inference_rule(
+        self, provider: str, pattern: str, name: str, rules: Dict[str, Any]
+    ) -> None:
         """추론 규칙 동적 추가"""
         if provider not in self.INFERENCE_RULES:
             self.INFERENCE_RULES[provider] = {"patterns": [], "defaults": {}}
 
-        if "patterns" not in self.INFERENCE_RULES[provider]:
-            self.INFERENCE_RULES[provider]["patterns"] = []
+        prov_config = cast(Dict[str, Any], self.INFERENCE_RULES[provider])
+        if "patterns" not in prov_config:
+            prov_config["patterns"] = []
 
-        self.INFERENCE_RULES[provider]["patterns"].append(
-            {"match": pattern, "name": name, "rules": rules}
-        )
+        prov_config["patterns"].append({"match": pattern, "name": name, "rules": rules})
 
         logger.info(f"Added inference rule for {provider}: {name}")

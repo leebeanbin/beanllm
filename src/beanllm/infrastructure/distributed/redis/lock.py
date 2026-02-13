@@ -8,7 +8,7 @@ Redis SET NX EX를 사용하여 분산 락 구현
 import asyncio
 import uuid
 from contextlib import asynccontextmanager
-from typing import AsyncContextManager
+from typing import AsyncGenerator
 
 from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
 from beanllm.infrastructure.distributed.utils import LockAcquisitionError, check_redis_health
@@ -61,7 +61,7 @@ class RedisLock(DistributedLockInterface):
         return self._script_sha
 
     @asynccontextmanager
-    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncContextManager:
+    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncGenerator[None, None]:
         """락 획득 (context manager)"""
         lock_key = f"lock:{key}"
         worker_id = str(uuid.uuid4())

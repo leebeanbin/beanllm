@@ -8,7 +8,7 @@ SOLID 원칙:
 """
 
 import threading
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 if TYPE_CHECKING:
     from beanllm.handler.factory import HandlerFactory
@@ -64,7 +64,7 @@ class DIContainer:
             from beanllm.facade.core.client_facade import SourceProviderFactoryAdapter
             from beanllm.providers.provider_factory import ProviderFactory as SourceProviderFactory
 
-            self._provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory)
+            self._provider_factory = SourceProviderFactoryAdapter(SourceProviderFactory())
         return self._provider_factory
 
     def get_service_factory(self, **kwargs) -> "ServiceFactory":
@@ -94,7 +94,7 @@ class DIContainer:
             service_factory = ServiceFactory(provider_factory=provider_factory, **kwargs)
             self._service_factories[cache_key] = service_factory
 
-        return self._service_factories[cache_key]
+        return cast("ServiceFactory", self._service_factories[cache_key])
 
     @property
     def service_factory(self) -> "ServiceFactory":

@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from beanllm.dto.request.ml.rag_debug_request import (
     AnalyzeEmbeddingsRequest,
@@ -77,7 +77,7 @@ class RAGDebug:
 
     def _init_handler(self) -> None:
         """Handler 초기화 (DI Container 사용)"""
-        from beanllm.utils.di_container import get_container
+        from beanllm.utils.core.di_container import get_container
 
         container = get_container()
         service_factory = container.get_service_factory()
@@ -104,7 +104,8 @@ class RAGDebug:
             config={"vector_store": self.vector_store},
         )
 
-        response = await self._handler.handle_start_session(request)
+        raw = await self._handler.handle_start_session(request)
+        response = cast(DebugSessionResponse, raw)
         self.session_id = response.session_id
 
         logger.info(
@@ -157,7 +158,7 @@ class RAGDebug:
             f"silhouette={response.silhouette_score:.4f}"
         )
 
-        return response
+        return cast(AnalyzeEmbeddingsResponse, response)
 
     async def validate_chunks(
         self,
@@ -204,7 +205,7 @@ class RAGDebug:
             f"{response.valid_chunks} valid, {len(response.issues)} issues"
         )
 
-        return response
+        return cast(ValidateChunksResponse, response)
 
     async def tune_parameters(
         self,
@@ -243,7 +244,7 @@ class RAGDebug:
             f"recommendations={len(response.recommendations)}"
         )
 
-        return response
+        return cast(TuneParametersResponse, response)
 
     async def export_report(
         self, output_dir: str, formats: Optional[List[str]] = None
@@ -317,7 +318,7 @@ class RAGDebug:
         # Start session
         session_info = await self.start()
 
-        results = {
+        results: Dict[str, Any] = {
             "session": session_info,
         }
 

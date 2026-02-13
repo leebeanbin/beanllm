@@ -21,11 +21,17 @@ from beanllm.utils.cli.cli_utils import (
 
 async def scan_models() -> None:
     """API 스캔 및 신규 모델 감지."""
-    if RICH_AVAILABLE:
+    if RICH_AVAILABLE and console is not None:
         console.rule("[bold cyan]🔍 Scanning APIs for Models[/bold cyan]")
 
     try:
-        if RICH_AVAILABLE:
+        if (
+            RICH_AVAILABLE
+            and console is not None
+            and Progress is not None
+            and SpinnerColumn is not None
+            and TextColumn is not None
+        ):
             with Progress(
                 SpinnerColumn(), TextColumn("[bold blue]{task.description}"), console=console
             ) as progress:
@@ -38,7 +44,7 @@ async def scan_models() -> None:
 
         summary = manager.get_summary()
 
-        if RICH_AVAILABLE:
+        if RICH_AVAILABLE and console is not None and Panel is not None and Table is not None:
             console.print()
             summary_panel = Panel(
                 f"""[bold cyan]Total Models:[/bold cyan] {summary["total"]}

@@ -190,13 +190,13 @@ class CloudOCREngine(BaseOCREngine):
         # PIL Image를 bytes로 변환
         img_byte_arr = io.BytesIO()
         pil_image.save(img_byte_arr, format="PNG")
-        img_byte_arr = img_byte_arr.getvalue()
+        img_bytes: bytes = img_byte_arr.getvalue()
 
         # Google Vision 클라이언트
         client = vision.ImageAnnotatorClient()
 
         # 이미지 생성
-        vision_image = vision.Image(content=img_byte_arr)
+        vision_image = vision.Image(content=img_bytes)
 
         # OCR 실행
         response = client.text_detection(image=vision_image)
@@ -258,7 +258,7 @@ class CloudOCREngine(BaseOCREngine):
         # PIL Image를 bytes로 변환
         img_byte_arr = io.BytesIO()
         pil_image.save(img_byte_arr, format="PNG")
-        img_byte_arr = img_byte_arr.getvalue()
+        img_bytes: bytes = img_byte_arr.getvalue()
 
         # AWS Textract 클라이언트
         textract = boto3.client(
@@ -269,7 +269,7 @@ class CloudOCREngine(BaseOCREngine):
         )
 
         # OCR 실행
-        response = textract.detect_document_text(Document={"Bytes": img_byte_arr})
+        response = textract.detect_document_text(Document={"Bytes": img_bytes})
 
         # 결과 변환
         lines = []

@@ -78,7 +78,7 @@ class Qwen2VLEngine(BaseOCREngine):
             model_size: 모델 크기 (2b/7b/72b)
             use_gpu: GPU 사용 여부
         """
-        super().__init__()
+        super().__init__(name="Qwen2VL")
 
         if not HAS_QWEN2VL:
             raise ImportError(
@@ -169,6 +169,7 @@ class Qwen2VLEngine(BaseOCREngine):
         ]
 
         # 입력 준비
+        assert self._processor is not None and self._model is not None, "Model not initialized"
         text_input = self._processor.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )

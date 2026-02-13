@@ -124,9 +124,15 @@ class HTMLLoader(BaseDocumentLoader):
             raise ImportError("requests is required for URL loading. Install: pip install requests")
 
         try:
-            response = httpx.get(self.source, headers=self.headers, timeout=self.timeout)
+            url = str(self.source)
+            response = httpx.get(url, headers=self.headers, timeout=self.timeout)
             response.raise_for_status()
-            response.encoding = response.apparent_encoding or "utf-8"
+            enc = (
+                getattr(response, "charset_encoding", None)
+                or getattr(response, "apparent_encoding", None)
+                or "utf-8"
+            )
+            response.encoding = enc
             return response.text
         except Exception as e:
             logger.error(f"Failed to fetch {self.source}: {e}")

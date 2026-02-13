@@ -465,9 +465,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
 
     # BaseEvaluationFramework 추상 메서드 구현
 
-    def evaluate(
-        self, metric: str, data: Union[Dict[str, Any], List[Dict[str, Any]]], **kwargs
-    ) -> Dict[str, Any]:
+    def evaluate(self, **kwargs: Any) -> Dict[str, Any]:
         """
         평가 실행 (BaseEvaluationFramework 인터페이스)
 
@@ -497,23 +495,29 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             )
             ```
         """
+        metric: str = kwargs.pop("metric", "")
+        data: Any = kwargs.pop("data", None)
+        if not metric or data is None:
+            raise ValueError("Both 'metric' and 'data' are required kwargs")
+
         if isinstance(data, list):
             # 배치 평가
             return {"results": self.batch_evaluate(metric=metric, data=data, **kwargs)}
         else:
+            data_dict: Dict[str, Any] = data if isinstance(data, dict) else {}
             # 단일 평가
             if metric == "answer_relevancy":
-                return self.evaluate_answer_relevancy(**data, **kwargs)
+                return self.evaluate_answer_relevancy(**data_dict, **kwargs)
             elif metric == "faithfulness":
-                return self.evaluate_faithfulness(**data, **kwargs)
+                return self.evaluate_faithfulness(**data_dict, **kwargs)
             elif metric == "contextual_precision":
-                return self.evaluate_contextual_precision(**data, **kwargs)
+                return self.evaluate_contextual_precision(**data_dict, **kwargs)
             elif metric == "contextual_recall":
-                return self.evaluate_contextual_recall(**data, **kwargs)
+                return self.evaluate_contextual_recall(**data_dict, **kwargs)
             elif metric == "hallucination":
-                return self.evaluate_hallucination(**data, **kwargs)
+                return self.evaluate_hallucination(**data_dict, **kwargs)
             elif metric == "toxicity":
-                return self.evaluate_toxicity(**data, **kwargs)
+                return self.evaluate_toxicity(**data_dict, **kwargs)
             else:
                 raise ValueError(
                     f"Unknown metric: {metric}. Available: {list(self.list_tasks().keys())}"

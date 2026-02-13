@@ -36,10 +36,11 @@ class FineTuningManagerFacade(AsyncHelperMixin):
         self._init_services()
 
     def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입) - ServiceFactory 사용"""
-        from beanllm.service.factory import ServiceFactory
+        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
+        from beanllm.utils.core.di_container import get_container
 
-        service_factory = ServiceFactory()
+        container = get_container()
+        service_factory = container.get_service_factory()
         finetuning_service = service_factory.create_finetuning_service(provider=self.provider)
         self._finetuning_handler = FinetuningHandler(finetuning_service)
 
@@ -153,10 +154,11 @@ def quick_finetune(
     Returns:
         파인튜닝 작업
     """
-    # Handler/Service 초기화 - ServiceFactory 사용
-    from beanllm.service.factory import ServiceFactory
+    # Handler/Service 초기화 - DI Container 사용
+    from beanllm.utils.core.di_container import get_container
 
-    service_factory = ServiceFactory()
+    container = get_container()
+    service_factory = container.get_service_factory()
     finetuning_service = service_factory.create_finetuning_service()
     handler = FinetuningHandler(finetuning_service)
 

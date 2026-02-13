@@ -4,7 +4,7 @@ LangGraph Workflow - beanLLM 스타일 Workflow Builder
 LangGraph의 StateGraph를 beanLLM 인터페이스로 제공합니다.
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, cast
 
 from beanllm.utils.logging import get_logger
 
@@ -86,7 +86,7 @@ class LangGraphWorkflow:
 
         logger.info(f"LangGraph workflow executed: initial_keys={list(initial_state.keys())}")
 
-        return result
+        return cast(Dict[str, Any], result)
 
     def stream(
         self,
@@ -162,8 +162,8 @@ class WorkflowBuilder:
         self.graph = StateGraph(state_class)
 
         # 진입점 및 종료점
-        self.entry_point = None
-        self.finish_point = None
+        self.entry_point: Optional[str] = None
+        self.finish_point: Optional[str] = None
 
         logger.info(f"WorkflowBuilder initialized with state: {state_class.__name__}")
 

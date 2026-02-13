@@ -3,8 +3,9 @@
 """
 
 from datetime import datetime
+from typing import Union
 
-from .tool_registry import register_tool
+from beanllm.domain.tools.tool_registry import register_tool
 
 
 @register_tool
@@ -24,17 +25,22 @@ def calculator(operation: str, a: float, b: float) -> float:
         b: 두 번째 숫자
     """
     operations = {
-        "add": lambda x, y: x + y,
-        "subtract": lambda x, y: x - y,
-        "multiply": lambda x, y: x * y,
-        "divide": lambda x, y: x / y if y != 0 else "Error: Division by zero",
+        "add": lambda x: x,
+        "subtract": lambda x: x,
+        "multiply": lambda x: x,
+        "divide": lambda x: x if x != 0 else float("nan"),
     }
-
-    if operation not in operations:
-        return f"Error: Unknown operation '{operation}'"
-
-    result = operations[operation](a, b)
-    return float(result) if isinstance(result, (int, float)) else result
+    if operation == "add":
+        return float(a + b)
+    if operation == "subtract":
+        return float(a - b)
+    if operation == "multiply":
+        return float(a * b)
+    if operation == "divide":
+        if b == 0:
+            return float("nan")
+        return float(a / b)
+    return float("nan")
 
 
 @register_tool

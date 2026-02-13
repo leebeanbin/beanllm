@@ -6,7 +6,7 @@ Updated to use generic LRUCache with TTL and automatic cleanup
 
 import hashlib
 import json
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol
@@ -196,7 +196,7 @@ class NodeCache:
                 - evictions: LRU 제거 수
                 - expirations: TTL 만료 수
         """
-        return self._cache.stats()
+        return cast(Dict[str, Any], self._cache.stats())
 
     def shutdown(self):
         """

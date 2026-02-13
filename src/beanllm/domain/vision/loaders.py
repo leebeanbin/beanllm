@@ -5,7 +5,7 @@ Vision Document Loaders - 이미지 및 멀티모달 문서 로딩
 import base64
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union, cast
 
 from beanllm.domain.loaders import BaseDocumentLoader, Document
 
@@ -67,7 +67,7 @@ class ImageLoader(BaseDocumentLoader):
         self.generate_captions = generate_captions
         self.caption_model = caption_model or "Salesforce/blip-image-captioning-base"
 
-    def load(self, source: Union[str, Path]) -> List[ImageDocument]:
+    def load(self, *args: Any, **kwargs: Any) -> List[ImageDocument]:  # type: ignore[override]
         """
         이미지 로드
 
@@ -77,10 +77,11 @@ class ImageLoader(BaseDocumentLoader):
         Returns:
             ImageDocument 리스트
         """
+        source: Union[str, Path] = args[0] if args else kwargs.get("source", "")
         source_path = Path(source)
 
         if source_path.is_file():
-            return [self._load_image(source_path)]
+            return cast(List[ImageDocument], [self._load_image(source_path)])
         elif source_path.is_dir():
             return self._load_directory(source_path)
         else:
@@ -122,7 +123,7 @@ class ImageLoader(BaseDocumentLoader):
             if file_path.suffix.lower() in image_extensions:
                 documents.append(self._load_image(file_path))
 
-        return documents
+        return cast(List[ImageDocument], documents)
 
     def _generate_caption(self, image_path: Path) -> str:
         """이미지 캡션 자동 생성"""
@@ -144,7 +145,7 @@ class ImageLoader(BaseDocumentLoader):
         output = model.generate(**inputs)
         caption = processor.decode(output[0], skip_special_tokens=True)
 
-        return caption
+        return cast(str, caption)
 
 
 class PDFWithImagesLoader(BaseDocumentLoader):
@@ -226,7 +227,7 @@ class PDFWithImagesLoader(BaseDocumentLoader):
                     )
 
         pdf_document.close()
-        return documents
+        return cast(List[Union[Document, ImageDocument]], documents)
 
     def lazy_load(self, source: Union[str, Path]):
         """지연 로딩 (제너레이터)"""
@@ -249,7 +250,7 @@ def load_images(source: Union[str, Path], generate_captions: bool = False) -> Li
         docs = load_images("images/", generate_captions=True)
     """
     loader = ImageLoader(generate_captions=generate_captions)
-    return loader.load(source)
+    return cast(List[ImageDocument], loader.load(source))
 
 
 def load_pdf_with_images(source: Union[str, Path]) -> List[Union[Document, ImageDocument]]:
@@ -266,4 +267,4 @@ def load_pdf_with_images(source: Union[str, Path]) -> List[Union[Document, Image
         docs = load_pdf_with_images("document.pdf")
     """
     loader = PDFWithImagesLoader()
-    return loader.load(source)
+    return cast(List[Union[Document, ImageDocument]], loader.load(source))

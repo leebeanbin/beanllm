@@ -98,15 +98,16 @@ class Evaluator:
             """단일 평가 (Rate Limiting + 동시성 제어)"""
             # Rate Limiting (옵션)
             if rate_limiter is not None:
-                await rate_limiter.wait("evaluation", cost=1.0)
+                await rate_limiter.acquire("evaluation", max_requests=60, window=60)
 
             # 동시성 제어 (옵션)
             if concurrency_controller is not None:
-                async with concurrency_controller.with_concurrency_control(
-                    "evaluation", max_concurrent=max_concurrent, rate_limit_key="evaluation"
-                ):
+                await concurrency_controller.acquire_semaphore(max_concurrent=max_concurrent)
+                try:
                     loop = asyncio.get_event_loop()
                     return await loop.run_in_executor(None, self.evaluate, pred, ref, **kwargs)
+                finally:
+                    await concurrency_controller.release_semaphore()
             else:
                 # 제한 없이 실행
                 loop = asyncio.get_event_loop()
@@ -117,7 +118,7 @@ class Evaluator:
         results = await asyncio.gather(*tasks, return_exceptions=True)
 
         # 예외 처리
-        batch_results = []
+        batch_results: List[BatchEvaluationResult] = []
         for i, result in enumerate(results):
             if isinstance(result, Exception):
                 # 예외 발생 시 빈 결과 생성
@@ -126,7 +127,7 @@ class Evaluator:
                         results=[], average_score=0.0, metadata={"error": str(result), "index": i}
                     )
                 )
-            else:
+            elif isinstance(result, BatchEvaluationResult):
                 batch_results.append(result)
 
         return batch_results

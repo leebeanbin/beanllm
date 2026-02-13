@@ -6,10 +6,7 @@
 """
 
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Callable
-
-if TYPE_CHECKING:
-    from contextlib import AsyncContextManager
+from typing import Callable
 
 from .factory import get_distributed_lock
 from .utils import sanitize_error_message
@@ -132,13 +129,11 @@ class LockManager:
         """벡터 스토어 락 획득"""
         return self.acquire_resource_lock("vector_store", store_id, timeout=timeout)
 
-    def with_model_lock(
-        self, model_name: str, timeout: float = 30.0
-    ) -> "AsyncContextManager[None]":
+    def with_model_lock(self, model_name: str, timeout: float = 30.0):
         """모델 로딩 락 획득"""
         return self.acquire_resource_lock("model", model_name, timeout=timeout)
 
-    def with_file_lock(self, file_path: str, timeout: float = 30.0) -> "AsyncContextManager[None]":
+    def with_file_lock(self, file_path: str, timeout: float = 30.0):
         """파일 처리 락 획득"""
         import hashlib
 

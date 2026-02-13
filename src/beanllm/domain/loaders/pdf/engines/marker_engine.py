@@ -17,7 +17,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from .base import BasePDFEngine
+from beanllm.domain.loaders.pdf.engines.base import BasePDFEngine
 
 try:
     from beanllm.utils.logging import get_logger
@@ -80,8 +80,8 @@ class MarkerEngine(BasePDFEngine):
         self.max_pages = max_pages
         self.enable_cache = enable_cache
         self.cache_size = cache_size
-        self._marker_available = None
-        self._model_cache = None  # marker-pdf 모델 캐시
+        self._marker_available: Optional[bool] = None
+        self._model_cache: Optional[Any] = None  # marker-pdf 모델 캐시
         self._result_cache: Dict[str, Dict] = {}  # 결과 캐시
 
     def _check_dependencies(self) -> None:
@@ -551,7 +551,9 @@ class MarkerEngine(BasePDFEngine):
             "use_gpu": self.use_gpu,
         }
 
-    def extract_batch(self, pdf_paths: List[Union[str, Path]], config: Dict) -> List[Dict]:
+    def extract_batch(
+        self, pdf_paths: List[Union[str, Path]], config: Dict
+    ) -> List[Optional[Dict]]:
         """
         여러 PDF를 배치로 처리
 
@@ -560,12 +562,12 @@ class MarkerEngine(BasePDFEngine):
             config: 추출 설정 딕셔너리
 
         Returns:
-            List[Dict]: 각 PDF의 추출 결과 리스트
+            List[Dict]: 각 PDF의 추출 결과 리스트 (실패 시 해당 위치는 None)
 
         Note:
             현재는 순차 처리이지만, 향후 병렬 처리로 확장 가능
         """
-        results = []
+        results: List[Optional[Dict]] = []
         total = len(pdf_paths)
 
         logger.info(f"Processing {total} PDFs in batch mode...")

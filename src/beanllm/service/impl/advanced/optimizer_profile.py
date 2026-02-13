@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any, Dict, Protocol
 
 from beanllm.domain.optimizer import Priority, ProfileResult
 from beanllm.dto.request.advanced.optimizer_request import ProfileRequest
@@ -15,10 +16,20 @@ from beanllm.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
+class _OptimizerProfileStorage(Protocol):
+    """Protocol for classes that provide profile storage (used by mixin)."""
+
+    _profiles: Dict[str, Any]
+    _recommender: Any
+
+
 class OptimizerProfileMixin:
     """Mixin providing profile() and get_recommendations() for OptimizerServiceImpl."""
 
-    async def profile(self, request: ProfileRequest) -> ProfileResponse:
+    _profiles: Dict[str, Any]
+    _recommender: Any
+
+    async def profile(self: _OptimizerProfileStorage, request: ProfileRequest) -> ProfileResponse:
         """Profile system components."""
         logger.info("Starting profiling: components=%s", request.components or [])
         profile_id = str(uuid.uuid4())
@@ -60,7 +71,9 @@ class OptimizerProfileMixin:
             logger.error("Profiling failed: %s", e)
             raise RuntimeError(f"Failed to profile system: {e}") from e
 
-    async def get_recommendations(self, profile_id: str) -> RecommendationResponse:
+    async def get_recommendations(
+        self: _OptimizerProfileStorage, profile_id: str
+    ) -> RecommendationResponse:
         """Get optimization recommendations for a profile."""
         logger.info("Getting recommendations for profile: %s", profile_id)
         if profile_id not in self._profiles:

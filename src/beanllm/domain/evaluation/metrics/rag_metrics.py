@@ -239,6 +239,8 @@ class ContextRecallMetric(BaseMetric):
         ground_truth_contexts: List[str],
     ) -> float:
         """임베딩 기반 재현율 계산"""
+        if self.embedding_function is None:
+            return self._compute_recall_with_tokens(contexts, ground_truth_contexts)
         try:
             import numpy as np
             from sklearn.metrics.pairwise import cosine_similarity

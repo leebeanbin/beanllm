@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Set
+from typing import TYPE_CHECKING, Dict, Set, cast
 
 from beanllm.domain.graph import GraphState, NodeCache
 from beanllm.dto.request.graph.graph_request import GraphRequest
@@ -72,7 +72,8 @@ class GraphServiceImpl(IGraphService):
         # 노드 딕셔너리 생성 (기존: self.nodes)
         nodes: Dict[str, "BaseNode"] = {}
         for node in request.nodes or []:
-            nodes[node.name] = node
+            base_node = cast("BaseNode", node)
+            nodes[base_node.name] = base_node
 
         # 캐시 생성 (기존과 동일)
         cache = NodeCache() if request.enable_cache else None
@@ -147,7 +148,7 @@ class GraphServiceImpl(IGraphService):
                     logger.info("No next node, finishing")
                 break
 
-            current_node = next_node
+            current_node = cast(str, next_node)
 
         # 캐시 통계 (기존과 동일)
         cache_stats = None

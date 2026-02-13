@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from beanllm.domain.rag_debug import (
     ChunkValidator,
@@ -15,6 +15,7 @@ from beanllm.domain.rag_debug import (
     EmbeddingAnalyzer,
     ParameterTuner,
 )
+from beanllm.domain.vector_stores.base import BaseVectorStore
 from beanllm.dto.request.ml.rag_debug_request import (
     AnalyzeEmbeddingsRequest,
     StartDebugSessionRequest,
@@ -69,7 +70,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
 
         # Create DebugSession
         session = DebugSession(
-            vector_store=vector_store,
+            vector_store=cast(BaseVectorStore, vector_store),
             session_name=request.session_name,
         )
 

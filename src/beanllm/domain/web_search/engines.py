@@ -11,7 +11,7 @@ Implementations:
 import time
 from abc import ABC
 from enum import Enum
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from beanllm.domain.web_search.security import validate_url
 from beanllm.domain.web_search.types import SearchResponse
@@ -61,7 +61,7 @@ class BaseSearchEngine(ABC):
         self.validate_urls = validate_urls
         self._cache: Dict[str, tuple[SearchResponse, float]] = {}
 
-    def search(self, query: str, **kwargs: object) -> SearchResponse:
+    def search(self, query: str, **kwargs: Any) -> SearchResponse:
         """
         검색 실행 (동기)
 
@@ -74,7 +74,7 @@ class BaseSearchEngine(ABC):
         """
         raise NotImplementedError
 
-    async def search_async(self, query: str, **kwargs: object) -> SearchResponse:
+    async def search_async(self, query: str, **kwargs: Any) -> SearchResponse:
         """
         검색 실행 (비동기)
 

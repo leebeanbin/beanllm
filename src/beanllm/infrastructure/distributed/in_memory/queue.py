@@ -5,7 +5,7 @@
 import asyncio
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from beanllm.infrastructure.distributed.interfaces import TaskQueueInterface
 
@@ -72,11 +72,11 @@ class InMemoryTaskQueue(TaskQueueInterface):
                     self._task_status[task["task_id"]]["status"] = "processing"
                     self._task_status[task["task_id"]]["started_at"] = time.time()
 
-            return task
+            return cast(Optional[Dict[str, Any]], task)
         except asyncio.TimeoutError:
             return None
 
     async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """작업 상태 조회"""
         async with self._lock:
-            return self._task_status.get(task_id)
+            return cast(Optional[Dict[str, Any]], self._task_status.get(task_id))

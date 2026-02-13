@@ -9,7 +9,7 @@ Knowledge Graph 그래프 연산: 시각화, 통계, 목록, 삭제.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 import networkx as nx  # type: ignore[import-untyped]
 
@@ -117,7 +117,7 @@ async def get_graph_stats(service: Any, graph_id: str) -> Dict[str, Any]:
     stats["relation_type_counts"] = relation_type_counts
 
     logger.info(f"Graph stats calculated: {graph_id}")
-    return stats
+    return cast(Dict[str, Any], stats)
 
 
 async def list_graphs(service: Any) -> List[Dict[str, Any]]:

@@ -2,7 +2,7 @@
 Evaluation Dashboard - 평가 결과 시각화 대시보드
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 try:
     import plotly.graph_objects as go
@@ -70,7 +70,7 @@ class EvaluationDashboard:
             raise ImportError("plotly is required. Install with: pip install plotly")
 
         # 메트릭별로 그룹화
-        metrics = {}
+        metrics: Dict[str, List[float]] = {}
         for result in results:
             metric_name = result.get("metric", "unknown")
             score = result.get("score", 0.0)
@@ -118,7 +118,7 @@ class EvaluationDashboard:
             raise ImportError("matplotlib is required. Install with: pip install matplotlib")
 
         # 메트릭별로 그룹화
-        metrics = {}
+        metrics: Dict[str, List[float]] = {}
         for result in results:
             metric_name = result.get("metric", "unknown")
             score = result.get("score", 0.0)
@@ -198,7 +198,7 @@ class EvaluationDashboard:
         filtered.sort(key=lambda x: x.get("timestamp", ""))
 
         # 메트릭별로 그룹화
-        metrics = {}
+        metrics: Dict[str, Dict[str, List[Any]]] = {}
         for data in filtered:
             metric = data.get("metric", "unknown")
             timestamp = data.get("timestamp", "")
@@ -256,7 +256,7 @@ class EvaluationDashboard:
         filtered.sort(key=lambda x: x.get("timestamp", ""))
 
         # 메트릭별로 그룹화
-        metrics = {}
+        metrics: Dict[str, Dict[str, List[Any]]] = {}
         for data in filtered:
             metric = data.get("metric", "unknown")
             timestamp = data.get("timestamp", "")
@@ -324,10 +324,10 @@ class EvaluationDashboard:
 
         # 데이터 변환
         metrics = list(matrix_data.keys())
-        cases = set()
+        cases_set: Set[str] = set()
         for metric_data in matrix_data.values():
-            cases.update(metric_data.keys())
-        cases = sorted(list(cases))
+            cases_set.update(metric_data.keys())
+        cases: List[str] = sorted(list(cases_set))
 
         # 행렬 생성
         z = []
@@ -378,10 +378,10 @@ class EvaluationDashboard:
 
         # 데이터 변환
         metrics = list(matrix_data.keys())
-        cases = set()
+        cases_set_heatmap: Set[str] = set()
         for metric_data in matrix_data.values():
-            cases.update(metric_data.keys())
-        cases = sorted(list(cases))
+            cases_set_heatmap.update(metric_data.keys())
+        cases: List[str] = sorted(list(cases_set_heatmap))
 
         # 행렬 생성
         z = []

@@ -7,12 +7,21 @@ import hmac
 import os
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, List, Optional, Union, cast
 
+if TYPE_CHECKING:
+    from numpy import ndarray as NDArray
+else:
+    NDArray = Any  # noqa: N816
+
+np: Optional[ModuleType] = None
 try:
-    import numpy as np
+    import numpy as _np
+
+    np = _np
 except ImportError:
-    np = None
+    pass
 
 # 보안: 모델 서명용 비밀 키 (환경변수에서 로드)
 MODEL_SIGNATURE_KEY = os.getenv("MODEL_SIGNATURE_KEY", "change-this-secret-key-in-production")
@@ -95,8 +104,8 @@ class TensorFlowModel(BaseMLModel):
         self.model_path = model_path
 
     def predict(
-        self, inputs: Union[np.ndarray, List], batch_size: Optional[int] = None, **kwargs
-    ) -> np.ndarray:
+        self, inputs: Union[NDArray, List], batch_size: Optional[int] = None, **kwargs
+    ) -> NDArray:
         """
         예측
 
@@ -177,7 +186,7 @@ class PyTorchModel(BaseMLModel):
         try:
             import torch
 
-            return torch.cuda.is_available()
+            return bool(torch.cuda.is_available())
         except ImportError:
             return False
 
@@ -208,10 +217,11 @@ class PyTorchModel(BaseMLModel):
             # 모델 전체가 저장된 경우
             self.model = checkpoint
 
-        self.model.to(self.device)
+        if self.model is not None:
+            self.model.to(self.device)
         self.model_path = model_path
 
-    def predict(self, inputs: Union[np.ndarray, Any], **kwargs) -> np.ndarray:
+    def predict(self, inputs: Union[NDArray, Any], **kwargs) -> NDArray:
         """
         예측
 
@@ -231,7 +241,7 @@ class PyTorchModel(BaseMLModel):
             raise ValueError("Model not loaded")
 
         # numpy를 tensor로 변환
-        if isinstance(inputs, np.ndarray):
+        if np is not None and isinstance(inputs, np.ndarray):
             inputs = torch.from_numpy(inputs).to(self.device)
         elif isinstance(inputs, torch.Tensor):
             inputs = inputs.to(self.device)
@@ -244,9 +254,8 @@ class PyTorchModel(BaseMLModel):
 
         # numpy로 변환
         if isinstance(outputs, torch.Tensor):
-            return outputs.cpu().numpy()
-        else:
-            return outputs
+            return cast(NDArray, outputs.cpu().numpy())
+        return cast(NDArray, outputs)
 
     def save(self, save_path: Union[str, Path], save_full_model: bool = False):
         """
@@ -388,7 +397,7 @@ class SklearnModel(BaseMLModel):
         except Exception as e:
             raise ValueError(f"Failed to load model: {e}")
 
-    def predict(self, inputs: Union[np.ndarray, List], **kwargs) -> np.ndarray:
+    def predict(self, inputs: Union[NDArray, List], **kwargs) -> NDArray:
         """
         예측
 
@@ -404,7 +413,7 @@ class SklearnModel(BaseMLModel):
 
         return self.model.predict(inputs, **kwargs)
 
-    def predict_proba(self, inputs: Union[np.ndarray, List], **kwargs) -> np.ndarray:
+    def predict_proba(self, inputs: Union[NDArray, List], **kwargs) -> NDArray:
         """
         확률 예측 (분류 모델)
 
@@ -423,7 +432,7 @@ class SklearnModel(BaseMLModel):
 
         return self.model.predict_proba(inputs, **kwargs)
 
-    def fit(self, X: Union[np.ndarray, List], y: Union[np.ndarray, List], **kwargs):
+    def fit(self, X: Union[NDArray, List], y: Union[NDArray, List], **kwargs):
         """
         모델 학습
 

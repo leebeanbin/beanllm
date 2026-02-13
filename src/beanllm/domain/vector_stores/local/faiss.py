@@ -5,7 +5,7 @@ Facebook AI Similarity Search
 """
 
 import uuid
-from typing import TYPE_CHECKING, Any, List
+from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
     from beanllm.domain.loaders import Document
@@ -79,6 +79,8 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         # FAISS 인덱스 생성
         self.index = self._create_index(index_type, dimension)
+        self.documents: List["Document"] = []
+        self.ids_to_index: Dict[str, int] = {}
 
     def _create_index(self, index_type: str, dimension: int) -> Any:
         """
@@ -107,9 +109,6 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         else:
             # auto 또는 기타: 기본 Flat
             return self.faiss.IndexFlatL2(dimension)
-
-        self.documents = []  # 문서 저장
-        self.ids_to_index = {}  # ID -> index 매핑
 
     def add_documents(self, documents: List[Any], **kwargs) -> List[str]:
         """문서 추가"""
@@ -232,8 +231,8 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
         self._is_trained = False
 
         # 문서 및 매핑 초기화
-        self.documents = []
-        self.ids_to_index = {}
+        self.documents = []  # type: List[Document]
+        self.ids_to_index = {}  # type: Dict[str, int]
 
     def close(self):
         """
@@ -330,4 +329,4 @@ class FAISSVectorStore(BaseVectorStore, AdvancedSearchMixin):
                 doc = Document(content=doc_data["content"], metadata=doc_data.get("metadata", {}))
                 self.documents.append(doc)
 
-            self.ids_to_index = data["ids_to_index"]
+            self.ids_to_index = {str(k): int(v) for k, v in data["ids_to_index"].items()}

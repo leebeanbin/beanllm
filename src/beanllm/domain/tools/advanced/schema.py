@@ -3,12 +3,28 @@ Dynamic Schema Generation - 동적 스키마 생성
 """
 
 import inspect
-from typing import Any, Callable, Dict, Type, Union, get_args, get_origin, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    Type,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
+
+if TYPE_CHECKING:
+    from pydantic import BaseModel
 
 try:
-    from pydantic import BaseModel
+    from pydantic import BaseModel as _PydanticBaseModelClass
+
+    _PydanticBaseModel: Optional[Type[_PydanticBaseModelClass]] = _PydanticBaseModelClass
 except ImportError:
-    BaseModel = None
+    _PydanticBaseModel = None
 
 
 class SchemaGenerator:
@@ -121,7 +137,7 @@ class SchemaGenerator:
         return {"type": "object"}
 
     @classmethod
-    def from_pydantic(cls, model: Type[BaseModel]) -> Dict[str, Any]:
+    def from_pydantic(cls, model: "Type[BaseModel]") -> Dict[str, Any]:
         """
         Pydantic 모델로부터 JSON Schema 생성
 
@@ -131,6 +147,6 @@ class SchemaGenerator:
         Returns:
             JSON Schema dict
         """
-        if BaseModel is None:
+        if _PydanticBaseModel is None:
             raise ImportError("pydantic is required for from_pydantic method")
         return model.schema()

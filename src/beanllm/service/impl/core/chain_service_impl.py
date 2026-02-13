@@ -97,7 +97,10 @@ class ChainServiceImpl(IChainService):
         for i, chain_request in enumerate(chains):
             logger.debug(f"Executing chain {i + 1}/{len(chains)}")
             result = await self._execute_sequential_step(
-                chain_request, template_vars, current_output, i
+                cast(ChainRequest, chain_request),
+                template_vars,
+                current_output,
+                i,
             )
             if not result.success:
                 return result
@@ -118,7 +121,9 @@ class ChainServiceImpl(IChainService):
         chains = request.chains or []
         template_vars = self._get_template_vars(request)
 
-        chain_results = await self._execute_parallel_chains(chains, template_vars)
+        chain_results = await self._execute_parallel_chains(
+            cast(List[ChainRequest], chains), template_vars
+        )
         return self._combine_parallel_results(chain_results)
 
     # ===== Helper Methods: Request Parameter Extraction =====

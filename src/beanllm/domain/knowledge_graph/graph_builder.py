@@ -7,7 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import networkx as nx
 
@@ -332,8 +332,9 @@ class GraphBuilder:
             else:
                 path = nx.shortest_path(graph, source_id, target_id, weight=None)
 
-            if len(path) <= max_length + 1:  # +1 for nodes count
-                return path
+            path_list = cast(List[str], path)
+            if len(path_list) <= max_length + 1:  # +1 for nodes count
+                return path_list
             else:
                 return None
 

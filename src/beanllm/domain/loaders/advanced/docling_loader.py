@@ -158,10 +158,11 @@ class DoclingLoader(BaseDocumentLoader):
             metadata = self._extract_metadata(result)
 
             # Document 생성
+            meta = metadata if self.include_metadata else {}
+            meta = dict(meta, source=self.file_path)
             doc = Document(
                 content=content,
-                metadata=metadata if self.include_metadata else {},
-                source=self.file_path,
+                metadata=meta,
             )
 
             logger.info(
@@ -271,11 +272,11 @@ class DoclingLoader(BaseDocumentLoader):
                 metadata["chunk_index"] = i
                 metadata["total_chunks"] = len(chunks)
 
+                meta = dict(metadata, source=doc.metadata.get("source", ""))
                 split_docs.append(
                     Document(
                         content=chunk,
-                        metadata=metadata,
-                        source=doc.source,
+                        metadata=meta,
                     )
                 )
 

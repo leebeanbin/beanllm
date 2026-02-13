@@ -86,7 +86,7 @@ class FinetuningServiceImpl(IFinetuningService):
             model=request.model,
             training_file=request.training_file,
             validation_file=request.validation_file,
-            **request.kwargs,
+            **request.extra_params,
         )
         return StartTrainingResponse(job=job)
 
@@ -120,7 +120,7 @@ class FinetuningServiceImpl(IFinetuningService):
             training_file=train_file,
             validation_file=val_file,
             n_epochs=request.n_epochs,
-            **request.kwargs,
+            **request.extra_params,
         )
 
         # 대기

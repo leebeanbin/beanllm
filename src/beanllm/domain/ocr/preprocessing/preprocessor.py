@@ -12,6 +12,8 @@ Features:
 - 선명화 (Sharpen)
 """
 
+from typing import cast
+
 import numpy as np
 
 from beanllm.domain.ocr.models import (
@@ -150,7 +152,7 @@ class ImagePreprocessor:
         else:
             result = gray
 
-        return result
+        return cast(np.ndarray, result)
 
     def _resize(self, image: np.ndarray, config: ResizeConfig) -> np.ndarray:
         """
@@ -184,7 +186,7 @@ class ImagePreprocessor:
                 f"Resized image from {w}x{h} to {new_w}x{new_h} (interpolation={config.interpolation})"
             )
 
-        return image
+        return cast(np.ndarray, image)
 
     def _denoise(self, image: np.ndarray, config: DenoiseConfig) -> np.ndarray:
         """
@@ -216,7 +218,7 @@ class ImagePreprocessor:
         # Median filter (salt-and-pepper 노이즈 제거)
         denoised = cv2.medianBlur(denoised, median_kernel)
 
-        return denoised
+        return cast(np.ndarray, denoised)
 
     def _adjust_contrast(self, image: np.ndarray, config: ContrastConfig) -> np.ndarray:
         """
@@ -235,7 +237,7 @@ class ImagePreprocessor:
         clahe = cv2.createCLAHE(clipLimit=config.clip_limit, tileGridSize=config.tile_grid_size)
         enhanced = clahe.apply(image)
 
-        return enhanced
+        return cast(np.ndarray, enhanced)
 
     def _binarize(self, image: np.ndarray, config: BinarizeConfig) -> np.ndarray:
         """
@@ -267,7 +269,7 @@ class ImagePreprocessor:
             # Manual thresholding
             _, binary = cv2.threshold(image, config.threshold, 255, cv2.THRESH_BINARY)
 
-        return binary
+        return cast(np.ndarray, binary)
 
     def _deskew(self, image: np.ndarray, config: DeskewConfig) -> np.ndarray:
         """
@@ -315,7 +317,7 @@ class ImagePreprocessor:
                 image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE
             )
             logger.debug(f"Deskewed image by {median_angle:.2f} degrees")
-            return rotated
+            return cast(np.ndarray, rotated)
 
         return image
 
@@ -340,7 +342,7 @@ class ImagePreprocessor:
         beta = -config.strength
         sharpened = cv2.addWeighted(image, alpha, blurred, beta, 0)
 
-        return sharpened
+        return cast(np.ndarray, sharpened)
 
     def __repr__(self) -> str:
         return "ImagePreprocessor()"

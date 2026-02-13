@@ -251,8 +251,12 @@ class FineTuningManager:
             )
             ```
         """
-        from .providers import OpenAIFineTuningProvider
+        from beanllm.domain.finetuning.providers import (
+            BaseFineTuningProvider,
+            OpenAIFineTuningProvider,
+        )
 
+        provider_instance: BaseFineTuningProvider
         if provider == "openai":
             provider_instance = OpenAIFineTuningProvider(**kwargs)
         elif provider == "axolotl":

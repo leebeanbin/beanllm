@@ -9,7 +9,7 @@ import asyncio
 import json
 import time
 import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 from beanllm.infrastructure.distributed.interfaces import TaskQueueInterface
 from beanllm.utils import check_kafka_health, sanitize_error_message
@@ -49,7 +49,7 @@ class KafkaTaskQueue(TaskQueueInterface):
         self.producer = producer
         self.consumer = consumer
         self.topic = topic
-        self._task_status = {}  # 인메모리 상태 저장 (실제로는 Redis 사용 권장)
+        self._task_status: Dict[str, Dict[str, Any]] = {}  # 인메모리 상태 저장
 
     async def enqueue(self, task_type: str, data: Dict[str, Any], priority: int = 0) -> str:
         """작업 큐에 추가"""
@@ -154,7 +154,7 @@ class KafkaTaskQueue(TaskQueueInterface):
                                 self._task_status[task_id]["status"] = "processing"
                                 self._task_status[task_id]["started_at"] = time.time()
 
-                            return task
+                            return cast(Dict[str, Any], task)
 
             await asyncio.sleep(0.1)  # 짧은 대기
 
