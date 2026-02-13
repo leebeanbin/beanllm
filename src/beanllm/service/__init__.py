@@ -10,7 +10,12 @@ from .audio_service import IAudioService
 from .chain_service import IChainService
 from .chat_service import IChatService
 from .evaluation_service import IEvaluationService
-from .finetuning_service import IFinetuningService
+from .finetuning_service import (
+    IFinetuningDataService,
+    IFinetuningJobService,
+    IFinetuningService,
+    IFinetuningTrainingService,
+)
 from .graph_service import IGraphService
 from .multi_agent_service import IMultiAgentService
 from .rag_service import IRAGService
@@ -31,4 +36,7 @@ __all__ = [
     "IAudioService",
     "IEvaluationService",
     "IFinetuningService",
+    "IFinetuningDataService",
+    "IFinetuningJobService",
+    "IFinetuningTrainingService",
 ]

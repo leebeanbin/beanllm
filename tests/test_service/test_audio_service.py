@@ -13,9 +13,9 @@ from beanllm.domain.audio import (
     TranscriptionSegment,
     TTSProvider,
 )
-from beanllm.dto.request.audio_request import AudioRequest
-from beanllm.dto.response.audio_response import AudioResponse
-from beanllm.service.impl.audio_service_impl import AudioServiceImpl
+from beanllm.dto.request.ml.audio_request import AudioRequest
+from beanllm.dto.response.ml.audio_response import AudioResponse
+from beanllm.service.impl.ml.audio_service_impl import AudioServiceImpl
 
 
 class TestAudioService:

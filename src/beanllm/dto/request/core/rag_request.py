@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
 
-from beanllm.utils.constants import DEFAULT_RAG_CHUNK_OVERLAP
+from beanllm.utils.constants import DEFAULT_RAG_CHUNK_OVERLAP, DEFAULT_RAG_CHUNK_SIZE
 
 if TYPE_CHECKING:
     from beanllm.service.types import VectorStoreProtocol
@@ -33,7 +33,7 @@ class RAGRequest:
     rerank: bool = False
     mmr: bool = False
     hybrid: bool = False
-    chunk_size: int = 500
+    chunk_size: int = DEFAULT_RAG_CHUNK_SIZE
     chunk_overlap: int = DEFAULT_RAG_CHUNK_OVERLAP
     embedding_model: str = "text-embedding-3-small"
     llm_model: str = "gpt-4o-mini"

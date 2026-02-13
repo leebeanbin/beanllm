@@ -8,48 +8,32 @@ SOLID 원칙:
 from __future__ import annotations
 
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from beanllm.utils.logging import get_logger
 
+from .analytics import (
+    AgentUtilizationAnalyzer,
+    BottleneckAnalysis,
+    BottleneckAnalyzer,
+    CostAnalyzer,
+    PathAnalysis,
+    PathAnalyzer,
+    StatisticsAnalyzer,
+    UtilizationStats,
+)
 from .workflow_monitor import MonitorEvent, NodeExecutionState, NodeStatus
 
 logger = get_logger(__name__)
 
-
-@dataclass
-class BottleneckAnalysis:
-    """병목 지점 분석"""
-
-    node_id: str
-    duration_ms: float
-    percentage_of_total: float
-    is_bottleneck: bool
-    recommendation: str
-
-
-@dataclass
-class UtilizationStats:
-    """Agent 활용도 통계"""
-
-    agent_id: str
-    total_executions: int
-    total_duration_ms: float
-    avg_duration_ms: float
-    success_rate: float
-    nodes_used: List[str]
-
-
-@dataclass
-class PathAnalysis:
-    """실행 경로 분석"""
-
-    path: List[str]  # Node IDs
-    frequency: int
-    avg_duration_ms: float
-    success_rate: float
+# Re-export for backward compatibility
+__all__ = [
+    "BottleneckAnalysis",
+    "UtilizationStats",
+    "PathAnalysis",
+    "WorkflowAnalytics",
+]
 
 
 class WorkflowAnalytics:
@@ -164,55 +148,7 @@ class WorkflowAnalytics:
             return []
 
         node_states = self.executions[workflow_id]["node_states"]
-
-        # Calculate total duration
-        total_duration = sum(
-            state.duration_ms
-            for state in node_states.values()
-            if state.status == NodeStatus.COMPLETED
-        )
-
-        if total_duration == 0:
-            return []
-
-        # Analyze each node
-        bottlenecks = []
-
-        for node_id, state in node_states.items():
-            if state.status != NodeStatus.COMPLETED:
-                continue
-
-            percentage = (state.duration_ms / total_duration) * 100
-
-            # Check if bottleneck
-            is_bottleneck = percentage >= (threshold_percentile * 100)
-
-            # Generate recommendation
-            recommendation = ""
-            if is_bottleneck:
-                if percentage > 50:
-                    recommendation = (
-                        "Critical bottleneck. Consider parallelization or optimization."
-                    )
-                elif percentage > 30:
-                    recommendation = "Major bottleneck. Review implementation efficiency."
-                else:
-                    recommendation = "Minor bottleneck. Monitor for optimization opportunities."
-
-            bottlenecks.append(
-                BottleneckAnalysis(
-                    node_id=node_id,
-                    duration_ms=state.duration_ms,
-                    percentage_of_total=percentage,
-                    is_bottleneck=is_bottleneck,
-                    recommendation=recommendation,
-                )
-            )
-
-        # Sort by duration (descending)
-        bottlenecks.sort(key=lambda x: x.duration_ms, reverse=True)
-
-        return bottlenecks
+        return BottleneckAnalyzer.find_bottlenecks(node_states, threshold_percentile)
 
     def analyze_agent_utilization(self) -> Dict[str, UtilizationStats]:
         """
@@ -221,27 +157,7 @@ class WorkflowAnalytics:
         Returns:
             Dict[str, UtilizationStats]: Agent별 활용도 통계
         """
-        utilization = {}
-
-        for agent_id, metrics in self.agent_metrics.items():
-            executions = metrics["executions"]
-            if executions == 0:
-                continue
-
-            successes = metrics["successes"]
-            total_duration = metrics["total_duration_ms"]
-            nodes = metrics["nodes"]
-
-            utilization[agent_id] = UtilizationStats(
-                agent_id=agent_id,
-                total_executions=executions,
-                total_duration_ms=total_duration,
-                avg_duration_ms=total_duration / executions,
-                success_rate=successes / executions,
-                nodes_used=list(nodes),
-            )
-
-        return utilization
+        return AgentUtilizationAnalyzer.analyze_utilization(self.agent_metrics)
 
     def analyze_execution_paths(
         self,
@@ -261,36 +177,7 @@ class WorkflowAnalytics:
 
         events = self.executions[workflow_id]["events"]
         node_states = self.executions[workflow_id]["node_states"]
-
-        # Extract execution order from events
-        node_order = []
-        for event in events:
-            if event.node_id and event.event_type.value == "node_start":
-                node_order.append(event.node_id)
-
-        if not node_order:
-            return []
-
-        # For now, we have one path (future: handle conditional branches)
-        total_duration = sum(
-            state.duration_ms
-            for state in node_states.values()
-            if state.status == NodeStatus.COMPLETED
-        )
-
-        success_count = sum(
-            1 for state in node_states.values() if state.status == NodeStatus.COMPLETED
-        )
-        total_count = len(node_states)
-
-        path_analysis = PathAnalysis(
-            path=node_order,
-            frequency=1,
-            avg_duration_ms=total_duration,
-            success_rate=success_count / total_count if total_count > 0 else 0.0,
-        )
-
-        return [path_analysis]
+        return PathAnalyzer.analyze_execution_paths(events, node_states)
 
     def get_node_statistics(self, node_id: str) -> Dict[str, Any]:
         """
@@ -302,19 +189,7 @@ class WorkflowAnalytics:
         Returns:
             Dict: 노드 통계
         """
-        durations = self.node_metrics.get(node_id, [])
-
-        if not durations:
-            return {"node_id": node_id, "executions": 0}
-
-        return {
-            "node_id": node_id,
-            "executions": len(durations),
-            "avg_duration_ms": sum(durations) / len(durations),
-            "min_duration_ms": min(durations),
-            "max_duration_ms": max(durations),
-            "total_duration_ms": sum(durations),
-        }
+        return StatisticsAnalyzer.get_node_statistics(node_id, self.node_metrics)
 
     def compare_executions(
         self,
@@ -336,43 +211,9 @@ class WorkflowAnalytics:
 
         states_a = self.executions[workflow_id_a]["node_states"]
         states_b = self.executions[workflow_id_b]["node_states"]
-
-        # Total durations
-        duration_a = sum(
-            s.duration_ms for s in states_a.values() if s.status == NodeStatus.COMPLETED
+        return StatisticsAnalyzer.compare_executions(
+            states_a, states_b, workflow_id_a, workflow_id_b
         )
-        duration_b = sum(
-            s.duration_ms for s in states_b.values() if s.status == NodeStatus.COMPLETED
-        )
-
-        # Success rates
-        success_a = sum(1 for s in states_a.values() if s.status == NodeStatus.COMPLETED)
-        success_b = sum(1 for s in states_b.values() if s.status == NodeStatus.COMPLETED)
-
-        total_a = len(states_a)
-        total_b = len(states_b)
-
-        return {
-            "workflow_a": {
-                "workflow_id": workflow_id_a,
-                "total_duration_ms": duration_a,
-                "success_rate": success_a / total_a if total_a > 0 else 0.0,
-                "node_count": total_a,
-            },
-            "workflow_b": {
-                "workflow_id": workflow_id_b,
-                "total_duration_ms": duration_b,
-                "success_rate": success_b / total_b if total_b > 0 else 0.0,
-                "node_count": total_b,
-            },
-            "comparison": {
-                "duration_diff_ms": duration_b - duration_a,
-                "duration_diff_percent": (
-                    ((duration_b - duration_a) / duration_a * 100) if duration_a > 0 else 0.0
-                ),
-                "faster": workflow_id_a if duration_a < duration_b else workflow_id_b,
-            },
-        }
 
     def generate_optimization_recommendations(
         self,
@@ -454,44 +295,7 @@ class WorkflowAnalytics:
             return {"error": "Workflow not found"}
 
         node_states = self.executions[workflow_id]["node_states"]
-
-        # Default costs (USD per second)
-        default_costs = {
-            "gpt-4": 0.03 / 1000,  # $0.03 per 1K tokens ~ rough estimate
-            "gpt-4o": 0.005 / 1000,
-            "gpt-4o-mini": 0.0005 / 1000,
-            "default": 0.001 / 1000,
-        }
-
-        cost_per_second = cost_per_second or default_costs
-
-        total_cost = 0.0
-        node_costs = {}
-
-        for node_id, state in node_states.items():
-            if state.status != NodeStatus.COMPLETED:
-                continue
-
-            agent_id = state.metadata.get("agent_id", "default")
-            model = state.metadata.get("model", "default")
-
-            # Get cost rate
-            cost_rate = cost_per_second.get(model, cost_per_second.get("default", 0.0))
-
-            # Calculate cost
-            duration_seconds = state.duration_ms / 1000
-            node_cost = duration_seconds * cost_rate
-
-            node_costs[node_id] = node_cost
-            total_cost += node_cost
-
-        return {
-            "workflow_id": workflow_id,
-            "total_cost_usd": total_cost,
-            "node_costs": node_costs,
-            "currency": "USD",
-            "note": "Costs are rough estimates based on execution time",
-        }
+        return CostAnalyzer.calculate_cost_estimate(node_states, workflow_id, cost_per_second)
 
     def export_analytics_report(self, workflow_id: str) -> Dict[str, Any]:
         """
@@ -547,36 +351,6 @@ class WorkflowAnalytics:
         Returns:
             Dict: 요약 통계
         """
-        total_executions = len(self.executions)
-
-        if total_executions == 0:
-            return {"total_executions": 0}
-
-        # Aggregate metrics
-        all_durations = []
-        all_success_rates = []
-
-        for exec_data in self.executions.values():
-            node_states = exec_data["node_states"]
-
-            duration = sum(
-                s.duration_ms for s in node_states.values() if s.status == NodeStatus.COMPLETED
-            )
-            all_durations.append(duration)
-
-            success_count = sum(1 for s in node_states.values() if s.status == NodeStatus.COMPLETED)
-            total_count = len(node_states)
-            success_rate = success_count / total_count if total_count > 0 else 0.0
-            all_success_rates.append(success_rate)
-
-        return {
-            "total_executions": total_executions,
-            "avg_duration_ms": sum(all_durations) / len(all_durations) if all_durations else 0.0,
-            "min_duration_ms": min(all_durations) if all_durations else 0.0,
-            "max_duration_ms": max(all_durations) if all_durations else 0.0,
-            "avg_success_rate": (
-                sum(all_success_rates) / len(all_success_rates) if all_success_rates else 0.0
-            ),
-            "total_agents_used": len(self.agent_metrics),
-            "total_nodes_analyzed": len(self.node_metrics),
-        }
+        return StatisticsAnalyzer.get_summary_statistics(
+            self.executions, self.node_metrics, self.agent_metrics
+        )

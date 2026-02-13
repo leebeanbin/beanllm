@@ -12,6 +12,7 @@ from beanllm.domain.memory.implementations import (
     TokenMemory,
     WindowMemory,
 )
+from beanllm.utils.constants import DEFAULT_MAX_CONTEXT_TOKENS
 
 
 def create_memory(memory_type: str = "buffer", **kwargs) -> BaseMemory:
@@ -36,7 +37,7 @@ def create_memory(memory_type: str = "buffer", **kwargs) -> BaseMemory:
         memory = create_memory("window", window_size=10)
 
         # 토큰 메모리
-        memory = create_memory("token", max_tokens=4000)
+        memory = create_memory("token", max_tokens=DEFAULT_MAX_CONTEXT_TOKENS)
         ```
     """
     memory_map = {

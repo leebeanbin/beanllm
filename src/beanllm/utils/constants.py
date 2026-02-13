@@ -12,11 +12,23 @@ beanllm 전역 상수 정의
 DEFAULT_TEMPERATURE: float = 0.7
 """기본 생성 온도 (0.0~2.0)"""
 
+LOW_TEMPERATURE: float = 0.3
+"""낮은 온도 (사실적/결정적 작업용)"""
+
+HIGH_TEMPERATURE: float = 0.9
+"""높은 온도 (창의적 생성용)"""
+
 MIN_TEMPERATURE: float = 0.0
 """최소 온도 (결정론적 생성)"""
 
 MAX_TEMPERATURE: float = 2.0
 """최대 온도"""
+
+DEFAULT_MAX_TOKENS: int = 4096
+"""기본 max_tokens (일반 LLM 호출)"""
+
+LARGE_MAX_TOKENS: int = 8192
+"""큰 컨텍스트용 max_tokens"""
 
 CLAUDE_DEFAULT_MAX_TOKENS: int = 4096
 """Claude 모델 기본 max_tokens"""
@@ -63,6 +75,12 @@ DEFAULT_TOP_K: int = 5
 DEFAULT_CHUNK_SIZE: int = 1000
 """기본 문서 청크 크기 (문자)"""
 
+DEFAULT_RAG_CHUNK_SIZE: int = 500
+"""RAG 파이프라인 기본 청크 크기 (문자)"""
+
+MIN_CHUNK_SIZE: int = 100
+"""최소 청크 크기 (문자)"""
+
 DEFAULT_CHUNK_OVERLAP: int = 200
 """기본 문서 청크 오버랩 (문자)"""
 
@@ -75,6 +93,15 @@ KAFKA_DEFAULT_RETRIES: int = 3
 
 DEFAULT_TIMEOUT_SECONDS: int = 30
 """기본 네트워크 타임아웃 (초)"""
+
+REDIS_TIMEOUT: float = 2.0
+"""Redis 작업 기본 타임아웃 (초)"""
+
+REDIS_SCAN_TIMEOUT: float = 5.0
+"""Redis SCAN/대량 작업 타임아웃 (초)"""
+
+LOCK_ACQUIRE_TIMEOUT: float = 30.0
+"""분산 락 획득 기본 타임아웃 (초)"""
 
 # ============================================================
 # 검증 제한

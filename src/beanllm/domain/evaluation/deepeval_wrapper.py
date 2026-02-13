@@ -26,7 +26,7 @@ import logging
 from typing import Any, Dict, List, Optional, Union
 
 from beanllm.domain.evaluation.base_framework import BaseEvaluationFramework
-from beanllm.domain.evaluation.deepeval_metrics import create_metric
+from beanllm.domain.evaluation.deepeval import BatchEvaluator, RAGEvaluators, SafetyEvaluators
 
 try:
     from beanllm.utils.logging import get_logger
@@ -116,49 +116,25 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         self.async_mode = async_mode
         self.kwargs = kwargs
 
-        # Lazy loading
-        self._deepeval = None
-        self._metrics_cache: Dict[str, Any] = {}
-
-    def _check_dependencies(self):
-        """의존성 확인"""
-        try:
-            import deepeval
-        except ImportError:
-            raise ImportError(
-                "deepeval is required for DeepEvalWrapper. Install it with: pip install deepeval"
-            )
-
-        self._deepeval = deepeval
-
-    def _get_metric(self, metric_name: str, **metric_kwargs: Any) -> Any:
-        """
-        DeepEval 메트릭 가져오기 (lazy loading + caching)
-
-        Args:
-            metric_name: 메트릭 이름
-            **metric_kwargs: 메트릭별 추가 파라미터
-
-        Returns:
-            DeepEval Metric 객체
-        """
-        self._check_dependencies()
-
-        cache_key = f"{metric_name}_{str(metric_kwargs)}"
-        if cache_key in self._metrics_cache:
-            return self._metrics_cache[cache_key]
-
-        metric = create_metric(
-            metric_name=metric_name,
-            model=self.model,
-            threshold=self.threshold,
-            include_reason=self.include_reason,
-            async_mode=self.async_mode,
-            **metric_kwargs,
-            **self.kwargs,
+        # Compose evaluators
+        self._rag_evaluators = RAGEvaluators(
+            model=model,
+            threshold=threshold,
+            include_reason=include_reason,
+            async_mode=async_mode,
+            **kwargs,
         )
-        self._metrics_cache[cache_key] = metric
-        return metric
+        self._safety_evaluators = SafetyEvaluators(
+            model=model,
+            threshold=threshold,
+            include_reason=include_reason,
+            async_mode=async_mode,
+            **kwargs,
+        )
+        self._batch_evaluator = BatchEvaluator(
+            rag_evaluators=self._rag_evaluators,
+            safety_evaluators=self._safety_evaluators,
+        )
 
     def evaluate_answer_relevancy(
         self,
@@ -179,23 +155,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("answer_relevancy", **kwargs)
-
-        test_case = LLMTestCase(
-            input=question,
-            actual_output=answer,
-        )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
+        return self._rag_evaluators.evaluate_answer_relevancy(question, answer, **kwargs)
 
     def evaluate_faithfulness(
         self,
@@ -216,28 +176,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("faithfulness", **kwargs)
-
-        # context를 리스트로 변환
-        if isinstance(context, str):
-            context = [context]
-
-        test_case = LLMTestCase(
-            input="",  # Faithfulness는 input 불필요
-            actual_output=answer,
-            retrieval_context=context,
-        )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
+        return self._rag_evaluators.evaluate_faithfulness(answer, context, **kwargs)
 
     def evaluate_contextual_precision(
         self,
@@ -260,25 +199,9 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("contextual_precision", **kwargs)
-
-        test_case = LLMTestCase(
-            input=question,
-            actual_output="",  # Contextual Precision은 actual_output 불필요
-            expected_output=expected_output,
-            retrieval_context=context,
+        return self._rag_evaluators.evaluate_contextual_precision(
+            question, context, expected_output, **kwargs
         )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
 
     def evaluate_contextual_recall(
         self,
@@ -301,25 +224,9 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("contextual_recall", **kwargs)
-
-        test_case = LLMTestCase(
-            input=question,
-            actual_output="",
-            expected_output=expected_output,
-            retrieval_context=context,
+        return self._rag_evaluators.evaluate_contextual_recall(
+            question, context, expected_output, **kwargs
         )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
 
     def evaluate_hallucination(
         self,
@@ -340,27 +247,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("hallucination", **kwargs)
-
-        if isinstance(context, str):
-            context = [context]
-
-        test_case = LLMTestCase(
-            input="",
-            actual_output=answer,
-            context=context,
-        )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
+        return self._safety_evaluators.evaluate_hallucination(answer, context, **kwargs)
 
     def evaluate_toxicity(
         self,
@@ -379,23 +266,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
         Returns:
             {"score": float, "reason": str, "is_successful": bool}
         """
-        from deepeval.test_case import LLMTestCase
-
-        metric = self._get_metric("toxicity", **kwargs)
-
-        test_case = LLMTestCase(
-            input="",
-            actual_output=text,
-        )
-
-        metric.measure(test_case)
-
-        return {
-            "score": metric.score,
-            "reason": metric.reason if self.include_reason else None,
-            "is_successful": metric.is_successful(),
-            "threshold": self.threshold,
-        }
+        return self._safety_evaluators.evaluate_toxicity(text, **kwargs)
 
     def batch_evaluate(
         self,
@@ -427,41 +298,7 @@ class DeepEvalWrapper(BaseEvaluationFramework):
             )
             ```
         """
-        results = []
-
-        for item in data:
-            try:
-                if metric == "answer_relevancy":
-                    result = self.evaluate_answer_relevancy(**item, **kwargs)
-                elif metric == "faithfulness":
-                    result = self.evaluate_faithfulness(**item, **kwargs)
-                elif metric == "contextual_precision":
-                    result = self.evaluate_contextual_precision(**item, **kwargs)
-                elif metric == "contextual_recall":
-                    result = self.evaluate_contextual_recall(**item, **kwargs)
-                elif metric == "hallucination":
-                    result = self.evaluate_hallucination(**item, **kwargs)
-                elif metric == "toxicity":
-                    result = self.evaluate_toxicity(**item, **kwargs)
-                else:
-                    raise ValueError(f"Unknown metric: {metric}")
-
-                results.append(result)
-
-            except Exception as e:
-                logger.error(f"DeepEval evaluation failed for item {item}: {e}")
-                results.append(
-                    {
-                        "score": 0.0,
-                        "reason": f"Error: {e}",
-                        "is_successful": False,
-                        "error": str(e),
-                    }
-                )
-
-        logger.info(f"DeepEval batch evaluation completed: {len(results)} items")
-
-        return results
+        return self._batch_evaluator.batch_evaluate(metric, data, **kwargs)
 
     # BaseEvaluationFramework 추상 메서드 구현
 

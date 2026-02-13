@@ -328,13 +328,13 @@ class HybridRetriever:
         Returns:
             {문서 인덱스: RRF 점수}
         """
-        # BM25 순위
-        bm25_ranked = sorted(bm25_scores.items(), key=lambda x: x[1], reverse=True)
-        bm25_ranks = {idx: rank for rank, (idx, _) in enumerate(bm25_ranked)}
+        # BM25 순위 (키만 정렬하여 rank 딕셔너리 구성)
+        bm25_sorted_keys = sorted(bm25_scores, key=bm25_scores.__getitem__, reverse=True)
+        bm25_ranks = {idx: rank for rank, idx in enumerate(bm25_sorted_keys)}
 
         # Dense 순위
-        dense_ranked = sorted(dense_scores.items(), key=lambda x: x[1], reverse=True)
-        dense_ranks = {idx: rank for rank, (idx, _) in enumerate(dense_ranked)}
+        dense_sorted_keys = sorted(dense_scores, key=dense_scores.__getitem__, reverse=True)
+        dense_ranks = {idx: rank for rank, idx in enumerate(dense_sorted_keys)}
 
         # 모든 문서 인덱스
         all_indices = set(bm25_scores.keys()) | set(dense_scores.keys())

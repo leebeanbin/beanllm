@@ -256,30 +256,45 @@ class FineTuningManager:
             OpenAIFineTuningProvider,
         )
 
-        provider_instance: BaseFineTuningProvider
-        if provider == "openai":
-            provider_instance = OpenAIFineTuningProvider(**kwargs)
-        elif provider == "axolotl":
+        def _create_openai_provider(**kwargs) -> BaseFineTuningProvider:
+            """OpenAI provider factory"""
+            return OpenAIFineTuningProvider(**kwargs)
+
+        def _create_axolotl_provider(**kwargs) -> BaseFineTuningProvider:
+            """Axolotl provider factory"""
             try:
                 from .local_providers import AxolotlProvider
 
-                provider_instance = AxolotlProvider(**kwargs)
+                return AxolotlProvider(**kwargs)
             except ImportError:
                 raise ImportError(
                     "AxolotlProvider requires axolotl. Install with: pip install axolotl-ai"
                 )
-        elif provider == "unsloth":
+
+        def _create_unsloth_provider(**kwargs) -> BaseFineTuningProvider:
+            """Unsloth provider factory"""
             try:
                 from .local_providers import UnslothProvider
 
-                provider_instance = UnslothProvider(**kwargs)
+                return UnslothProvider(**kwargs)
             except ImportError:
                 raise ImportError(
                     "UnslothProvider requires unsloth. Install with: pip install unsloth"
                 )
-        else:
-            raise ValueError(f"Unknown provider: {provider}. Available: openai, axolotl, unsloth")
 
+        # Registry pattern: provider name -> factory function
+        _FINETUNING_PROVIDER_REGISTRY: Dict[str, Callable[..., BaseFineTuningProvider]] = {
+            "openai": _create_openai_provider,
+            "axolotl": _create_axolotl_provider,
+            "unsloth": _create_unsloth_provider,
+        }
+
+        provider_factory = _FINETUNING_PROVIDER_REGISTRY.get(provider)
+        if provider_factory is None:
+            available = ", ".join(_FINETUNING_PROVIDER_REGISTRY.keys())
+            raise ValueError(f"Unknown provider: {provider}. Available: {available}")
+
+        provider_instance = provider_factory(**kwargs)
         return FineTuningManager(provider_instance)
 
     def prepare_and_upload(
@@ -408,7 +423,9 @@ class FineTuningCostEstimator:
         Returns:
             비용 정보
         """
-        if provider == "openai":
+
+        def _estimate_openai_cost(model: str, n_tokens: int, n_epochs: int) -> Dict[str, Any]:
+            """OpenAI cost estimation"""
             prices = FineTuningCostEstimator.OPENAI_PRICES.get(model, {})
             training_price = prices.get("training", 0)
 
@@ -422,5 +439,15 @@ class FineTuningCostEstimator:
                 "estimated_cost_usd": cost,
                 "epochs": n_epochs,
             }
-        else:
-            return {"error": f"Provider {provider} not supported"}
+
+        # Registry pattern: provider name -> cost estimation function
+        _COST_ESTIMATOR_REGISTRY: Dict[str, Callable[[str, int, int], Dict[str, Any]]] = {
+            "openai": _estimate_openai_cost,
+        }
+
+        estimator_func = _COST_ESTIMATOR_REGISTRY.get(provider)
+        if estimator_func is None:
+            available = ", ".join(_COST_ESTIMATOR_REGISTRY.keys())
+            return {"error": f"Provider {provider} not supported. Available: {available}"}
+
+        return estimator_func(model, n_tokens, n_epochs)

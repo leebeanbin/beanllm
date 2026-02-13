@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from beanllm.facade.core.client_facade import Client
+from beanllm.utils.constants import DEFAULT_RAG_CHUNK_OVERLAP, DEFAULT_RAG_CHUNK_SIZE
 
 if TYPE_CHECKING:
     from beanllm.facade.core.rag_facade import RAGChain
@@ -20,7 +21,7 @@ class RAGBuilder:
     Example:
         rag = (RAGBuilder()
             .load_documents("doc.pdf")
-            .split_text(chunk_size=500)
+            .split_text(chunk_size=DEFAULT_RAG_CHUNK_SIZE)
             .embed_with(Embedding.openai())
             .store_in(VectorStore.chroma())
             .use_llm(Client(model="gpt-4o"))
@@ -39,8 +40,8 @@ class RAGBuilder:
         self.retriever_config: Dict[str, Any] = {}
 
         # 설정
-        self.chunk_size = 500
-        self.chunk_overlap = 50
+        self.chunk_size = DEFAULT_RAG_CHUNK_SIZE
+        self.chunk_overlap = DEFAULT_RAG_CHUNK_OVERLAP
 
     def load_documents(self, source: Union[str, Path, List[Any]]) -> RAGBuilder:
         """문서 로딩 (기존 rag_chain.py와 정확히 동일)"""
@@ -53,7 +54,10 @@ class RAGBuilder:
         return self
 
     def split_text(
-        self, chunk_size: int = 500, chunk_overlap: int = 50, **kwargs: Any
+        self,
+        chunk_size: int = DEFAULT_RAG_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_RAG_CHUNK_OVERLAP,
+        **kwargs: Any,
     ) -> RAGBuilder:
         """텍스트 분할 (기존 rag_chain.py와 정확히 동일)"""
         self.chunk_size = chunk_size
@@ -146,7 +150,7 @@ class RAGBuilder:
 
 def create_rag(
     source: Union[str, Path, List[Any]],
-    chunk_size: int = 500,
+    chunk_size: int = DEFAULT_RAG_CHUNK_SIZE,
     embedding_model: str = "text-embedding-3-small",
     llm_model: str = "gpt-4o-mini",
     **kwargs: Any,

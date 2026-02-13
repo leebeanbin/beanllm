@@ -274,8 +274,20 @@ class BaseVectorStore(ABC):
 
         similarities = np.dot(query_matrix_norm, candidate_matrix_norm.T)
 
-        # Top-k 선택
-        top_k_indices = np.argsort(similarities, axis=1)[:, -k:][:, ::-1]
+        # Top-k 선택 (argpartition으로 O(n+k log k) 부분 정렬)
+        n_candidates = similarities.shape[1]
+        actual_k = min(k, n_candidates)
+        if actual_k >= n_candidates:
+            # k가 전체보다 크면 전체 정렬
+            top_k_indices = np.argsort(similarities, axis=1)[:, ::-1][:, :actual_k]
+        else:
+            # argpartition으로 부분 정렬 후 top-k만 정렬
+            partitioned = np.argpartition(similarities, -actual_k, axis=1)[:, -actual_k:]
+            # top-k 내에서만 정렬 (작은 k에 대해 매우 빠름)
+            top_k_indices = np.empty_like(partitioned)
+            for i in range(len(partitioned)):
+                local_order = np.argsort(similarities[i, partitioned[i]])[::-1]
+                top_k_indices[i] = partitioned[i][local_order]
 
         # 결과 구성
         results = []

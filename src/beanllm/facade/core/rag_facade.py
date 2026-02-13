@@ -11,7 +11,9 @@ import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Tuple, Union, cast
 
+from beanllm.facade.base import FacadeBase
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
+from beanllm.utils.constants import DEFAULT_RAG_CHUNK_OVERLAP, DEFAULT_RAG_CHUNK_SIZE
 from beanllm.utils.logging import get_logger
 
 _logger = get_logger(__name__)
@@ -38,7 +40,7 @@ def _safe_log_event(
         _logger.debug("Event logging failed for %s", event_type, exc_info=True)
 
 
-class RAGChain(AsyncHelperMixin):
+class RAGChain(FacadeBase, AsyncHelperMixin):
     """
     완전한 RAG 파이프라인 (Facade 패턴)
 
@@ -87,25 +89,23 @@ Answer:"""
         self.retriever_config = retriever_config or {}
 
         # Handler/Service 초기화 (의존성 주입)
-        self._init_services()
+        super().__init__()
 
-    def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.utils.core.di_container import get_container
+    def _prepare_container_dependencies(self, container: Any) -> None:
+        """Use vector_store for RAG-specific service factory."""
+        self._service_factory = container.get_service_factory(vector_store=self.vector_store)
+        self._handler_factory = container.get_handler_factory(self._service_factory)
 
-        container = get_container()
-        service_factory = container.get_service_factory(vector_store=self.vector_store)
-        handler_factory = container.get_handler_factory(service_factory)
-
-        # RAGHandler 생성
-        self._rag_handler = handler_factory.create_rag_handler()
+    def _init_handlers(self) -> None:
+        """Create RAGHandler via handler factory."""
+        self._rag_handler = self._handler_factory.create_rag_handler()
 
     @classmethod
     def from_documents(
         cls,
         source: Union[str, Path, List[Any]],
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
+        chunk_size: int = DEFAULT_RAG_CHUNK_SIZE,
+        chunk_overlap: int = DEFAULT_RAG_CHUNK_OVERLAP,
         embedding_model: str = "text-embedding-3-small",
         vector_store_provider: Optional[str] = None,
         llm_model: str = "gpt-4o-mini",

@@ -11,7 +11,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, List, Optional, cast
 
 from beanllm.dto.response.core.chat_response import ChatResponse
+from beanllm.facade.base import FacadeBase
 from beanllm.infrastructure.registry import get_model_registry
+from beanllm.utils.constants import DEFAULT_TEMPERATURE
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +25,7 @@ else:
     from beanllm.providers.provider_factory import ProviderFactory as SourceProviderFactory
 
 
-class Client:
+class Client(FacadeBase):
     """
     통일된 LLM 클라이언트 (Facade 패턴)
 
@@ -35,11 +37,11 @@ class Client:
 
         # 명시적 provider
         client = Client(provider="openai", model="gpt-4o-mini")
-        response = await client.chat(messages, temperature=0.7)
+        response = await client.chat(messages, temperature=DEFAULT_TEMPERATURE)
 
         # provider 자동 감지
         client = Client(model="gpt-4o-mini")
-        response = await client.chat(messages, temperature=0.7)
+        response = await client.chat(messages, temperature=DEFAULT_TEMPERATURE)
         ```
     """
 
@@ -68,17 +70,11 @@ class Client:
             self.provider = self._detect_provider(model)
 
         # Handler/Service 초기화 (의존성 주입)
-        self._init_services()
+        super().__init__()
 
-    def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.utils.core.di_container import get_container
-
-        container = get_container()
-        handler_factory = container.handler_factory
-
-        # ChatHandler 생성
-        self._chat_handler = handler_factory.create_chat_handler()
+    def _init_handlers(self) -> None:
+        """Create ChatHandler via handler factory."""
+        self._chat_handler = self._handler_factory.create_chat_handler()
 
     async def chat(
         self,
@@ -285,7 +281,7 @@ def create_client(
 
     Example:
         ```python
-        client = create_client("gpt-4o-mini", temperature=0.7)
+        client = create_client("gpt-4o-mini", temperature=DEFAULT_TEMPERATURE)
         ```
     """
     return Client(model=model, provider=provider, api_key=api_key, **kwargs)

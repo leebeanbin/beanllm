@@ -15,6 +15,7 @@ from beanllm.decorators.logger import log_service_call
 from beanllm.dto.request.core.chat_request import ChatRequest
 from beanllm.dto.response.core.chat_response import ChatResponse
 from beanllm.infrastructure.adapter import ParameterAdapter
+from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
 from beanllm.service.chat_service import IChatService
 
 from .base_service import BaseService
@@ -53,6 +54,11 @@ class ChatServiceImpl(BaseService, IChatService):
         super().__init__(provider_factory, parameter_adapter)
 
     @log_service_call
+    @with_distributed_features(
+        pipeline_type="chat",
+        enable_cache=True,
+        cache_key_prefix="llm:response",
+    )
     async def chat(self, request: ChatRequest) -> ChatResponse:
         """
         채팅 요청 처리 (비즈니스 로직만)
@@ -69,23 +75,6 @@ class ChatServiceImpl(BaseService, IChatService):
             - 응답 변환 (비즈니스 로직)
             - if-else/try-catch 없음
         """
-        # 0. 캐시 확인 (LLM 응답)
-        from beanllm.infrastructure.distributed.cache_helpers import (
-            get_llm_response_cache,
-            set_llm_response_cache,
-        )
-
-        cached_response = await get_llm_response_cache(
-            request.messages,
-            request.model,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
-            **request.extra_params,
-        )
-        if cached_response is not None:
-            # 캐시 히트 - 응답 재사용
-            return cast(ChatResponse, cached_response)
-
         # 1. Provider 생성 (공통 로직 재사용)
         provider = self._create_provider(
             request.model, cast(Optional[str], request.extra_params.get("provider"))
@@ -110,21 +99,9 @@ class ChatServiceImpl(BaseService, IChatService):
         )
 
         # 4. 응답 변환 (비즈니스 로직)
-        response = ChatResponse.from_provider_response(
+        return ChatResponse.from_provider_response(
             provider_response, model=request.model, provider=provider.name
         )
-
-        # 5. 캐시에 저장
-        await set_llm_response_cache(
-            request.messages,
-            request.model,
-            response,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
-            **request.extra_params,
-        )
-
-        return response
 
     @log_service_call
     async def stream_chat(self, request: ChatRequest) -> AsyncIterator[str]:

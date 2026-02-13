@@ -13,6 +13,7 @@ from typing import AsyncGenerator
 from beanllm.infrastructure.distributed.interfaces import DistributedLockInterface
 from beanllm.infrastructure.distributed.utils import LockAcquisitionError, check_redis_health
 from beanllm.utils import sanitize_error_message
+from beanllm.utils.constants import LOCK_ACQUIRE_TIMEOUT, REDIS_TIMEOUT
 
 from .client import get_redis_client
 
@@ -61,7 +62,9 @@ class RedisLock(DistributedLockInterface):
         return self._script_sha
 
     @asynccontextmanager
-    async def acquire(self, key: str, timeout: float = 30.0) -> AsyncGenerator[None, None]:
+    async def acquire(
+        self, key: str, timeout: float = LOCK_ACQUIRE_TIMEOUT
+    ) -> AsyncGenerator[None, None]:
         """락 획득 (context manager)"""
         lock_key = f"lock:{key}"
         worker_id = str(uuid.uuid4())
@@ -83,7 +86,7 @@ class RedisLock(DistributedLockInterface):
                     nx=True,  # 키가 없을 때만 설정
                     ex=lock_timeout,  # TTL
                 ),
-                timeout=2.0,
+                timeout=REDIS_TIMEOUT,
             )
 
             if not acquired:
@@ -104,7 +107,7 @@ class RedisLock(DistributedLockInterface):
                             lock_key,
                             worker_id.encode() if isinstance(worker_id, str) else worker_id,
                         ),
-                        timeout=2.0,
+                        timeout=REDIS_TIMEOUT,
                     )
                 except Exception as e:
                     logger.error(

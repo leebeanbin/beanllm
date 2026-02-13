@@ -4,7 +4,12 @@ Splitters Factory - 텍스트 분할 팩토리
 
 from typing import TYPE_CHECKING, List, Optional, cast
 
-from beanllm.utils.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+from beanllm.utils.constants import (
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_RAG_CHUNK_OVERLAP,
+    DEFAULT_RAG_CHUNK_SIZE,
+)
 
 from .base import BaseTextSplitter
 from .splitters import (
@@ -54,7 +59,7 @@ class TextSplitter:
         from beanllm.utils.constants import DEFAULT_CHUNK_SIZE
         chunks = TextSplitter.recursive(chunk_size=DEFAULT_CHUNK_SIZE).split_documents(docs)
         chunks = TextSplitter.character(separator="\\n\\n").split_documents(docs)
-        chunks = TextSplitter.token(chunk_size=500).split_documents(docs)
+        chunks = TextSplitter.token(chunk_size=DEFAULT_RAG_CHUNK_SIZE).split_documents(docs)
 
         # 방법 3: 구분자만 지정 (자동 전략 선택)
         chunks = TextSplitter.split(docs, separator="\\n\\n")
@@ -203,7 +208,9 @@ class TextSplitter:
             chunks = splitter.split_documents(docs)
 
             # 크기 조정
-            splitter = TextSplitter.recursive(chunk_size=500, chunk_overlap=50)
+            splitter = TextSplitter.recursive(
+                chunk_size=DEFAULT_RAG_CHUNK_SIZE, chunk_overlap=DEFAULT_RAG_CHUNK_OVERLAP
+            )
 
             # 커스텀 구분자
             splitter = TextSplitter.recursive(
@@ -243,7 +250,9 @@ class TextSplitter:
             splitter = TextSplitter.character(separator="\\n\\n")
 
             # 줄로 분할
-            splitter = TextSplitter.character(separator="\\n", chunk_size=500)
+            splitter = TextSplitter.character(
+                separator="\\n", chunk_size=DEFAULT_RAG_CHUNK_SIZE
+            )
 
             # 커스텀 구분자
             splitter = TextSplitter.character(separator="---")
@@ -292,7 +301,7 @@ class TextSplitter:
             # 커스텀 인코딩
             splitter = TextSplitter.token(
                 encoding_name="p50k_base",
-                chunk_size=500
+                chunk_size=DEFAULT_RAG_CHUNK_SIZE
             )
             ```
         """
@@ -386,7 +395,7 @@ def split_documents(
         chunks = split_documents(docs, separators=["\\n\\n", "\\n"])
 
         # 전략 + 커스터마이징
-        chunks = split_documents(docs, chunk_size=500, strategy="token")
+        chunks = split_documents(docs, chunk_size=DEFAULT_RAG_CHUNK_SIZE, strategy="token")
         ```
     """
     return TextSplitter.split(

@@ -3,6 +3,7 @@ Advanced search algorithms
 Hybrid, MMR, Re-ranking 등
 """
 
+import heapq
 from typing import Dict, List, Optional, Tuple, cast
 
 from beanllm.domain.vector_stores.base import VectorSearchResult
@@ -149,10 +150,13 @@ class SearchAlgorithms:
                 )
             )
 
+        # top_k가 전체보다 작으면 heapq로 O(n log k) 부분 정렬
+        if top_k and top_k < len(reranked_results):
+            return cast(
+                List[VectorSearchResult],
+                heapq.nlargest(top_k, reranked_results, key=lambda x: x.score),
+            )
         reranked_results.sort(key=lambda x: x.score, reverse=True)
-
-        if top_k:
-            return cast(List[VectorSearchResult], reranked_results[:top_k])
         return cast(List[VectorSearchResult], reranked_results)
 
     @staticmethod

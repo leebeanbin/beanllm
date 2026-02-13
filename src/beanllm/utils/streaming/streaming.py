@@ -40,6 +40,8 @@ if TYPE_CHECKING:
     from rich.panel import Panel
     from rich.text import Text
 
+from beanllm.utils.constants import DEFAULT_TEMPERATURE
+
 try:
     from beanllm.utils.logging.logger import get_logger
 except ImportError:
@@ -134,7 +136,7 @@ async def stream_response(
         from beanllm import Client, stream_response
 
         client = Client(model="gpt-4o-mini")
-        stream = client.stream_chat(messages, temperature=0.7)
+        stream = client.stream_chat(messages, temperature=DEFAULT_TEMPERATURE)
 
         # 기본 출력
         await stream_response(stream)

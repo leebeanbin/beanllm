@@ -11,6 +11,7 @@ from typing import Generic, Optional, TypeVar, cast
 from beanllm.infrastructure.distributed.interfaces import CacheInterface
 from beanllm.infrastructure.distributed.utils import check_redis_health
 from beanllm.utils import sanitize_error_message
+from beanllm.utils.constants import REDIS_SCAN_TIMEOUT, REDIS_TIMEOUT
 
 from .client import get_redis_client
 
@@ -65,7 +66,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
                 return None  # 연결 실패 시 캐시 미스로 처리
 
             cache_key = self._make_key(key)
-            value = await asyncio.wait_for(self.redis.get(cache_key), timeout=2.0)
+            value = await asyncio.wait_for(self.redis.get(cache_key), timeout=REDIS_TIMEOUT)
 
             if value is None:
                 return None
@@ -98,11 +99,12 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
 
             if ttl:
                 await asyncio.wait_for(
-                    self.redis.setex(cache_key, ttl, value_json.encode("utf-8")), timeout=2.0
+                    self.redis.setex(cache_key, ttl, value_json.encode("utf-8")),
+                    timeout=REDIS_TIMEOUT,
                 )
             else:
                 await asyncio.wait_for(
-                    self.redis.set(cache_key, value_json.encode("utf-8")), timeout=2.0
+                    self.redis.set(cache_key, value_json.encode("utf-8")), timeout=REDIS_TIMEOUT
                 )
         except asyncio.TimeoutError:
             logger.warning(f"Redis cache set timeout for key: {key}")
@@ -117,7 +119,7 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
                 return
 
             cache_key = self._make_key(key)
-            await asyncio.wait_for(self.redis.delete(cache_key), timeout=2.0)
+            await asyncio.wait_for(self.redis.delete(cache_key), timeout=REDIS_TIMEOUT)
         except asyncio.TimeoutError:
             logger.warning(f"Redis cache delete timeout for key: {key}")
         except Exception as e:
@@ -137,10 +139,10 @@ class RedisCache(CacheInterface[K, V], Generic[K, V]):
             cursor = 0
             while True:
                 cursor, keys = await asyncio.wait_for(
-                    self.redis.scan(cursor, match=pattern, count=100), timeout=5.0
+                    self.redis.scan(cursor, match=pattern, count=100), timeout=REDIS_SCAN_TIMEOUT
                 )
                 if keys:
-                    await asyncio.wait_for(self.redis.delete(*keys), timeout=5.0)
+                    await asyncio.wait_for(self.redis.delete(*keys), timeout=REDIS_SCAN_TIMEOUT)
                 if cursor == 0:
                     break
         except asyncio.TimeoutError:

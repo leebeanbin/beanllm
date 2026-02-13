@@ -4,6 +4,7 @@ Position Engineering Reranker implementation.
 
 from __future__ import annotations
 
+import heapq
 from typing import List, Optional, cast
 
 from beanllm.domain.retrieval.base import BaseReranker
@@ -58,9 +59,12 @@ class PositionEngineeringReranker(BaseReranker):
                 RerankResult(text=doc, score=float(score), index=idx)
                 for idx, (doc, score) in enumerate(zip(documents, scores))
             ]
-            ranked_results.sort(key=lambda x: x.score, reverse=True)
-            if top_k is not None:
-                ranked_results = ranked_results[:top_k]
+            if top_k is not None and top_k < len(ranked_results):
+                ranked_results = heapq.nlargest(top_k, ranked_results, key=lambda x: x.score)
+            else:
+                ranked_results.sort(key=lambda x: x.score, reverse=True)
+                if top_k is not None:
+                    ranked_results = ranked_results[:top_k]
         else:
             ranked_results = [
                 RerankResult(text=doc, score=1.0 / (idx + 1), index=idx)

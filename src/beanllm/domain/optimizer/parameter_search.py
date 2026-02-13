@@ -232,13 +232,13 @@ class MetadataInferrer:
         if "defaults" in provider_config:
             metadata.update(provider_config["defaults"])
 
-        # 패턴 매칭
+        # 패턴 매칭 (사전 컴파일된 패턴 사용)
         patterns = provider_config.get("patterns", [])
         matched_rules = []
 
         for pattern_rule in patterns:
-            pattern = pattern_rule["match"]
-            if re.match(pattern, base_model, re.IGNORECASE):
+            compiled = self._get_compiled_pattern(pattern_rule["match"])
+            if compiled.match(base_model):
                 matched_rules.append(pattern_rule)
                 metadata["matched_patterns"].append(pattern_rule["name"])
                 # 규칙 적용
@@ -259,6 +259,15 @@ class MetadataInferrer:
         )
 
         return metadata
+
+    # 정규표현식 패턴 컴파일 캐시
+    _compiled_pattern_cache: Dict[str, "re.Pattern[str]"] = {}
+
+    def _get_compiled_pattern(self, pattern: str) -> "re.Pattern[str]":
+        """패턴 문자열을 컴파일하고 캐시에서 재사용"""
+        if pattern not in self._compiled_pattern_cache:
+            self._compiled_pattern_cache[pattern] = re.compile(pattern, re.IGNORECASE)
+        return self._compiled_pattern_cache[pattern]
 
     def _extract_base_model(self, model_id: str) -> str:
         """

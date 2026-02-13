@@ -67,6 +67,8 @@ class RAGServiceImpl(IRAGService):
 
     @with_distributed_features(
         pipeline_type="rag",
+        enable_cache=True,
+        cache_key_prefix="rag:query",
         enable_rate_limiting=True,
         rate_limit_key=lambda self, args, kwargs: (
             f"rag:query:{args[0].llm_model}"
@@ -90,37 +92,8 @@ class RAGServiceImpl(IRAGService):
             - 응답 생성 비즈니스 로직
             - if-else/try-catch 없음
         """
-        # 0. 캐시 확인 (RAG 검색 결과)
-        from beanllm.infrastructure.distributed.cache_helpers import (
-            get_rag_search_cache,
-            set_rag_search_cache,
-        )
-
-        vector_store_id = str(id(self._vector_store))  # 벡터 스토어 ID (간단한 구현)
-        cached_results = await get_rag_search_cache(
-            request.query,
-            vector_store_id,
-            request.k,
-            rerank=request.rerank,
-            mmr=request.mmr,
-            hybrid=request.hybrid,
-        )
-        if cached_results is not None:
-            # 캐시 히트 - 검색 결과 재사용
-            search_results = cached_results
-        else:
-            # 1. 문서 검색 (비즈니스 로직)
-            search_results = await self.retrieve(request)
-            # 캐시에 저장
-            await set_rag_search_cache(
-                request.query,
-                vector_store_id,
-                request.k,
-                search_results,
-                rerank=request.rerank,
-                mmr=request.mmr,
-                hybrid=request.hybrid,
-            )
+        # 1. 문서 검색 (비즈니스 로직)
+        search_results = await self.retrieve(request)
 
         # 2. 컨텍스트 생성 (비즈니스 로직)
         context = self._build_context(search_results)

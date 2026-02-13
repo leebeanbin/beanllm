@@ -19,6 +19,9 @@ from beanllm.domain.web_search import (
 )
 from beanllm.dto.request.web.web_search_request import WebSearchRequest
 from beanllm.dto.response.web.web_search_response import WebSearchResponse
+from beanllm.infrastructure.distributed.pipeline_decorators import (
+    with_distributed_features,
+)
 from beanllm.service.web_search_service import IWebSearchService
 from beanllm.utils.logging import get_logger
 
@@ -46,6 +49,13 @@ class WebSearchServiceImpl(IWebSearchService):
         """의존성 주입을 통한 생성자"""
         pass
 
+    @with_distributed_features(
+        pipeline_type="web_search",
+        enable_rate_limiting=True,
+        rate_limit_key=lambda self,
+        args,
+        kwargs: f"web_search:{(args[0].engine or 'duckduckgo') if args else 'web_search'}",
+    )
     async def search(self, request: WebSearchRequest) -> WebSearchResponse:
         """
         웹 검색 실행 (기존 web_search.py의 WebSearch.search() 정확히 마이그레이션)
@@ -56,13 +66,6 @@ class WebSearchServiceImpl(IWebSearchService):
         Returns:
             WebSearchResponse: Web Search 응답 DTO
         """
-        # Rate Limiting (분산 또는 인메모리)
-        from beanllm.infrastructure.distributed.factory import get_rate_limiter
-
-        rate_limiter = get_rate_limiter()
-        engine_key = request.engine or "duckduckgo"
-        await rate_limiter.wait(f"web_search:{engine_key}", cost=1.0)
-
         # 엔진 결정 (기존과 동일)
         engine_enum = SearchEngine(request.engine) if request.engine else SearchEngine.DUCKDUCKGO
 

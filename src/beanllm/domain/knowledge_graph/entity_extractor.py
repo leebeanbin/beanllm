@@ -29,7 +29,7 @@ from beanllm.domain.knowledge_graph.coreference_resolver import (
 )
 from beanllm.domain.knowledge_graph.entity_models import Entity, EntityType
 from beanllm.domain.knowledge_graph.entity_patterns import (
-    ENTITY_REGEX_PATTERNS,
+    ENTITY_REGEX_PATTERNS_COMPILED,
     NER_LABEL_TO_ENTITY_TYPE,
     STR_TO_ENTITY_TYPE,
 )
@@ -323,15 +323,15 @@ class EntityExtractor:
         text: str,
         entity_types: List[EntityType],
     ) -> List[Entity]:
-        """Regex 기반 엔티티 추출 (fallback)"""
+        """Regex 기반 엔티티 추출 (fallback, 사전 컴파일 패턴 사용)"""
         entities = []
 
         for entity_type in entity_types:
-            if entity_type not in ENTITY_REGEX_PATTERNS:
+            if entity_type not in ENTITY_REGEX_PATTERNS_COMPILED:
                 continue
 
-            for pattern in ENTITY_REGEX_PATTERNS[entity_type]:
-                matches = re.finditer(pattern, text)
+            for compiled_pattern in ENTITY_REGEX_PATTERNS_COMPILED[entity_type]:
+                matches = compiled_pattern.finditer(text)
 
                 for match in matches:
                     # 가장 긴 그룹 선택

@@ -127,10 +127,22 @@ def create_finetuning_provider(provider: str = "openai", **kwargs) -> BaseFineTu
     Returns:
         파인튜닝 프로바이더
     """
-    if provider == "openai":
+
+    def _create_openai_provider(**kwargs) -> BaseFineTuningProvider:
+        """OpenAI provider factory"""
         return OpenAIFineTuningProvider(**kwargs)
-    else:
-        raise ValueError(f"Provider {provider} not supported yet")
+
+    # Registry pattern: provider name -> factory function
+    _FINETUNING_PROVIDER_REGISTRY: dict[str, Callable[..., BaseFineTuningProvider]] = {
+        "openai": _create_openai_provider,
+    }
+
+    provider_factory = _FINETUNING_PROVIDER_REGISTRY.get(provider)
+    if provider_factory is None:
+        available = ", ".join(_FINETUNING_PROVIDER_REGISTRY.keys())
+        raise ValueError(f"Provider {provider} not supported. Available: {available}")
+
+    return provider_factory(**kwargs)
 
 
 def quick_finetune(

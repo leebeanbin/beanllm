@@ -29,6 +29,7 @@ from beanllm.dto.response.ml.rag_debug_response import (
     ValidateChunksResponse,
 )
 from beanllm.service.rag_debug_service import IRAGDebugService
+from beanllm.utils.constants import MIN_CHUNK_SIZE
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -188,7 +189,7 @@ class RAGDebugServiceImpl(IRAGDebugService):
 
         # Validate chunks
         validator = ChunkValidator(
-            min_chunk_size=100,
+            min_chunk_size=MIN_CHUNK_SIZE,
             max_chunk_size=request.size_threshold,
             overlap_threshold=0.9,
         )

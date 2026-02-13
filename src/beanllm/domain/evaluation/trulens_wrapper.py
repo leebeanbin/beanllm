@@ -29,7 +29,7 @@ References:
 """
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .base_framework import BaseEvaluationFramework
 
@@ -176,26 +176,36 @@ class TruLensWrapper(BaseEvaluationFramework):
         try:
             from trulens_eval import LLMProvider
 
-            # LLM Provider 생성
-            if self.provider.lower() == "openai":
-                self._llm = LLMProvider.create(
-                    provider_name="openai", model_name=self.model, api_key=self.api_key
-                )
-            elif self.provider.lower() == "anthropic":
-                self._llm = LLMProvider.create(
-                    provider_name="anthropic", model_name=self.model, api_key=self.api_key
-                )
-            elif self.provider.lower() == "azure":
-                self._llm = LLMProvider.create(
-                    provider_name="azure_openai",
-                    model_name=self.model,
-                    api_key=self.api_key,
-                )
-            else:
-                raise ValueError(
-                    f"Unsupported provider: {self.provider}. Available: openai, anthropic, azure"
+            def _create_openai_llm(model: str, api_key: Optional[str]) -> Any:
+                """OpenAI LLM provider factory"""
+                return LLMProvider.create(provider_name="openai", model_name=model, api_key=api_key)
+
+            def _create_anthropic_llm(model: str, api_key: Optional[str]) -> Any:
+                """Anthropic LLM provider factory"""
+                return LLMProvider.create(
+                    provider_name="anthropic", model_name=model, api_key=api_key
                 )
 
+            def _create_azure_llm(model: str, api_key: Optional[str]) -> Any:
+                """Azure OpenAI LLM provider factory"""
+                return LLMProvider.create(
+                    provider_name="azure_openai", model_name=model, api_key=api_key
+                )
+
+            # Registry pattern: provider name -> LLM factory function
+            _TRULENS_LLM_PROVIDER_REGISTRY: Dict[str, Callable[[str, Optional[str]], Any]] = {
+                "openai": _create_openai_llm,
+                "anthropic": _create_anthropic_llm,
+                "azure": _create_azure_llm,
+            }
+
+            provider_lower = self.provider.lower()
+            llm_factory = _TRULENS_LLM_PROVIDER_REGISTRY.get(provider_lower)
+            if llm_factory is None:
+                available = ", ".join(_TRULENS_LLM_PROVIDER_REGISTRY.keys())
+                raise ValueError(f"Unsupported provider: {self.provider}. Available: {available}")
+
+            self._llm = llm_factory(self.model, self.api_key)
             logger.info(f"LLM provider initialized: {self.provider}/{self.model}")
 
         except Exception as e:

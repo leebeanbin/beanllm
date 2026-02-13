@@ -8,6 +8,7 @@ import asyncio
 import functools
 from typing import Callable, Optional, Union
 
+from beanllm.utils.constants import REDIS_TIMEOUT
 from beanllm.utils.logging import get_logger
 
 try:
@@ -38,7 +39,7 @@ async def check_redis_health(redis_client=None) -> bool:
             redis_client = get_redis_client()
 
         # PING으로 연결 확인
-        result = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
+        result = await asyncio.wait_for(redis_client.ping(), timeout=REDIS_TIMEOUT)
         return result is True
     except Exception as e:
         logger.warning(f"Redis health check failed: {sanitize_error_message(str(e))}")

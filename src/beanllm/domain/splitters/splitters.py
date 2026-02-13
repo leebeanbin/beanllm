@@ -4,7 +4,11 @@ Splitters Implementations - 텍스트 분할 구현체들
 
 from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
-from beanllm.utils.constants import DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE
+from beanllm.utils.constants import (
+    DEFAULT_CHUNK_OVERLAP,
+    DEFAULT_CHUNK_SIZE,
+    DEFAULT_RAG_CHUNK_SIZE,
+)
 
 from .base import BaseTextSplitter
 
@@ -98,7 +102,7 @@ class RecursiveCharacterTextSplitter(BaseTextSplitter):
         # 커스텀 구분자
         splitter = RecursiveCharacterTextSplitter(
             separators=["\\n\\n", "\\n", ". ", " ", ""],
-            chunk_size=500
+            chunk_size=DEFAULT_RAG_CHUNK_SIZE
         )
         ```
     """

@@ -1,8 +1,12 @@
 """
-Finetuning Service Interface
+Finetuning Service Interfaces
 
 파인튜닝 작업의 전체 수명주기를 관리하는 서비스 인터페이스.
-데이터 준비, 작업 생성/조회/취소, 메트릭 모니터링을 포함합니다.
+ISP(Interface Segregation Principle)에 따라 역할별로 분리합니다:
+- IFinetuningDataService: 데이터 준비
+- IFinetuningJobService: 작업 CRUD (생성/조회/목록/취소)
+- IFinetuningTrainingService: 훈련 실행 및 모니터링
+- IFinetuningService: 위 3개를 통합 + quick_finetune 편의 메서드
 """
 
 from __future__ import annotations
@@ -33,18 +37,15 @@ if TYPE_CHECKING:
     )
 
 
-class IFinetuningService(ABC):
+class IFinetuningDataService(ABC):
     """
-    파인튜닝 서비스 인터페이스
+    파인튜닝 데이터 준비 인터페이스
 
-    LLM 모델의 파인튜닝 워크플로우를 추상화합니다.
-    데이터 준비 → 작업 생성 → 훈련 → 모니터링 → 완료의 전체 흐름을 지원합니다.
+    훈련 데이터의 준비 및 업로드를 담당합니다.
 
     Example:
-        >>> service: IFinetuningService = factory.create_finetuning_service()
-        >>> data_resp = await service.prepare_data(PrepareDataRequest(...))
-        >>> job_resp = await service.start_training(StartTrainingRequest(...))
-        >>> await service.wait_for_completion(WaitForCompletionRequest(job_id=...))
+        >>> data_service: IFinetuningDataService = ...
+        >>> resp = await data_service.prepare_data(PrepareDataRequest(...))
     """
 
     @abstractmethod
@@ -63,6 +64,19 @@ class IFinetuningService(ABC):
             RuntimeError: 파일 업로드 실패 시
         """
         pass
+
+
+class IFinetuningJobService(ABC):
+    """
+    파인튜닝 작업 관리 인터페이스
+
+    작업의 생성, 조회, 목록, 취소를 담당합니다.
+
+    Example:
+        >>> job_service: IFinetuningJobService = ...
+        >>> job = await job_service.create_job(CreateJobRequest(...))
+        >>> status = await job_service.get_job(GetJobRequest(job_id=job.job_id))
+    """
 
     @abstractmethod
     async def create_job(self, request: "CreateJobRequest") -> "CreateJobResponse":
@@ -125,21 +139,18 @@ class IFinetuningService(ABC):
         """
         pass
 
-    @abstractmethod
-    async def get_metrics(self, request: "GetMetricsRequest") -> "GetMetricsResponse":
-        """
-        훈련 메트릭(loss, accuracy 등)을 조회합니다.
 
-        Args:
-            request: 작업 ID가 포함된 요청
+class IFinetuningTrainingService(ABC):
+    """
+    파인튜닝 훈련 실행 및 모니터링 인터페이스
 
-        Returns:
-            GetMetricsResponse: 훈련 메트릭 목록
+    훈련 시작, 완료 대기, 메트릭 조회를 담당합니다.
 
-        Raises:
-            ValueError: 작업 ID가 존재하지 않는 경우
-        """
-        pass
+    Example:
+        >>> training_service: IFinetuningTrainingService = ...
+        >>> resp = await training_service.start_training(StartTrainingRequest(...))
+        >>> metrics = await training_service.get_metrics(GetMetricsRequest(job_id=...))
+    """
 
     @abstractmethod
     async def start_training(self, request: "StartTrainingRequest") -> "StartTrainingResponse":
@@ -174,6 +185,41 @@ class IFinetuningService(ABC):
             RuntimeError: 작업이 실패한 경우
         """
         pass
+
+    @abstractmethod
+    async def get_metrics(self, request: "GetMetricsRequest") -> "GetMetricsResponse":
+        """
+        훈련 메트릭(loss, accuracy 등)을 조회합니다.
+
+        Args:
+            request: 작업 ID가 포함된 요청
+
+        Returns:
+            GetMetricsResponse: 훈련 메트릭 목록
+
+        Raises:
+            ValueError: 작업 ID가 존재하지 않는 경우
+        """
+        pass
+
+
+class IFinetuningService(
+    IFinetuningDataService,
+    IFinetuningJobService,
+    IFinetuningTrainingService,
+):
+    """
+    파인튜닝 통합 서비스 인터페이스
+
+    데이터 준비, 작업 관리, 훈련의 전체 워크플로우를 하나로 통합합니다.
+    필요에 따라 세분화된 인터페이스(IFinetuningDataService 등)만 사용할 수도 있습니다.
+
+    Example:
+        >>> service: IFinetuningService = factory.create_finetuning_service()
+        >>> data_resp = await service.prepare_data(PrepareDataRequest(...))
+        >>> job_resp = await service.start_training(StartTrainingRequest(...))
+        >>> await service.wait_for_completion(WaitForCompletionRequest(job_id=...))
+    """
 
     @abstractmethod
     async def quick_finetune(self, request: "QuickFinetuneRequest") -> "CreateJobResponse":

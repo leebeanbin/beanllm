@@ -12,6 +12,7 @@ from typing import Any, Dict
 from beanllm.infrastructure.distributed.interfaces import RateLimiterInterface
 from beanllm.infrastructure.distributed.utils import check_redis_health
 from beanllm.utils import sanitize_error_message
+from beanllm.utils.constants import REDIS_TIMEOUT
 
 from .client import get_redis_client
 
@@ -118,7 +119,7 @@ class RedisRateLimiter(RateLimiterInterface):
                     self.default_capacity,
                     time.time(),
                 ),
-                timeout=2.0,
+                timeout=REDIS_TIMEOUT,
             )
 
             success, _ = result
@@ -163,7 +164,7 @@ class RedisRateLimiter(RateLimiterInterface):
                         self.default_capacity,
                         time.time(),
                     ),
-                    timeout=2.0,
+                    timeout=REDIS_TIMEOUT,
                 )
 
                 success, wait_time = result

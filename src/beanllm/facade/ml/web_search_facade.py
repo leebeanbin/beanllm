@@ -10,13 +10,14 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, cast
 
 from beanllm.domain.web_search import SearchEngine, SearchResponse, WebScraper
+from beanllm.facade.base import FacadeBase
 from beanllm.utils.async_helpers import AsyncHelperMixin, run_async_in_sync
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 
-class WebSearch(AsyncHelperMixin):
+class WebSearch(FacadeBase, AsyncHelperMixin):
     """
     통합 웹 검색 인터페이스 (Facade 패턴)
 
@@ -60,15 +61,11 @@ class WebSearch(AsyncHelperMixin):
         self.scraper = WebScraper()
 
         # Handler/Service 초기화 (의존성 주입)
-        self._init_services()
+        super().__init__()
 
-    def _init_services(self) -> None:
-        """Service 및 Handler 초기화 (의존성 주입) - DI Container 사용"""
-        from beanllm.utils.core.di_container import get_container
-
-        container = get_container()
-        handler_factory = container.handler_factory
-        self._web_search_handler = handler_factory.create_web_search_handler()
+    def _init_handlers(self) -> None:
+        """Create WebSearchHandler via handler factory."""
+        self._web_search_handler = self._handler_factory.create_web_search_handler()
 
     def search(self, query: str, engine: Optional[SearchEngine] = None, **kwargs) -> SearchResponse:
         """

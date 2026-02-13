@@ -7,6 +7,7 @@ Regex 패턴, NER 레이블 매핑, 문자열→EntityType 매핑을 중앙 관�
 
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Optional
 
 from beanllm.domain.knowledge_graph.entity_models import EntityType
@@ -72,6 +73,12 @@ ENTITY_REGEX_PATTERNS: Dict[EntityType, List[str]] = {
     EntityType.PRODUCT: [
         r"\b(iPhone|iPad|MacBook|Galaxy|Pixel|Windows|macOS|Linux|Android|iOS)\b",
     ],
+}
+
+# 사전 컴파일된 정규표현식 패턴 (O(1) 매칭, 매번 컴파일 비용 제거)
+ENTITY_REGEX_PATTERNS_COMPILED: Dict["EntityType", List[re.Pattern[str]]] = {
+    entity_type: [re.compile(pattern) for pattern in patterns]
+    for entity_type, patterns in ENTITY_REGEX_PATTERNS.items()
 }
 
 # Coreference 대명사 매핑

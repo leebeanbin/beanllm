@@ -50,6 +50,11 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from beanllm.domain.evaluation.unified import (
+    DriftDetector,
+    HumanFeedbackManager,
+    ImprovementAnalyzer,
+)
 from beanllm.domain.evaluation.unified_auto_metrics import AutoMetricsMixin
 from beanllm.domain.evaluation.unified_models import EvalRecord, ImprovementSuggestion
 from beanllm.domain.evaluation.unified_persistence import PersistenceMixin
@@ -162,6 +167,11 @@ class UnifiedEvaluator(AutoMetricsMixin, PersistenceMixin):
         self._records: Dict[str, EvalRecord] = {}
         self._query_to_record: Dict[str, str] = {}  # query -> record_id
 
+        # Compose modules
+        self._human_feedback_manager = HumanFeedbackManager(self.human_weight)
+        self._improvement_analyzer = ImprovementAnalyzer()
+        self._drift_detector = DriftDetector(drift_threshold)
+
         # 히스토리 로드
         if self.persist_path:
             self.persist_path.mkdir(parents=True, exist_ok=True)
@@ -264,22 +274,10 @@ class UnifiedEvaluator(AutoMetricsMixin, PersistenceMixin):
             response: 응답 (레코드 업데이트용)
         """
         record = self._get_or_create_record(query, response or "")
-
-        # 피드백 추가
-        record.human_ratings.append(rating)
-        record.human_feedback_count += 1
-        record.human_avg_rating = sum(record.human_ratings) / len(record.human_ratings)
-
-        if comment:
-            record.human_comments.append(comment)
+        self._human_feedback_manager.collect_feedback(record, rating, feedback_type, comment)
 
         # 통합 점수 업데이트
         self._update_unified_score(record)
-
-        logger.info(
-            f"Human feedback collected: query='{query[:30]}...', "
-            f"rating={rating:.2f}, type={feedback_type}"
-        )
 
         # 저장
         self._save_history()
@@ -300,13 +298,16 @@ class UnifiedEvaluator(AutoMetricsMixin, PersistenceMixin):
             response_b: 응답 B
             winner: 선택된 응답 ("A", "B", "TIE")
         """
-        # Winner를 rating으로 변환
-        if winner == "A":
-            self.collect_human_feedback(query, 1.0, "comparison", "Winner: A")
-        elif winner == "B":
-            self.collect_human_feedback(query, 0.0, "comparison", "Winner: B")
-        else:
-            self.collect_human_feedback(query, 0.5, "comparison", "TIE")
+        record = self._get_or_create_record(query)
+        self._human_feedback_manager.collect_comparison_feedback(
+            record, response_a, response_b, winner
+        )
+
+        # 통합 점수 업데이트
+        self._update_unified_score(record)
+
+        # 저장
+        self._save_history()
 
     # ==================== 통합 점수 ====================
 
@@ -363,127 +364,15 @@ class UnifiedEvaluator(AutoMetricsMixin, PersistenceMixin):
 
     def get_improvement_suggestions(self) -> List[ImprovementSuggestion]:
         """피드백 기반 개선 제안 생성"""
-        suggestions: List[ImprovementSuggestion] = []
-
-        if not self._records:
-            return suggestions
-
         records = list(self._records.values())
-
-        # 1. 낮은 Faithfulness 감지
-        low_faithfulness = [r for r in records if r.auto_scores.get("faithfulness", 1.0) < 0.5]
-        if low_faithfulness:
-            suggestions.append(
-                ImprovementSuggestion(
-                    category="retrieval",
-                    priority="high",
-                    issue=f"{len(low_faithfulness)}개 쿼리에서 환각 감지됨",
-                    suggestion=(
-                        "검색된 컨텍스트가 불충분합니다. "
-                        "청크 크기를 늘리거나, top_k를 증가시키거나, "
-                        "Reranker를 추가해보세요."
-                    ),
-                    affected_queries=[r.query for r in low_faithfulness[:5]],
-                    expected_improvement=0.2,
-                )
-            )
-
-        # 2. 낮은 Relevance 감지
-        low_relevance = [r for r in records if r.auto_scores.get("relevance", 1.0) < 0.5]
-        if low_relevance:
-            suggestions.append(
-                ImprovementSuggestion(
-                    category="generation",
-                    priority="high",
-                    issue=f"{len(low_relevance)}개 쿼리에서 관련성 부족",
-                    suggestion=(
-                        "프롬프트를 개선하여 질문에 더 집중하도록 하세요. "
-                        "또는 쿼리 확장(HyDE, MultiQuery)을 시도해보세요."
-                    ),
-                    affected_queries=[r.query for r in low_relevance[:5]],
-                    expected_improvement=0.15,
-                )
-            )
-
-        # 3. 낮은 Human 피드백
-        low_human = [r for r in records if r.human_avg_rating < 0.4 and r.human_feedback_count > 0]
-        if low_human:
-            # 코멘트 분석
-            all_comments = []
-            for r in low_human:
-                all_comments.extend(r.human_comments)
-
-            suggestions.append(
-                ImprovementSuggestion(
-                    category="overall",
-                    priority="high",
-                    issue=f"{len(low_human)}개 쿼리에서 사용자 불만족",
-                    suggestion=(
-                        "사용자 피드백이 낮습니다. "
-                        f"주요 코멘트: {all_comments[:3] if all_comments else '없음'}. "
-                        "청킹 전략 변경과 프롬프트 개선을 고려하세요."
-                    ),
-                    affected_queries=[r.query for r in low_human[:5]],
-                    expected_improvement=0.25,
-                )
-            )
-
-        # 4. Context Precision 낮음
-        low_ctx_precision = [
-            r for r in records if r.auto_scores.get("context_precision", 1.0) < 0.5
-        ]
-        if low_ctx_precision:
-            suggestions.append(
-                ImprovementSuggestion(
-                    category="chunking",
-                    priority="medium",
-                    issue=f"{len(low_ctx_precision)}개 쿼리에서 컨텍스트 정확도 낮음",
-                    suggestion=(
-                        "검색된 청크가 질문과 관련이 적습니다. "
-                        "시맨틱 청킹을 사용하거나, 청크 크기를 줄여보세요. "
-                        "하이브리드 검색(BM25 + Dense)도 효과적입니다."
-                    ),
-                    affected_queries=[r.query for r in low_ctx_precision[:5]],
-                    expected_improvement=0.2,
-                )
-            )
-
-        # 우선순위순 정렬
-        priority_order = {"high": 0, "medium": 1, "low": 2}
-        suggestions.sort(key=lambda s: priority_order.get(s.priority, 2))
-
-        return suggestions
+        return self._improvement_analyzer.get_improvement_suggestions(records)
 
     # ==================== Drift 감지 ====================
 
     def detect_drift(self) -> Optional[Dict[str, Any]]:
         """성능 저하 감지"""
-        if len(self._records) < 10:
-            return None
-
-        records = sorted(self._records.values(), key=lambda r: r.timestamp)
-
-        # 최근 vs 이전 비교
-        midpoint = len(records) // 2
-        old_records = records[:midpoint]
-        new_records = records[midpoint:]
-
-        old_avg = sum(r.unified_score for r in old_records) / len(old_records)
-        new_avg = sum(r.unified_score for r in new_records) / len(new_records)
-
-        drift = old_avg - new_avg
-
-        if drift > self.drift_threshold:
-            return {
-                "detected": True,
-                "old_score": old_avg,
-                "new_score": new_avg,
-                "drift_magnitude": drift,
-                "severity": "high" if drift > 0.3 else "medium",
-                "message": (f"성능 저하 감지: {old_avg:.2f} → {new_avg:.2f} (하락폭: {drift:.2f})"),
-            }
-
-        return {"detected": False, "old_score": old_avg, "new_score": new_avg}
+        records = list(self._records.values())
+        return self._drift_detector.detect_drift(records)
 
     # ==================== 유틸리티 ====================
 

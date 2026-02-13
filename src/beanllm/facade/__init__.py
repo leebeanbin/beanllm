@@ -8,6 +8,8 @@ SOLID 원칙:
 import importlib
 
 _LAZY_IMPORT_MAP: dict[str, tuple[str, str]] = {
+    # Base class
+    "FacadeBase": ("beanllm.facade.base", "FacadeBase"),
     # Core facades
     "Client": ("beanllm.facade.core.client_facade", "Client"),
     "RAGChain": ("beanllm.facade.core.rag_facade", "RAGChain"),
@@ -43,6 +45,8 @@ _LAZY_IMPORT_MAP: dict[str, tuple[str, str]] = {
 }
 
 __all__ = [
+    # Base class
+    "FacadeBase",
     # Core facades (backward compatibility)
     "Client",
     "RAGChain",

@@ -13,19 +13,14 @@ SOLID:
 
 from __future__ import annotations
 
-import uuid
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional
 
 import networkx as nx
 
 from beanllm.domain.knowledge_graph import (
-    Entity,
     EntityExtractor,
     GraphBuilder,
-    GraphQuerier,
-    GraphRAG,
     Neo4jAdapter,
-    Relation,
     RelationExtractor,
 )
 from beanllm.dto.request.graph.kg_request import (
@@ -48,6 +43,7 @@ from beanllm.service.impl.advanced.kg_entity_extraction import (
     extract_entities_logic,
     extract_relations_logic,
 )
+from beanllm.service.impl.advanced.kg_graph_builder import build_graph_logic
 from beanllm.service.impl.advanced.kg_graph_operations import (
     delete_graph as kg_delete_graph,
 )
@@ -60,6 +56,8 @@ from beanllm.service.impl.advanced.kg_graph_operations import (
 from beanllm.service.impl.advanced.kg_graph_operations import (
     visualize_graph as kg_visualize_graph,
 )
+from beanllm.service.impl.advanced.kg_graph_query import execute_graph_query
+from beanllm.service.impl.advanced.kg_graph_rag import execute_graph_rag
 from beanllm.service.knowledge_graph_service import IKnowledgeGraphService
 from beanllm.utils.logging import get_logger
 
@@ -242,118 +240,23 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             BuildGraphResponse: 그래프 정보
         """
         try:
-            graph_id = request.graph_id or str(uuid.uuid4())
 
-            # 기존 그래프가 있으면 가져오기
-            if graph_id in self._graphs:
-                graph = self._graphs[graph_id]
-                logger.info(f"Loading existing graph: {graph_id}")
-            else:
-                graph = nx.DiGraph()
-                logger.info(f"Creating new graph: {graph_id}")
-
-            # 문서별로 엔티티/관계 추출
-            all_entities: List[Entity] = []
-            all_relations: List[Relation] = []
-
-            # 문서 리스트 검증
-            documents = request.documents or []
-            if not documents:
-                raise ValueError("documents is required for graph building")
-
-            # 배치 처리 여부 결정 (5개 이상 문서면 병렬 처리)
-            use_batch = len(documents) >= 5
-
-            if use_batch:
-                logger.info(f"Using batch processing for {len(documents)} documents")
-
-                # 각 문서에 대한 처리 함수 생성
-                async def process_doc_wrapper(doc: str) -> Dict[str, Any]:
-                    return await self._process_single_document(
-                        doc=doc,
-                        entity_types=request.entity_types,
-                        relation_types=request.relation_types,
-                    )
-
-                # 병렬 처리
-                results = await self._batch_processor.process_items(
-                    items=documents,
-                    handler=process_doc_wrapper,
+            async def process_doc(doc: str) -> Dict[str, Any]:
+                return await self._process_single_document(
+                    doc=doc,
+                    entity_types=request.entity_types,
+                    relation_types=request.relation_types,
                 )
 
-                # 결과 수집
-                for result in results:
-                    if isinstance(result, dict) and "error" not in result:
-                        all_entities.extend(result.get("entities", []))
-                        all_relations.extend(result.get("relations", []))
-                    elif isinstance(result, dict) and "error" in result:
-                        logger.warning(f"Document processing error: {result['error']}")
-            else:
-                logger.info(f"Using sequential processing for {len(documents)} documents")
-
-                # 순차 처리 (문서가 적을 때)
-                for doc in documents:
-                    result = await self._process_single_document(
-                        doc=doc,
-                        entity_types=request.entity_types,
-                        relation_types=request.relation_types,
-                    )
-                    all_entities.extend(result.get("entities", []))
-                    all_relations.extend(result.get("relations", []))
-
-            # 그래프 구축
-            graph = self._graph_builder.build_graph(
-                entities=all_entities,
-                relations=all_relations,
+            return await build_graph_logic(
+                graphs=self._graphs,
+                graph_metadata=self._graph_metadata,
+                graph_builder=self._graph_builder,
+                neo4j_adapter=self._neo4j_adapter,
+                batch_processor=self._batch_processor,
+                process_single_doc_fn=process_doc,
+                request=request,
             )
-
-            # 기존 그래프와 병합
-            if graph_id in self._graphs:
-                graph = self._graph_builder.merge_graphs(self._graphs[graph_id], graph)
-
-            # 상태 저장
-            self._graphs[graph_id] = graph
-            self._graph_metadata[graph_id] = {
-                "num_documents": len(documents),
-                "entity_types": request.entity_types or [],
-                "relation_types": request.relation_types or [],
-            }
-
-            # Neo4j에 저장 (optional)
-            if self._neo4j_adapter and request.persist_to_neo4j:
-                try:
-                    self._neo4j_adapter.export_graph(
-                        graph=graph,
-                        clear_existing=request.clear_existing,
-                    )
-                    logger.info(f"Graph exported to Neo4j: {graph_id}")
-                except Exception as e:
-                    logger.warning(f"Failed to export to Neo4j: {e}")
-
-            # 통계 계산
-            stats = self._graph_builder.get_graph_statistics(graph)
-
-            logger.info(
-                f"Graph built: {graph_id} ({stats['num_nodes']} nodes, {stats['num_edges']} edges)"
-            )
-
-            # Use appropriate connected components metric for directed/undirected graphs
-            if "num_connected_components" not in stats:
-                # For directed graphs, use weakly connected components as default
-                stats["num_connected_components"] = stats.get("num_weakly_connected_components", 0)
-
-            return BuildGraphResponse(
-                graph_id=graph_id,
-                graph_name=request.graph_name or graph_id,
-                num_nodes=stats["num_nodes"],
-                num_edges=stats["num_edges"],
-                backend=request.backend,
-                document_ids=[],  # Will be populated if using document_ids
-                created_at=graph_id,  # Using graph_id as timestamp placeholder
-                statistics=stats,  # Pass all stats in statistics dict
-                metadata=request.config,
-            )
-
         except Exception as e:
             logger.error(f"Failed to build graph: {e}", exc_info=True)
             raise RuntimeError(f"Failed to build graph: {e}") from e
@@ -378,84 +281,15 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             QueryGraphResponse: 쿼리 결과
         """
         try:
-            graph_id = request.graph_id
+            if request.graph_id not in self._graphs:
+                raise ValueError(f"Graph not found: {request.graph_id}")
 
-            # 그래프 확인
-            if graph_id not in self._graphs:
-                raise ValueError(f"Graph not found: {graph_id}")
-
-            graph = self._graphs[graph_id]
-            querier = GraphQuerier(graph=graph)
-
-            # 쿼리 타입별 처리
-            query_type = request.query_type or "cypher"
-            results: List[Dict[str, Any]] = []
-            params = request.params or {}
-
-            if query_type == "find_entities_by_type":
-                # 타입별 엔티티 검색
-                entity_type = str(params.get("entity_type", ""))
-                results = querier.find_entities_by_type(entity_type=entity_type)
-
-            elif query_type == "find_entities_by_name":
-                # 이름 기반 검색
-                name = str(params.get("name", ""))
-                fuzzy = bool(params.get("fuzzy", False))
-                results = querier.find_entities_by_name(name=name, fuzzy=fuzzy)
-
-            elif query_type == "find_related_entities":
-                # 관계 기반 탐색
-                entity_id = str(params.get("entity_id", ""))
-                relation_type = (
-                    str(params.get("relation_type", "")) if params.get("relation_type") else None
-                )
-                max_hops_val = params.get("max_hops", 1)
-                max_hops = int(max_hops_val) if isinstance(max_hops_val, (int, float, str)) else 1
-                results = querier.find_related_entities(
-                    entity_id=entity_id,
-                    relation_type=relation_type,
-                    max_hops=max_hops,
-                )
-
-            elif query_type == "find_shortest_path":
-                # 최단 경로
-                source_id = str(params.get("source_id", ""))
-                target_id = str(params.get("target_id", ""))
-                path = querier.find_shortest_path(
-                    source_id=source_id,
-                    target_id=target_id,
-                )
-                results = [{"path": path}] if path else []
-
-            elif query_type == "get_entity_details":
-                # 엔티티 상세 정보
-                entity_id = str(params.get("entity_id", ""))
-                details = querier.get_entity_details(entity_id=entity_id)
-                results = [details] if details else []
-
-            elif query_type == "cypher":
-                # Cypher 쿼리 (Neo4j만 지원)
-                if self._neo4j_adapter:
-                    results = self._neo4j_adapter.query(
-                        cypher_query=request.query,
-                        parameters=request.params,
-                    )
-                else:
-                    raise ValueError("Cypher queries require Neo4j adapter")
-
-            else:
-                raise ValueError(f"Unknown query type: {query_type}")
-
-            logger.info(f"Graph query executed: {graph_id} ({len(results)} results)")
-
-            return QueryGraphResponse(
-                graph_id=graph_id,
-                query=request.query,
-                results=results,
-                num_results=len(results),
-                execution_time=0.0,  # TODO: Add timing
+            graph = self._graphs[request.graph_id]
+            return execute_graph_query(
+                graph=graph,
+                neo4j_adapter=self._neo4j_adapter,
+                request=request,
             )
-
         except Exception as e:
             logger.error(f"Failed to query graph: {e}", exc_info=True)
             raise RuntimeError(f"Failed to query graph: {e}") from e
@@ -481,57 +315,15 @@ class KnowledgeGraphServiceImpl(IKnowledgeGraphService):
             GraphRAGResponse: RAG 응답
         """
         try:
-            # 그래프 확인
             if graph_id not in self._graphs:
                 raise ValueError(f"Graph not found: {graph_id}")
 
             graph = self._graphs[graph_id]
-            graph_rag = GraphRAG(graph=graph)
-
-            # Entity-centric retrieval
-            entity_results = graph_rag.entity_centric_retrieval(
-                query=query,
-                top_k=5,
-                max_hops=2,
-            )
-
-            # Path reasoning
-            path_results = graph_rag.path_reasoning(
-                query=query,
-                max_path_length=3,
-            )
-
-            # Hybrid retrieval
-            hybrid_results = graph_rag.hybrid_retrieval(
-                query=query,
-                top_k=5,
-            )
-
-            logger.info(f"Graph RAG executed: {graph_id} ({len(hybrid_results)} results)")
-
-            # Extract entity names used
-            entities_used = [e.get("name", e.get("id", "")) for e in entity_results]
-
-            # Extract reasoning paths
-            reasoning_paths = [p.get("path", []) for p in path_results]
-
-            # Build graph context
-            graph_context = (
-                f"Graph {graph_id}: {len(entity_results)} entities, {len(path_results)} paths"
-            )
-
-            return GraphRAGResponse(
-                answer=f"Found {len(hybrid_results)} results for query: {query}",
-                entities_used=entities_used,
-                reasoning_paths=reasoning_paths,
-                graph_context=graph_context,
+            return execute_graph_rag(
+                graph=graph,
                 graph_id=graph_id,
-                num_results=len(hybrid_results),
-                entity_results=entity_results,
-                path_results=path_results,
-                hybrid_results=hybrid_results,
+                query=query,
             )
-
         except Exception as e:
             logger.error(f"Failed to execute graph RAG: {e}", exc_info=True)
             raise RuntimeError(f"Failed to execute graph RAG: {e}") from e

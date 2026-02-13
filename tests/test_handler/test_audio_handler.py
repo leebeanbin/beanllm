@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.audio_request import AudioRequest
-from beanllm.dto.response.audio_response import AudioResponse
-from beanllm.handler.audio_handler import AudioHandler
+from beanllm.dto.request.ml.audio_request import AudioRequest
+from beanllm.dto.response.ml.audio_response import AudioResponse
+from beanllm.handler import AudioHandler
 
 
 class TestAudioHandler:

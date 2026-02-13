@@ -114,6 +114,8 @@ class ColBERTRetriever:
         self._document_ids = document_ids
         self._document_metadatas = document_metadatas or []
         self._indexed = False
+        # O(1) 문서 ID -> 인덱스 조회를 위한 딕셔너리 캐시
+        self._doc_id_to_index: Dict[str, int] = {}
 
         # 문서가 있으면 인덱싱
         if self._documents:
@@ -169,6 +171,8 @@ class ColBERTRetriever:
         self._document_ids = document_ids
         self._document_metadatas = document_metadatas or []
         self._indexed = True
+        # O(1) 조회를 위한 딕셔너리 캐시 구성
+        self._doc_id_to_index = {doc_id: idx for idx, doc_id in enumerate(self._document_ids)}
 
         logger.info(f"Indexed {len(documents)} documents to {index_path}")
 
@@ -207,6 +211,10 @@ class ColBERTRetriever:
 
             self._documents.extend(documents)
             if self._document_ids:
+                # 기존 인덱스 오프셋부터 새 문서 ID 매핑 추가
+                offset = len(self._doc_id_to_index)
+                for i, did in enumerate(document_ids):
+                    self._doc_id_to_index[did] = offset + i
                 self._document_ids.extend(document_ids)
             self._document_metadatas.extend(document_metadatas or [])
 
@@ -243,15 +251,12 @@ class ColBERTRetriever:
         for r in results:
             metadata = {"rank": r.get("rank", 0)}
 
-            # 문서 메타데이터 추가
+            # 문서 메타데이터 추가 (O(1) dict 조회)
             doc_id = r.get("document_id")
-            if doc_id and self._document_ids:
-                try:
-                    idx = self._document_ids.index(doc_id)
-                    if idx < len(self._document_metadatas):
-                        metadata.update(self._document_metadatas[idx])
-                except ValueError:
-                    pass
+            if doc_id and self._doc_id_to_index:
+                idx = self._doc_id_to_index.get(doc_id)
+                if idx is not None and idx < len(self._document_metadatas):
+                    metadata.update(self._document_metadatas[idx])
 
             search_results.append(
                 SearchResult(
