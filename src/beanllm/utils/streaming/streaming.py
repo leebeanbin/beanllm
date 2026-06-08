@@ -424,30 +424,48 @@ import re as _re
 _THINKING_PATTERN = _re.compile(r"<thinking>.*?</thinking>", _re.DOTALL)
 
 
+_OPEN_TAG = "<thinking>"
+_CLOSE_TAG = "</thinking>"
+
+
 async def filter_thinking_stream(
     stream: AsyncIterator[str],
 ) -> AsyncIterator[str]:
     """
     Strip <thinking>…</thinking> blocks from a streaming response.
 
-    Yields text chunks with thinking tokens removed. Handles blocks that
-    span multiple chunks by buffering until the closing tag is found.
+    Handles blocks that span multiple chunks (including partial opening/closing
+    tags split at chunk boundaries) by holding back uncertain tail bytes.
     """
     buffer = ""
     async for chunk in stream:
         buffer += chunk
-        # Remove complete thinking blocks
+        # Remove any complete <thinking>…</thinking> blocks first
         buffer = _THINKING_PATTERN.sub("", buffer)
-        # If an opening tag has started but not yet closed, hold the tail
-        open_pos = buffer.rfind("<thinking>")
+        # Find how many chars at the END of buffer might be the start of a tag
+        # We must not yield those until we know whether they form a tag.
+        hold = 0
+        for tag_len in range(len(_OPEN_TAG) - 1, 0, -1):
+            if buffer.endswith(_OPEN_TAG[:tag_len]):
+                hold = tag_len
+                break
+        # Also hold back if an unclosed <thinking> block has started
+        open_pos = buffer.find(_OPEN_TAG)
         if open_pos != -1:
-            safe, buffer = buffer[:open_pos], buffer[open_pos:]
+            # Unclosed block still in buffer — hold from its start
+            safe = buffer[:open_pos]
+            buffer = buffer[open_pos:]
         else:
-            safe, buffer = buffer, ""
+            safe = buffer[: len(buffer) - hold]
+            buffer = buffer[len(buffer) - hold :]
         if safe:
             yield safe
-    # Flush remainder (strip any dangling partial block)
+    # Flush: strip any incomplete/dangling block in the remainder
     remainder = _THINKING_PATTERN.sub("", buffer)
+    # Also strip any partial opening tag that never closed
+    open_pos = remainder.find(_OPEN_TAG)
+    if open_pos != -1:
+        remainder = remainder[:open_pos]
     if remainder:
         yield remainder
 
