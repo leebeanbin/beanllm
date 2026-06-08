@@ -1,3 +1,7 @@
+<p align="right">
+  <a href="README_KO.md">🇰🇷 한국어</a>
+</p>
+
 <h1 align="center">beanllm</h1>
 
 <p align="center">
