@@ -50,11 +50,18 @@ except Exception as e:
     logger.warning(f"Failed to import PerplexityProvider: {e}")
     PerplexityProvider = None  # type: ignore
 
+try:
+    from .grok_provider import GrokProvider
+except Exception as e:
+    logger.warning(f"Failed to import GrokProvider: {e}")
+    GrokProvider = None  # type: ignore
+
 # Debug: Log which providers are available
 logger.info(
     f"Provider import status: OpenAI={OpenAIProvider is not None}, Claude={ClaudeProvider is not None}, "
     f"Gemini={GeminiProvider is not None}, DeepSeek={DeepSeekProvider is not None}, "
-    f"Perplexity={PerplexityProvider is not None}, Ollama={OllamaProvider is not None}"
+    f"Perplexity={PerplexityProvider is not None}, Grok={GrokProvider is not None}, "
+    f"Ollama={OllamaProvider is not None}"
 )
 
 
@@ -82,6 +89,9 @@ class ProviderFactory:
 
         if PerplexityProvider is not None:
             priority.append(("perplexity", PerplexityProvider, "PERPLEXITY_API_KEY"))
+
+        if GrokProvider is not None:
+            priority.append(("grok", GrokProvider, "XAI_API_KEY"))
 
         if OllamaProvider is not None:
             priority.append(("ollama", OllamaProvider, "OLLAMA_HOST"))  # API 키 없음
@@ -147,6 +157,7 @@ class ProviderFactory:
                     "gemini": (GeminiProvider, "GEMINI_API_KEY"),
                     "deepseek": (DeepSeekProvider, "DEEPSEEK_API_KEY"),
                     "perplexity": (PerplexityProvider, "PERPLEXITY_API_KEY"),
+                    "grok": (GrokProvider, "XAI_API_KEY"),
                     "ollama": (OllamaProvider, "OLLAMA_HOST"),
                 }
                 if provider_name in provider_map:

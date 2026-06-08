@@ -69,6 +69,7 @@ class AxolotlProvider(BaseFineTuningProvider):
         output_dir: Union[str, Path],
         use_flash_attention: bool = True,
         device_map: str = "auto",
+        training_method: str = "lora",
         **kwargs: Any,
     ):
         """
@@ -77,12 +78,22 @@ class AxolotlProvider(BaseFineTuningProvider):
             output_dir: 출력 디렉토리
             use_flash_attention: Flash Attention 2 사용 여부
             device_map: 디바이스 맵 (auto/cuda/cpu)
+            training_method: "lora" | "dpo" | "orpo" | "kto" (기본: "lora")
+                - orpo: reference model 불필요, 메모리 50% 절감 (2026 표준)
+                - dpo: reference model 필요
+                - kto: binary feedback 기반
             **kwargs: 추가 Axolotl 설정
         """
+        _valid_methods = {"lora", "qlora", "dpo", "orpo", "kto", "sft"}
+        if training_method not in _valid_methods:
+            raise ValueError(
+                f"training_method must be one of {_valid_methods}, got '{training_method}'"
+            )
         self.base_model = base_model
         self.output_dir = Path(output_dir)
         self.use_flash_attention = use_flash_attention
         self.device_map = device_map
+        self.training_method = training_method
         self.kwargs = kwargs
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self._jobs: Dict[str, FineTuningJob] = {}
@@ -187,21 +198,14 @@ class AxolotlProvider(BaseFineTuningProvider):
         return self._extract_metrics_from_log(log_file)
 
     def _create_axolotl_config(self, config: FineTuningConfig) -> Dict[str, Any]:
-        """Axolotl 설정 생성."""
+        """Axolotl 설정 생성 (training_method별 분기)."""
         metadata = config.metadata or {}
-        return {
+        method = metadata.get("training_method", self.training_method)
+
+        base: Dict[str, Any] = {
             "base_model": config.model,
             "model_type": "AutoModelForCausalLM",
             "tokenizer_type": "AutoTokenizer",
-            "datasets": [{"path": config.training_file, "type": "alpaca"}],
-            "adapter": metadata.get("adapter", "lora"),
-            "lora_r": metadata.get("lora_r", 16),
-            "lora_alpha": metadata.get("lora_alpha", 32),
-            "lora_dropout": metadata.get("lora_dropout", 0.05),
-            "lora_target_modules": metadata.get(
-                "lora_target_modules",
-                ["q_proj", "v_proj", "k_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
-            ),
             "sequence_len": metadata.get("max_seq_length", DEFAULT_MAX_SEQ_LENGTH),
             "num_epochs": config.n_epochs,
             "micro_batch_size": config.batch_size or 4,
@@ -220,6 +224,108 @@ class AxolotlProvider(BaseFineTuningProvider):
             "wandb_project": metadata.get("wandb_project"),
             "wandb_run_name": metadata.get("wandb_run_name"),
         }
+
+        if method == "orpo":
+            # ORPO: no reference model required — combined SFT+preference in one pass
+            # Uses ~50% less GPU memory compared to DPO
+            base.update(
+                {
+                    "rl": "orpo",
+                    "orpo_alpha": metadata.get("orpo_alpha", 0.1),
+                    "datasets": [{"path": config.training_file, "type": "orpo.chat_template"}],
+                    "adapter": metadata.get("adapter", "lora"),
+                    "lora_r": metadata.get("lora_r", 16),
+                    "lora_alpha": metadata.get("lora_alpha", 32),
+                    "lora_dropout": metadata.get("lora_dropout", 0.05),
+                    "lora_target_modules": metadata.get(
+                        "lora_target_modules",
+                        [
+                            "q_proj",
+                            "v_proj",
+                            "k_proj",
+                            "o_proj",
+                            "gate_proj",
+                            "up_proj",
+                            "down_proj",
+                        ],
+                    ),
+                }
+            )
+        elif method == "dpo":
+            # DPO: reference model required (loaded automatically by Axolotl)
+            base.update(
+                {
+                    "rl": "dpo",
+                    "dpo_beta": metadata.get("dpo_beta", 0.1),
+                    "datasets": [{"path": config.training_file, "type": "chat_template"}],
+                    "adapter": metadata.get("adapter", "lora"),
+                    "lora_r": metadata.get("lora_r", 16),
+                    "lora_alpha": metadata.get("lora_alpha", 32),
+                    "lora_dropout": metadata.get("lora_dropout", 0.05),
+                    "lora_target_modules": metadata.get(
+                        "lora_target_modules",
+                        [
+                            "q_proj",
+                            "v_proj",
+                            "k_proj",
+                            "o_proj",
+                            "gate_proj",
+                            "up_proj",
+                            "down_proj",
+                        ],
+                    ),
+                }
+            )
+        elif method == "kto":
+            base.update(
+                {
+                    "rl": "kto",
+                    "kto_desirable_weight": metadata.get("kto_desirable_weight", 1.0),
+                    "kto_undesirable_weight": metadata.get("kto_undesirable_weight", 1.0),
+                    "datasets": [{"path": config.training_file, "type": "kto.chat_template"}],
+                    "adapter": metadata.get("adapter", "lora"),
+                    "lora_r": metadata.get("lora_r", 16),
+                    "lora_alpha": metadata.get("lora_alpha", 32),
+                    "lora_dropout": metadata.get("lora_dropout", 0.05),
+                    "lora_target_modules": metadata.get(
+                        "lora_target_modules",
+                        [
+                            "q_proj",
+                            "v_proj",
+                            "k_proj",
+                            "o_proj",
+                            "gate_proj",
+                            "up_proj",
+                            "down_proj",
+                        ],
+                    ),
+                }
+            )
+        else:
+            # Default: LoRA / QLoRA supervised fine-tuning
+            base.update(
+                {
+                    "datasets": [{"path": config.training_file, "type": "alpaca"}],
+                    "adapter": metadata.get("adapter", "lora"),
+                    "lora_r": metadata.get("lora_r", 16),
+                    "lora_alpha": metadata.get("lora_alpha", 32),
+                    "lora_dropout": metadata.get("lora_dropout", 0.05),
+                    "lora_target_modules": metadata.get(
+                        "lora_target_modules",
+                        [
+                            "q_proj",
+                            "v_proj",
+                            "k_proj",
+                            "o_proj",
+                            "gate_proj",
+                            "up_proj",
+                            "down_proj",
+                        ],
+                    ),
+                }
+            )
+
+        return base
 
     def _update_job_from_log(self, job: FineTuningJob, log_file: Path) -> FineTuningJob:
         """로그 파일에서 작업 상태 업데이트."""

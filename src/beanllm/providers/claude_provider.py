@@ -110,9 +110,11 @@ class ClaudeProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = DEFAULT_TEMPERATURE,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
+        stream_thinking: bool = True,
+        **kwargs,
     ) -> LLMResponse:
         """일반 채팅 (비스트리밍, 재시도 로직 포함)"""
-        # Rate Limiting (분산 또는 인메모리)
         await self._acquire_rate_limit(f"claude:{model or self.default_model}", cost=1.0)
 
         claude_messages = []
@@ -120,16 +122,33 @@ class ClaudeProvider(BaseLLMProvider):
             if msg["role"] in ["user", "assistant"]:
                 claude_messages.append({"role": msg["role"], "content": msg["content"]})
 
-        response = await self.client.messages.create(
-            model=model or self.default_model,
-            max_tokens=max_tokens or CLAUDE_DEFAULT_MAX_TOKENS,
-            system=system,
-            temperature=temperature,
-            messages=claude_messages,
-        )
+        create_kwargs: Dict = {
+            "model": model or self.default_model,
+            "max_tokens": max_tokens or CLAUDE_DEFAULT_MAX_TOKENS,
+            "system": system,
+            "messages": claude_messages,
+        }
+
+        if thinking_budget is not None:
+            # Extended thinking — temperature must be 1 per Anthropic spec
+            create_kwargs["thinking"] = {"type": "enabled", "budget_tokens": thinking_budget}
+            create_kwargs["betas"] = ["interleaved-thinking-2025-05-14"]
+        else:
+            create_kwargs["temperature"] = temperature
+
+        response = await self.client.messages.create(**create_kwargs)
+
+        # Extract text content, optionally filtering <thinking> blocks
+        text_parts = []
+        for block in response.content:
+            if hasattr(block, "type") and block.type == "thinking":
+                if stream_thinking:
+                    text_parts.append(f"<thinking>{block.thinking}</thinking>")
+            elif hasattr(block, "text"):
+                text_parts.append(block.text)
 
         return LLMResponse(
-            content=response.content[0].text,
+            content="".join(text_parts),
             model=response.model,
             usage={
                 "input_tokens": response.usage.input_tokens,
@@ -157,6 +176,10 @@ class ClaudeProvider(BaseLLMProvider):
             "claude-opus-4-5",  # Opus 4.5 (with thinking/effort)
             "claude-sonnet-4-5",  # Sonnet 4.5 (with thinking)
             "claude-haiku-4-5",  # Haiku 4.5
+            # Claude 4.6/4.7/4.8 Series (2026)
+            "claude-sonnet-4-6",  # Sonnet 4.6
+            "claude-haiku-4-5-20251001",  # Haiku 4.5 dated
+            "claude-opus-4-8",  # Opus 4.8 (extended thinking)
         ]
 
     def is_available(self) -> bool:

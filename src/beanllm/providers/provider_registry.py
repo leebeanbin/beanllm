@@ -26,6 +26,7 @@ MODEL_PATTERN_REGISTRY: List[Tuple[Sequence[str], str]] = [
     (["gemini"], "google"),
     (["deepseek"], "deepseek"),
     (["perplexity", "sonar"], "perplexity"),
+    (["grok"], "grok"),
 ]
 
 # Ollama 전용 패턴 (콜론 포함 또는 로컬 모델명)
@@ -72,6 +73,8 @@ PROVIDER_NAME_NORMALIZATION: Dict[str, str] = {
     "claude": "anthropic",
     "anthropic": "anthropic",
     "ollama": "ollama",
+    "grok": "grok",
+    "xai": "grok",
 }
 
 # ProviderFactory용 정규화 (ProviderFactory는 "claude", "gemini" 사용)
@@ -84,6 +87,8 @@ PROVIDER_FACTORY_NAME_MAP: Dict[str, str] = {
     "deepseek": "deepseek",
     "perplexity": "perplexity",
     "ollama": "ollama",
+    "grok": "grok",
+    "xai": "grok",
 }
 
 
@@ -117,6 +122,7 @@ PROVIDER_ENV_MAP: Dict[str, Optional[str]] = {
     "gemini": "GEMINI_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "perplexity": "PERPLEXITY_API_KEY",
+    "grok": "XAI_API_KEY",
     "ollama": None,  # Ollama는 API 키가 필요 없음
 }
 

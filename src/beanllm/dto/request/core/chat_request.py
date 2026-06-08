@@ -27,4 +27,6 @@ class ChatRequest:
     top_p: Optional[float] = None
     system: Optional[str] = None
     stream: bool = False
+    thinking_budget: Optional[int] = None
+    stream_thinking: bool = True
     extra_params: dict[str, object] = field(default_factory=dict)

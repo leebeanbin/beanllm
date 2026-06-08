@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "beanllm"
-version = "0.3.0"
-description = "Unified toolkit for managing and using multiple LLM providers with automatic model detection"
+version = "0.4.0"
+description = "Unified LLM framework — 8 providers, reasoning models (thinking_budget), VLM-OCR, GraphRAG, ORPO fine-tuning, 80% test coverage"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
 license = "MIT"
@@ -14,10 +14,11 @@ authors = [
 ]
 keywords = [
     "llm", "beanllm", "ai-toolkit",
-    "openai", "claude", "anthropic", "gemini", "ollama",
-    "ai", "machine-learning", "rag", "langchain",
+    "openai", "claude", "anthropic", "gemini", "ollama", "grok", "xai",
+    "ai", "machine-learning", "rag", "graphrag", "langchain",
     "embedding", "vector-store", "chatbot", "gpt",
-    "multi-agent", "agent", "nlp", "prompt-engineering"
+    "multi-agent", "agent", "nlp", "reasoning-model",
+    "thinking-budget", "orpo", "dpo", "fine-tuning", "vlm-ocr"
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",

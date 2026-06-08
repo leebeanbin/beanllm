@@ -308,6 +308,9 @@ class OpenAIProvider(BaseLLMProvider):
         system: Optional[str] = None,
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
+        thinking_budget: Optional[int] = None,
+        stream_thinking: bool = True,
+        **kwargs,
     ) -> LLMResponse:
         """
         일반 채팅 (비스트리밍, 최신 SDK 사용, 재시도 로직 포함)
@@ -352,6 +355,15 @@ class OpenAIProvider(BaseLLMProvider):
                 elif param_config["supports_max_tokens"]:
                     # 일반 모델은 max_tokens 사용
                     request_params["max_tokens"] = max_tokens
+
+            # reasoning_effort for o-series models (maps thinking_budget → effort level)
+            if thinking_budget is not None and model_name.startswith(("o1", "o3", "o4")):
+                if thinking_budget >= 16000:
+                    request_params["reasoning_effort"] = "high"
+                elif thinking_budget >= 4000:
+                    request_params["reasoning_effort"] = "medium"
+                else:
+                    request_params["reasoning_effort"] = "low"
 
             response = await self.client.chat.completions.create(**request_params)  # type: ignore[arg-type]
 

@@ -13,7 +13,7 @@ from beanllm._lazy_imports import (
 
 __all__ = _PUBLIC_API
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 
 # 설치 안내 메시지 (선택적 의존성)

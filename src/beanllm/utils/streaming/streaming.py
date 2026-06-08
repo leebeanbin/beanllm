@@ -161,9 +161,9 @@ async def stream_response(
         use_rich = False
 
     try:
-        if display and use_rich and panel_title and console:
+        if display and use_rich and panel_title and console and _Live:
             # Rich Panel + Live 업데이트
-            with Live(console=console, refresh_per_second=10) as live:
+            with _Live(console=console, refresh_per_second=10) as live:
                 current_text = ""
                 async for chunk in stream:
                     current_text += chunk
@@ -174,10 +174,14 @@ async def stream_response(
                         on_chunk(chunk)
 
                     # Live 업데이트
-                    content: Any = Markdown(current_text) if markdown else Text(current_text)
+                    content: Any = (
+                        _Markdown(current_text)
+                        if (markdown and _Markdown)
+                        else (_Text(current_text) if _Text else current_text)
+                    )
 
                     live.update(
-                        Panel(
+                        _Panel(
                             content,
                             title=f"[bold cyan]{panel_title}[/bold cyan]",
                             border_style="cyan",
@@ -258,12 +262,12 @@ def _display_stats(stats: StreamStats):
         print(f"Chunks: {stats.chunks}")
         return
 
-    stats_panel = Panel(
+    stats_panel = _Panel(
         f"""[bold cyan]Duration:[/bold cyan] {stats.duration:.2f}s
 [bold cyan]Tokens:[/bold cyan] {stats.total_tokens}
 [bold cyan]Speed:[/bold cyan] {stats.tokens_per_second:.2f} tok/s
 [bold cyan]Chunks:[/bold cyan] {stats.chunks}""",
-        title="[bold yellow]📊 Statistics[/bold yellow]",
+        title="[bold yellow]Statistics[/bold yellow]",
         border_style="yellow",
         expand=False,
     )
@@ -413,3 +417,41 @@ async def pretty_stream(
         show_stats=True,
         panel_title=title,
     )
+
+
+import re as _re
+
+_THINKING_PATTERN = _re.compile(r"<thinking>.*?</thinking>", _re.DOTALL)
+
+
+async def filter_thinking_stream(
+    stream: AsyncIterator[str],
+) -> AsyncIterator[str]:
+    """
+    Strip <thinking>…</thinking> blocks from a streaming response.
+
+    Yields text chunks with thinking tokens removed. Handles blocks that
+    span multiple chunks by buffering until the closing tag is found.
+    """
+    buffer = ""
+    async for chunk in stream:
+        buffer += chunk
+        # Remove complete thinking blocks
+        buffer = _THINKING_PATTERN.sub("", buffer)
+        # If an opening tag has started but not yet closed, hold the tail
+        open_pos = buffer.rfind("<thinking>")
+        if open_pos != -1:
+            safe, buffer = buffer[:open_pos], buffer[open_pos:]
+        else:
+            safe, buffer = buffer, ""
+        if safe:
+            yield safe
+    # Flush remainder (strip any dangling partial block)
+    remainder = _THINKING_PATTERN.sub("", buffer)
+    if remainder:
+        yield remainder
+
+
+def strip_thinking_tokens(text: str) -> str:
+    """Remove all <thinking>…</thinking> blocks from a completed response string."""
+    return _THINKING_PATTERN.sub("", text).strip()

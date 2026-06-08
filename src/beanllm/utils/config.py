@@ -39,6 +39,7 @@ class EnvConfig:
     GEMINI_API_KEY: Optional[str] = os.getenv("GEMINI_API_KEY")
     DEEPSEEK_API_KEY: Optional[str] = os.getenv("DEEPSEEK_API_KEY")
     PERPLEXITY_API_KEY: Optional[str] = os.getenv("PERPLEXITY_API_KEY")
+    XAI_API_KEY: Optional[str] = os.getenv("XAI_API_KEY")
 
     # Hosts
     OLLAMA_HOST: str = os.getenv("OLLAMA_HOST", "http://localhost:11434")
@@ -88,6 +89,7 @@ class EnvConfig:
                 "gemini_api_key": "***MASKED***" if cls.GEMINI_API_KEY else None,
                 "deepseek_api_key": "***MASKED***" if cls.DEEPSEEK_API_KEY else None,
                 "perplexity_api_key": "***MASKED***" if cls.PERPLEXITY_API_KEY else None,
+                "xai_api_key": "***MASKED***" if cls.XAI_API_KEY else None,
             }
 
     @classmethod
@@ -104,6 +106,8 @@ class EnvConfig:
             providers.append("deepseek")
         if cls.PERPLEXITY_API_KEY:
             providers.append("perplexity")
+        if cls.XAI_API_KEY:
+            providers.append("grok")
         providers.append("ollama")  # 항상 가능
         return providers
 
@@ -117,6 +121,8 @@ class EnvConfig:
             "gemini": cls.GEMINI_API_KEY,
             "deepseek": cls.DEEPSEEK_API_KEY,
             "perplexity": cls.PERPLEXITY_API_KEY,
+            "grok": cls.XAI_API_KEY,
+            "xai": cls.XAI_API_KEY,
             "ollama": True,  # 항상 가능
         }
         return bool(provider_map.get(provider.lower()))
