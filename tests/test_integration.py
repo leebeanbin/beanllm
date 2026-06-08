@@ -10,14 +10,10 @@ class TestFacadeToHandler:
 
     def test_client_facade_to_handler(self):
         """Client Facade가 Handler를 사용하는지 확인"""
-        try:
-            from beanllm.facade.client_facade import Client
-        except ImportError:
-            from src.beanllm.facade.client_facade import Client
+        from beanllm.facade.core.client_facade import Client
 
         try:
             client = Client(model="gpt-4o-mini")
-            # 내부적으로 Handler를 사용하는지 확인
             assert hasattr(client, "_chat_handler") or hasattr(client, "chat")
         except (ValueError, ImportError):
             pytest.skip("Client provider not available")
@@ -28,21 +24,14 @@ class TestHandlerToService:
 
     def test_chat_handler_to_service(self):
         """ChatHandler가 Service를 사용하는지 확인"""
-        try:
-            from beanllm._source_providers.provider_factory import ProviderFactory
-            from beanllm.handler.chat_handler import ChatHandler
-            from beanllm.service.factory import ServiceFactory
-        except ImportError:
-            from src.beanllm._source_providers.provider_factory import ProviderFactory
-            from src.beanllm.handler.chat_handler import ChatHandler
-            from src.beanllm.service.factory import ServiceFactory
+        from beanllm.handler import ChatHandler
+        from beanllm.providers.provider_factory import ProviderFactory
+        from beanllm.service.factory import ServiceFactory
 
         try:
             provider_factory = ProviderFactory()
             service_factory = ServiceFactory(provider_factory=provider_factory)
-            handler = ChatHandler(
-                service_factory.create_chat_service()
-            )  # get_chat_service가 아니라 create_chat_service
+            handler = ChatHandler(service_factory.create_chat_service())
             assert handler is not None
         except (ValueError, ImportError, AttributeError):
             pytest.skip("Service provider not available")

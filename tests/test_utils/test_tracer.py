@@ -1,11 +1,7 @@
-"""
-Tracer 테스트 - 추적 유틸리티 테스트
-"""
+"""Tests for utils/tracer.py."""
 
 import json
-from datetime import datetime
-from pathlib import Path
-from unittest.mock import Mock, patch
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -17,289 +13,377 @@ from beanllm.utils.tracer import (
     get_tracer,
 )
 
+# ---------------------------------------------------------------------------
+# TraceSpan
+# ---------------------------------------------------------------------------
 
-class TestTracer:
-    """Tracer 테스트"""
 
-    @pytest.fixture
-    def tracer(self):
-        """Tracer 인스턴스"""
-        return Tracer(project_name="test")
+class TestTraceSpan:
+    def _span(self, **kwargs) -> TraceSpan:
+        defaults = dict(
+            span_id="s1",
+            parent_id=None,
+            name="test",
+            start_time=datetime.now(),
+        )
+        defaults.update(kwargs)
+        return TraceSpan(**defaults)
 
-    def test_tracer_start_trace(self, tracer):
-        """추적 시작 테스트"""
-        trace = tracer.start_trace()
+    def test_duration_ms_no_end_time(self):
+        span = self._span()
+        assert span.duration_ms == 0.0
 
-        assert trace is not None
-        assert trace.trace_id is not None
+    def test_duration_ms_with_end_time(self):
+        start = datetime.now()
+        end = start + timedelta(milliseconds=123)
+        span = self._span(start_time=start, end_time=end)
+        assert span.duration_ms == pytest.approx(123.0, abs=1.0)
+
+    def test_to_dict_includes_fields(self):
+        span = self._span(provider="openai", model="gpt-4o")
+        d = span.to_dict()
+        assert d["name"] == "test"
+        assert d["provider"] == "openai"
+        assert d["model"] == "gpt-4o"
+        assert "duration_ms" in d
+        assert "start_time" in d
+
+    def test_to_dict_end_time_iso(self):
+        start = datetime.now()
+        end = start + timedelta(seconds=1)
+        span = self._span(start_time=start, end_time=end)
+        d = span.to_dict()
+        assert "T" in d["end_time"]  # ISO format
+
+    def test_default_status_running(self):
+        span = self._span()
+        assert span.status == "running"
+
+    def test_metadata_default_empty(self):
+        span = self._span()
+        assert span.metadata == {}
+
+    def test_tags_default_empty(self):
+        span = self._span()
+        assert span.tags == []
+
+
+# ---------------------------------------------------------------------------
+# Trace
+# ---------------------------------------------------------------------------
+
+
+class TestTrace:
+    def _trace(self, **kwargs) -> Trace:
+        defaults = dict(
+            trace_id="t1",
+            project_name="test-project",
+            start_time=datetime.now(),
+        )
+        defaults.update(kwargs)
+        return Trace(**defaults)
+
+    def test_total_duration_no_end(self):
+        trace = self._trace()
+        assert trace.total_duration_ms == 0.0
+
+    def test_total_duration_with_end(self):
+        start = datetime.now()
+        end = start + timedelta(milliseconds=500)
+        trace = self._trace(start_time=start, end_time=end)
+        assert trace.total_duration_ms == pytest.approx(500.0, abs=5.0)
+
+    def test_total_tokens_no_spans(self):
+        trace = self._trace()
+        assert trace.total_tokens == 0
+
+    def test_total_tokens_with_spans(self):
+        span = TraceSpan(
+            span_id="s1",
+            parent_id=None,
+            name="s",
+            start_time=datetime.now(),
+            input_tokens=10,
+            output_tokens=20,
+        )
+        trace = self._trace(spans=[span])
+        assert trace.total_tokens == 30
+
+    def test_total_tokens_none_tokens(self):
+        span = TraceSpan(
+            span_id="s1",
+            parent_id=None,
+            name="s",
+            start_time=datetime.now(),
+            input_tokens=None,
+            output_tokens=None,
+        )
+        trace = self._trace(spans=[span])
+        assert trace.total_tokens == 0
+
+    def test_to_dict_basic(self):
+        trace = self._trace()
+        d = trace.to_dict()
+        assert d["trace_id"] == "t1"
+        assert d["project_name"] == "test-project"
+        assert "total_duration_ms" in d
+        assert isinstance(d["spans"], list)
+
+    def test_to_dict_no_end_time_is_none(self):
+        trace = self._trace()
+        d = trace.to_dict()
+        assert d["end_time"] is None
+
+
+# ---------------------------------------------------------------------------
+# Tracer — start_trace / end_trace
+# ---------------------------------------------------------------------------
+
+
+class TestTracerStartEnd:
+    def setup_method(self):
+        self.tracer = Tracer(project_name="test")
+
+    def test_start_trace_returns_trace(self):
+        trace = self.tracer.start_trace()
+        assert isinstance(trace, Trace)
         assert trace.project_name == "test"
 
-    def test_tracer_start_span(self, tracer):
-        """Span 시작 테스트"""
-        trace = tracer.start_trace()
-        span = tracer.start_span("test_span", provider="openai", model="gpt-4o-mini")
+    def test_start_trace_sets_current_trace_id(self):
+        trace = self.tracer.start_trace()
+        assert self.tracer.current_trace_id == trace.trace_id
 
+    def test_start_trace_stores_in_traces(self):
+        trace = self.tracer.start_trace()
+        assert trace.trace_id in self.tracer.traces
+
+    def test_start_trace_with_metadata(self):
+        trace = self.tracer.start_trace(metadata={"env": "test"})
+        assert trace.metadata["env"] == "test"
+
+    def test_end_trace_sets_end_time(self):
+        trace = self.tracer.start_trace()
+        self.tracer.end_trace()
+        assert self.tracer.traces[trace.trace_id].end_time is not None
+
+    def test_end_trace_with_explicit_id(self):
+        trace = self.tracer.start_trace()
+        self.tracer.end_trace(trace.trace_id)
+        assert self.tracer.traces[trace.trace_id].end_time is not None
+
+    def test_end_trace_no_active_trace_no_crash(self):
+        self.tracer.end_trace()  # should not raise
+
+    def test_end_trace_unknown_id_no_crash(self):
+        self.tracer.end_trace("nonexistent-id")  # should not raise
+
+    def test_get_trace_returns_trace(self):
+        trace = self.tracer.start_trace()
+        found = self.tracer.get_trace(trace.trace_id)
+        assert found is trace
+
+    def test_get_trace_unknown_returns_none(self):
+        assert self.tracer.get_trace("nope") is None
+
+    def test_clear_removes_all(self):
+        self.tracer.start_trace()
+        self.tracer.clear()
+        assert self.tracer.traces == {}
+        assert self.tracer.current_trace_id is None
+
+
+# ---------------------------------------------------------------------------
+# Tracer — span management
+# ---------------------------------------------------------------------------
+
+
+class TestTracerSpans:
+    def setup_method(self):
+        self.tracer = Tracer(project_name="test")
+        self.trace = self.tracer.start_trace()
+
+    def test_start_span_returns_span(self):
+        span = self.tracer.start_span("my-span")
+        assert isinstance(span, TraceSpan)
+        assert span.name == "my-span"
+
+    def test_start_span_added_to_trace(self):
+        self.tracer.start_span("my-span")
+        assert len(self.trace.spans) == 1
+
+    def test_start_span_provider_model(self):
+        span = self.tracer.start_span("llm", provider="openai", model="gpt-4o")
+        assert span.provider == "openai"
+        assert span.model == "gpt-4o"
+
+    def test_start_span_no_trace_creates_one(self):
+        tracer = Tracer(project_name="fresh")
+        span = tracer.start_span("auto-span")
         assert span is not None
-        assert span.name == "test_span"
+        assert tracer.current_trace_id is not None
 
-    def test_tracer_end_trace(self, tracer):
-        """추적 종료 테스트"""
-        trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
+    def test_nested_spans_set_parent(self):
+        parent = self.tracer.start_span("parent")
+        child = self.tracer.start_span("child")
+        assert child.parent_id == parent.span_id
 
-        retrieved_trace = tracer.get_trace(trace.trace_id)
-        assert retrieved_trace is not None
-        assert retrieved_trace.end_time is not None
+    def test_end_span_sets_status_success(self):
+        self.tracer.start_span("s1")
+        self.tracer.end_span(status="success")
+        assert self.trace.spans[0].status == "success"
 
-    def test_tracer_get_trace(self, tracer):
-        """추적 정보 조회 테스트"""
-        trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
+    def test_end_span_sets_error(self):
+        self.tracer.start_span("s1")
+        self.tracer.end_span(status="error", error="boom")
+        assert self.trace.spans[0].error == "boom"
 
-        retrieved_trace = tracer.get_trace(trace.trace_id)
+    def test_end_span_sets_tokens(self):
+        self.tracer.start_span("s1")
+        self.tracer.end_span(input_tokens=10, output_tokens=20)
+        span = self.trace.spans[0]
+        assert span.input_tokens == 10
+        assert span.output_tokens == 20
 
-        assert retrieved_trace is not None
-        assert retrieved_trace.trace_id == trace.trace_id
+    def test_end_span_no_active_span_no_crash(self):
+        self.tracer.end_span()  # nothing on stack — should not raise
 
-    def test_tracer_span_context_manager(self, tracer):
-        """Span 컨텍스트 매니저 테스트"""
-        trace = tracer.start_trace()
+    def test_end_span_sets_end_time(self):
+        self.tracer.start_span("s1")
+        self.tracer.end_span()
+        assert self.trace.spans[0].end_time is not None
 
-        with tracer.span("test_span", provider="openai"):
-            pass
 
-        assert len(trace.spans) == 1
-        assert trace.spans[0].name == "test_span"
+# ---------------------------------------------------------------------------
+# Tracer — span() context manager
+# ---------------------------------------------------------------------------
 
-    def test_tracer_get_stats(self, tracer):
-        """통계 정보 조회 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span()
-        tracer.end_trace(trace.trace_id)
 
-        stats = tracer.get_stats(trace.trace_id)
+class TestSpanContextManager:
+    def setup_method(self):
+        self.tracer = Tracer(project_name="test")
+        self.tracer.start_trace()
 
-        assert isinstance(stats, dict)
-        assert "total_spans" in stats
+    def test_context_manager_success(self):
+        with self.tracer.span("cm-span") as span:
+            assert span.name == "cm-span"
+        assert span.status == "success"
 
-    def test_trace_span_to_dict(self, tracer):
-        """TraceSpan to_dict 테스트"""
-        trace = tracer.start_trace()
-        span = tracer.start_span("test_span", provider="openai", model="gpt-4o-mini")
-        span.input_tokens = 100
-        span.output_tokens = 50
-        tracer.end_span()
-
-        span_dict = span.to_dict()
-        assert isinstance(span_dict, dict)
-        assert "span_id" in span_dict
-        assert "name" in span_dict
-        assert "duration_ms" in span_dict
-        assert "start_time" in span_dict
-
-    def test_trace_to_dict(self, tracer):
-        """Trace to_dict 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span()
-        tracer.end_trace(trace.trace_id)
-
-        trace_dict = trace.to_dict()
-        assert isinstance(trace_dict, dict)
-        assert "trace_id" in trace_dict
-        assert "project_name" in trace_dict
-        assert "total_duration_ms" in trace_dict
-        assert "total_tokens" in trace_dict
-        assert "spans" in trace_dict
-
-    def test_tracer_save_trace(self, tracer, tmp_path):
-        """추적 저장 테스트"""
-        tracer.save_dir = tmp_path
-        trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
-
-        tracer.save_trace(trace.trace_id, "test_trace.json")
-
-        filepath = tmp_path / "test_trace.json"
-        assert filepath.exists()
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            assert data["trace_id"] == trace.trace_id
-
-    def test_tracer_end_span_with_tokens(self, tracer):
-        """토큰 수 포함 스팬 종료 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span(input_tokens=100, output_tokens=50)
-
-        span = trace.spans[0]
-        assert span.input_tokens == 100
-        assert span.output_tokens == 50
-
-    def test_tracer_end_span_with_error(self, tracer):
-        """에러 포함 스팬 종료 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span(status="error", error="Test error")
-
-        span = trace.spans[0]
+    def test_context_manager_error_on_exception(self):
+        with pytest.raises(ValueError):
+            with self.tracer.span("err-span") as span:
+                raise ValueError("test error")
         assert span.status == "error"
-        assert span.error == "Test error"
+        assert "test error" in span.error
 
-    def test_tracer_nested_spans(self, tracer):
-        """중첩 스팬 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("parent_span")
-        tracer.start_span("child_span")
-        tracer.end_span()
-        tracer.end_span()
-
-        assert len(trace.spans) == 2
-        assert trace.spans[1].parent_id == trace.spans[0].span_id
-
-    def test_tracer_clear(self, tracer):
-        """추적 초기화 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.clear()
-
-        assert len(tracer.traces) == 0
-        assert tracer.current_trace_id is None
-        assert len(tracer.span_stack) == 0
-
-    def test_tracer_span_context_manager_with_error(self, tracer):
-        """에러 발생 시 스팬 컨텍스트 매니저 테스트"""
-        trace = tracer.start_trace()
-
-        try:
-            with tracer.span("test_span"):
-                raise ValueError("Test error")
-        except ValueError:
+    def test_context_manager_provider_passed(self):
+        with self.tracer.span("s", provider="anthropic", model="claude-3") as span:
             pass
+        assert span.provider == "anthropic"
+        assert span.model == "claude-3"
 
-        assert len(trace.spans) == 1
-        assert trace.spans[0].status == "error"
-        assert "Test error" in (trace.spans[0].error or "")
 
-    def test_tracer_auto_save(self, tmp_path):
-        """자동 저장 테스트"""
-        tracer = Tracer(project_name="test", auto_save=True, save_dir=str(tmp_path))
+# ---------------------------------------------------------------------------
+# Tracer — stats
+# ---------------------------------------------------------------------------
+
+
+class TestTracerStats:
+    def setup_method(self):
+        self.tracer = Tracer(project_name="test")
+
+    def test_stats_no_trace_returns_empty(self):
+        assert self.tracer.get_stats() == {}
+
+    def test_stats_basic(self):
+        self.tracer.start_trace()
+        self.tracer.start_span("s1")
+        self.tracer.end_span(status="success")
+        self.tracer.end_trace()
+        stats = self.tracer.get_stats()
+        assert stats["total_spans"] == 1
+        assert stats["success_spans"] == 1
+        assert stats["error_spans"] == 0
+
+    def test_stats_counts_errors(self):
+        self.tracer.start_trace()
+        self.tracer.start_span("s1")
+        self.tracer.end_span(status="error", error="boom")
+        stats = self.tracer.get_stats()
+        assert stats["error_spans"] == 1
+
+    def test_stats_unknown_trace_id(self):
+        assert self.tracer.get_stats("nope") == {}
+
+    def test_stats_total_tokens(self):
+        self.tracer.start_trace()
+        self.tracer.start_span("s1")
+        self.tracer.end_span(input_tokens=5, output_tokens=10)
+        stats = self.tracer.get_stats()
+        assert stats["total_tokens"] == 15
+
+
+# ---------------------------------------------------------------------------
+# Tracer — save_trace
+# ---------------------------------------------------------------------------
+
+
+class TestTracerSave:
+    def test_save_trace_creates_file(self, tmp_path):
+        tracer = Tracer(project_name="test", save_dir=str(tmp_path))
         trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
+        tracer.end_trace()
+        tracer.save_trace(trace.trace_id, filename="out.json")
+        output = tmp_path / "out.json"
+        assert output.exists()
+        data = json.loads(output.read_text())
+        assert data["trace_id"] == trace.trace_id
 
-        # 자동 저장 확인
+    def test_save_trace_auto_filename(self, tmp_path):
+        tracer = Tracer(project_name="test", save_dir=str(tmp_path))
+        trace = tracer.start_trace()
+        tracer.end_trace()
+        tracer.save_trace(trace.trace_id)
         files = list(tmp_path.glob("trace_*.json"))
-        assert len(files) > 0
+        assert len(files) == 1
 
+    def test_save_trace_no_trace_no_crash(self, tmp_path):
+        tracer = Tracer(project_name="test", save_dir=str(tmp_path))
+        tracer.save_trace()  # should not raise
 
-class TestTracerFunctions:
-    """Tracer 편의 함수 테스트"""
+    def test_save_trace_unknown_id_no_crash(self, tmp_path):
+        tracer = Tracer(project_name="test", save_dir=str(tmp_path))
+        tracer.save_trace("nonexistent")  # should not raise
 
-    def test_get_tracer(self):
-        """get_tracer 함수 테스트"""
-        tracer = get_tracer("test-project")
-
-        assert isinstance(tracer, Tracer)
-        assert tracer.project_name == "test-project"
-
-    def test_enable_tracing(self):
-        """enable_tracing 함수 테스트"""
-        enable_tracing(project_name="test-project", auto_save=False)
-
-        tracer = get_tracer("test-project")
-        assert isinstance(tracer, Tracer)
-
-    def test_trace_to_dict(self, tracer):
-        """Trace to_dict 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span()
-        tracer.end_trace(trace.trace_id)
-
-        trace_dict = trace.to_dict()
-        assert isinstance(trace_dict, dict)
-        assert "trace_id" in trace_dict
-        assert "project_name" in trace_dict
-        assert "total_duration_ms" in trace_dict
-        assert "total_tokens" in trace_dict
-        assert "spans" in trace_dict
-
-    def test_tracer_save_trace(self, tracer, tmp_path):
-        """추적 저장 테스트"""
-        tracer.save_dir = tmp_path
-        trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
-
-        tracer.save_trace(trace.trace_id, "test_trace.json")
-
-        filepath = tmp_path / "test_trace.json"
-        assert filepath.exists()
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            assert data["trace_id"] == trace.trace_id
-
-    def test_tracer_end_span_with_tokens(self, tracer):
-        """토큰 수 포함 스팬 종료 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span(input_tokens=100, output_tokens=50)
-
-        span = trace.spans[0]
-        assert span.input_tokens == 100
-        assert span.output_tokens == 50
-
-    def test_tracer_end_span_with_error(self, tracer):
-        """에러 포함 스팬 종료 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.end_span(status="error", error="Test error")
-
-        span = trace.spans[0]
-        assert span.status == "error"
-        assert span.error == "Test error"
-
-    def test_tracer_nested_spans(self, tracer):
-        """중첩 스팬 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("parent_span")
-        tracer.start_span("child_span")
-        tracer.end_span()
-        tracer.end_span()
-
-        assert len(trace.spans) == 2
-        assert trace.spans[1].parent_id == trace.spans[0].span_id
-
-    def test_tracer_clear(self, tracer):
-        """추적 초기화 테스트"""
-        trace = tracer.start_trace()
-        tracer.start_span("test_span")
-        tracer.clear()
-
-        assert len(tracer.traces) == 0
-        assert tracer.current_trace_id is None
-        assert len(tracer.span_stack) == 0
-
-    def test_tracer_span_context_manager_with_error(self, tracer):
-        """에러 발생 시 스팬 컨텍스트 매니저 테스트"""
-        trace = tracer.start_trace()
-
-        try:
-            with tracer.span("test_span"):
-                raise ValueError("Test error")
-        except ValueError:
-            pass
-
-        assert len(trace.spans) == 1
-        assert trace.spans[0].status == "error"
-        assert "Test error" in (trace.spans[0].error or "")
-
-    def test_tracer_auto_save(self, tmp_path):
-        """자동 저장 테스트"""
+    def test_auto_save_on_end_trace(self, tmp_path):
         tracer = Tracer(project_name="test", auto_save=True, save_dir=str(tmp_path))
-        trace = tracer.start_trace()
-        tracer.end_trace(trace.trace_id)
-
-        # 자동 저장 확인
+        tracer.start_trace()
+        tracer.end_trace()
         files = list(tmp_path.glob("trace_*.json"))
-        assert len(files) > 0
+        assert len(files) == 1
+
+
+# ---------------------------------------------------------------------------
+# Global tracer helpers
+# ---------------------------------------------------------------------------
+
+
+class TestGlobalTracer:
+    def test_get_tracer_returns_tracer(self):
+        t = get_tracer("my-project")
+        assert isinstance(t, Tracer)
+        assert t.project_name == "my-project"
+
+    def test_get_tracer_same_project_reuses(self):
+        t1 = get_tracer("proj-reuse")
+        t2 = get_tracer("proj-reuse")
+        assert t1 is t2
+
+    def test_get_tracer_different_project_creates_new(self):
+        t1 = get_tracer("proj-x1")
+        t2 = get_tracer("proj-y1")
+        assert t1 is not t2
+
+    def test_enable_tracing_sets_global(self, tmp_path):
+        enable_tracing(project_name="enabled-proj", auto_save=False, save_dir=str(tmp_path))
+        t = get_tracer("enabled-proj")
+        assert t.project_name == "enabled-proj"

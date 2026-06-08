@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from beanllm.utils.error_handling import (
+from beanllm.utils.integration.error_handling import (
     CircuitBreaker,
     CircuitBreakerConfig,
     CircuitBreakerError,
@@ -69,7 +69,7 @@ class TestRateLimiter:
     @pytest.fixture
     def rate_limiter(self):
         """RateLimiter 인스턴스"""
-        from beanllm.utils.error_handling import RateLimitConfig
+        from beanllm.utils.integration.error_handling import RateLimitConfig
 
         config = RateLimitConfig(max_calls=5, time_window=60)
         return RateLimiter(config)
@@ -96,7 +96,7 @@ class TestRetryHandler:
     @pytest.fixture
     def retry_handler(self):
         """RetryHandler 인스턴스"""
-        from beanllm.utils.error_handling import RetryConfig, RetryStrategy
+        from beanllm.utils.integration.error_handling import RetryConfig, RetryStrategy
 
         config = RetryConfig(max_retries=3, strategy=RetryStrategy.EXPONENTIAL)
         return RetryHandler(config)
