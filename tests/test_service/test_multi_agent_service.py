@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.multi_agent_request import MultiAgentRequest
-from beanllm.dto.response.multi_agent_response import MultiAgentResponse
-from beanllm.service.impl.multi_agent_service_impl import MultiAgentServiceImpl
+from beanllm.dto.request import MultiAgentRequest
+from beanllm.dto.response import MultiAgentResponse
+from beanllm.service.impl.advanced.multi_agent_service_impl import MultiAgentServiceImpl
 
 
 class TestMultiAgentService:

@@ -7,10 +7,9 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from beanllm.dto.request.vision_rag_request import VisionRAGRequest
-from beanllm.dto.response.chat_response import ChatResponse
-from beanllm.dto.response.vision_rag_response import VisionRAGResponse
-from beanllm.service.impl.vision_rag_service_impl import VisionRAGServiceImpl
+from beanllm.dto.request import VisionRAGRequest
+from beanllm.dto.response import ChatResponse, VisionRAGResponse
+from beanllm.service.impl.ml.vision_rag_service_impl import VisionRAGServiceImpl
 
 
 class TestVisionRAGService:

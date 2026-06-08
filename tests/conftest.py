@@ -11,6 +11,8 @@ import pytest
 
 # 테스트 환경 변수 설정
 os.environ.setdefault("PYTEST", "true")
+# Allow tmp directories for file-based tests
+os.environ.setdefault("BEANLLM_ALLOWED_DIRS", "/,/tmp,/var,/private/var,/Users")
 
 
 @pytest.fixture
@@ -80,12 +82,12 @@ def skip_if_no_provider():
     """Provider가 없으면 테스트 스킵"""
     import pytest
 
-    from beanllm._source_providers import OpenAIProvider
-
     try:
-        # OpenAI Provider가 사용 가능한지 확인
-        if OpenAIProvider is None:
-            pytest.skip("OpenAI provider not available")
+        from beanllm.providers.provider_factory import ProviderFactory
+
+        providers = ProviderFactory.get_available_providers()
+        if not providers:
+            pytest.skip("No provider available")
     except (ImportError, AttributeError):
         pytest.skip("Provider not available")
 
@@ -95,7 +97,7 @@ def mock_client():
     """Mock Client for testing"""
     from unittest.mock import MagicMock
 
-    from beanllm.facade.client_facade import Client
+    from beanllm.facade.core.client_facade import Client
 
     mock = MagicMock(spec=Client)
     mock.model = "gpt-4o-mini"

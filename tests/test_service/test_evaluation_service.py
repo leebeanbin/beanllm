@@ -7,15 +7,15 @@ from unittest.mock import Mock
 import pytest
 
 from beanllm.domain.evaluation.metrics import BLEUMetric, F1ScoreMetric, ROUGEMetric
-from beanllm.dto.request.evaluation_request import (
+from beanllm.dto.request.ml.evaluation_request import (
     BatchEvaluationRequest,
     CreateEvaluatorRequest,
     EvaluationRequest,
     RAGEvaluationRequest,
     TextEvaluationRequest,
 )
-from beanllm.dto.response.evaluation_response import BatchEvaluationResponse, EvaluationResponse
-from beanllm.service.impl.evaluation_service_impl import EvaluationServiceImpl
+from beanllm.dto.response.ml.evaluation_response import BatchEvaluationResponse, EvaluationResponse
+from beanllm.service.impl.ml.evaluation_service_impl import EvaluationServiceImpl
 
 
 class TestEvaluationService:

@@ -6,18 +6,11 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-try:
-    from beanllm.domain.loaders import Document
-    from beanllm.domain.vector_stores.base import VectorSearchResult
-    from beanllm.dto.response.rag_response import RAGResponse
-    from beanllm.handler.rag_handler import RAGHandler
-    from beanllm.service.rag_service import IRAGService
-except ImportError:
-    from src.beanllm.domain.loaders import Document
-    from src.beanllm.domain.vector_stores.base import VectorSearchResult
-    from src.beanllm.dto.response.rag_response import RAGResponse
-    from src.beanllm.handler.rag_handler import RAGHandler
-    from src.beanllm.service.rag_service import IRAGService
+from beanllm.domain.loaders import Document
+from beanllm.domain.vector_stores.base import VectorSearchResult
+from beanllm.dto.response import RAGResponse
+from beanllm.handler import RAGHandler
+from beanllm.service.rag_service import IRAGService
 
 
 class TestRAGHandler:
@@ -99,7 +92,7 @@ class TestRAGHandler:
         )
 
         assert len(results) == 2
-        assert rag_handler._rag_service.retrieve.called
+        assert rag_handler._service.retrieve.called
 
     @pytest.mark.asyncio
     async def test_handle_query_dto_conversion(self, rag_handler):
@@ -115,7 +108,7 @@ class TestRAGHandler:
 
         assert response is not None
         # RAGRequest가 올바르게 생성되었는지 확인
-        call_args = rag_handler._rag_service.query.call_args[0][0]
+        call_args = rag_handler._service.query.call_args[0][0]
         assert call_args.query == "What is this about?"
         assert call_args.vector_store == mock_vector_store
         assert call_args.k == 2
@@ -136,7 +129,7 @@ class TestRAGHandler:
         )
 
         assert response is not None
-        call_args = rag_handler._rag_service.query.call_args[0][0]
+        call_args = rag_handler._service.query.call_args[0][0]
         assert call_args.mmr is True
         assert call_args.hybrid is True
         assert call_args.rerank is True
@@ -167,7 +160,7 @@ class TestRAGHandler:
     async def test_handle_query_error_handling(self, rag_handler):
         """에러 처리 테스트"""
         # Service에서 에러 발생 시뮬레이션
-        rag_handler._rag_service.query = AsyncMock(side_effect=ValueError("Service error"))
+        rag_handler._service.query = AsyncMock(side_effect=ValueError("Service error"))
 
         with pytest.raises(ValueError):
             await rag_handler.handle_query(
@@ -188,7 +181,7 @@ class TestRAGHandler:
                 yield chunk
 
         # Service의 stream_query를 실제 async generator로 교체
-        rag_handler._rag_service.stream_query = mock_stream
+        rag_handler._service.stream_query = mock_stream
 
         chunks = []
         async for chunk in rag_handler.handle_stream_query(
@@ -215,7 +208,7 @@ class TestRAGHandler:
 
         assert len(results) == 2
         # RAGRequest가 올바르게 생성되었는지 확인
-        call_args = rag_handler._rag_service.retrieve.call_args[0][0]
+        call_args = rag_handler._service.retrieve.call_args[0][0]
         assert call_args.query == "What is this about?"
         assert call_args.vector_store == mock_vector_store
         assert call_args.k == 3
@@ -232,7 +225,7 @@ class TestRAGHandler:
         )
 
         assert response is not None
-        call_args = rag_handler._rag_service.query.call_args[0][0]
+        call_args = rag_handler._service.query.call_args[0][0]
         # 기본값 확인
         assert call_args.mmr is False or call_args.mmr is None
         assert call_args.hybrid is False or call_args.hybrid is None
@@ -251,5 +244,5 @@ class TestRAGHandler:
         )
 
         assert response is not None
-        call_args = rag_handler._rag_service.query.call_args[0][0]
+        call_args = rag_handler._service.query.call_args[0][0]
         assert call_args.prompt_template == custom_template

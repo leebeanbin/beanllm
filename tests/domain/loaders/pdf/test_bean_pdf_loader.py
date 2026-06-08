@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from src.beanllm.domain.loaders.pdf import beanPDFLoader
-from src.beanllm.domain.loaders.types import Document
+from beanllm.domain.loaders.pdf import beanPDFLoader
+from beanllm.domain.loaders.types import Document
 
 # 테스트 픽스처 경로
 FIXTURES_DIR = Path(__file__).parent.parent.parent.parent / "fixtures" / "pdf"

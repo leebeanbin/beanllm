@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.graph_request import GraphRequest
-from beanllm.dto.response.graph_response import GraphResponse
-from beanllm.handler.graph_handler import GraphHandler
+from beanllm.dto.request import GraphRequest
+from beanllm.dto.response import GraphResponse
+from beanllm.handler import GraphHandler
 
 
 class TestGraphHandler:
@@ -143,5 +143,5 @@ class TestGraphHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = graph_handler._graph_service.run_graph.call_args[0][0]
+        call_args = graph_handler._service.run_graph.call_args[0][0]
         assert "extra_param" in call_args.extra_params

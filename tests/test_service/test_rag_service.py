@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.rag_request import RAGRequest
-from beanllm.dto.response.rag_response import RAGResponse
-from beanllm.service.impl.rag_service_impl import RAGServiceImpl
+from beanllm.dto.request import RAGRequest
+from beanllm.dto.response import RAGResponse
+from beanllm.service.impl.core.rag_service_impl import RAGServiceImpl
 
 
 class TestRAGService:

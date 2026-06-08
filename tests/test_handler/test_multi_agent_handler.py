@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.multi_agent_request import MultiAgentRequest
-from beanllm.dto.response.multi_agent_response import MultiAgentResponse
-from beanllm.handler.multi_agent_handler import MultiAgentHandler
+from beanllm.dto.request import MultiAgentRequest
+from beanllm.dto.response import MultiAgentResponse
+from beanllm.handler import MultiAgentHandler
 
 
 class TestMultiAgentHandler:
@@ -65,7 +65,7 @@ class TestMultiAgentHandler:
         assert response is not None
         assert isinstance(response, MultiAgentResponse)
         assert response.strategy == "sequential"
-        multi_agent_handler._multi_agent_service.execute.assert_called_once()
+        multi_agent_handler._service.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_execute_parallel(self, multi_agent_handler, mock_agent):
@@ -80,7 +80,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "parallel"
-        multi_agent_handler._multi_agent_service.execute.assert_called()
+        multi_agent_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_hierarchical(self, multi_agent_handler, mock_agent):
@@ -95,7 +95,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "hierarchical"
-        multi_agent_handler._multi_agent_service.execute.assert_called()
+        multi_agent_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_debate(self, multi_agent_handler, mock_agent):
@@ -115,7 +115,7 @@ class TestMultiAgentHandler:
 
         assert response is not None
         assert response.strategy == "debate"
-        multi_agent_handler._multi_agent_service.execute.assert_called()
+        multi_agent_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_execute_unknown_strategy(self, multi_agent_handler):
@@ -148,5 +148,5 @@ class TestMultiAgentHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = multi_agent_handler._multi_agent_service.execute.call_args[0][0]
+        call_args = multi_agent_handler._service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params

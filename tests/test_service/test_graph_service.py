@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, Mock
 import pytest
 
 from beanllm.domain.graph import FunctionNode, GraphState
-from beanllm.dto.request.graph_request import GraphRequest
-from beanllm.dto.response.graph_response import GraphResponse
-from beanllm.service.impl.graph_service_impl import GraphServiceImpl
+from beanllm.dto.request import GraphRequest
+from beanllm.dto.response import GraphResponse
+from beanllm.service.impl.advanced.graph_service_impl import GraphServiceImpl
 
 
 class TestGraphService:

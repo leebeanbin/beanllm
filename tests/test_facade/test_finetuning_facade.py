@@ -9,7 +9,7 @@ import pytest
 try:
     from beanllm.domain.finetuning.providers import OpenAIFineTuningProvider
     from beanllm.domain.finetuning.types import FineTuningJob, TrainingExample
-    from beanllm.dto.response.finetuning_response import (
+    from beanllm.dto.response.ml.finetuning_response import (
         GetJobResponse,
         GetMetricsResponse,
         PrepareDataResponse,

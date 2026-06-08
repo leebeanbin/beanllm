@@ -10,9 +10,18 @@ import numpy as np
 import pytest
 from PIL import Image
 
+try:
+    import cv2
+
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+
 from beanllm.domain.ocr import OCRConfig, beanOCR
 from beanllm.domain.ocr.engines.base import BaseOCREngine
 from beanllm.domain.ocr.models import BoundingBox, OCRTextLine
+
+pytestmark = pytest.mark.skipif(not CV2_AVAILABLE, reason="opencv-python not installed")
 
 
 class MockOCREngine(BaseOCREngine):
@@ -71,7 +80,7 @@ class TestBeanOCRInitialization:
 
     def test_bean_ocr_init_with_mock_engine(self):
         """Mock 엔진으로 초기화"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr", language="ko")
             assert ocr.config.engine == "paddleocr"
             assert ocr.config.language == "ko"
@@ -83,7 +92,7 @@ class TestBeanOCRImageLoading:
 
     def test_load_numpy_array(self):
         """numpy array 이미지 로드"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # numpy array 생성
@@ -95,7 +104,7 @@ class TestBeanOCRImageLoading:
 
     def test_load_pil_image(self):
         """PIL Image 로드"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # PIL Image 생성
@@ -107,7 +116,7 @@ class TestBeanOCRImageLoading:
 
     def test_load_image_file(self):
         """이미지 파일 로드"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # 임시 이미지 파일 생성
@@ -125,7 +134,7 @@ class TestBeanOCRImageLoading:
 
     def test_load_image_file_not_found(self):
         """존재하지 않는 이미지 파일"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             with pytest.raises(FileNotFoundError):
@@ -133,7 +142,7 @@ class TestBeanOCRImageLoading:
 
     def test_load_image_rgba_to_rgb(self):
         """RGBA 이미지를 RGB로 변환"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # RGBA PIL Image 생성
@@ -149,7 +158,7 @@ class TestBeanOCRRecognize:
 
     def test_recognize_with_numpy_array(self):
         """numpy array로 OCR 실행"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr", language="ko")
 
             image = np.zeros((100, 100, 3), dtype=np.uint8)
@@ -163,7 +172,7 @@ class TestBeanOCRRecognize:
 
     def test_recognize_with_pil_image(self):
         """PIL Image로 OCR 실행"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             pil_img = Image.new("RGB", (100, 100))
@@ -174,7 +183,7 @@ class TestBeanOCRRecognize:
 
     def test_recognize_with_image_file(self):
         """이미지 파일로 OCR 실행"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # 임시 이미지 파일 생성
@@ -192,7 +201,7 @@ class TestBeanOCRRecognize:
 
     def test_recognize_processing_time(self):
         """처리 시간 측정"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             image = np.zeros((100, 100, 3), dtype=np.uint8)
@@ -206,7 +215,7 @@ class TestBeanOCRPDFRecognize:
 
     def test_recognize_pdf_page_file_not_found(self):
         """존재하지 않는 PDF 파일"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             with pytest.raises(FileNotFoundError):
@@ -214,7 +223,7 @@ class TestBeanOCRPDFRecognize:
 
     def test_recognize_pdf_page_mock(self):
         """Mock PDF 페이지 OCR"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # fitz Mock
@@ -249,7 +258,7 @@ class TestBeanOCRPDFRecognize:
 
     def test_recognize_pdf_page_invalid_page_number(self):
         """잘못된 페이지 번호"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             # fitz Mock
@@ -275,7 +284,7 @@ class TestBeanOCRBatchRecognize:
 
     def test_batch_recognize_empty_list(self):
         """빈 리스트 배치 처리"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             results = ocr.batch_recognize([])
@@ -283,7 +292,7 @@ class TestBeanOCRBatchRecognize:
 
     def test_batch_recognize_multiple_images(self):
         """여러 이미지 배치 처리"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr")
 
             images = [
@@ -305,7 +314,7 @@ class TestBeanOCRRepr:
 
     def test_repr(self):
         """문자열 표현 테스트"""
-        with patch.object(beanOCR, "_create_engine", return_value=MockOCREngine()):
+        with patch("beanllm.domain.ocr.bean_ocr.create_ocr_engine", return_value=MockOCREngine()):
             ocr = beanOCR(engine="paddleocr", language="ko", use_gpu=True)
             repr_str = repr(ocr)
 

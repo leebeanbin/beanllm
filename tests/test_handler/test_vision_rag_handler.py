@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.vision_rag_request import VisionRAGRequest
-from beanllm.dto.response.vision_rag_response import VisionRAGResponse
-from beanllm.handler.vision_rag_handler import VisionRAGHandler
+from beanllm.dto.request import VisionRAGRequest
+from beanllm.dto.response import VisionRAGResponse
+from beanllm.handler import VisionRAGHandler
 
 
 class TestVisionRAGHandler:

@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from beanllm.dto.request.chat_request import ChatRequest
-from beanllm.dto.response.chat_response import ChatResponse
+from beanllm.dto.request import ChatRequest
+from beanllm.dto.response import ChatResponse
 from beanllm.infrastructure.adapter import ParameterAdapter
-from beanllm.service.impl.chat_service_impl import ChatServiceImpl
+from beanllm.service.impl.core.chat_service_impl import ChatServiceImpl
 
 
 class TestChatService:

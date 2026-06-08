@@ -6,14 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-try:
-    from beanllm.dto.response.chat_response import ChatResponse
-    from beanllm.handler.chat_handler import ChatHandler
-    from beanllm.service.chat_service import IChatService
-except ImportError:
-    from src.beanllm.dto.response.chat_response import ChatResponse
-    from src.beanllm.handler.chat_handler import ChatHandler
-    from src.beanllm.service.chat_service import IChatService
+from beanllm.dto.response import ChatResponse
+from beanllm.handler import ChatHandler
+from beanllm.service.chat_service import IChatService
 
 
 class TestChatHandler:
@@ -68,7 +63,7 @@ class TestChatHandler:
 
         assert response is not None
         # Service가 호출되었는지 확인
-        chat_handler._chat_service.chat.assert_called_once()
+        chat_handler._service.chat.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_stream_chat(self, chat_handler):
@@ -81,7 +76,7 @@ class TestChatHandler:
                 yield chunk
 
         # AsyncMock이 아닌 실제 async generator 함수로 설정
-        chat_handler._chat_service.stream_chat = mock_stream
+        chat_handler._service.stream_chat = mock_stream
 
         chunks = []
         async for chunk in chat_handler.handle_stream_chat(
@@ -105,7 +100,7 @@ class TestChatHandler:
 
         assert response is not None
         # ChatRequest가 올바르게 생성되었는지 확인
-        call_args = chat_handler._chat_service.chat.call_args[0][0]
+        call_args = chat_handler._service.chat.call_args[0][0]
         assert call_args.messages == [{"role": "user", "content": "Hello"}]
         assert call_args.model == "gpt-4o-mini"
         assert call_args.temperature == 0.7
@@ -124,7 +119,7 @@ class TestChatHandler:
 
         assert response is not None
         # extra_params에 포함되었는지 확인
-        call_args = chat_handler._chat_service.chat.call_args[0][0]
+        call_args = chat_handler._service.chat.call_args[0][0]
         assert call_args.extra_params.get("presence_penalty") == 0.5
         assert call_args.extra_params.get("frequency_penalty") == 0.3
 
@@ -172,7 +167,7 @@ class TestChatHandler:
     async def test_handle_chat_error_handling(self, chat_handler):
         """에러 처리 테스트"""
         # Service에서 에러 발생 시뮬레이션
-        chat_handler._chat_service.chat = AsyncMock(side_effect=ValueError("Service error"))
+        chat_handler._service.chat = AsyncMock(side_effect=ValueError("Service error"))
 
         with pytest.raises(ValueError):
             await chat_handler.handle_chat(
@@ -187,7 +182,7 @@ class TestChatHandler:
         async def mock_stream(*args, **kwargs):
             yield "chunk"
 
-        chat_handler._chat_service.stream_chat = mock_stream
+        chat_handler._service.stream_chat = mock_stream
 
         chunks = []
         async for chunk in chat_handler.handle_stream_chat(
@@ -211,7 +206,7 @@ class TestChatHandler:
         )
 
         assert response is not None
-        call_args = chat_handler._chat_service.chat.call_args[0][0]
+        call_args = chat_handler._service.chat.call_args[0][0]
         assert call_args.system == "You are a helpful assistant"
 
     @pytest.mark.asyncio
@@ -227,7 +222,7 @@ class TestChatHandler:
         response = await chat_handler.handle_chat(messages=messages, model="gpt-4o-mini")
 
         assert response is not None
-        call_args = chat_handler._chat_service.chat.call_args[0][0]
+        call_args = chat_handler._service.chat.call_args[0][0]
         assert len(call_args.messages) == 4
 
     @pytest.mark.asyncio
@@ -245,7 +240,7 @@ class TestChatHandler:
         )
 
         assert response is not None
-        call_args = chat_handler._chat_service.chat.call_args[0][0]
+        call_args = chat_handler._service.chat.call_args[0][0]
         assert call_args.temperature == 0.7
         assert call_args.max_tokens == 1000
         assert call_args.top_p == 0.9

@@ -6,17 +6,28 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.finetuning_request import (
+from beanllm.domain.finetuning.enums import FineTuningStatus
+from beanllm.domain.finetuning.types import FineTuningJob
+from beanllm.dto.request.ml.finetuning_request import (
     CreateJobRequest,
     GetJobRequest,
     PrepareDataRequest,
 )
-from beanllm.dto.response.finetuning_response import (
+from beanllm.dto.response.ml.finetuning_response import (
     CreateJobResponse,
     GetJobResponse,
     PrepareDataResponse,
 )
-from beanllm.handler.finetuning_handler import FinetuningHandler
+from beanllm.handler import FinetuningHandler
+
+
+def _make_job(job_id: str = "job_123") -> FineTuningJob:
+    return FineTuningJob(
+        job_id=job_id,
+        model="gpt-4o-mini",
+        status=FineTuningStatus.CREATED,
+        created_at=0,
+    )
 
 
 class TestFinetuningHandler:
@@ -27,8 +38,8 @@ class TestFinetuningHandler:
         """Mock FinetuningService"""
         service = Mock()
         service.prepare_data = AsyncMock(return_value=PrepareDataResponse(file_id="file_123"))
-        service.create_job = AsyncMock(return_value=CreateJobResponse(job=Mock(job_id="job_123")))
-        service.get_job = AsyncMock(return_value=GetJobResponse(job=Mock(job_id="job_123")))
+        service.create_job = AsyncMock(return_value=CreateJobResponse(job=_make_job()))
+        service.get_job = AsyncMock(return_value=GetJobResponse(job=_make_job()))
         return service
 
     @pytest.fixture

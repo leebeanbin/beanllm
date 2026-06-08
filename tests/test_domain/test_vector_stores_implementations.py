@@ -9,7 +9,15 @@ import pytest
 from beanllm.domain.loaders import Document
 from beanllm.domain.vector_stores.base import VectorSearchResult
 
+try:
+    import chromadb
 
+    CHROMA_AVAILABLE = True
+except Exception:
+    CHROMA_AVAILABLE = False
+
+
+@pytest.mark.skipif(not CHROMA_AVAILABLE, reason="chromadb not available or incompatible")
 class TestChromaVectorStore:
     """ChromaVectorStore 테스트"""
 

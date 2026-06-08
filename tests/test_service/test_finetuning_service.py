@@ -8,7 +8,7 @@ import pytest
 
 from beanllm.domain.finetuning.enums import FineTuningStatus
 from beanllm.domain.finetuning.types import FineTuningConfig, FineTuningJob
-from beanllm.dto.request.finetuning_request import (
+from beanllm.dto.request.ml.finetuning_request import (
     CancelJobRequest,
     CreateJobRequest,
     GetJobRequest,
@@ -19,7 +19,7 @@ from beanllm.dto.request.finetuning_request import (
     StartTrainingRequest,
     WaitForCompletionRequest,
 )
-from beanllm.dto.response.finetuning_response import (
+from beanllm.dto.response.ml.finetuning_response import (
     CancelJobResponse,
     CreateJobResponse,
     GetJobResponse,
@@ -28,7 +28,7 @@ from beanllm.dto.response.finetuning_response import (
     PrepareDataResponse,
     StartTrainingResponse,
 )
-from beanllm.service.impl.finetuning_service_impl import FinetuningServiceImpl
+from beanllm.service.impl.ml.finetuning_service_impl import FinetuningServiceImpl
 
 
 class TestFinetuningService:

@@ -272,11 +272,11 @@ class TestOCRConfig:
 
     def test_ocr_config_preprocessing_options(self):
         """OCRConfig 전처리 옵션 테스트"""
-        config = OCRConfig(denoise=False, contrast_adjustment=False, rotation_correction=False)
+        config = OCRConfig(denoise=False, contrast_adjustment=False, deskew=False)
 
         assert config.denoise is False
         assert config.contrast_adjustment is False
-        assert config.rotation_correction is False
+        assert config.deskew is False
 
     def test_ocr_config_postprocessing_options(self):
         """OCRConfig 후처리 옵션 테스트"""

@@ -1,82 +1,312 @@
-"""
-Evaluation Facade 테스트
-"""
+"""Tests for facade/ml/evaluation_facade.py — EvaluatorFacade and convenience functions."""
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-try:
-    from beanllm.domain.evaluation.results import BatchEvaluationResult
-    from beanllm.facade.evaluation_facade import EvaluatorFacade
+from beanllm.domain.evaluation.results import BatchEvaluationResult
+from beanllm.facade.ml.evaluation_facade import (
+    Evaluator,
+    EvaluatorFacade,
+    create_evaluator,
+    evaluate_rag,
+    evaluate_text,
+)
 
-    FACADE_AVAILABLE = True
-except ImportError:
-    FACADE_AVAILABLE = False
+
+def _make_eval_result(score=0.75):
+    from beanllm.domain.evaluation.results import EvaluationResult
+
+    return BatchEvaluationResult(
+        results=[EvaluationResult(metric_name="bleu", score=score)],
+        average_score=score,
+    )
 
 
-@pytest.mark.skipif(not FACADE_AVAILABLE, reason="EvaluatorFacade not available")
-class TestEvaluatorFacade:
-    @pytest.fixture
-    def evaluator(self):
-        from beanllm.domain.evaluation.results import EvaluationResult
-        from beanllm.dto.response.evaluation_response import (
-            BatchEvaluationResponse,
-            EvaluationResponse,
-        )
+def _make_evaluator():
+    """Create EvaluatorFacade with fully mocked dependencies."""
+    mock_handler = MagicMock()
+    mock_result = _make_eval_result()
+    mock_response = MagicMock()
+    mock_response.result = mock_result
+    mock_batch_response = MagicMock()
+    mock_batch_response.results = [mock_result, mock_result]
 
-        # Facade가 직접 Handler를 생성하므로 Handler를 Mock으로 교체
-        with patch("beanllm.handler.evaluation_handler.EvaluationHandler") as mock_handler_class:
-            mock_handler = MagicMock()
+    mock_handler.handle_evaluate = AsyncMock(return_value=mock_response)
+    mock_handler.handle_batch_evaluate = AsyncMock(return_value=mock_batch_response)
+    mock_handler.handle_evaluate_text = AsyncMock(return_value=mock_response)
+    mock_handler.handle_evaluate_rag = AsyncMock(return_value=mock_response)
+    mock_handler.handle_create_evaluator = AsyncMock(return_value=MagicMock())
 
-            # handle_evaluate는 EvaluationResponse를 반환
-            mock_response = EvaluationResponse(
-                result=BatchEvaluationResult(
-                    results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
-                )
-            )
+    container_patcher = patch("beanllm.utils.core.di_container.get_container")
+    handler_patcher = patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler")
 
-            async def mock_handle_evaluate(*args, **kwargs):
-                return mock_response
+    mock_get_container = container_patcher.start()
+    MockHandler = handler_patcher.start()
 
-            mock_handler.handle_evaluate = MagicMock(side_effect=mock_handle_evaluate)
+    mock_container = MagicMock()
+    mock_get_container.return_value = mock_container
+    MockHandler.return_value = mock_handler
 
-            # handle_batch_evaluate는 BatchEvaluationResponse를 반환
-            mock_response_batch = BatchEvaluationResponse(
-                results=[
-                    BatchEvaluationResult(
-                        results=[EvaluationResult(metric_name="test", score=0.5)], average_score=0.5
-                    )
-                ]
-            )
+    evaluator = EvaluatorFacade()
+    return evaluator, mock_handler, [container_patcher, handler_patcher]
 
-            async def mock_handle_batch_evaluate(*args, **kwargs):
-                return mock_response_batch
 
-            mock_handler.handle_batch_evaluate = MagicMock(side_effect=mock_handle_batch_evaluate)
+def _stop(patchers):
+    for p in patchers:
+        p.stop()
 
-            # Handler 클래스가 인스턴스화될 때 mock_handler 반환
-            mock_handler_class.return_value = mock_handler
 
-            evaluator = EvaluatorFacade()
-            # 실제 생성된 Handler를 Mock으로 교체
-            evaluator._evaluation_handler = mock_handler
-            return evaluator
+# ---------------------------------------------------------------------------
+# EvaluatorFacade.__init__
+# ---------------------------------------------------------------------------
 
-    def test_evaluate(self, evaluator):
-        result = evaluator.evaluate("prediction", "reference")
-        assert isinstance(result, BatchEvaluationResult)
-        assert result.average_score == 0.5
-        assert evaluator._evaluation_handler.handle_evaluate.called
 
-    def test_batch_evaluate(self, evaluator):
-        results = evaluator.batch_evaluate(["pred1", "pred2"], ["ref1", "ref2"])
-        assert isinstance(results, list)
-        assert len(results) == 1
-        assert evaluator._evaluation_handler.handle_batch_evaluate.called
+class TestEvaluatorFacadeInit:
+    def test_creates_with_empty_metrics(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            assert evaluator.metrics == []
+        finally:
+            _stop(p)
 
-    def test_add_metric(self, evaluator):
-        mock_metric = Mock()
-        result = evaluator.add_metric(mock_metric)
-        assert result is evaluator
+    def test_creates_with_initial_metrics(self):
+        mock_metric = MagicMock()
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler"),
+        ):
+            mc.return_value = MagicMock()
+            evaluator = EvaluatorFacade(metrics=[mock_metric])
         assert len(evaluator.metrics) == 1
+
+    def test_evaluator_alias_equals_evaluatorfacade(self):
+        assert Evaluator is EvaluatorFacade
+
+
+# ---------------------------------------------------------------------------
+# add_metric
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorAddMetric:
+    def test_add_metric_appends(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            mock_metric = MagicMock()
+            evaluator.add_metric(mock_metric)
+            assert mock_metric in evaluator.metrics
+        finally:
+            _stop(p)
+
+    def test_add_metric_returns_self(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            result = evaluator.add_metric(MagicMock())
+            assert result is evaluator
+        finally:
+            _stop(p)
+
+    def test_chaining(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            m1, m2 = MagicMock(), MagicMock()
+            evaluator.add_metric(m1).add_metric(m2)
+            assert len(evaluator.metrics) == 2
+        finally:
+            _stop(p)
+
+
+# ---------------------------------------------------------------------------
+# evaluate (sync)
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorEvaluate:
+    def test_evaluate_returns_batch_result(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            result = evaluator.evaluate("prediction", "reference")
+            assert isinstance(result, BatchEvaluationResult)
+        finally:
+            _stop(p)
+
+    def test_evaluate_passes_prediction_and_reference(self):
+        evaluator, handler, p = _make_evaluator()
+        try:
+            evaluator.evaluate("my pred", "my ref")
+            call_kwargs = handler.handle_evaluate.call_args.kwargs
+            assert call_kwargs.get("prediction") == "my pred"
+            assert call_kwargs.get("reference") == "my ref"
+        finally:
+            _stop(p)
+
+    def test_evaluate_result_has_correct_score(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            result = evaluator.evaluate("p", "r")
+            assert result.average_score == 0.75
+        finally:
+            _stop(p)
+
+
+# ---------------------------------------------------------------------------
+# evaluate_async
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorEvaluateAsync:
+    async def test_evaluate_async_returns_result(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            result = await evaluator.evaluate_async("pred", "ref")
+            assert isinstance(result, BatchEvaluationResult)
+        finally:
+            _stop(p)
+
+    async def test_evaluate_async_calls_handler(self):
+        evaluator, handler, p = _make_evaluator()
+        try:
+            await evaluator.evaluate_async("p", "r")
+            handler.handle_evaluate.assert_awaited()
+        finally:
+            _stop(p)
+
+
+# ---------------------------------------------------------------------------
+# batch_evaluate (sync)
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorBatchEvaluate:
+    def test_batch_evaluate_returns_list(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            results = evaluator.batch_evaluate(["p1", "p2"], ["r1", "r2"])
+            assert isinstance(results, list)
+            assert len(results) == 2
+        finally:
+            _stop(p)
+
+    def test_batch_evaluate_passes_predictions(self):
+        evaluator, handler, p = _make_evaluator()
+        try:
+            evaluator.batch_evaluate(["a", "b"], ["c", "d"])
+            call_kwargs = handler.handle_batch_evaluate.call_args.kwargs
+            assert call_kwargs.get("predictions") == ["a", "b"]
+        finally:
+            _stop(p)
+
+
+# ---------------------------------------------------------------------------
+# batch_evaluate_async
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluatorBatchEvaluateAsync:
+    async def test_batch_evaluate_async_returns_list(self):
+        evaluator, _, p = _make_evaluator()
+        try:
+            results = await evaluator.batch_evaluate_async(["p1"], ["r1"])
+            assert isinstance(results, list)
+        finally:
+            _stop(p)
+
+
+# ---------------------------------------------------------------------------
+# evaluate_text convenience function
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluateText:
+    def test_evaluate_text_returns_result(self):
+        mock_result = _make_eval_result()
+        mock_response = MagicMock()
+        mock_response.result = mock_result
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler") as MockH,
+        ):
+            mc.return_value = MagicMock()
+            mock_handler = MagicMock()
+            mock_handler.handle_evaluate_text = AsyncMock(return_value=mock_response)
+            MockH.return_value = mock_handler
+            result = evaluate_text("prediction", "reference")
+        assert isinstance(result, BatchEvaluationResult)
+
+    def test_evaluate_text_passes_params(self):
+        mock_result = _make_eval_result()
+        mock_response = MagicMock()
+        mock_response.result = mock_result
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler") as MockH,
+        ):
+            mc.return_value = MagicMock()
+            mock_handler = MagicMock()
+            mock_handler.handle_evaluate_text = AsyncMock(return_value=mock_response)
+            MockH.return_value = mock_handler
+            evaluate_text("pred", "ref", metrics=["bleu"])
+            call_kwargs = mock_handler.handle_evaluate_text.call_args.kwargs
+            assert call_kwargs.get("prediction") == "pred"
+            assert call_kwargs.get("reference") == "ref"
+
+
+# ---------------------------------------------------------------------------
+# evaluate_rag convenience function
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluateRAG:
+    def test_evaluate_rag_returns_result(self):
+        mock_result = _make_eval_result()
+        mock_response = MagicMock()
+        mock_response.result = mock_result
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler") as MockH,
+        ):
+            mc.return_value = MagicMock()
+            mock_handler = MagicMock()
+            mock_handler.handle_evaluate_rag = AsyncMock(return_value=mock_response)
+            MockH.return_value = mock_handler
+            result = evaluate_rag("question", "answer", ["context1"])
+        assert isinstance(result, BatchEvaluationResult)
+
+    def test_evaluate_rag_passes_params(self):
+        mock_result = _make_eval_result()
+        mock_response = MagicMock()
+        mock_response.result = mock_result
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler") as MockH,
+        ):
+            mc.return_value = MagicMock()
+            mock_handler = MagicMock()
+            mock_handler.handle_evaluate_rag = AsyncMock(return_value=mock_response)
+            MockH.return_value = mock_handler
+            evaluate_rag("Q", "A", ["ctx"], ground_truth="GT")
+            call_kwargs = mock_handler.handle_evaluate_rag.call_args.kwargs
+            assert call_kwargs.get("question") == "Q"
+            assert call_kwargs.get("answer") == "A"
+            assert call_kwargs.get("ground_truth") == "GT"
+
+
+# ---------------------------------------------------------------------------
+# create_evaluator convenience function
+# ---------------------------------------------------------------------------
+
+
+class TestCreateEvaluator:
+    def test_create_evaluator_returns_facade_instance(self):
+        with (
+            patch("beanllm.utils.core.di_container.get_container") as mc,
+            patch("beanllm.handler.ml.evaluation_handler.EvaluationHandler") as MockH,
+        ):
+            mc.return_value = MagicMock()
+            mock_handler = MagicMock()
+            mock_facade = MagicMock(spec=EvaluatorFacade)
+            mock_handler.handle_create_evaluator = AsyncMock(return_value=mock_facade)
+            MockH.return_value = mock_handler
+            result = create_evaluator(["bleu", "rouge"])
+        assert result is mock_facade

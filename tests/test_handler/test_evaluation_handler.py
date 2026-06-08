@@ -6,13 +6,22 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.evaluation_request import (
+from beanllm.domain.evaluation.results import BatchEvaluationResult, EvaluationResult
+from beanllm.dto.request.ml.evaluation_request import (
     EvaluationRequest,
     RAGEvaluationRequest,
     TextEvaluationRequest,
 )
-from beanllm.dto.response.evaluation_response import EvaluationResponse
-from beanllm.handler.evaluation_handler import EvaluationHandler
+from beanllm.dto.response import EvaluationResponse
+from beanllm.handler import EvaluationHandler
+
+
+def _make_eval_response() -> EvaluationResponse:
+    result = BatchEvaluationResult(
+        results=[],
+        average_score=1.0,
+    )
+    return EvaluationResponse(result=result)
 
 
 class TestEvaluationHandler:
@@ -22,9 +31,9 @@ class TestEvaluationHandler:
     def mock_evaluation_service(self):
         """Mock EvaluationService"""
         service = Mock()
-        service.evaluate = AsyncMock(return_value=EvaluationResponse(result=Mock()))
-        service.evaluate_text = AsyncMock(return_value=EvaluationResponse(result=Mock()))
-        service.evaluate_rag = AsyncMock(return_value=EvaluationResponse(result=Mock()))
+        service.evaluate = AsyncMock(return_value=_make_eval_response())
+        service.evaluate_text = AsyncMock(return_value=_make_eval_response())
+        service.evaluate_rag = AsyncMock(return_value=_make_eval_response())
         return service
 
     @pytest.fixture

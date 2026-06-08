@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.web_search_request import WebSearchRequest
-from beanllm.dto.response.web_search_response import WebSearchResponse
-from beanllm.handler.web_search_handler import WebSearchHandler
+from beanllm.dto.request import WebSearchRequest
+from beanllm.dto.response import WebSearchResponse
+from beanllm.handler import WebSearchHandler
 
 
 class TestWebSearchHandler:
@@ -47,7 +47,7 @@ class TestWebSearchHandler:
         assert response is not None
         assert isinstance(response, WebSearchResponse)
         # query가 request에서 전달되었는지 확인
-        call_args = web_search_handler._web_search_service.search.call_args[0][0]
+        call_args = web_search_handler._service.search.call_args[0][0]
         assert call_args.query == "Python programming"
 
     @pytest.mark.asyncio

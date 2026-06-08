@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.chain_request import ChainRequest
-from beanllm.dto.response.chain_response import ChainResponse
-from beanllm.handler.chain_handler import ChainHandler
+from beanllm.dto.request import ChainRequest
+from beanllm.dto.response import ChainResponse
+from beanllm.handler import ChainHandler
 
 
 class TestChainHandler:
@@ -53,7 +53,7 @@ class TestChainHandler:
         assert response is not None
         assert isinstance(response, ChainResponse)
         assert response.output == "Chain output"
-        chain_handler._chain_service.execute.assert_called_once()
+        chain_handler._service.execute.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_handle_run_prompt(self, chain_handler):
@@ -66,7 +66,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Prompt chain output"
-        chain_handler._chain_service.execute.assert_called()
+        chain_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_sequential(self, chain_handler):
@@ -79,7 +79,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Sequential chain output"
-        chain_handler._chain_service.execute.assert_called()
+        chain_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_parallel(self, chain_handler):
@@ -92,7 +92,7 @@ class TestChainHandler:
 
         assert response is not None
         assert response.output == "Parallel chain output"
-        chain_handler._chain_service.execute.assert_called()
+        chain_handler._service.execute.assert_called()
 
     @pytest.mark.asyncio
     async def test_handle_run_unknown_type(self, chain_handler):
@@ -159,5 +159,5 @@ class TestChainHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = chain_handler._chain_service.execute.call_args[0][0]
+        call_args = chain_handler._service.execute.call_args[0][0]
         assert "extra_param" in call_args.extra_params

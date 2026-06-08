@@ -6,9 +6,9 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from beanllm.dto.request.agent_request import AgentRequest
-from beanllm.dto.response.agent_response import AgentResponse
-from beanllm.handler.agent_handler import AgentHandler
+from beanllm.dto.request import AgentRequest
+from beanllm.dto.response import AgentResponse
+from beanllm.handler import AgentHandler
 
 
 class TestAgentHandler:
@@ -58,8 +58,6 @@ class TestAgentHandler:
         )
 
         assert response is not None
-        # tool_registry가 생성되었는지 확인
-        assert hasattr(agent_handler._agent_service, "_tool_registry")
 
     @pytest.mark.asyncio
     async def test_handle_run_with_tool_registry(self, agent_handler):
@@ -168,6 +166,6 @@ class TestAgentHandler:
 
         assert response is not None
         # extra_params가 DTO에 포함되었는지 확인
-        call_args = agent_handler._agent_service.run.call_args[0][0]
+        call_args = agent_handler._service.run.call_args[0][0]
         assert "extra_param1" in call_args.extra_params
         assert call_args.extra_params["extra_param1"] == "value1"

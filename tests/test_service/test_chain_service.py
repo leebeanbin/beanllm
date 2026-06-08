@@ -2,14 +2,13 @@
 ChainService 테스트 - Chain 서비스 구현체 테스트
 """
 
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from beanllm.dto.request.chain_request import ChainRequest
-from beanllm.dto.response.chain_response import ChainResponse
-from beanllm.dto.response.chat_response import ChatResponse
-from beanllm.service.impl.chain_service_impl import ChainServiceImpl
+from beanllm.dto.request import ChainRequest
+from beanllm.dto.response import ChainResponse, ChatResponse
+from beanllm.service.impl.core.chain_service_impl import ChainServiceImpl
 
 
 class TestChainService:
@@ -205,3 +204,130 @@ class TestChainService:
         # 따라서 call_args의 extra_params는 빈 dict일 수 있음
         # 대신 ChatRequest가 생성되었는지 확인
         assert call_args.model == "gpt-4o-mini"
+
+    # ------------------------------------------------------------------
+    # Coverage of missed lines
+    # ------------------------------------------------------------------
+
+    async def test_run_sequential_chain_fails_early_on_step_failure(self, chain_service):
+        """Sequential chain early-exit when a step returns success=False (line 106)."""
+        failed_response = ChainResponse(output="", steps=[], success=False, error="step failed")
+
+        chain1 = ChainRequest(chain_type="basic", user_input="Step 1", model="gpt-4o-mini")
+        chain2 = ChainRequest(chain_type="basic", user_input="Step 2", model="gpt-4o-mini")
+
+        request = ChainRequest(
+            chain_type="sequential",
+            chains=[chain1, chain2],
+            model="gpt-4o-mini",
+        )
+
+        with patch.object(
+            chain_service,
+            "_execute_sequential_step",
+            new=AsyncMock(return_value=failed_response),
+        ):
+            response = await chain_service.run_sequential_chain(request)
+
+        assert response.success is False
+        assert response.error == "step failed"
+
+    async def test_run_sequential_chain_with_template_first_step(self, chain_service):
+        """First step in sequential chain with template → _execute_first_step line 261-262."""
+        chain_with_template = ChainRequest(
+            chain_type="prompt",
+            template="Summarize: {text}",
+            template_vars={"text": "hello"},
+            model="gpt-4o-mini",
+        )
+        chain_plain = ChainRequest(
+            chain_type="basic",
+            user_input="Step 2",
+            model="gpt-4o-mini",
+        )
+
+        request = ChainRequest(
+            chain_type="sequential",
+            chains=[chain_with_template, chain_plain],
+            template_vars={"text": "hello"},
+            model="gpt-4o-mini",
+        )
+
+        response = await chain_service.run_sequential_chain(request)
+        assert response.success is True
+
+    async def test_run_sequential_chain_subsequent_step_with_template(self, chain_service):
+        """Subsequent step with template → _execute_subsequent_step lines 270-271."""
+        chain_plain = ChainRequest(
+            chain_type="basic",
+            user_input="Initial",
+            model="gpt-4o-mini",
+        )
+        chain_template = ChainRequest(
+            chain_type="prompt",
+            template="Improve: {input}",
+            template_vars={"input": ""},
+            model="gpt-4o-mini",
+        )
+
+        request = ChainRequest(
+            chain_type="sequential",
+            chains=[chain_plain, chain_template],
+            model="gpt-4o-mini",
+        )
+
+        response = await chain_service.run_sequential_chain(request)
+        assert response.success is True
+
+    async def test_run_parallel_chain_with_template(self, chain_service):
+        """Parallel chain where each step has a template → _execute_single_chain lines 324-325."""
+        chain1 = ChainRequest(
+            chain_type="prompt",
+            template="Rewrite: {text}",
+            template_vars={"text": "hello"},
+            model="gpt-4o-mini",
+        )
+        chain2 = ChainRequest(
+            chain_type="prompt",
+            template="Expand: {text}",
+            template_vars={"text": "world"},
+            model="gpt-4o-mini",
+        )
+
+        request = ChainRequest(
+            chain_type="parallel",
+            chains=[chain1, chain2],
+            template_vars={"text": "test"},
+            model="gpt-4o-mini",
+        )
+
+        response = await chain_service.run_parallel_chain(request)
+        assert response.success is True
+
+    def test_extract_model_with_model(self, chain_service):
+        """_extract_model returns model when request has model (line 354)."""
+        req = ChainRequest(chain_type="basic", user_input="hi", model="gpt-4o")
+        result = ChainServiceImpl._extract_model((req,), {})
+        assert result == "gpt-4o"
+
+    def test_extract_model_without_model(self, chain_service):
+        """_extract_model returns 'default' when no model."""
+        result = ChainServiceImpl._extract_model((), {})
+        assert result == "default"
+
+    def test_hash_chains_with_chains(self, chain_service):
+        """_hash_chains returns a hash string when chains present (lines 359-362)."""
+        sub_chain = ChainRequest(chain_type="basic", user_input="x", model="gpt-4o-mini")
+        req = ChainRequest(
+            chain_type="sequential",
+            chains=[sub_chain],
+            model="gpt-4o-mini",
+        )
+        result = ChainServiceImpl._hash_chains((req,), {})
+        assert isinstance(result, str)
+        assert result != "default"
+
+    def test_hash_chains_without_chains(self, chain_service):
+        """_hash_chains returns 'default' when no chains."""
+        result = ChainServiceImpl._hash_chains((), {})
+        assert result == "default"

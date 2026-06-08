@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 
 from beanllm.domain.web_search import SearchEngine, SearchResult
-from beanllm.dto.request.web_search_request import WebSearchRequest
-from beanllm.dto.response.web_search_response import WebSearchResponse
-from beanllm.service.impl.web_search_service_impl import WebSearchServiceImpl
+from beanllm.dto.request import WebSearchRequest
+from beanllm.dto.response import WebSearchResponse
+from beanllm.service.impl.ml.web_search_service_impl import WebSearchServiceImpl
 
 
 class TestWebSearchService:
@@ -89,7 +89,7 @@ class TestWebSearchService:
 
         # GoogleSearch 생성자를 Mock
         with patch(
-            "beanllm.service.impl.web_search_service_impl.GoogleSearch", return_value=mock_engine
+            "beanllm.service.impl.ml.web_search_service_impl.GoogleSearch", return_value=mock_engine
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -124,7 +124,7 @@ class TestWebSearchService:
 
         # BingSearch 생성자를 Mock
         with patch(
-            "beanllm.service.impl.web_search_service_impl.BingSearch", return_value=mock_engine
+            "beanllm.service.impl.ml.web_search_service_impl.BingSearch", return_value=mock_engine
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -157,7 +157,7 @@ class TestWebSearchService:
         mock_engine.search_async = AsyncMock(return_value=mock_search_response)
 
         with patch(
-            "beanllm.service.impl.web_search_service_impl.DuckDuckGoSearch",
+            "beanllm.service.impl.ml.web_search_service_impl.DuckDuckGoSearch",
             return_value=mock_engine,
         ):
             request = WebSearchRequest(
@@ -197,7 +197,7 @@ class TestWebSearchService:
         mock_scraper.scrape_async = AsyncMock(return_value="Scraped content")
 
         with patch(
-            "beanllm.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
+            "beanllm.service.impl.ml.web_search_service_impl.WebScraper", return_value=mock_scraper
         ):
             request = WebSearchRequest(
                 query="Python programming",
@@ -238,7 +238,7 @@ class TestWebSearchService:
         mock_scraper.scrape_async = AsyncMock(side_effect=["Content 1", "Content 2"])
 
         with patch(
-            "beanllm.service.impl.web_search_service_impl.WebScraper", return_value=mock_scraper
+            "beanllm.service.impl.ml.web_search_service_impl.WebScraper", return_value=mock_scraper
         ):
             request = WebSearchRequest(
                 query="Python programming",
