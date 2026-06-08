@@ -152,11 +152,12 @@ class DataValidator:
                 errors.append(f"Message {i} content must be string")
 
         # 첫 메시지는 system 또는 user여야 함
-        if example.messages[0]["role"] not in ["system", "user"]:
+        first_role = example.messages[0].get("role", "")
+        if first_role not in ["system", "user"]:
             errors.append("First message must be 'system' or 'user'")
 
         # Assistant 메시지가 최소 하나 있어야 함
-        has_assistant = any(m["role"] == "assistant" for m in example.messages)
+        has_assistant = any(m.get("role") == "assistant" for m in example.messages)
         if not has_assistant:
             errors.append("Must have at least one 'assistant' message")
 

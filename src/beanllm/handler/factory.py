@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, Type
 from beanllm.service.factory import ServiceFactory
 
 from .advanced.graph_handler import GraphHandler
+from .advanced.knowledge_graph_handler import KnowledgeGraphHandler
 from .advanced.multi_agent_handler import MultiAgentHandler
 from .advanced.optimizer_handler import OptimizerHandler
 from .advanced.orchestrator_handler import OrchestratorHandler
@@ -26,7 +27,6 @@ from .core.rag_handler import RAGHandler
 from .ml.audio_handler import AudioHandler
 from .ml.evaluation_handler import EvaluationHandler
 from .ml.finetuning_handler import FinetuningHandler
-from .ml.knowledge_graph_handler import KnowledgeGraphHandler
 from .ml.vision_rag_handler import VisionRAGHandler
 from .ml.web_search_handler import WebSearchHandler
 

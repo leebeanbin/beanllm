@@ -262,9 +262,12 @@ class WorkflowAnalytics:
             )
 
         # Success rate
-        success_rate = sum(
-            1 for s in node_states.values() if s.status == NodeStatus.COMPLETED
-        ) / len(node_states)
+        success_rate = (
+            sum(1 for s in node_states.values() if s.status == NodeStatus.COMPLETED)
+            / len(node_states)
+            if node_states
+            else 0.0
+        )
 
         if success_rate < 0.95:
             recommendations.append(

@@ -99,7 +99,7 @@ class OptimizerOptimizeMixin:
             else:
                 optimization_result = self._optimizer_engine.optimize(
                     param_spaces=param_spaces,
-                    objective_fn=lambda **kwargs: 0.0,
+                    objective_fn=lambda params: 0.0,
                     n_trials=n_trials,
                     method=method,
                 )

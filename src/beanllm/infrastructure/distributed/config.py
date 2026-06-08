@@ -125,7 +125,8 @@ class GraphDistributedConfig:
     per_node_rate_limit: bool = False  # 전체 Graph에 대해 제한
 
     # Caching
-    # NodeCache 사용 (이미 분산 캐시 지원)
+    enable_cache: bool = False  # NodeCache 사용 (이미 분산 캐시 지원)
+    cache_ttl: int = 3600
 
     # Task Queue
     use_distributed_queue: bool = False
