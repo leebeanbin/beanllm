@@ -102,13 +102,11 @@ class ChromaVectorStore(BaseVectorStore, AdvancedSearchMixin):
 
         # 동기 함수이므로 비동기 래퍼 실행
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
-                return self._add_documents_without_lock(documents, **kwargs)
-            else:
-                return loop.run_until_complete(_add_documents_async())
+            asyncio.get_running_loop()
+            # 실행 중인 루프가 있으면 분산 락 없이 즉시 실행 (deadlock 방지)
+            return self._add_documents_without_lock(documents, **kwargs)
         except RuntimeError:
+            # 루프 없음 — sync 컨텍스트에서 분산 락과 함께 실행
             return asyncio.run(_add_documents_async())
 
     def _add_documents_without_lock(self, documents: List[Any], **kwargs) -> List[str]:

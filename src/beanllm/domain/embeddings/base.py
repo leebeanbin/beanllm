@@ -286,13 +286,11 @@ class BaseLocalEmbedding(BaseEmbedding):
                 loader_func()
 
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
-                loader_func()
-            else:
-                loop.run_until_complete(_load_async())
+            asyncio.get_running_loop()
+            # 실행 중인 루프가 있으면 분산 락 없이 즉시 로딩 (deadlock 방지)
+            loader_func()
         except RuntimeError:
+            # 루프 없음 — sync 컨텍스트에서 분산 락과 함께 실행
             asyncio.run(_load_async())
 
     def _get_device(self) -> str:

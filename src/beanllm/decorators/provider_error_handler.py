@@ -11,11 +11,12 @@ Provider Error Handler Decorator - Provider 전용 에러 핸들링
 을 자동으로 처리합니다.
 """
 
+import asyncio
 import functools
 import inspect
 from typing import Callable, Optional, TypeVar
 
-from beanllm.utils.exceptions import ProviderError
+from beanllm.utils.exceptions import CircuitBreakerError, ProviderError
 from beanllm.utils.integration.security import sanitize_error_message
 from beanllm.utils.logging import get_logger
 
@@ -76,6 +77,8 @@ def provider_error_handler(
                 try:
                     async for item in func(self, *args, **kwargs):
                         yield item
+                except (asyncio.CancelledError, CircuitBreakerError):
+                    raise
                 except api_error_types as e:
                     error_str = sanitize_error_message(e)
                     error_msg = custom_error_message or f"{provider} {op_name} API error"
@@ -99,6 +102,8 @@ def provider_error_handler(
                 try:
                     for item in func(self, *args, **kwargs):
                         yield item
+                except CircuitBreakerError:
+                    raise
                 except api_error_types as e:
                     error_str = sanitize_error_message(e)
                     error_msg = custom_error_message or f"{provider} {op_name} API error"
@@ -121,6 +126,8 @@ def provider_error_handler(
 
                 try:
                     return await func(self, *args, **kwargs)
+                except (asyncio.CancelledError, CircuitBreakerError):
+                    raise
                 except api_error_types as e:
                     error_str = sanitize_error_message(e)
                     error_msg = custom_error_message or f"{provider} {op_name} API error"
@@ -143,6 +150,8 @@ def provider_error_handler(
 
                 try:
                     return func(self, *args, **kwargs)
+                except CircuitBreakerError:
+                    raise
                 except api_error_types as e:
                     error_str = sanitize_error_message(e)
                     error_msg = custom_error_message or f"{provider} {op_name} API error"

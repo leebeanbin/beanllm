@@ -10,6 +10,7 @@ Implementations:
 
 import time
 from abc import ABC
+from collections import OrderedDict
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -45,6 +46,7 @@ class BaseSearchEngine(ABC):
         timeout: int = 10,
         cache_ttl: int = 3600,
         validate_urls: bool = False,
+        max_cache_size: int = 500,
     ):
         """
         Args:
@@ -53,13 +55,16 @@ class BaseSearchEngine(ABC):
             timeout: 요청 타임아웃 (초)
             cache_ttl: 캐시 유효 시간 (초)
             validate_urls: 검색 결과 URL 검증 여부 (기본: False, SSRF 방지)
+            max_cache_size: 인메모리 캐시 최대 항목 수. 초과 시 가장 오래된 항목 제거.
         """
         self.api_key = api_key
         self.max_results = max_results
         self.timeout = timeout
         self.cache_ttl = cache_ttl
         self.validate_urls = validate_urls
-        self._cache: Dict[str, tuple[SearchResponse, float]] = {}
+        self._max_cache_size = max_cache_size
+        # OrderedDict으로 삽입 순서 추적 → OOM 방지를 위한 LRU eviction
+        self._cache: OrderedDict[str, tuple[SearchResponse, float]] = OrderedDict()
 
     def search(self, query: str, **kwargs: Any) -> SearchResponse:
         """
@@ -98,8 +103,12 @@ class BaseSearchEngine(ABC):
         return None
 
     def _save_to_cache(self, query: str, response: SearchResponse) -> None:
-        """캐시에 저장"""
+        """캐시에 저장. max_cache_size 초과 시 가장 오래된 항목 제거."""
+        if query in self._cache:
+            self._cache.move_to_end(query)
         self._cache[query] = (response, time.time())
+        if len(self._cache) > self._max_cache_size:
+            self._cache.popitem(last=False)
 
     def _validate_result_url(self, url: str) -> Optional[str]:
         """

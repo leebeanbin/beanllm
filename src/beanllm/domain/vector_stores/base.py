@@ -141,7 +141,9 @@ class BaseVectorStore(ABC):
         try:
             import asyncio
 
-            asyncio.create_task(
+            # 실행 중인 루프가 있을 때만 fire-and-forget 가능
+            loop = asyncio.get_running_loop()
+            loop.create_task(
                 self._event_logger.log_event(
                     f"vector_store.{operation}",
                     {
@@ -150,8 +152,10 @@ class BaseVectorStore(ABC):
                     },
                 )
             )
+        except RuntimeError:
+            # 실행 중인 루프 없음 (sync 호출) — 이벤트 발행 건너뜀
+            pass
         except Exception:
-            # 이벤트 발행 실패 시 무시 (fallback)
             pass
 
     async def asimilarity_search(
@@ -167,7 +171,7 @@ class BaseVectorStore(ABC):
         Returns:
             검색 결과 리스트
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, lambda: self.similarity_search(query, k, **kwargs))
 
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:

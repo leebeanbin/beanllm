@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 
-from beanllm.domain.multi_agent import AgentMessage, CommunicationBus, MessageType
+from beanllm.domain.multi_agent import AgentMessage, CommunicationBus, MessageType, SharedWhiteboard
 from beanllm.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -50,19 +50,31 @@ class MultiAgentCoordinator:
     """
 
     def __init__(
-        self, agents: Dict[str, Any], communication_bus: Optional[CommunicationBus] = None
+        self,
+        agents: Dict[str, Any],
+        communication_bus: Optional[CommunicationBus] = None,
+        shared_whiteboard: Optional[SharedWhiteboard] = None,
     ):
         """
         Args:
             agents: Agent 딕셔너리 {agent_id: Agent}
             communication_bus: 통신 버스 (None이면 자동 생성)
+            shared_whiteboard: 공용 지식 저장소 (None이면 자동 생성)
         """
         self.agents = agents
         self.bus = communication_bus or CommunicationBus()
+        self.whiteboard = shared_whiteboard or SharedWhiteboard()
 
-        # 각 agent를 bus에 구독
-        for agent_id in agents:
+        # 각 agent를 bus에 구독 및 telemetry_bus, whiteboard 설정
+        for agent_id, agent in agents.items():
             self.bus.subscribe(agent_id, self._on_message)
+            # Agent facade인 경우 설정 주입
+            if hasattr(agent, "telemetry_bus"):
+                agent.telemetry_bus = self.bus
+            if hasattr(agent, "whiteboard"):
+                agent.whiteboard = self.whiteboard
+            if hasattr(agent, "name") and not agent.name:
+                agent.name = agent_id
 
         # Handler/Service 초기화 (의존성 주입)
         self._init_services()
@@ -83,6 +95,13 @@ class MultiAgentCoordinator:
         """Agent 추가"""
         self.agents[agent_id] = agent
         self.bus.subscribe(agent_id, self._on_message)
+        # Agent facade인 경우 telemetry_bus, whiteboard 설정
+        if hasattr(agent, "telemetry_bus"):
+            agent.telemetry_bus = self.bus
+        if hasattr(agent, "whiteboard"):
+            agent.whiteboard = self.whiteboard
+        if hasattr(agent, "name"):
+            agent.name = agent_id
 
     def remove_agent(self, agent_id: str):
         """Agent 제거"""
@@ -111,6 +130,7 @@ class MultiAgentCoordinator:
             task=task,
             agents=agents,
             agent_order=agent_order,
+            whiteboard=self.whiteboard,
             **kwargs,
         )
 
@@ -149,6 +169,7 @@ class MultiAgentCoordinator:
             agents=agents,
             agent_ids=agent_ids,
             aggregation=aggregation,
+            whiteboard=self.whiteboard,
             **kwargs,
         )
 
@@ -184,6 +205,7 @@ class MultiAgentCoordinator:
             agents=agents,
             manager_id=manager_id,
             worker_ids=worker_ids,
+            whiteboard=self.whiteboard,
             **kwargs,
         )
 
@@ -219,9 +241,6 @@ class MultiAgentCoordinator:
         # Agent 리스트 생성 (토론 참여 agents만) - 기존과 동일
         agents = [self.agents[aid] for aid in agent_ids]
 
-        # Judge agent 찾기 (기존 multi_agent.py와 동일)
-        self.agents[judge_id] if judge_id else None
-
         # Handler를 통한 처리
         # judge를 agents_dict로 전달하여 handler에서 찾을 수 있도록 함
         response = await self._multi_agent_handler.handle_execute(
@@ -232,10 +251,88 @@ class MultiAgentCoordinator:
             rounds=rounds,
             judge_id=judge_id,
             agents_dict=self.agents,  # judge를 찾기 위한 딕셔너리 전달
+            whiteboard=self.whiteboard,
             **kwargs,
         )
 
         # MultiAgentResponse를 Dict로 변환 (기존 API 유지)
+        return {
+            "final_result": response.final_result,
+            "strategy": response.strategy,
+            **response.metadata,
+        }
+
+    async def execute_autonomous_planning(
+        self,
+        task: str,
+        planner_id: str,
+        worker_ids: Optional[List[str]] = None,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        자율 계획 및 실행
+
+        Args:
+            task: 작업
+            planner_id: 계획을 세울 에이전트 ID
+            worker_ids: 실행에 참여할 에이전트 IDs (None이면 전체)
+        """
+        if worker_ids is None:
+            worker_ids = list(self.agents.keys())
+
+        # Agent 리스트 생성 (planner + workers)
+        planner = self.agents[planner_id]
+        workers = [self.agents[wid] for wid in worker_ids]
+        agents = [planner] + workers
+
+        # Handler를 통한 처리
+        response = await self._multi_agent_handler.handle_execute(
+            strategy="autonomous_planning",
+            task=task,
+            agents=agents,
+            planner_id=planner_id,
+            worker_ids=worker_ids,
+            telemetry_bus=self.bus,
+            whiteboard=self.whiteboard,
+            **kwargs,
+        )
+
+        return {
+            "final_result": response.final_result,
+            "strategy": response.strategy,
+            **response.metadata,
+        }
+
+    async def execute_reflective(
+        self,
+        task: str,
+        primary_id: str,
+        reviewer_id: str,
+        rounds: int = 2,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """
+        자기 성찰 및 상호 검증
+
+        Args:
+            task: 작업
+            primary_id: 실행할 에이전트 ID
+            reviewer_id: 검토할 에이전트 ID
+            rounds: 최대 수정 횟수
+        """
+        # Agent 리스트 생성
+        agents = [self.agents[primary_id], self.agents[reviewer_id]]
+
+        # Handler를 통한 처리
+        response = await self._multi_agent_handler.handle_execute(
+            strategy="reflective",
+            task=task,
+            agents=agents,
+            rounds=rounds,
+            whiteboard=self.whiteboard,
+            **kwargs,
+        )
+
         return {
             "final_result": response.final_result,
             "strategy": response.strategy,

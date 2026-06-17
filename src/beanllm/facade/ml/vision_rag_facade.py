@@ -123,24 +123,26 @@ Answer:"""
         """
         event_logger = get_event_logger()
 
+        def _fire_event(event_type: str, data: dict) -> None:
+            """Loop-safe fire-and-forget event helper."""
+            try:
+                asyncio.get_running_loop().create_task(
+                    event_logger.log_event(event_type, data, level="info")
+                )
+            except RuntimeError:
+                pass  # Not in an async context — skip non-critical telemetry
+
         # 이벤트 발행: 이미지 로딩 시작
-        asyncio.create_task(
-            event_logger.log_event(
-                "vision_rag.from_images.started",
-                {"source": str(source), "generate_captions": generate_captions},
-                level="info",
-            )
+        _fire_event(
+            "vision_rag.from_images.started",
+            {"source": str(source), "generate_captions": generate_captions},
         )
 
         # 1. 이미지 로딩 (기존과 동일)
         images = load_images(source, generate_captions=generate_captions)
 
         # 이벤트 발행: 이미지 로딩 완료
-        asyncio.create_task(
-            event_logger.log_event(
-                "vision_rag.from_images.images_loaded", {"image_count": len(images)}, level="info"
-            )
-        )
+        _fire_event("vision_rag.from_images.images_loaded", {"image_count": len(images)})
 
         # 2. 임베딩 (기존과 동일)
         vision_embed = CLIPEmbedding()
@@ -194,25 +196,19 @@ Answer:"""
 
                 # 비동기 실행
                 try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        logger.warning("Event loop already running, using sequential embedding")
-                        embeddings = [
-                            embed_func([img.content if hasattr(img, "content") else str(img)])[0]
-                            for img in images
-                        ]
-                    else:
-                        embeddings = loop.run_until_complete(process_embeddings_async())
+                    asyncio.get_running_loop()
+                    logger.warning("Event loop already running, using sequential embedding")
+                    embeddings = [
+                        embed_func([img.content if hasattr(img, "content") else str(img)])[0]
+                        for img in images
+                    ]
                 except RuntimeError:
-                    embeddings = run_async_in_sync(process_embeddings_async()) or []
+                    embeddings = asyncio.run(process_embeddings_async()) or []
 
                 # 이벤트 발행: 임베딩 완료
-                asyncio.create_task(
-                    event_logger.log_event(
-                        "vision_rag.from_images.embeddings_completed",
-                        {"embedding_count": len(embeddings)},
-                        level="info",
-                    )
+                _fire_event(
+                    "vision_rag.from_images.embeddings_completed",
+                    {"embedding_count": len(embeddings)},
                 )
 
                 # 3. Vector Store (임베딩 결과 사용)
@@ -242,24 +238,15 @@ Answer:"""
             vector_store = from_documents(images, embed_func)
 
         # 이벤트 발행: 벡터 스토어 생성 완료
-        asyncio.create_task(
-            event_logger.log_event(
-                "vision_rag.from_images.vector_store_created",
-                {"document_count": len(images)},
-                level="info",
-            )
-        )
+        _fire_event("vision_rag.from_images.vector_store_created", {"document_count": len(images)})
 
         # 4. LLM (기존과 동일)
         llm = Client(model=llm_model)
 
         # 이벤트 발행: 완료
-        asyncio.create_task(
-            event_logger.log_event(
-                "vision_rag.from_images.completed",
-                {"image_count": len(images), "llm_model": llm_model},
-                level="info",
-            )
+        _fire_event(
+            "vision_rag.from_images.completed",
+            {"image_count": len(images), "llm_model": llm_model},
         )
 
         return cls(vector_store=vector_store, vision_embedding=vision_embed, llm=llm, **kwargs)
