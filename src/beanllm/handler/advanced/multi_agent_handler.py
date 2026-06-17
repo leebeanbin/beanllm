@@ -55,36 +55,34 @@ class MultiAgentHandler(BaseHandler[IMultiAgentService]):
         agent_order: Optional[List[str]] = None,
         agent_ids: Optional[List[str]] = None,
         manager_id: Optional[str] = None,
+        planner_id: Optional[str] = None,
         worker_ids: Optional[List[str]] = None,
         aggregation: str = "vote",
         rounds: int = 3,
         judge_id: Optional[str] = None,
+        whiteboard: Optional[Any] = None,
         **kwargs: Any,
     ) -> MultiAgentResponse:
         """
         Multi-Agent 실행 요청 처리 (모든 검증 및 에러 처리 포함)
 
         Args:
-            strategy: 전략 (sequential, parallel, hierarchical, debate)
+            strategy: 전략 (sequential, parallel, hierarchical, debate, autonomous_planning)
             task: 작업
             agents: Agent 리스트
             agent_order: 순차 실행용 순서
             agent_ids: 병렬/토론 실행용 agent IDs
             manager_id: 계층적 실행용 매니저 ID
-            worker_ids: 계층적 실행용 워커 IDs
+            planner_id: 자율 계획용 플래너 ID
+            worker_ids: 계층적/자율 계획용 워커 IDs
             aggregation: 병렬 실행용 집계 방법
             rounds: 토론 실행용 라운드 수
             judge_id: 토론 실행용 판정자 ID
+            whiteboard: 공용 지식 저장소
             **kwargs: 추가 파라미터
 
         Returns:
             MultiAgentResponse: Multi-Agent 응답
-
-        책임:
-            - 입력 검증 (decorator로 처리)
-            - 에러 처리 (decorator로 처리)
-            - DTO 변환
-            - Service 호출
         """
         # judge_id가 있으면 judge_agent를 찾아서 전달
         judge_agent = None
@@ -102,11 +100,13 @@ class MultiAgentHandler(BaseHandler[IMultiAgentService]):
             agent_order=agent_order or [],
             agent_ids=agent_ids or [],
             manager_id=manager_id,
+            planner_id=planner_id,
             worker_ids=worker_ids or [],
             aggregation=aggregation,
             rounds=rounds,
             judge_id=judge_id,
             judge_agent=judge_agent,
+            whiteboard=whiteboard,
             extra_params=kwargs,
         )
 

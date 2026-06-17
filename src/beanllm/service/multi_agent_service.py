@@ -78,6 +78,32 @@ class IMultiAgentService(ABC):
         """
         pass
 
+    @abstractmethod
+    async def execute_autonomous_planning(self, request: MultiAgentRequest) -> MultiAgentResponse:
+        """
+        자율 계획 및 실행
+
+        Args:
+            request: Multi-Agent 요청 DTO
+
+        Returns:
+            MultiAgentResponse: Multi-Agent 응답 DTO
+        """
+        pass
+
+    @abstractmethod
+    async def execute_reflective(self, request: MultiAgentRequest) -> MultiAgentResponse:
+        """
+        자기 성찰 및 상호 검증
+
+        Args:
+            request: Multi-Agent 요청 DTO
+
+        Returns:
+            MultiAgentResponse: Multi-Agent 응답 DTO
+        """
+        pass
+
     async def execute(self, request: MultiAgentRequest) -> MultiAgentResponse:
         """
         통합 실행 메서드 (Strategy 패턴)
@@ -97,5 +123,9 @@ class IMultiAgentService(ABC):
             return await self.execute_hierarchical(request)
         elif strategy == "debate":
             return await self.execute_debate(request)
+        elif strategy == "autonomous_planning":
+            return await self.execute_autonomous_planning(request)
+        elif strategy == "reflective":
+            return await self.execute_reflective(request)
         else:
             raise ValueError(f"Unknown strategy: {strategy}")

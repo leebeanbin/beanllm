@@ -26,9 +26,11 @@ class MultiAgentRequest:
     agent_order: list[str] = field(default_factory=list)
     agent_ids: list[str] = field(default_factory=list)
     manager_id: Optional[str] = None
+    planner_id: Optional[str] = None
     worker_ids: list[str] = field(default_factory=list)
     aggregation: str = "vote"
     rounds: int = 3
     judge_id: Optional[str] = None
     judge_agent: Optional[object] = None
+    whiteboard: Optional[object] = None
     extra_params: dict[str, object] = field(default_factory=dict)

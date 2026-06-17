@@ -57,6 +57,9 @@ class AgentHandler(BaseHandler[IAgentService]):
         temperature: Optional[float] = None,
         system_prompt: Optional[str] = None,
         tool_registry: Optional[Any] = None,
+        telemetry_bus: Optional[Any] = None,
+        agent_id: Optional[str] = None,
+        whiteboard: Optional[Any] = None,
         **kwargs: Any,
     ) -> AgentResponse:
         """
@@ -70,16 +73,13 @@ class AgentHandler(BaseHandler[IAgentService]):
             temperature: 온도
             system_prompt: 시스템 프롬프트
             tool_registry: 도구 레지스트리 (선택적, 없으면 tools로부터 생성)
+            telemetry_bus: 텔레메트리 버스
+            agent_id: 에이전트 ID
+            whiteboard: 공용 지식 저장소
             **kwargs: 추가 파라미터
 
         Returns:
             AgentResponse: 에이전트 응답
-
-        책임:
-            - 입력 검증 (decorator로 처리)
-            - 에러 처리 (decorator로 처리)
-            - DTO 변환
-            - Service 호출
         """
         # ToolRegistry 생성 (기존 agent.py와 동일한 로직)
         from beanllm.domain.tools import ToolRegistry
@@ -99,7 +99,12 @@ class AgentHandler(BaseHandler[IAgentService]):
             max_steps=max_steps,
             temperature=temperature,
             system_prompt=system_prompt,
-            extra_params=kwargs,
+            extra_params={
+                **kwargs,
+                "telemetry_bus": telemetry_bus,
+                "agent_id": agent_id,
+                "whiteboard": whiteboard,
+            },
         )
 
         # Service 호출 (에러 처리는 decorator가 담당)
