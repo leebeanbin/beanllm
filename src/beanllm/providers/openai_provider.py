@@ -3,9 +3,6 @@ OpenAI Provider
 OpenAI API 통합 (최신 SDK: AsyncOpenAI 사용)
 """
 
-# 독립적인 utils 사용
-import sys
-from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional, cast
 
 # 선택적 의존성
@@ -15,8 +12,6 @@ except ImportError:
     APIError = Exception  # type: ignore
     APITimeoutError = Exception  # type: ignore
     AsyncOpenAI = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -295,7 +290,7 @@ class OpenAIProvider(BaseLLMProvider):
 
         return strategy_config
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(APITimeoutError, APIError, Exception))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(APITimeoutError, APIError))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APITimeoutError, APIError),
@@ -365,7 +360,10 @@ class OpenAIProvider(BaseLLMProvider):
                 else:
                     request_params["reasoning_effort"] = "low"
 
-            response = await self.client.chat.completions.create(**request_params)  # type: ignore[arg-type]
+            response = await self._call_with_circuit_breaker(
+                self.client.chat.completions.create,
+                **request_params,  # type: ignore[arg-type]
+            )
 
             return LLMResponse(
                 content=response.choices[0].message.content or "",

@@ -3,9 +3,6 @@ Ollama Provider
 Ollama API 통합 (최신 SDK: ollama 패키지의 AsyncClient 사용)
 """
 
-# 독립적인 utils 사용
-import sys
-from pathlib import Path
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 # 선택적 의존성
@@ -13,8 +10,6 @@ try:
     from ollama import AsyncClient
 except ImportError:
     AsyncClient = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -92,7 +87,7 @@ class OllamaProvider(BaseLLMProvider):
             logger.error(f"Ollama stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(ConnectionError, OSError, TimeoutError))
     @provider_error_handler(operation="chat", custom_error_message="Ollama chat failed")
     async def chat(
         self,
@@ -118,7 +113,8 @@ class OllamaProvider(BaseLLMProvider):
             if system:
                 chat_messages = [{"role": "system", "content": system}] + chat_messages
 
-            response = await self.client.chat(
+            response = await self._call_with_circuit_breaker(
+                self.client.chat,
                 model=model or self.default_model,
                 messages=chat_messages,
                 options={

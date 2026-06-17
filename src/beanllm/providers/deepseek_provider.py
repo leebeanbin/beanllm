@@ -9,8 +9,6 @@ DeepSeek-V3:
 - 모델: deepseek-chat (일반), deepseek-reasoner (사고 모드)
 """
 
-import sys
-from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
 # 선택적 의존성
@@ -20,8 +18,6 @@ except ImportError:
     APIError = Exception  # type: ignore
     APITimeoutError = Exception  # type: ignore
     AsyncOpenAI = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -119,7 +115,7 @@ class DeepSeekProvider(BaseLLMProvider):
             logger.error(f"DeepSeek stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0)
+    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0, retry_on=(APITimeoutError, APIError))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APIError, APITimeoutError),
@@ -156,7 +152,9 @@ class DeepSeekProvider(BaseLLMProvider):
         if max_tokens_param is not None:
             request_params["max_tokens"] = max_tokens_param
 
-        response = await self.client.chat.completions.create(**request_params)
+        response = await self._call_with_circuit_breaker(
+            self.client.chat.completions.create, **request_params
+        )
 
         # 사용량 정보 추출
         usage_info = None

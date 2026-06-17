@@ -7,23 +7,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, AsyncGenerator, Awaitable, Callable, Dict, List, Optional, TypeVar
 
-try:
-    from beanllm.utils.constants import DEFAULT_TEMPERATURE
-except ImportError:
-    DEFAULT_TEMPERATURE: float = 0.7  # type: ignore[no-redef]
-
-# 선택적 의존성 - ProviderError 임포트 시도
-try:
-    from beanllm.utils.exceptions import ProviderError
-except ImportError:
-    # Fallback: 기본 Exception 사용
-    class ProviderError(Exception):  # type: ignore
-        """Provider 에러"""
-
-        pass
-
-
+from beanllm.utils.constants import DEFAULT_TEMPERATURE
+from beanllm.utils.exceptions import CircuitBreakerError, ProviderError
 from beanllm.utils.logging import get_logger
+from beanllm.utils.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerConfig
 
 
 @dataclass
@@ -49,6 +36,17 @@ class BaseLLMProvider(ABC):
         self.config = config
         self.name = self.__class__.__name__
         self._logger = get_logger(self.__class__.__name__)
+
+        # Circuit Breaker: provider별 독립 인스턴스.
+        # 설정은 config["circuit_breaker"] 딕셔너리로 주입 가능.
+        cb_cfg = config.get("circuit_breaker", {})
+        self._circuit_breaker = CircuitBreaker(
+            CircuitBreakerConfig(
+                failure_threshold=cb_cfg.get("failure_threshold", 5),
+                success_threshold=cb_cfg.get("success_threshold", 2),
+                timeout=cb_cfg.get("timeout", 60.0),
+            )
+        )
 
     @abstractmethod
     def stream_chat(
@@ -338,3 +336,34 @@ class BaseLLMProvider(ABC):
             self._logger.warning(
                 f"Rate limiting failed for {self.name}: {e}, continuing without rate limit"
             )
+
+    async def _call_with_circuit_breaker(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
+        """Circuit breaker를 통해 async API 함수를 보호 실행.
+
+        연속 실패가 failure_threshold(기본 5)를 넘으면 OPEN 상태로 전환되어
+        timeout(기본 60초) 동안 모든 호출을 즉시 CircuitBreakerError로 차단합니다.
+        이후 HALF_OPEN 상태에서 success_threshold(기본 2)번 성공하면 복구됩니다.
+
+        Example:
+            response = await self._call_with_circuit_breaker(
+                self.client.messages.create, **api_params
+            )
+
+        Raises:
+            CircuitBreakerError: circuit이 OPEN 상태일 때
+            ProviderError: API 호출 자체가 실패했을 때
+        """
+        try:
+            return await self._circuit_breaker.async_call(func, *args, **kwargs)
+        except CircuitBreakerError:
+            self._logger.warning(
+                f"{self.name} circuit breaker OPEN — " f"state: {self._circuit_breaker.get_state()}"
+            )
+            raise
+
+    def get_circuit_breaker_state(self) -> Dict[str, Any]:
+        """현재 circuit breaker 상태 조회. 모니터링·디버깅용."""
+        return {
+            "provider": self.name,
+            **self._circuit_breaker.get_state(),
+        }

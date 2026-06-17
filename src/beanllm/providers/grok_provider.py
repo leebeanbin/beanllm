@@ -8,8 +8,6 @@ Grok 4.3:
 - 실시간 웹 검색 + 추론 능력 결합
 """
 
-import sys
-from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
 try:
@@ -18,8 +16,6 @@ except ImportError:
     APIError = Exception  # type: ignore
     APITimeoutError = Exception  # type: ignore
     AsyncOpenAI = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -111,7 +107,7 @@ class GrokProvider(BaseLLMProvider):
             logger.error(f"Grok stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0)
+    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0, retry_on=(APITimeoutError, APIError))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APIError, APITimeoutError),
@@ -146,7 +142,9 @@ class GrokProvider(BaseLLMProvider):
         if max_tokens_param is not None:
             request_params["max_tokens"] = max_tokens_param
 
-        response = await self.client.chat.completions.create(**request_params)
+        response = await self._call_with_circuit_breaker(
+            self.client.chat.completions.create, **request_params
+        )
 
         usage_info = None
         if hasattr(response, "usage") and response.usage:

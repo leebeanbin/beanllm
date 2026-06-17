@@ -11,8 +11,6 @@ Perplexity Sonar:
 - 상세한 인용 제공 (2025년부터 인용 토큰 무료)
 """
 
-import sys
-from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
 # 선택적 의존성
@@ -22,8 +20,6 @@ except ImportError:
     APIError = Exception  # type: ignore
     APITimeoutError = Exception  # type: ignore
     AsyncOpenAI = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -110,7 +106,7 @@ class PerplexityProvider(BaseLLMProvider):
             if chunk.choices and chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0)
+    @retry(max_retries=DEFAULT_MAX_RETRIES, initial_delay=1.0, retry_on=(APITimeoutError, APIError))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APIError, APITimeoutError),
@@ -147,7 +143,9 @@ class PerplexityProvider(BaseLLMProvider):
         if max_tokens_param is not None:
             request_params["max_tokens"] = max_tokens_param
 
-        response = await self.client.chat.completions.create(**request_params)
+        response = await self._call_with_circuit_breaker(
+            self.client.chat.completions.create, **request_params
+        )
 
         # 사용량 정보 추출 (헬퍼 메서드 사용)
         usage_info = self._extract_openai_usage(response)
