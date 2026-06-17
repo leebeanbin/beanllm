@@ -363,7 +363,9 @@ class OrchestratorCommands:
         self.console.print(f"\n{StatusIcon.info()} [cyan]Monitoring workflow execution...[/cyan]")
         self.console.print("[dim]Press Ctrl+C to stop[/dim]\n")
 
-        start_time = asyncio.get_event_loop().time()
+        import time as _time
+
+        start_time = _time.monotonic()
 
         try:
             with Live(
@@ -383,7 +385,7 @@ class OrchestratorCommands:
 
                     # Check duration
                     if duration:
-                        elapsed = asyncio.get_event_loop().time() - start_time
+                        elapsed = _time.monotonic() - start_time
                         if elapsed >= duration:
                             break
 

@@ -129,7 +129,7 @@ class TaskProcessor:
                     result = await handler(task_data)
                 else:
                     # 동기 함수는 executor에서 실행
-                    loop = asyncio.get_event_loop()
+                    loop = asyncio.get_running_loop()
                     result = await loop.run_in_executor(None, handler, task_data)
 
                 # 작업 완료 이벤트 발행
@@ -247,7 +247,7 @@ class BatchProcessor:
                         if asyncio.iscoroutinefunction(handler):
                             return await handler(task_data)
                         else:
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             return await loop.run_in_executor(None, handler, task_data)
                 else:
                     if asyncio.iscoroutinefunction(handler):
@@ -311,7 +311,7 @@ class BatchProcessor:
                         if asyncio.iscoroutinefunction(handler):
                             return await handler(item)
                         else:
-                            loop = asyncio.get_event_loop()
+                            loop = asyncio.get_running_loop()
                             return await loop.run_in_executor(None, handler, item)
                 else:
                     if asyncio.iscoroutinefunction(handler):

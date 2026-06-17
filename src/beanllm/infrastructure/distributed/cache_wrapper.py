@@ -7,19 +7,36 @@
 import asyncio
 from typing import Generic, Optional, TypeVar
 
-from .factory import get_cache
-from .interfaces import CacheInterface
+from beanllm.infrastructure.distributed.factory import get_cache
+from beanllm.infrastructure.distributed.interfaces import CacheInterface
 
 K = TypeVar("K")
 V = TypeVar("V")
+
+
+def _run_coro(coro):
+    """
+    동기 컨텍스트에서 코루틴 실행.
+
+    - 이미 실행 중인 루프가 있으면 None을 반환 (blocking 불가)
+    - 없으면 asyncio.run()으로 실행 (deprecated get_event_loop() 사용 안 함)
+    """
+    try:
+        asyncio.get_running_loop()
+        # 실행 중인 루프 안에서 호출됨 — 동기 blocking 불가
+        coro.close()
+        return None
+    except RuntimeError:
+        pass
+    return asyncio.run(coro)
 
 
 class SyncCacheWrapper(Generic[K, V]):
     """
     동기 캐시 래퍼
 
-    분산 캐시(비동기)를 동기 인터페이스로 래핑
-    기존 코드와의 호환성 유지
+    분산 캐시(비동기)를 동기 인터페이스로 래핑.
+    기존 코드와의 호환성 유지.
     """
 
     def __init__(self, max_size: int = 1000, ttl: Optional[int] = None):
@@ -29,82 +46,25 @@ class SyncCacheWrapper(Generic[K, V]):
             ttl: Time-to-Live (초)
         """
         self._async_cache: CacheInterface[K, V] = get_cache(max_size=max_size, ttl=ttl)
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-
-    def _get_loop(self) -> asyncio.AbstractEventLoop:
-        """이벤트 루프 가져오기 (없으면 생성)"""
-        if self._loop is None:
-            try:
-                self._loop = asyncio.get_event_loop()
-            except RuntimeError:
-                self._loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(self._loop)
-        return self._loop
 
     def get(self, key: K) -> Optional[V]:
-        """값 조회 (동기)"""
-        loop = self._get_loop()
-        if loop.is_running():
-            # 이미 실행 중인 루프가 있으면 새 태스크로 실행
-            # 하지만 동기 컨텍스트에서는 await 불가능하므로 None 반환
-            # 실제로는 비동기 코드에서 사용하는 것이 권장됨
-            return None
-        else:
-            return loop.run_until_complete(self._async_cache.get(key))
+        """값 조회 (동기). 실행 중인 루프 안에서 호출 시 None 반환."""
+        return _run_coro(self._async_cache.get(key))
 
-    def set(self, key: K, value: V, ttl: Optional[int] = None):
-        """값 저장 (동기)"""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 이미 실행 중인 루프가 있으면 건너뛰기
-                return
-            else:
-                loop.run_until_complete(self._async_cache.set(key, value, ttl=ttl))
-        except RuntimeError:
-            # 루프가 없으면 새로 생성
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(self._async_cache.set(key, value, ttl=ttl))
-            finally:
-                loop.close()
+    def set(self, key: K, value: V, ttl: Optional[int] = None) -> None:
+        """값 저장 (동기). 실행 중인 루프 안에서 호출 시 no-op."""
+        _run_coro(self._async_cache.set(key, value, ttl=ttl))
 
-    def delete(self, key: K):
-        """값 삭제 (동기)"""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                return
-            else:
-                loop.run_until_complete(self._async_cache.delete(key))
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(self._async_cache.delete(key))
-            finally:
-                loop.close()
+    def delete(self, key: K) -> None:
+        """값 삭제 (동기). 실행 중인 루프 안에서 호출 시 no-op."""
+        _run_coro(self._async_cache.delete(key))
 
-    def clear(self):
-        """모든 캐시 삭제 (동기)"""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                return
-            else:
-                loop.run_until_complete(self._async_cache.clear())
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                loop.run_until_complete(self._async_cache.clear())
-            finally:
-                loop.close()
+    def clear(self) -> None:
+        """모든 캐시 삭제 (동기). 실행 중인 루프 안에서 호출 시 no-op."""
+        _run_coro(self._async_cache.clear())
 
     def stats(self) -> dict:
         """캐시 통계 (기존 인터페이스 호환)"""
-        # 분산 캐시는 통계를 제공하지 않으므로 기본값 반환
         return {
             "size": 0,
             "max_size": 0,
@@ -116,9 +76,8 @@ class SyncCacheWrapper(Generic[K, V]):
             "expirations": 0,
         }
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """캐시 정리 (기존 인터페이스 호환)"""
-        # 분산 캐시는 별도 정리 불필요
         pass
 
 
@@ -126,8 +85,8 @@ def get_distributed_cache(max_size: int = 1000, ttl: Optional[int] = None) -> Sy
     """
     분산 캐시 래퍼 반환 (동기 인터페이스)
 
-    기존 코드와의 호환성을 위해 동기 인터페이스 제공
-    내부적으로는 분산 캐시(비동기) 사용
+    기존 코드와의 호환성을 위해 동기 인터페이스 제공.
+    내부적으로는 분산 캐시(비동기) 사용.
 
     Args:
         max_size: 최대 캐시 크기

@@ -64,13 +64,10 @@ def with_distributed_lock(lock_key: str, timeout: float = 30.0):
                 return await async_wrapper(*args, **kwargs)
 
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
-                    logger.warning(f"Lock {lock_key} skipped (event loop running)")
-                    return func(*args, **kwargs)
-                else:
-                    return loop.run_until_complete(_async_wrapper())
+                asyncio.get_running_loop()
+                # 이미 실행 중인 루프가 있으면 락 없이 실행 (fallback)
+                logger.warning(f"Lock {lock_key} skipped (event loop running)")
+                return func(*args, **kwargs)
             except RuntimeError:
                 return asyncio.run(_async_wrapper())
 

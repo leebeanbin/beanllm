@@ -63,10 +63,8 @@ def with_batch_processing(
                     return [r for r in results if r is not None]
 
                 try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        return [func(self, [item], *args, **kwargs)[0] for item in items]
-                    return loop.run_until_complete(_batch_async())
+                    asyncio.get_running_loop()
+                    return [func(self, [item], *args, **kwargs)[0] for item in items]
                 except RuntimeError:
                     return asyncio.run(_batch_async())
             results = []
