@@ -95,12 +95,9 @@ def with_event_publishing(event_type: str, include_result: bool = True):
                 return await async_wrapper(*args, **kwargs)
 
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # 이미 실행 중인 루프가 있으면 순차 처리
-                    return func(*args, **kwargs)
-                else:
-                    return loop.run_until_complete(_async_wrapper())
+                asyncio.get_running_loop()
+                # 이미 실행 중인 루프가 있으면 순차 처리
+                return func(*args, **kwargs)
             except RuntimeError:
                 return asyncio.run(_async_wrapper())
 

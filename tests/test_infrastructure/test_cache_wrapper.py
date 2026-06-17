@@ -5,7 +5,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from beanllm.infrastructure.distributed.cache_wrapper import SyncCacheWrapper, get_distributed_cache
+from beanllm.infrastructure.distributed.cache_wrapper import (
+    SyncCacheWrapper,
+    _run_coro,
+    get_distributed_cache,
+)
 
 
 def _make_wrapper(max_size: int = 50, ttl: int = 120):
@@ -22,184 +26,123 @@ def _make_wrapper(max_size: int = 50, ttl: int = 120):
     return wrapper, mock_cache
 
 
-def _make_non_running_loop(return_value=None):
-    mock_loop = MagicMock()
-    mock_loop.is_running.return_value = False
-    mock_loop.run_until_complete.return_value = return_value
-    return mock_loop
-
-
 # ---------------------------------------------------------------------------
-# _get_loop RuntimeError fallback (lines 39-41)
+# _run_coro: running loop → None; no loop → asyncio.run result
 # ---------------------------------------------------------------------------
 
 
-class TestGetLoopFallback:
-    def test_creates_new_loop_when_get_event_loop_raises(self):
-        wrapper, _ = _make_wrapper()
-        wrapper._loop = None
-        mock_new_loop = MagicMock()
+class TestRunCoro:
+    async def test_returns_none_when_loop_is_running(self):
+        """In async context get_running_loop() succeeds → coro is closed, None returned."""
+        mock_coro = AsyncMock(return_value="value")()
+        result = _run_coro(mock_coro)
+        assert result is None
 
-        with (
-            patch("asyncio.get_event_loop", side_effect=RuntimeError("no running event loop")),
-            patch("asyncio.new_event_loop", return_value=mock_new_loop) as mock_new,
-            patch("asyncio.set_event_loop") as mock_set,
-        ):
-            loop = wrapper._get_loop()
+    def test_runs_coro_when_no_loop(self):
+        """Outside async context asyncio.run() executes the coroutine."""
 
-        mock_new.assert_called_once()
-        mock_set.assert_called_once_with(mock_new_loop)
-        assert loop is mock_new_loop
+        async def _coro():
+            return "hello"
 
-    def test_get_loop_cached_after_first_call(self):
-        wrapper, _ = _make_wrapper()
-        wrapper._loop = None
-        mock_loop = MagicMock()
-
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
-            loop1 = wrapper._get_loop()
-            loop2 = wrapper._get_loop()
-
-        assert loop1 is mock_loop
-        assert loop2 is mock_loop
+        result = _run_coro(_coro())
+        assert result == "hello"
 
 
 # ---------------------------------------------------------------------------
-# get() (line 51: running loop returns None; line 53: non-running returns value)
+# get() — running loop returns None; no loop executes
 # ---------------------------------------------------------------------------
 
 
 class TestGet:
     async def test_get_returns_none_when_loop_is_running(self):
-        wrapper, mock_cache = _make_wrapper()
-        # In async test context, loop.is_running() is True → returns None (line 51)
+        """get() returns None when called from inside an async context."""
+        wrapper, _ = _make_wrapper()
         result = wrapper.get("key1")
         assert result is None
 
-    def test_get_returns_value_when_loop_not_running(self):
+    def test_get_returns_value_when_no_loop(self):
+        """get() executes the coroutine when there is no running loop."""
         wrapper, mock_cache = _make_wrapper()
-        mock_loop = _make_non_running_loop(return_value="cached_value")
-        wrapper._loop = mock_loop
+        mock_cache.get.return_value = "cached_value"
 
-        result = wrapper.get("key1")
+        with patch(
+            "beanllm.infrastructure.distributed.cache_wrapper._run_coro",
+            return_value="cached_value",
+        ):
+            result = wrapper.get("key1")
 
         assert result == "cached_value"
-        mock_loop.run_until_complete.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# set() (line 61: running loop skips; lines 64-71: not running; RuntimeError)
+# set() — running loop is a no-op; no loop executes
 # ---------------------------------------------------------------------------
 
 
 class TestSet:
-    async def test_set_returns_when_loop_running(self):
+    async def test_set_no_op_when_loop_running(self):
+        """set() closes coro without awaiting when called from async context."""
         wrapper, mock_cache = _make_wrapper()
-        # In async context, loop.is_running() True → returns without run_until_complete (line 61)
         wrapper.set("key", "value")
-        # Verify mock_cache.set was not called (since we just returned)
-        mock_cache.set.assert_not_called()
+        # coro was created but closed (not awaited) — get_running_loop() succeeds
+        mock_cache.set.assert_not_awaited()
 
-    def test_set_calls_run_until_complete_when_loop_not_running(self):
-        wrapper, mock_cache = _make_wrapper()
-        mock_loop = _make_non_running_loop()
-
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
-            wrapper.set("key", "value", ttl=60)
-
-        mock_loop.run_until_complete.assert_called_once()
-
-    def test_set_creates_new_loop_on_runtime_error(self):
+    def test_set_executes_when_no_loop(self):
+        """set() calls _run_coro when there is no running loop."""
         wrapper, _ = _make_wrapper()
-        mock_new_loop = MagicMock()
-        mock_new_loop.run_until_complete.return_value = None
-
-        with (
-            patch("asyncio.get_event_loop", side_effect=RuntimeError("no loop")),
-            patch("asyncio.new_event_loop", return_value=mock_new_loop),
-            patch("asyncio.set_event_loop"),
-        ):
-            wrapper.set("key", "value")
-
-        mock_new_loop.run_until_complete.assert_called_once()
-        mock_new_loop.close.assert_called_once()
+        with patch(
+            "beanllm.infrastructure.distributed.cache_wrapper._run_coro", return_value=None
+        ) as mock_run:
+            wrapper.set("key", "value", ttl=60)
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# delete() (lines 75-87)
+# delete()
 # ---------------------------------------------------------------------------
 
 
 class TestDelete:
-    async def test_delete_returns_when_loop_running(self):
+    async def test_delete_no_op_when_loop_running(self):
+        """delete() closes coro without awaiting when called from async context."""
         wrapper, mock_cache = _make_wrapper()
-        # In async context, loop.is_running() True → returns (line 78)
         wrapper.delete("key")
-        mock_cache.delete.assert_not_called()
+        mock_cache.delete.assert_not_awaited()
 
-    def test_delete_calls_run_until_complete_when_loop_not_running(self):
+    def test_delete_executes_when_no_loop(self):
+        """delete() calls _run_coro when there is no running loop."""
         wrapper, _ = _make_wrapper()
-        mock_loop = _make_non_running_loop()
-
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
+        with patch(
+            "beanllm.infrastructure.distributed.cache_wrapper._run_coro", return_value=None
+        ) as mock_run:
             wrapper.delete("key")
-
-        mock_loop.run_until_complete.assert_called_once()
-
-    def test_delete_creates_new_loop_on_runtime_error(self):
-        wrapper, _ = _make_wrapper()
-        mock_new_loop = MagicMock()
-        mock_new_loop.run_until_complete.return_value = None
-
-        with (
-            patch("asyncio.get_event_loop", side_effect=RuntimeError("no loop")),
-            patch("asyncio.new_event_loop", return_value=mock_new_loop),
-            patch("asyncio.set_event_loop"),
-        ):
-            wrapper.delete("key")
-
-        mock_new_loop.run_until_complete.assert_called_once()
-        mock_new_loop.close.assert_called_once()
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# clear() (lines 91-103)
+# clear()
 # ---------------------------------------------------------------------------
 
 
 class TestClear:
-    async def test_clear_returns_when_loop_running(self):
+    async def test_clear_no_op_when_loop_running(self):
+        """clear() closes coro without awaiting when called from async context."""
         wrapper, mock_cache = _make_wrapper()
         wrapper.clear()
-        mock_cache.clear.assert_not_called()
+        mock_cache.clear.assert_not_awaited()
 
-    def test_clear_calls_run_until_complete_when_loop_not_running(self):
+    def test_clear_executes_when_no_loop(self):
+        """clear() calls _run_coro when there is no running loop."""
         wrapper, _ = _make_wrapper()
-        mock_loop = _make_non_running_loop()
-
-        with patch("asyncio.get_event_loop", return_value=mock_loop):
+        with patch(
+            "beanllm.infrastructure.distributed.cache_wrapper._run_coro", return_value=None
+        ) as mock_run:
             wrapper.clear()
-
-        mock_loop.run_until_complete.assert_called_once()
-
-    def test_clear_creates_new_loop_on_runtime_error(self):
-        wrapper, _ = _make_wrapper()
-        mock_new_loop = MagicMock()
-        mock_new_loop.run_until_complete.return_value = None
-
-        with (
-            patch("asyncio.get_event_loop", side_effect=RuntimeError("no loop")),
-            patch("asyncio.new_event_loop", return_value=mock_new_loop),
-            patch("asyncio.set_event_loop"),
-        ):
-            wrapper.clear()
-
-        mock_new_loop.run_until_complete.assert_called_once()
-        mock_new_loop.close.assert_called_once()
+        mock_run.assert_called_once()
 
 
 # ---------------------------------------------------------------------------
-# stats() (line 108)
+# stats()
 # ---------------------------------------------------------------------------
 
 
@@ -222,14 +165,14 @@ class TestStats:
 
 
 # ---------------------------------------------------------------------------
-# shutdown() (line 122)
+# shutdown()
 # ---------------------------------------------------------------------------
 
 
 class TestShutdown:
     def test_shutdown_does_not_raise(self):
         wrapper, _ = _make_wrapper()
-        wrapper.shutdown()  # Just passes (line 122)
+        wrapper.shutdown()
 
     def test_shutdown_can_be_called_multiple_times(self):
         wrapper, _ = _make_wrapper()
@@ -238,7 +181,7 @@ class TestShutdown:
 
 
 # ---------------------------------------------------------------------------
-# get_distributed_cache() (line 139)
+# get_distributed_cache()
 # ---------------------------------------------------------------------------
 
 
