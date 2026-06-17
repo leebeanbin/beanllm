@@ -32,6 +32,33 @@ class MessageType(Enum):
     DELEGATE = "delegate"  # 작업 위임
     VOTE = "vote"  # 투표
     CONSENSUS = "consensus"  # 합의
+    TELEMETRY = "telemetry"  # 텔레메트리 (관찰용)
+
+
+class TelemetryEventType(Enum):
+    """텔레메트리 이벤트 타입"""
+
+    AGENT_STARTED = "agent_started"
+    AGENT_FINISHED = "agent_finished"
+    MESSAGE_SENT = "message_sent"
+    THINKING_CHUNK = "thinking_chunk"
+    TOOL_STARTED = "tool_started"
+    TOOL_FINISHED = "tool_finished"
+    ERROR = "error"
+    PLAN_READY = "plan_ready"
+
+
+@dataclass
+class TelemetryEvent:
+    """텔레메트리 이벤트 데이터"""
+
+    event_type: TelemetryEventType
+    agent_id: str
+    timestamp: datetime = field(default_factory=datetime.now)
+    content: Any = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    # run_id: 동시에 여러 multi-agent 실행이 진행될 때 이벤트를 구분하는 식별자
+    run_id: Optional[str] = None
 
 
 @dataclass
@@ -80,6 +107,7 @@ class CommunicationBus:
         use_kafka: Optional[bool] = None,
         event_bus: Optional["EventBusProtocol"] = None,
         event_logger: Optional["EventLoggerProtocol"] = None,
+        max_messages: int = 10_000,
     ):
         """
         Args:
@@ -90,9 +118,12 @@ class CommunicationBus:
             use_kafka: Kafka 사용 여부 (None이면 USE_DISTRIBUTED 환경변수 사용)
             event_bus: 이벤트 버스 프로토콜 (옵션, Service layer에서 주입)
             event_logger: 이벤트 로거 프로토콜 (옵션, Service layer에서 주입)
+            max_messages: 인메모리 메시지 히스토리 최대 수. 초과 시 절반을 폐기해 OOM 방지.
         """
+        self._max_messages = max_messages
         self.messages: List[AgentMessage] = []
         self.subscribers: Dict[str, List[Callable]] = {}  # agent_id -> [callbacks]
+        self.telemetry_callbacks: List[Callable[[TelemetryEvent], Any]] = []
         self.delivery_guarantee = delivery_guarantee
         self.delivered_messages: set = set()  # For exactly-once
 
@@ -132,6 +163,21 @@ class CommunicationBus:
             else:
                 del self.subscribers[agent_id]
 
+    def add_telemetry_callback(self, callback: Callable[[TelemetryEvent], Any]):
+        """텔레메트리 콜백 추가"""
+        self.telemetry_callbacks.append(callback)
+
+    async def emit_telemetry(self, event: TelemetryEvent):
+        """텔레메트리 이벤트 발행"""
+        for callback in self.telemetry_callbacks:
+            try:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(event)
+                else:
+                    callback(event)
+            except Exception as e:
+                logger.error(f"Error in telemetry callback: {e}")
+
     async def publish(self, message: AgentMessage):
         """
         메시지 발행
@@ -141,12 +187,34 @@ class CommunicationBus:
         """
         self.messages.append(message)
 
-        # Exactly-once: 중복 방지
+        # OOM 방지: 메시지 누적 상한 초과 시 오래된 절반 폐기
+        if len(self.messages) > self._max_messages:
+            self.messages = self.messages[self._max_messages // 2 :]
+
+        # 텔레메트리 이벤트 발행 (메시지 전송)
+        if message.message_type != MessageType.TELEMETRY:
+            await self.emit_telemetry(
+                TelemetryEvent(
+                    event_type=TelemetryEventType.MESSAGE_SENT,
+                    agent_id=message.sender,
+                    content=message.content,
+                    metadata={
+                        "receiver": message.receiver,
+                        "message_type": message.message_type.value,
+                        "message_id": message.id,
+                    },
+                )
+            )
+
+        # Exactly-once: 중복 방지 (set 무한 증가 방지 포함)
         if self.delivery_guarantee == "exactly-once":
             if message.id in self.delivered_messages:
                 logger.debug(f"Message {message.id} already delivered, skipping")
                 return
             self.delivered_messages.add(message.id)
+            if len(self.delivered_messages) > self._max_messages:
+                ids = list(self.delivered_messages)
+                self.delivered_messages = set(ids[len(ids) // 2 :])
 
         # 분산 모드: Kafka에 메시지 발행
         if self.use_kafka and self.kafka_producer:

@@ -285,6 +285,40 @@ class DistributedConfigProtocol(Protocol):
         ...
 
 
+@runtime_checkable
+class AgentResultProtocol(Protocol):
+    """Protocol for the result object returned by an agent's run() method."""
+
+    answer: str
+    success: bool
+    steps: List[Any]
+    error: Optional[str]
+
+
+@runtime_checkable
+class AgentProtocol(Protocol):
+    """Protocol for any object that can act as an agent in a multi-agent strategy."""
+
+    name: str
+
+    async def run(self, task: str) -> AgentResultProtocol:
+        """Execute the agent on the given task and return a result."""
+        ...
+
+
+@runtime_checkable
+class IPlanRepository(Protocol):
+    """Protocol for retrieving user-modified plans.
+
+    Implemented by the telemetry layer (e.g. playground), injected into the
+    service layer via constructor — never imported directly.
+    """
+
+    def get_modified_plan(self, execution_id: str) -> Optional[List[Dict[str, Any]]]:
+        """Return a user-modified plan for *execution_id*, or None if unmodified."""
+        ...
+
+
 # Re-export for convenience
 __all__ = [
     "CacheProtocol",
@@ -296,4 +330,7 @@ __all__ = [
     "ConcurrencyControllerProtocol",
     "SyncCacheProtocol",
     "DistributedConfigProtocol",
+    "AgentResultProtocol",
+    "AgentProtocol",
+    "IPlanRepository",
 ]
