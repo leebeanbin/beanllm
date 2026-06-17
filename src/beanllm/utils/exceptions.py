@@ -3,6 +3,31 @@ beanllm.utils.exceptions - Custom Exception Classes
 커스텀 예외 클래스들
 
 이 모듈은 beanllm에서 사용하는 모든 커스텀 예외를 정의합니다.
+
+예외 계층 구조:
+    BeanLLMError                  ← 단일 루트: 모든 beanllm 예외의 부모
+    ├── ProviderError             ← API 호출, 인증, 모델 관련
+    │   ├── AuthenticationError
+    │   ├── RateLimitError
+    │   └── ModelNotFoundError
+    ├── TimeoutError
+    ├── ValidationError
+    ├── CircuitBreakerError
+    ├── MaxRetriesExceededError
+    ├── InvalidParameterError
+    ├── VectorStoreError
+    ├── DocumentLoadError
+    ├── RAGPipelineError
+    ├── KnowledgeGraphError
+    ├── EmbeddingError
+    └── ChainExecutionError
+
+사용 예:
+    # 모든 beanllm 예외를 한 번에 잡기
+    except BeanLLMError as e: ...
+
+    # 구버전 코드와의 하위 호환: LLMManagerError, LLMKitError도 동일하게 작동
+    except LLMKitError as e: ...  # BeanLLMError와 동일
 """
 
 from typing import Optional
@@ -10,16 +35,18 @@ from typing import Optional
 # ===== Base Exceptions =====
 
 
-class LLMManagerError(Exception):
-    """Base exception for llm-model-manager"""
+class BeanLLMError(Exception):
+    """beanllm 모든 예외의 단일 루트.
+
+    `except BeanLLMError` 하나로 모든 beanllm 발생 예외를 포착할 수 있습니다.
+    """
 
     pass
 
 
-class LLMKitError(Exception):
-    """beanllm 베이스 예외"""
-
-    pass
+# 하위 호환 별칭 — 기존 코드가 LLMManagerError / LLMKitError를 catch해도 계속 동작
+LLMManagerError = BeanLLMError
+LLMKitError = BeanLLMError
 
 
 # ===== Provider Exceptions =====

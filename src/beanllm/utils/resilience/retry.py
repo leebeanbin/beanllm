@@ -10,11 +10,12 @@ beanllm.utils.resilience.retry - Retry Logic
 """
 
 import asyncio
+import inspect
 import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import wraps
-from typing import Any, Callable, Optional
+from typing import Any, AsyncGenerator, Callable, Optional
 
 from beanllm.utils.constants import DEFAULT_MAX_RETRIES
 from beanllm.utils.exceptions import MaxRetriesExceededError
@@ -193,20 +194,23 @@ def retry(
     strategy: RetryStrategy = RetryStrategy.EXPONENTIAL,
     retry_on: tuple = (Exception,),
 ):
-    """
-    재시도 데코레이터 (Async/Sync 모두 지원)
+    """재시도 데코레이터 (Async / Sync / AsyncGenerator 모두 지원).
+
+    주의: retry_on에 asyncio.CancelledError를 포함하지 말 것.
+    CancelledError는 BaseException 파생이므로 Exception 튜플에도 잡히지 않지만,
+    명시적으로 제외 의도를 코드로 표현하는 것이 좋음.
 
     Example:
-        @retry(max_retries=5, strategy=RetryStrategy.EXPONENTIAL)
-        def api_call():
-            ...
+        @retry(max_retries=3, retry_on=(APITimeoutError, RateLimitError))
+        async def api_call(): ...
 
-        @retry(max_retries=5, strategy=RetryStrategy.EXPONENTIAL)
-        async def async_api_call():
-            ...
+        @retry(max_retries=3, retry_on=(APITimeoutError,))
+        async def stream_chat(...) -> AsyncGenerator[str, None]:
+            async for chunk in client.stream(...):
+                yield chunk
     """
 
-    def decorator(func):
+    def decorator(func: Callable) -> Callable:
         config = RetryConfig(
             max_retries=max_retries,
             initial_delay=initial_delay,
@@ -215,17 +219,56 @@ def retry(
         )
         handler = RetryHandler(config)
 
-        if asyncio.iscoroutinefunction(func):
+        # 1) Async generator 함수: asyncio.iscoroutinefunction()은 False를 반환하므로
+        #    반드시 먼저 확인해야 함. 재시도 시 제너레이터 전체를 재시작.
+        if inspect.isasyncgenfunction(func):
 
             @wraps(func)
-            async def async_wrapper(*args, **kwargs):
+            async def asyncgen_wrapper(*args: Any, **kwargs: Any) -> AsyncGenerator[Any, None]:
+                last_exc: Optional[BaseException] = None
+                for attempt in range(1, max_retries + 1):
+                    try:
+                        async for item in func(*args, **kwargs):
+                            yield item
+                        return  # 성공
+                    except asyncio.CancelledError:
+                        raise  # 취소는 재시도 불가 — 즉시 전파
+                    except Exception as e:
+                        last_exc = e
+                        if not isinstance(e, retry_on):
+                            raise
+                        if attempt >= max_retries:
+                            logger.error(
+                                f"AsyncGenerator {func.__name__} failed after "
+                                f"{max_retries} retries: {e!r}"
+                            )
+                            raise MaxRetriesExceededError(
+                                f"Max retries ({max_retries}) exceeded for "
+                                f"{func.__name__}. Last error: {e}"
+                            ) from e
+                        delay = handler._calculate_delay(attempt)
+                        logger.warning(
+                            f"AsyncGenerator {func.__name__} attempt {attempt}/{max_retries} "
+                            f"failed: {e!r}. Retrying in {delay:.2f}s..."
+                        )
+                        await asyncio.sleep(delay)
+
+            return asyncgen_wrapper  # type: ignore[return-value]
+
+        # 2) 일반 async 함수
+        elif asyncio.iscoroutinefunction(func):
+
+            @wraps(func)
+            async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
                 return await handler.execute_async(func, *args, **kwargs)
 
             return async_wrapper
+
+        # 3) 동기 함수
         else:
 
             @wraps(func)
-            def sync_wrapper(*args, **kwargs):
+            def sync_wrapper(*args: Any, **kwargs: Any) -> Any:
                 return handler.execute(func, *args, **kwargs)
 
             return sync_wrapper
