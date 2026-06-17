@@ -3,21 +3,15 @@ Claude Provider
 Anthropic Claude API 통합 (최신 SDK 사용)
 """
 
-# 독립적인 utils 사용
-import sys
-from pathlib import Path
 from typing import AsyncGenerator, Dict, List, Optional
 
 # 선택적 의존성 - 지연 import
 try:
     from anthropic import APIError, APITimeoutError, AsyncAnthropic
 except ImportError:
-    # anthropic가 설치되지 않은 경우
     APIError = Exception  # type: ignore
     APITimeoutError = Exception  # type: ignore
     AsyncAnthropic = None  # type: ignore
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
@@ -56,7 +50,8 @@ class ClaudeProvider(BaseLLMProvider):
         )
         self.default_model = "claude-3-5-sonnet-20241022"
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
+    # 스트리밍 재시도를 적용하지 않는 이유: 부분 출력이 이미 caller에게 전달된 후
+    # generator를 처음부터 재시작하면 중복 출력이 발생함 — 재시도 책임은 호출자에게 있음
     @provider_error_handler(
         operation="stream_chat",
         api_error_types=(APITimeoutError, APIError),
@@ -97,7 +92,7 @@ class ClaudeProvider(BaseLLMProvider):
                 if text:
                     yield text
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(APITimeoutError, APIError))
     @provider_error_handler(
         operation="chat",
         api_error_types=(APITimeoutError, APIError),
@@ -136,7 +131,9 @@ class ClaudeProvider(BaseLLMProvider):
         else:
             create_kwargs["temperature"] = temperature
 
-        response = await self.client.messages.create(**create_kwargs)
+        response = await self._call_with_circuit_breaker(
+            self.client.messages.create, **create_kwargs
+        )
 
         # Extract text content, optionally filtering <thinking> blocks
         text_parts = []

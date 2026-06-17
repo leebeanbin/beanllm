@@ -11,6 +11,27 @@ try:
 except ImportError:
     genai = None  # type: ignore
 
+# Retryable exceptions: ServerError = 5xx (transient). ClientError (4xx: auth, bad-request)
+# is intentionally excluded — retrying auth failures wastes quota and time.
+# Layered fallback handles both old (google-api-core) and new (google-genai) SDKs.
+try:
+    from google.genai import errors as _genai_errors  # type: ignore[import]
+
+    _GEMINI_RETRYABLE: tuple = (_genai_errors.ServerError,)
+except (ImportError, AttributeError):
+    try:
+        from google.api_core import exceptions as _gac  # type: ignore[import]
+
+        _GEMINI_RETRYABLE = (
+            _gac.ServiceUnavailable,
+            _gac.DeadlineExceeded,
+            _gac.InternalServerError,
+            _gac.ResourceExhausted,
+        )
+    except ImportError:
+        # Neither SDK exception module is available — broad fallback.
+        _GEMINI_RETRYABLE = (Exception,)
+
 from beanllm.decorators.provider_error_handler import provider_error_handler
 from beanllm.utils.config import EnvConfig
 from beanllm.utils.constants import DEFAULT_MAX_RETRIES, DEFAULT_TEMPERATURE
@@ -41,7 +62,8 @@ class GeminiProvider(BaseLLMProvider):
         self.client = genai.Client(api_key=api_key)
         self.default_model = "gemini-2.0-flash-exp"
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
+    # 스트리밍 재시도를 적용하지 않는 이유: 부분 출력이 이미 caller에게 전달된 후
+    # generator를 처음부터 재시작하면 중복 출력이 발생함 — 재시도 책임은 호출자에게 있음
     async def stream_chat(
         self,
         messages: List[Dict[str, str]],
@@ -87,7 +109,7 @@ class GeminiProvider(BaseLLMProvider):
             logger.error(f"Gemini stream_chat failed: {e}")
             raise
 
-    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=(Exception,))
+    @retry(max_retries=DEFAULT_MAX_RETRIES, retry_on=_GEMINI_RETRYABLE)
     @provider_error_handler(operation="chat", custom_error_message="Gemini chat failed")
     async def chat(
         self,
@@ -117,7 +139,8 @@ class GeminiProvider(BaseLLMProvider):
         max_output_tokens = kwargs.get("max_output_tokens", max_tokens)
         temperature_param = kwargs.get("temperature", temperature)
 
-        response = await self.client.aio.models.generate_content(
+        response = await self._call_with_circuit_breaker(
+            self.client.aio.models.generate_content,
             model=model or self.default_model,
             contents=contents,
             max_output_tokens=max_output_tokens,
