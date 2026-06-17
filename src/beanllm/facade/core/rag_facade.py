@@ -340,17 +340,16 @@ Answer:"""
                 yield chunk
 
         # 비동기 제너레이터를 동기 Iterator로 변환 (기존 동작 보장)
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
         async_gen = async_stream()
 
         # 동기 Iterator로 변환
-        if loop.is_running():
-            # 이미 실행 중인 루프가 있는 경우
+        try:
+            running_loop = asyncio.get_running_loop()
+        except RuntimeError:
+            running_loop = None
+
+        if running_loop is not None:
+            # 이미 실행 중인 루프가 있는 경우 — thread + queue 브리지
             import queue
             import threading
 
@@ -365,7 +364,7 @@ Answer:"""
                     q.put(None)
                     stop_flag.set()
 
-            asyncio.create_task(collect())
+            running_loop.create_task(collect())
             while not stop_flag.is_set() or not q.empty():
                 try:
                     chunk = q.get(timeout=0.1)
@@ -377,12 +376,16 @@ Answer:"""
                         break
         else:
             # 새 루프에서 실행
-            while True:
-                try:
-                    chunk = loop.run_until_complete(async_gen.__anext__())
-                    yield chunk
-                except StopAsyncIteration:
-                    break
+            new_loop = asyncio.new_event_loop()
+            try:
+                while True:
+                    try:
+                        chunk = new_loop.run_until_complete(async_gen.__anext__())
+                        yield chunk
+                    except StopAsyncIteration:
+                        break
+            finally:
+                new_loop.close()
 
     def batch_query(
         self, questions: List[str], k: int = 4, model: Optional[str] = None, **kwargs: Any
@@ -447,21 +450,16 @@ Answer:"""
 
         # 비동기 실행
         try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # 이미 실행 중인 루프가 있으면 순차 처리로 폴백
-                # (중첩 이벤트 루프는 복잡하므로)
-                answers_list: List[str] = []
-                for q in questions:
-                    ans = self.query(q, k=k, model=model, **kwargs)
-                    text = ans[0] if isinstance(ans, tuple) else ans
-                    answers_list.append(text if isinstance(text, str) else str(text))
-                return answers_list
-            else:
-                return cast(List[str], loop.run_until_complete(_batch_query_async()))
+            asyncio.get_running_loop()
+            # 이미 실행 중인 루프가 있으면 순차 처리로 폴백
+            answers_list: List[str] = []
+            for q in questions:
+                ans = self.query(q, k=k, model=model, **kwargs)
+                text = ans[0] if isinstance(ans, tuple) else ans
+                answers_list.append(text if isinstance(text, str) else str(text))
+            return answers_list
         except RuntimeError:
-            # 루프가 없으면 새로 생성
-            return cast(List[str], run_async_in_sync(_batch_query_async()))
+            return cast(List[str], asyncio.run(_batch_query_async()))
 
     async def aquery(
         self,
@@ -486,7 +484,7 @@ Answer:"""
         """
         # 기존 rag_chain.py의 aquery 정확히 마이그레이션
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None, lambda: self.query(question, k, include_sources, model=model, **kwargs)
         )

@@ -8,7 +8,7 @@ SOLID 원칙:
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 from beanllm.domain.tools import Tool, ToolRegistry
 
@@ -70,6 +70,9 @@ class Agent:
         max_iterations: int = 10,
         provider: Optional[str] = None,
         verbose: bool = False,
+        name: Optional[str] = None,
+        telemetry_bus: Optional[Any] = None,  # CommunicationBus
+        whiteboard: Optional[Any] = None,  # SharedWhiteboard
     ) -> None:
         """
         Args:
@@ -78,11 +81,17 @@ class Agent:
             max_iterations: 최대 반복 횟수
             provider: Provider 이름
             verbose: 상세 로그 출력
+            name: 에이전트 이름 (telemetry용)
+            telemetry_bus: 텔레메트리 전송을 위한 버스
+            whiteboard: 공용 지식 저장소
         """
         self.model = model
         self.provider = provider
         self.max_iterations = max_iterations
         self.verbose = verbose
+        self.name = name or f"agent_{id(self)}"
+        self.telemetry_bus = telemetry_bus
+        self.whiteboard = whiteboard
 
         # ToolRegistry 생성
         self.registry = ToolRegistry()
@@ -115,6 +124,19 @@ class Agent:
         Returns:
             AgentResult: 실행 결과
         """
+        # 텔레메트리 발행 (시작)
+        if self.telemetry_bus:
+            from beanllm.domain.multi_agent.communication import TelemetryEvent, TelemetryEventType
+
+            await self.telemetry_bus.emit_telemetry(
+                TelemetryEvent(
+                    event_type=TelemetryEventType.AGENT_STARTED,
+                    agent_id=self.name,
+                    content=task,
+                    metadata={"model": self.model},
+                )
+            )
+
         # Handler를 통한 처리 (기존 agent.py와 동일)
         # 기존: tools는 registry.get_all()로 가져옴
         tools_list = (
@@ -134,6 +156,9 @@ class Agent:
             max_steps=self.max_iterations,
             tool_registry=self.registry,  # ToolRegistry 전달 (기존 구조 유지)
             provider=self.provider,
+            telemetry_bus=self.telemetry_bus,
+            agent_id=self.name,
+            whiteboard=self.whiteboard,
         )
 
         # AgentResponse를 AgentResult로 변환 (기존 API 유지)
@@ -150,6 +175,19 @@ class Agent:
             )
             for i, step in enumerate(response.steps)
         ]
+
+        # 텔레메트리 발행 (종료)
+        if self.telemetry_bus:
+            from beanllm.domain.multi_agent.communication import TelemetryEvent, TelemetryEventType
+
+            await self.telemetry_bus.emit_telemetry(
+                TelemetryEvent(
+                    event_type=TelemetryEventType.AGENT_FINISHED,
+                    agent_id=self.name,
+                    content=response.answer,
+                    metadata={"success": response.success, "total_steps": response.total_steps},
+                )
+            )
 
         return AgentResult(
             answer=response.answer,
