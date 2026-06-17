@@ -100,38 +100,54 @@ class CircuitBreaker:
                 if self.failure_count >= self.config.failure_threshold:
                     self.state = CircuitState.OPEN
 
-    def call(self, func: Callable, *args, **kwargs) -> Any:
-        """
-        Circuit breaker를 통한 함수 호출
+    def _check_and_transition(self) -> None:
+        """OPEN 상태 확인 및 HALF_OPEN 전환. 차단 시 CircuitBreakerError 발생."""
+        with self._lock:
+            if self._should_attempt_reset():
+                self.state = CircuitState.HALF_OPEN
+                self.success_count = 0
+            if self.state == CircuitState.OPEN:
+                raise CircuitBreakerError(
+                    f"Circuit breaker is OPEN for '{self.__class__.__name__}'. "
+                    f"Cooling down — wait {self.config.timeout:.0f}s before retry."
+                )
 
-        Args:
-            func: 실행할 함수
-            *args, **kwargs: 함수 인자
-
-        Returns:
-            함수 실행 결과
+    def call(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
+        """Circuit breaker를 통한 동기 함수 호출.
 
         Raises:
             CircuitBreakerError: Circuit이 OPEN 상태일 때
         """
-        with self._lock:
-            # OPEN -> HALF_OPEN 전환 시도
-            if self._should_attempt_reset():
-                self.state = CircuitState.HALF_OPEN
-                self.success_count = 0
-
-            # OPEN 상태면 차단
-            if self.state == CircuitState.OPEN:
-                raise CircuitBreakerError(
-                    f"Circuit breaker is OPEN. Wait {self.config.timeout}s before retry."
-                )
-
-        # 함수 실행
+        self._check_and_transition()
         try:
             result = func(*args, **kwargs)
             self._record_success()
             return result
+        except Exception:
+            self._record_failure()
+            raise
 
+    async def async_call(self, func: Callable, *args: Any, **kwargs: Any) -> Any:
+        """Circuit breaker를 통한 비동기 함수 호출.
+
+        Example:
+            result = await breaker.async_call(self.client.chat, messages=...)
+
+        Raises:
+            CircuitBreakerError: Circuit이 OPEN 상태일 때
+        """
+        import asyncio
+
+        self._check_and_transition()
+        try:
+            if asyncio.iscoroutinefunction(func):
+                result = await func(*args, **kwargs)
+            else:
+                result = func(*args, **kwargs)
+            self._record_success()
+            return result
+        except CircuitBreakerError:
+            raise  # 재귀 방지
         except Exception:
             self._record_failure()
             raise

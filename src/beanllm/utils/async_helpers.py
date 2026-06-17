@@ -10,10 +10,13 @@ This module reduces boilerplate code for:
 """
 
 import asyncio
+import logging
 from typing import TYPE_CHECKING, Any, Coroutine, Dict, Optional, TypeVar
 
 if TYPE_CHECKING:
     from beanllm.domain.protocols import CacheProtocol, EventLoggerProtocol
+
+_logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
@@ -39,16 +42,12 @@ def run_async_in_sync(coro: Coroutine[Any, Any, T]) -> Optional[T]:
         >>> result = run_async_in_sync(async_operation())
     """
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            # Fire-and-forget (can't await in running loop)
-            asyncio.create_task(coro)
-            return None
-        else:
-            # Loop exists but not running
-            return loop.run_until_complete(coro)
+        loop = asyncio.get_running_loop()
+        # Fire-and-forget (can't await in running loop)
+        loop.create_task(coro)
+        return None
     except RuntimeError:
-        # No event loop exists
+        # No running loop — run synchronously
         return asyncio.run(coro)
 
 
@@ -117,17 +116,12 @@ class AsyncHelperMixin:
         event_coro = self._event_logger.log_event(event_type, data)
 
         if fire_and_forget:
-            # Best effort - don't block
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(event_coro)
-                else:
-                    loop.run_until_complete(event_coro)
+                loop = asyncio.get_running_loop()
+                loop.create_task(event_coro)
             except RuntimeError:
                 asyncio.run(event_coro)
         else:
-            # Wait for result
             self._run_async(event_coro)
 
     def _get_cached(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
@@ -156,8 +150,8 @@ class AsyncHelperMixin:
         try:
             result = self._run_async(self._cache.get(key))
             return result if result is not None else default
-        except Exception:
-            # Cache failure - return default
+        except Exception as e:
+            _logger.debug(f"Cache read failed (non-critical): {e!r}")
             return default
 
     def _set_cache(
@@ -190,24 +184,20 @@ class AsyncHelperMixin:
         cache_coro = self._cache.set(key, value, ttl=ttl) if ttl else self._cache.set(key, value)
 
         if fire_and_forget:
-            # Best effort - don't block
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(cache_coro)
-                else:
-                    loop.run_until_complete(cache_coro)
-            except (RuntimeError, Exception):
+                loop = asyncio.get_running_loop()
+                loop.create_task(cache_coro)
+            except RuntimeError:
                 try:
                     asyncio.run(cache_coro)
-                except Exception:
-                    pass  # Cache storage failed - continue
+                except Exception as e:
+                    _logger.debug(f"Cache storage failed (non-critical): {e!r}")
         else:
             # Wait for result
             try:
                 self._run_async(cache_coro)
-            except Exception:
-                pass  # Cache storage failed - continue
+            except Exception as e:
+                _logger.debug(f"Cache storage failed (non-critical): {e!r}")
 
 
 # Standalone functions for use without mixin
@@ -265,7 +255,8 @@ def get_cached_sync(
     try:
         result = run_async_in_sync(cache.get(key))
         return result if result is not None else default
-    except Exception:
+    except Exception as e:
+        _logger.debug(f"Cache read failed (non-critical): {e!r}")
         return default
 
 
@@ -296,5 +287,5 @@ def set_cache_sync(
 
     try:
         run_async_in_sync(cache_coro)
-    except Exception:
-        pass  # Cache storage failed - continue
+    except Exception as e:
+        _logger.debug(f"Cache storage failed (non-critical): {e!r}")
