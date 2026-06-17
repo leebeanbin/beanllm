@@ -89,8 +89,8 @@ app.add_middleware(
         "http://127.0.0.1:3001",
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],
 )
 
 USE_DISTRIBUTED = os.getenv("USE_DISTRIBUTED", "false").lower() == "true"
@@ -959,6 +959,7 @@ from routers.monitoring_router import router as monitoring_router
 from routers.ocr_router import router as ocr_router
 from routers.optimizer_router import router as optimizer_router
 from routers.rag_router import router as rag_router
+from routers.telemetry_router import router as telemetry_router
 from routers.vision_router import router as vision_router
 from routers.web_router import router as web_router
 
@@ -978,9 +979,10 @@ app.include_router(finetuning_router)
 app.include_router(ocr_router)
 app.include_router(web_router)
 app.include_router(optimizer_router)
+app.include_router(telemetry_router)
 
 logger.info(
-    "✅ Modular routers included: config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer"
+    "✅ Modular routers included: config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer, telemetry"
 )
 
 if __name__ == "__main__":

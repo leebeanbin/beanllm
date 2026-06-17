@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { API_URL } from "@/lib/api-client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Download, X } from "lucide-react";
@@ -24,7 +25,7 @@ export function ProviderWarning() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  
 
   useEffect(() => {
     fetchSDKStatus();
@@ -33,7 +34,7 @@ export function ProviderWarning() {
   const fetchSDKStatus = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/api/config/provider-sdks`);
+      const response = await fetch(`${API_URL}/api/config/provider-sdks`);
       if (response.ok) {
         const data = await response.json();
         setSdkStatus(data);

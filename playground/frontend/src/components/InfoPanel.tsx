@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { LayoutGrid, Box, PanelTop, FileText, SlidersHorizontal, ChevronRight, Sparkles, Settings, Download, Upload, Trash2, RefreshCw, CheckCircle2, Brain, KeyRound, Github, MessageSquare, Clock } from "lucide-react";
+import { API_URL } from "@/lib/api-client";
+import { LayoutGrid, Box, PanelTop, FileText, SlidersHorizontal, ChevronRight, Sparkles, Settings, Download, Upload, Trash2, RefreshCw, CheckCircle2, Brain, KeyRound, Github, MessageSquare, Clock, GitGraph } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -12,12 +13,14 @@ import { FeatureSelector } from "./FeatureSelector";
 import { FeatureBadge } from "./FeatureBadge";
 import { GoogleServiceSelector } from "./GoogleServiceSelector";
 import { FeatureMode, GoogleService } from "@/types/chat";
+import { WorkflowMap } from "./WorkflowMap";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 interface InfoPanelProps {
   isOpen: boolean;
   onClose: () => void;
   /** "documents" | "monitor" are mapped to "session" for backward compat */
-  defaultTab?: "quickstart" | "models" | "session" | "settings" | "documents" | "monitor";
+  defaultTab?: "quickstart" | "models" | "session" | "settings" | "documents" | "monitor" | "workflow";
   /** When set, panel uses this (controlled). Toggle lives in top tab bar. */
   isCollapsed?: boolean;
   onCollapseChange?: (collapsed: boolean) => void;
@@ -67,6 +70,9 @@ interface InfoPanelProps {
   onExport?: () => void;
   onImport?: () => void;
   onClear?: () => void;
+  // Telemetry
+  executionId?: string | null;
+  onTelemetryResume?: (modifiedPlan?: any[]) => void;
 }
 
 export function InfoPanel({
@@ -111,29 +117,40 @@ export function InfoPanel({
   onExport,
   onImport,
   onClear,
+  executionId = null,
+  onTelemetryResume,
 }: InfoPanelProps) {
   const resolvedTab =
     defaultTab && (defaultTab === "documents" || defaultTab === "monitor") ? "session" : defaultTab;
-  const [activeTab, setActiveTab] = useState<"quickstart" | "models" | "session" | "settings">(
-    resolvedTab || "quickstart"
+  const [activeTab, setActiveTab] = useState<"quickstart" | "models" | "session" | "settings" | "workflow">(
+    (resolvedTab as any) || "quickstart"
   );
+  
+  const { events, isConnected } = useTelemetry(executionId);
+
+  useEffect(() => {
+    if (executionId && activeTab !== "workflow") {
+      setActiveTab("workflow");
+    }
+  }, [executionId]);
+
   const [isCollapsedLocal, setIsCollapsedLocal] = useState(false);
   const isCollapsed = isCollapsedProp !== undefined ? isCollapsedProp : isCollapsedLocal;
 
   // Chat history (past sessions) — fetch when session tab is active
   const [historySessions, setHistorySessions] = useState<Array<{ session_id: string; title: string; updated_at: string; message_count: number }>>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  
 
   useEffect(() => {
-    if (resolvedTab) setActiveTab(resolvedTab);
+    if (resolvedTab) setActiveTab(resolvedTab as any);
   }, [resolvedTab]);
 
   useEffect(() => {
     if (activeTab !== "session" && !sessionId) return;
     let cancelled = false;
     setHistoryLoading(true);
-    fetch(`${apiUrl}/api/chat/sessions?limit=20&sort_by=updated_at`)
+    fetch(`${API_URL}/api/chat/sessions?limit=20&sort_by=updated_at`)
       .then((res) => (res.ok ? res.json() : { sessions: [] }))
       .then((data) => {
         if (!cancelled) setHistorySessions(data.sessions || []);
@@ -141,7 +158,7 @@ export function InfoPanel({
       .catch(() => { if (!cancelled) setHistorySessions([]); })
       .finally(() => { if (!cancelled) setHistoryLoading(false); });
     return () => { cancelled = true; };
-  }, [activeTab, apiUrl, onLoadSession, sessionId]);
+  }, [activeTab, onLoadSession, sessionId]);
 
   // Always render, but control visibility with width
 
@@ -165,12 +182,15 @@ export function InfoPanel({
       )}>
         {!isCollapsed && (
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="mx-2 mt-2 grid w-auto grid-cols-4 gap-0.5 p-0.5 h-auto bg-muted/20 border border-border/40 rounded-lg">
+            <TabsList className="mx-2 mt-2 grid w-auto grid-cols-5 gap-0.5 p-0.5 h-auto bg-muted/20 border border-border/40 rounded-lg">
               <TabsTrigger value="quickstart" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Start">
               <LayoutGrid className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
             <TabsTrigger value="models" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Model">
               <Box className="h-4 w-4" strokeWidth={1.5} />
+            </TabsTrigger>
+            <TabsTrigger value="workflow" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="Workflow">
+              <GitGraph className="h-4 w-4" strokeWidth={1.5} />
             </TabsTrigger>
             <TabsTrigger value="session" className="size-8 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 p-0 data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border/40 rounded-md touch-manipulation" title="History">
               <PanelTop className="h-4 w-4" strokeWidth={1.5} />
@@ -231,6 +251,49 @@ export function InfoPanel({
                   Top: Chat | Monitoring | Settings. Here: Start | Model | History | Settings.
                 </p>
               </div>
+            </div>
+          </TabsContent>
+
+          {/* Workflow — Real-time agent collaboration map */}
+          <TabsContent value="workflow" className="flex-1 flex flex-col min-h-0 mt-0 overflow-y-auto antialiased">
+            <div className="p-4 space-y-4 flex-1 flex flex-col min-h-0">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[13px] font-semibold text-foreground tracking-tight">Workflow Map</h4>
+                {isConnected && (
+                  <span className="flex items-center gap-1 text-[10px] font-medium text-green-600 dark:text-green-500">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Live
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex-1 min-h-[400px] rounded-lg border border-border/40 overflow-hidden">
+                {executionId ? (
+                  <WorkflowMap events={events} isConnected={isConnected} onResume={onTelemetryResume} />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-center p-6 bg-muted/5">
+                    <GitGraph className="h-10 w-10 text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+                    <p className="text-xs text-muted-foreground max-w-[12rem]">
+                      No active multi-agent workflow. Start a debate or collaborative task to see the map.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {events.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest">Recent Events</p>
+                  <div className="space-y-1 max-h-40 overflow-y-auto rounded-md border border-border/40 bg-muted/5 p-2">
+                    {events.slice(-5).reverse().map((event, idx) => (
+                      <div key={idx} className="text-[11px] flex gap-2 py-1 border-b border-border/20 last:border-0">
+                        <span className="text-muted-foreground shrink-0">{new Date(event.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+                        <span className="font-medium text-foreground shrink-0">{event.agent_id}:</span>
+                        <span className="text-muted-foreground truncate">{event.event_type}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
 
