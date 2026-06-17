@@ -7,15 +7,19 @@ SOLID 원칙:
 
 from __future__ import annotations
 
+import asyncio
 import os
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Optional, cast
 
 from beanllm.domain.multi_agent.strategies import (
+    AutonomousPlanningStrategy,
     DebateStrategy,
     HierarchicalStrategy,
     ParallelStrategy,
+    ReflectiveStrategy,
     SequentialStrategy,
 )
+from beanllm.domain.protocols import IPlanRepository
 from beanllm.dto.request.advanced.multi_agent_request import MultiAgentRequest
 from beanllm.dto.response.advanced.multi_agent_response import MultiAgentResponse
 from beanllm.infrastructure.distributed.pipeline_decorators import with_distributed_features
@@ -45,9 +49,13 @@ class MultiAgentServiceImpl(IMultiAgentService):
     - DIP: 인터페이스에 의존 (의존성 주입)
     """
 
-    def __init__(self) -> None:
-        """의존성 주입을 통한 생성자"""
-        pass
+    def __init__(self, plan_repository: Optional[IPlanRepository] = None) -> None:
+        """
+        Args:
+            plan_repository: 사용자 수정 계획을 조회하는 리포지토리.
+                Playground 등 외부 레이어에서 주입. None이면 사용자 수정 계획 기능 비활성화.
+        """
+        self._plan_repository = plan_repository
 
     @with_distributed_features(
         pipeline_type="multi_agent",
@@ -177,13 +185,15 @@ class MultiAgentServiceImpl(IMultiAgentService):
                 )
             except Exception as e:
                 logger.warning(
-                    f"Distributed parallel execution failed: {e}, falling back to sequential"
+                    f"Distributed parallel execution failed: {e!r}. "
+                    "Falling back to local ParallelStrategy."
                 )
-                # Fallback to sequential
+                # metadata에 degraded_mode 플래그를 포함해 호출자가 인지할 수 있게 함
 
-        # 기존 multi_agent.py의 ParallelStrategy.execute() 로직 정확히 마이그레이션
+        # 로컬 ParallelStrategy 실행 (분산 모드 비활성화 또는 fallback)
         strategy = ParallelStrategy(aggregation=request.aggregation)
         result = await strategy.execute(request.agents or [], request.task, **request.extra_params)
+        result["degraded_mode"] = USE_DISTRIBUTED  # 분산 요청이었으나 로컬 실행됐음을 표시
 
         return MultiAgentResponse(
             final_result=result.get("final_result"),
@@ -249,5 +259,101 @@ class MultiAgentServiceImpl(IMultiAgentService):
         return MultiAgentResponse(
             final_result=result.get("final_result"),
             strategy=result.get("strategy", "debate"),
+            metadata=result,
+        )
+
+    async def execute_autonomous_planning(self, request: MultiAgentRequest) -> MultiAgentResponse:
+        """
+        자율 계획 및 실행
+
+        Args:
+            request: Multi-Agent 요청 DTO
+
+        Returns:
+            MultiAgentResponse: Multi-Agent 응답 DTO
+        """
+        if not request.agents:
+            raise ValueError("No agents provided for autonomous planning")
+
+        # 첫 번째 agent가 planner
+        planner_agent = request.agents[0]
+        worker_agents = request.agents[1:] if len(request.agents) > 1 else request.agents
+
+        # 텔레메트리 버스 가져오기
+        telemetry_bus = request.extra_params.get("telemetry_bus")
+        wait_for_approval = request.extra_params.get("wait_for_approval", False)
+
+        async def plan_ready_callback(plan):
+            if telemetry_bus:
+                from beanllm.domain.multi_agent.communication import (
+                    TelemetryEvent,
+                    TelemetryEventType,
+                )
+
+                await telemetry_bus.emit_telemetry(
+                    TelemetryEvent(
+                        event_type=TelemetryEventType.PLAN_READY,
+                        agent_id=request.planner_id or "planner",
+                        content=plan,
+                        metadata={"wait_for_approval": wait_for_approval},
+                    )
+                )
+
+            if wait_for_approval:
+                # 승인 대기 로직: request.extra_params의 이벤트를 기다림
+                resume_event = request.extra_params.get("resume_event")
+                if resume_event and isinstance(resume_event, asyncio.Event):
+                    logger.info("AutonomousPlanning: Waiting for user approval...")
+                    await resume_event.wait()
+                    logger.info("AutonomousPlanning: Approval received, resuming...")
+
+                    # 주입된 plan_repository를 통해 사용자 수정 계획 조회
+                    # (sys.path 조작 금지 — playground 모듈은 DI로만 접근)
+                    execution_id = request.extra_params.get("execution_id")
+                    if execution_id and self._plan_repository is not None:
+                        modified_plan = self._plan_repository.get_modified_plan(execution_id)
+                        if modified_plan:
+                            logger.info(
+                                f"AutonomousPlanning: Applying user-modified plan "
+                                f"({len(modified_plan)} steps)"
+                            )
+                            plan.clear()
+                            plan.extend(modified_plan)
+
+        strategy = AutonomousPlanningStrategy(
+            planner_agent=planner_agent, on_plan_ready=plan_ready_callback
+        )
+        result = await strategy.execute(worker_agents, request.task, **request.extra_params)
+
+        return MultiAgentResponse(
+            final_result=result.get("final_result"),
+            strategy=result.get("strategy", "autonomous_planning"),
+            metadata=result,
+        )
+
+    async def execute_reflective(self, request: MultiAgentRequest) -> MultiAgentResponse:
+        """
+        자기 성찰 및 상호 검증
+
+        Args:
+            request: Multi-Agent 요청 DTO
+
+        Returns:
+            MultiAgentResponse: Multi-Agent 응답 DTO
+        """
+        if not request.agents or len(request.agents) < 2:
+            raise ValueError("At least two agents are required for reflective strategy")
+
+        # 첫 번째가 실행 주체, 두 번째가 리뷰어
+        primary_agent = request.agents[0]
+        reviewer_agent = request.agents[1]
+
+        # 기존 multi_agent.py의 ReflectiveStrategy.execute() 로직 적용
+        strategy = ReflectiveStrategy(reviewer_agent=reviewer_agent, rounds=request.rounds)
+        result = await strategy.execute([primary_agent], request.task, **request.extra_params)
+
+        return MultiAgentResponse(
+            final_result=result.get("final_result"),
+            strategy=result.get("strategy", "reflective"),
             metadata=result,
         )

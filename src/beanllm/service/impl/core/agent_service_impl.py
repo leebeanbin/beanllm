@@ -7,6 +7,7 @@ SOLID 원칙:
 
 from __future__ import annotations
 
+import asyncio
 import heapq
 import json
 import re
@@ -97,6 +98,16 @@ class AgentServiceImpl(IAgentService):
         # 히스토리를 리스트로 관리 (Dynamic Compression을 위해)
         history_steps: List[Dict[str, Any]] = []
 
+        # 텔레메트리 및 화이트보드 가져오기
+        telemetry_bus = request.extra_params.get("telemetry_bus")
+        agent_id = request.extra_params.get("agent_id", "agent")
+        whiteboard = request.extra_params.get("whiteboard")
+
+        # 화이트보드 지식 추가
+        if whiteboard:
+            initial_prompt = whiteboard.to_summary_string() + "\n\n" + initial_prompt
+            initial_prompt += "\n\nYou can use tools: 'write_whiteboard(key, value)' to store facts, and 'read_whiteboard()' to see all shared knowledge."
+
         # 기존 while 루프 로직 정확히 마이그레이션
         while step_number < request.max_steps:
             step_number += 1
@@ -113,6 +124,22 @@ class AgentServiceImpl(IAgentService):
             )
             response = await self._chat_service.chat(chat_request)
             content = response.content
+
+            # 텔레메트리 발행 (생각 과정)
+            if telemetry_bus:
+                from beanllm.domain.multi_agent.communication import (
+                    TelemetryEvent,
+                    TelemetryEventType,
+                )
+
+                await telemetry_bus.emit_telemetry(
+                    TelemetryEvent(
+                        event_type=TelemetryEventType.THINKING_CHUNK,
+                        agent_id=agent_id,
+                        content=content,
+                        metadata={"step": step_number},
+                    )
+                )
 
             # 응답 파싱 (기존: self._parse_response(content, step_number))
             parsed_step = self._parse_response(content, step_number)
@@ -131,12 +158,46 @@ class AgentServiceImpl(IAgentService):
             action_name = parsed_step.get("action")
             action_input = parsed_step.get("action_input")
             if action_name and action_input:
-                observation = self._execute_tool(
+                # 텔레메트리 발행 (도구 시작)
+                if telemetry_bus:
+                    from beanllm.domain.multi_agent.communication import (
+                        TelemetryEvent,
+                        TelemetryEventType,
+                    )
+
+                    await telemetry_bus.emit_telemetry(
+                        TelemetryEvent(
+                            event_type=TelemetryEventType.TOOL_STARTED,
+                            agent_id=agent_id,
+                            content=action_name,
+                            metadata={"input": action_input, "step": step_number},
+                        )
+                    )
+
+                observation = await self._execute_tool(
                     action_name,
                     action_input,
                     cast(Optional["ToolRegistryProtocol"], tool_registry),
+                    whiteboard=whiteboard,
+                    agent_id=agent_id,
                 )
                 parsed_step["observation"] = observation
+
+                # 텔레메트리 발행 (도구 종료)
+                if telemetry_bus:
+                    from beanllm.domain.multi_agent.communication import (
+                        TelemetryEvent,
+                        TelemetryEventType,
+                    )
+
+                    await telemetry_bus.emit_telemetry(
+                        TelemetryEvent(
+                            event_type=TelemetryEventType.TOOL_FINISHED,
+                            agent_id=agent_id,
+                            content=observation,
+                            metadata={"tool": action_name, "step": step_number},
+                        )
+                    )
 
                 # 히스토리 업데이트 (리스트로 관리)
                 history_steps.append(
@@ -271,13 +332,31 @@ Let's begin!
 
         return step
 
-    def _execute_tool(
+    async def _execute_tool(
         self,
         tool_name: str,
         arguments: Dict[str, Any],
         tool_registry: Optional["ToolRegistryProtocol"] = None,
+        whiteboard: Optional[Any] = None,
+        agent_id: str = "agent",
     ) -> str:
         """도구 실행 (기존 agent.py와 정확히 동일한 로직)"""
+        # Virtual Whiteboard Tools
+        if tool_name == "write_whiteboard":
+            if not whiteboard:
+                return "Error: Shared whiteboard is not initialized."
+            key = arguments.get("key")
+            value = arguments.get("value")
+            if not key or value is None:
+                return "Error: 'key' and 'value' are required for write_whiteboard."
+            await whiteboard.set(key, value, agent_id)
+            return f"Successfully wrote {key} to whiteboard."
+
+        if tool_name == "read_whiteboard":
+            if not whiteboard:
+                return "Shared whiteboard is empty."
+            return whiteboard.to_summary_string()
+
         # tool_registry 우선순위: 인자 > self._tool_registry
         registry = tool_registry or self._tool_registry
 
@@ -286,7 +365,12 @@ Let's begin!
 
         # 기존: result = self.registry.execute(tool_name, arguments)
         try:
-            result = registry.execute(tool_name, arguments)
+            if hasattr(registry, "execute_async") and asyncio.iscoroutinefunction(
+                registry.execute_async
+            ):
+                result = await registry.execute_async(tool_name, arguments)
+            else:
+                result = registry.execute(tool_name, arguments)
             return str(result)
         except Exception as e:
             error_msg = f"Error executing tool '{tool_name}': {e}"
