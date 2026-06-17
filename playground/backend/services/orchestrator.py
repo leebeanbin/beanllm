@@ -18,6 +18,14 @@ from services.intent_classifier import IntentResult, IntentType
 from services.mcp_client_service import mcp_client
 from services.tool_registry import Tool, ToolCheckResult, ToolRegistry, tool_registry
 
+# 텔레메트리 관리자 임포트
+try:
+    from telemetry_manager import telemetry_manager
+
+    from beanllm.domain.multi_agent.communication import TelemetryEvent, TelemetryEventType
+except ImportError:
+    telemetry_manager = None
+
 logger = logging.getLogger(__name__)
 
 # 그래프/노드 제한 (제안 단계·검증용)
@@ -49,6 +57,7 @@ def _handle_task_exception(task: "asyncio.Task[Any]") -> None:
 class EventType(str, Enum):
     """SSE 이벤트 타입"""
 
+    TELEMETRY_INIT = "telemetry_init"  # 텔레메트리 세션 시작 (run_id 전달)
     INTENT = "intent"  # 의도 분류 결과
     TOOL_SELECT = "tool_select"  # 도구 선택
     PROPOSAL = "proposal"  # 제안 단계: 노드/파이프라인 제안 (챗 전용)
@@ -128,6 +137,24 @@ class AgenticOrchestrator:
         self._tool_handlers: Dict[str, Any] = {}
         self._mcp_client = mcp_client  # MCP Client Service (중앙 관리 포인트)
         self._init_handlers()
+
+    async def _emit_telemetry(
+        self,
+        execution_id: Optional[str],
+        event_type: Any,  # TelemetryEventType
+        agent_id: str,
+        content: Any = None,
+        metadata: Dict[str, Any] = None,
+    ):
+        """텔레메트리 이벤트 발행 헬퍼"""
+        if telemetry_manager and execution_id:
+            event = TelemetryEvent(
+                event_type=event_type,
+                agent_id=agent_id,
+                content=content,
+                metadata=metadata or {},
+            )
+            await telemetry_manager.broadcast_event(execution_id, event)
 
     # ===========================================
     # Google OAuth Helper (중복 제거)
@@ -229,9 +256,25 @@ class AgenticOrchestrator:
         Yields:
             AgenticEvent: SSE 이벤트
         """
+        execution_id = context.run_id
         try:
             logger.info(
                 f"Orchestrator.execute started: query={context.query[:50]}..., tools={len(context.selected_tools)}, start_from={start_from_tool_index}"
+            )
+
+            # 텔레메트리 발행 (시작)
+            await self._emit_telemetry(
+                execution_id,
+                TelemetryEventType.AGENT_STARTED,
+                "orchestrator",
+                content=context.query,
+                metadata={"model": context.model},
+            )
+
+            # 클라이언트에 run_id 전달 (WebSocket 연결용)
+            yield AgenticEvent(
+                type=EventType.TELEMETRY_INIT,
+                data={"run_id": execution_id},
             )
 
             if start_from_tool_index == 0:
@@ -245,6 +288,14 @@ class AgenticOrchestrator:
                         "secondary_intents": [i.value for i in context.intent.secondary_intents],
                         "extracted_entities": context.intent.extracted_entities,
                     },
+                )
+
+                # 텔레메트리 발행 (의도 파악)
+                await self._emit_telemetry(
+                    execution_id,
+                    TelemetryEventType.THINKING_CHUNK,
+                    "orchestrator",
+                    content=f"Intent: {context.intent.primary_intent.value}",
                 )
 
                 # 2. 도구가 없으면 기본 Chat으로 폴백
@@ -310,6 +361,15 @@ class AgenticOrchestrator:
                 tool_check = context.selected_tools[idx]
                 tool = tool_check.tool
                 logger.info(f"Executing tool {idx + 1}/{len(context.selected_tools)}: {tool.name}")
+
+                # 텔레메트리 발행 (도구 시작)
+                await self._emit_telemetry(
+                    execution_id,
+                    TelemetryEventType.TOOL_STARTED,
+                    "orchestrator",
+                    content=tool.name,
+                    metadata={"index": idx},
+                )
 
                 # 도구 사용 불가 체크
                 if not tool_check.is_available:
@@ -391,11 +451,18 @@ class AgenticOrchestrator:
                         if event.type == EventType.TOOL_RESULT:
                             result = event.data.get("result")
                             all_results.append(
-                                {
-                                    "tool": tool.name,
-                                    "result": result,
-                                }
+                                {"tool": tool.name, "status": "completed", "result": result}
                             )
+
+                            # 텔레메트리 발행 (도구 종료)
+                            await self._emit_telemetry(
+                                execution_id,
+                                TelemetryEventType.TOOL_FINISHED,
+                                "orchestrator",
+                                content=result,
+                                metadata={"tool": tool.name},
+                            )
+
                             # 토큰 메트릭 수집 (handler가 usage를 넘기면 합산)
                             usage = event.data.get("usage")
                             if isinstance(usage, dict):
@@ -439,6 +506,14 @@ class AgenticOrchestrator:
             if accumulated_usage["input_tokens"] or accumulated_usage["output_tokens"]:
                 done_data["usage"] = accumulated_usage
             yield AgenticEvent(type=EventType.DONE, data=done_data)
+
+            # 텔레메트리 발행 (종료)
+            await self._emit_telemetry(
+                execution_id,
+                TelemetryEventType.AGENT_FINISHED,
+                "orchestrator",
+                content="Task completed",
+            )
 
         except Exception as e:
             logger.error(f"Orchestrator error: {e}")

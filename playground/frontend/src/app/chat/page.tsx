@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { API_URL } from "@/lib/api-client";
 import { PageLayout } from "@/components/PageLayout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -147,7 +148,8 @@ export default function ChatPage() {
   const [modelSupportsThinking, setModelSupportsThinking] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(true); // Always visible by default
-  const [infoPanelTab, setInfoPanelTab] = useState<"quickstart" | "models" | "session" | "settings">("quickstart");
+  const [infoPanelTab, setInfoPanelTab] = useState<"quickstart" | "models" | "session" | "settings" | "workflow">("quickstart");
+  const [executionId, setExecutionId] = useState<string | null>(null);
   const [isInfoPanelCollapsed, setIsInfoPanelCollapsed] = useState(false);
   const [documentPreviewContent, setDocumentPreviewContent] = useState<string | undefined>();
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
@@ -165,14 +167,14 @@ export default function ChatPage() {
   // Fetch provider config and set default model on mount
   useEffect(() => {
     const fetchProviderConfig = async () => {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      
       try {
         await Promise.all([
-          fetch(`${apiUrl}/api/config/providers`).catch(() => null),
+          fetch(`${API_URL}/api/config/providers`).catch(() => null),
         ]);
 
         // Fetch available models and set default to first installed Ollama model
-        const modelsResponse = await fetch(`${apiUrl}/api/config/models`).catch(() => null);
+        const modelsResponse = await fetch(`${API_URL}/api/config/models`).catch(() => null);
         if (modelsResponse && modelsResponse.ok) {
           const modelsData = await modelsResponse.json();
           
@@ -257,11 +259,11 @@ export default function ChatPage() {
   const loadSessionSummary = async () => {
     if (!sessionId || messages.length < 10) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     setSessionSummaryLoading(true);
 
     try {
-      const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}/summary`, {
+      const response = await fetch(`${API_URL}/api/chat/sessions/${sessionId}/summary`, {
         method: "GET",
       });
 
@@ -287,9 +289,9 @@ export default function ChatPage() {
 
   // Load a past session from chat history (panel)
   const loadSession = useCallback(async (sid: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     try {
-      const response = await fetch(`${apiUrl}/api/chat/sessions/${sid}`);
+      const response = await fetch(`${API_URL}/api/chat/sessions/${sid}`);
       if (!response.ok) return;
       const data = await response.json();
       const session = data.session;
@@ -313,7 +315,7 @@ export default function ChatPage() {
 
   // New chat — 10개 미만이면 "저장할까요?" 물어보고, 저장 시 백엔드에 세션+메시지 저장 후 비우기
   const handleNewChat = useCallback(async () => {
-    const apiUrlForNew = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     const effectiveFeature = mode === "auto" ? "agentic" : selectedFeature;
 
     if (messages.length > 0 && messages.length < 10) {
@@ -321,7 +323,7 @@ export default function ChatPage() {
       if (save) {
         try {
           const firstContent = messages.find((m) => m.role === "user")?.content ?? "";
-          const createRes = await fetch(`${apiUrlForNew}/api/chat/sessions`, {
+          const createRes = await fetch(`${API_URL}/api/chat/sessions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -337,7 +339,7 @@ export default function ChatPage() {
             if (sid) {
               for (const m of messages) {
                 if (m.role !== "user" && m.role !== "assistant") continue;
-                await fetch(`${apiUrlForNew}/api/chat/sessions/${sid}/messages`, {
+                await fetch(`${API_URL}/api/chat/sessions/${sid}/messages`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -395,7 +397,7 @@ export default function ChatPage() {
     if (!files || files.length === 0) return;
 
     const fileArray = Array.from(files);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
 
     // Add files to UI state (for display in chat)
     for (const file of fileArray) {
@@ -419,7 +421,7 @@ export default function ChatPage() {
 
       try {
         const response = await fetch(
-          `${apiUrl}/api/rag/session/${sessionId}/upload`,
+          `${API_URL}/api/rag/session/${sessionId}/upload`,
           {
             method: "POST",
             body: formData,
@@ -503,7 +505,7 @@ export default function ChatPage() {
 
     // Upload non-image files to session RAG for auto-indexing
     if (ragFiles.length > 0 && sessionId) {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      
       const formData = new FormData();
       for (const file of ragFiles) {
         formData.append("files", file);
@@ -511,7 +513,7 @@ export default function ChatPage() {
 
       try {
         const response = await fetch(
-          `${apiUrl}/api/rag/session/${sessionId}/upload`,
+          `${API_URL}/api/rag/session/${sessionId}/upload`,
           {
             method: "POST",
             body: formData,
@@ -615,11 +617,11 @@ export default function ChatPage() {
     const forceIntent = featureToIntentMap[effectiveFeature];
 
     // 첫 메시지면 세션 생성 → 히스토리에 제목으로 바로 표시
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     let sidForSave: string | null = messages.length === 0 ? null : sessionId;
     if (messages.length === 0) {
       try {
-        const createRes = await fetch(`${apiUrl}/api/chat/sessions`, {
+        const createRes = await fetch(`${API_URL}/api/chat/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -648,6 +650,7 @@ export default function ChatPage() {
       setLastProposal(null);
       setHumanApproval(null);
       streamAbortRef.current = new AbortController();
+      setExecutionId(null);
       const startTime = Date.now();
       let assistantContent = "";
       let thinking: string | undefined;
@@ -684,6 +687,12 @@ export default function ChatPage() {
         },
         (event) => {
           console.log("MCP event received:", event.type, event.data);
+          if (event.type === "telemetry_init") {
+            const runId = event.data.run_id as string;
+            setExecutionId(runId);
+            setInfoPanelTab("workflow");
+            return;
+          }
           if (event.type === "intent") {
             setDecisionBlock((prev) => ({
               ...prev,
@@ -856,12 +865,12 @@ export default function ChatPage() {
       // 세션에 user/assistant 메시지 저장 → 히스토리에서 불러올 수 있게
       if (sidForSave && userMessage.content) {
         try {
-          await fetch(`${apiUrl}/api/chat/sessions/${sidForSave}/messages`, {
+          await fetch(`${API_URL}/api/chat/sessions/${sidForSave}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role: "user", content: userMessage.content, model }),
           });
-          await fetch(`${apiUrl}/api/chat/sessions/${sidForSave}/messages`, {
+          await fetch(`${API_URL}/api/chat/sessions/${sidForSave}/messages`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -984,6 +993,27 @@ export default function ChatPage() {
       toast.success("Chat history cleared");
     }
   };
+
+  const handleResumeTelemetry = useCallback(async (modifiedPlan?: any[]) => {
+    if (!executionId) return;
+    try {
+      const response = await fetch(`${API_URL}/api/multi_agent/resume/${executionId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          modified_plan: modifiedPlan
+        }),
+      });
+      if (response.ok) {
+        toast.success("Execution resumed" + (modifiedPlan ? " with modified plan" : ""));
+      }
+    } catch (e) {
+      console.error("Failed to resume execution", e);
+      toast.error("Failed to resume execution");
+    }
+  }, [executionId]);
 
   return (
     <PageLayout
@@ -1776,6 +1806,8 @@ export default function ChatPage() {
           onExport={handleExport}
           onImport={handleImport}
           onClear={handleClear}
+          executionId={executionId}
+          onTelemetryResume={handleResumeTelemetry}
         />
       </div>
 

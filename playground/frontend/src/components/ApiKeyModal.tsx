@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { API_URL } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
@@ -91,7 +92,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
   const [importing, setImporting] = useState(false);
   const importFileInputRef = useRef<HTMLInputElement>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  
 
   useEffect(() => {
     if (open) {
@@ -114,7 +115,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
   const fetchProviders = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${apiUrl}/api/config/providers/all`);
+      const response = await fetch(`${API_URL}/api/config/providers/all`);
       if (response.ok) {
         const data = await response.json();
         setProviders(data.providers || []);
@@ -154,7 +155,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
     try {
       const results = await Promise.allSettled(
         toSave.map((e) =>
-          fetch(`${apiUrl}/api/config/keys`, {
+          fetch(`${API_URL}/api/config/keys`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ provider: e.provider, api_key: e.api_key }),
@@ -173,7 +174,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
         }
         for (const providerId of savedProviders) {
           try {
-            await fetch(`${apiUrl}/api/config/keys/${providerId}/validate`, { method: "POST" });
+            await fetch(`${API_URL}/api/config/keys/${providerId}/validate`, { method: "POST" });
           } catch {
             /* 무시, 배지만 미검증으로 유지 */
           }
@@ -230,7 +231,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
     try {
       for (const e of importPreview) {
         try {
-          const res = await fetch(`${apiUrl}/api/config/keys`, {
+          const res = await fetch(`${API_URL}/api/config/keys`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ provider: e.provider, api_key: e.api_key }),
@@ -261,7 +262,7 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
     if (!confirm(`Delete ${providerId} key?`)) return;
     setDeletingProvider(providerId);
     try {
-      const response = await fetch(`${apiUrl}/api/config/keys/${providerId}`, {
+      const response = await fetch(`${API_URL}/api/config/keys/${providerId}`, {
         method: "DELETE",
       });
       if (response.ok) {
@@ -576,11 +577,11 @@ export function ApiKeyModal({ open, onOpenChange, onKeysUpdated }: ApiKeyModalPr
 
 export function useApiKeyCheck() {
   const [missingProviders, setMissingProviders] = useState<string[]>([]);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  
 
   const checkProvider = async (providerId: string): Promise<boolean> => {
     try {
-      const response = await fetch(`${apiUrl}/api/config/keys/${providerId}`);
+      const response = await fetch(`${API_URL}/api/config/keys/${providerId}`);
       return response.ok;
     } catch {
       return false;

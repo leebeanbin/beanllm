@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
+import { API_URL } from "@/lib/api-client";
 
 export interface ChatMessage {
   role: string;
@@ -40,7 +41,7 @@ export interface UseSessionManagerOptions {
 }
 
 export function useSessionManager(options: UseSessionManagerOptions = {}) {
-  const { apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000", autoSave = true } = options;
+  const { apiUrl = API_URL, autoSave = true } = options;
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -53,7 +54,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`${apiUrl}/api/chat/sessions?limit=50`);
+      const response = await fetch(`${API_URL}/api/chat/sessions?limit=50`);
       if (!response.ok) {
         throw new Error(`Failed to fetch sessions: ${response.statusText}`);
       }
@@ -80,7 +81,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`${apiUrl}/api/chat/sessions`, {
+        const response = await fetch(`${API_URL}/api/chat/sessions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -122,7 +123,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
         setLoading(true);
         setError(null);
 
-        const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}`);
+        const response = await fetch(`${API_URL}/api/chat/sessions/${sessionId}`);
         if (!response.ok) {
           throw new Error(`Failed to load session: ${response.statusText}`);
         }
@@ -175,7 +176,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
       }
 
       try {
-        const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}/messages`, {
+        const response = await fetch(`${API_URL}/api/chat/sessions/${sessionId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -210,7 +211,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
   const updateTitle = useCallback(
     async (sessionId: string, title: string) => {
       try {
-        const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}/title?title=${encodeURIComponent(title)}`, {
+        const response = await fetch(`${API_URL}/api/chat/sessions/${sessionId}/title?title=${encodeURIComponent(title)}`, {
           method: "PATCH",
         });
 
@@ -240,7 +241,7 @@ export function useSessionManager(options: UseSessionManagerOptions = {}) {
   const deleteSession = useCallback(
     async (sessionId: string) => {
       try {
-        const response = await fetch(`${apiUrl}/api/chat/sessions/${sessionId}`, {
+        const response = await fetch(`${API_URL}/api/chat/sessions/${sessionId}`, {
           method: "DELETE",
         });
 

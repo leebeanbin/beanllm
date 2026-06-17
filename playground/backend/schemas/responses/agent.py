@@ -43,6 +43,7 @@ class MultiAgentRunResponse(BaseModel):
     intermediate_results: List[Dict[str, Any]] = Field(default_factory=list)
     all_steps: List[Dict[str, Any]] = Field(default_factory=list)
     agent_outputs: List[AgentOutputResponse] = Field(default_factory=list)
+    metadata: Optional[Dict[str, Any]] = Field(default_factory=dict)
 
 
 class WorkflowRunResponse(BaseModel):

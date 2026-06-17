@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { API_URL } from "@/lib/api-client";
 import {
   Dialog,
   DialogContent,
@@ -33,7 +34,7 @@ export function PackageInstallModal({
     output?: string;
     error?: string;
   } | null>(null);
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  
 
   useEffect(() => {
     if (open) {
@@ -46,7 +47,7 @@ export function PackageInstallModal({
     setInstallStatus(null);
 
     try {
-      const response = await fetch(`${apiUrl}/api/config/install-package`, {
+      const response = await fetch(`${API_URL}/api/config/install-package`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

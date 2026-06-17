@@ -6,7 +6,8 @@ Uses Python best practices: duck typing, type hints, comprehensions.
 """
 
 import logging
-from typing import Any, Dict, List
+import uuid
+from typing import Any, Dict, List, Optional
 
 from common import get_orchestrator
 from fastapi import APIRouter, HTTPException
@@ -131,7 +132,10 @@ async def multi_agent_run(request: MultiAgentRequest) -> MultiAgentRunResponse:
     - hierarchical: Manager-worker pattern
     - debate: Agents debate to reach consensus
     """
+    execution_id = str(uuid.uuid4())
     try:
+        from telemetry_manager import telemetry_manager
+
         from beanllm.facade.advanced.multi_agent_facade import MultiAgentCoordinator
         from beanllm.facade.core.agent_facade import Agent
 
@@ -146,16 +150,26 @@ async def multi_agent_run(request: MultiAgentRequest) -> MultiAgentRunResponse:
                     tools=config.get("tools", []),
                     max_iterations=config.get("max_iterations", 10),
                     verbose=config.get("verbose", False),
+                    name=config.get("agent_id", f"agent_{i}"),
                 )
                 for i, config in enumerate(request.agent_configs)
             }
         else:
             agents = {
-                f"agent_{i}": Agent(model=model, max_iterations=10, verbose=False)
+                f"agent_{i}": Agent(
+                    model=model, max_iterations=10, verbose=False, name=f"agent_{i}"
+                )
                 for i in range(request.num_agents)
             }
 
         coordinator = MultiAgentCoordinator(agents=agents)
+
+        # 텔레메트리 연결
+        async def telemetry_callback(event):
+            await telemetry_manager.broadcast_event(execution_id, event)
+
+        coordinator.bus.add_telemetry_callback(telemetry_callback)
+
         agent_ids = list(agents.keys())
 
         # Strategy dispatch using dict mapping (more Pythonic than if-elif chain)
@@ -164,21 +178,56 @@ async def multi_agent_run(request: MultiAgentRequest) -> MultiAgentRunResponse:
             "parallel": _execute_parallel,
             "hierarchical": _execute_hierarchical,
             "debate": _execute_debate,
+            "autonomous_planning": _execute_autonomous_planning,
+            "reflective": _execute_reflective,
         }
 
+        # 재개 이벤트 생성 (autonomous_planning용)
+        resume_event = telemetry_manager.get_resume_event(execution_id)
+
         handler = strategy_handlers.get(request.strategy, _execute_sequential)
-        return await handler(coordinator, request.task, agent_ids)
+        response = await handler(
+            coordinator,
+            request.task,
+            agent_ids,
+            resume_event=resume_event,
+            wait_for_approval=request.extra_params.get("wait_for_approval", True),
+            execution_id=execution_id,
+        )
+
+        # 결과에 execution_id 추가
+        if isinstance(response, MultiAgentRunResponse):
+            response.metadata = {**(response.metadata or {}), "execution_id": execution_id}
+        return response
 
     except Exception as e:
         logger.error(f"Multi-agent error: {e}", exc_info=True)
+        # 세션 정리
+        from telemetry_manager import telemetry_manager
+
+        telemetry_manager.cleanup_session(execution_id)
         raise HTTPException(500, f"Multi-agent error: {str(e)}")
 
 
+@router.post("/multi_agent/resume/{execution_id}")
+async def multi_agent_resume(execution_id: str, request: Optional[Dict[str, Any]] = None):
+    """실행 재개 (수정된 계획 포함 가능)"""
+    from telemetry_manager import telemetry_manager
+
+    modified_plan = request.get("modified_plan") if request else None
+    if modified_plan:
+        logger.info(f"Resuming {execution_id} with modified plan: {len(modified_plan)} steps")
+        telemetry_manager.set_modified_plan(execution_id, modified_plan)
+
+    telemetry_manager.resume_execution(execution_id)
+    return {"status": "resumed", "execution_id": execution_id}
+
+
 async def _execute_sequential(
-    coordinator: Any, task: str, agent_ids: List[str]
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
 ) -> MultiAgentRunResponse:
     """Execute agents sequentially"""
-    result = await coordinator.execute_sequential(task=task, agent_order=agent_ids)
+    result = await coordinator.execute_sequential(task=task, agent_order=agent_ids, **kwargs)
     extracted = _extract_result(result)
 
     return MultiAgentRunResponse(
@@ -198,10 +247,12 @@ async def _execute_sequential(
 
 
 async def _execute_parallel(
-    coordinator: Any, task: str, agent_ids: List[str]
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
 ) -> MultiAgentRunResponse:
     """Execute agents in parallel"""
-    result = await coordinator.execute_parallel(task=task, agent_ids=agent_ids, aggregation="vote")
+    result = await coordinator.execute_parallel(
+        task=task, agent_ids=agent_ids, aggregation="vote", **kwargs
+    )
 
     return MultiAgentRunResponse(
         task=task,
@@ -214,7 +265,7 @@ async def _execute_parallel(
 
 
 async def _execute_hierarchical(
-    coordinator: Any, task: str, agent_ids: List[str]
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
 ) -> MultiAgentRunResponse:
     """Execute with hierarchical (manager-worker) pattern"""
     if len(agent_ids) < 2:
@@ -222,7 +273,7 @@ async def _execute_hierarchical(
 
     manager_id, *worker_ids = agent_ids  # Unpacking for cleaner code
     result = await coordinator.execute_hierarchical(
-        task=task, manager_id=manager_id, worker_ids=worker_ids
+        task=task, manager_id=manager_id, worker_ids=worker_ids, **kwargs
     )
 
     return MultiAgentRunResponse(
@@ -242,10 +293,10 @@ async def _execute_hierarchical(
 
 
 async def _execute_debate(
-    coordinator: Any, task: str, agent_ids: List[str]
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
 ) -> MultiAgentRunResponse:
     """Execute debate among agents"""
-    result = await coordinator.execute_debate(task=task, agent_ids=agent_ids, rounds=3)
+    result = await coordinator.execute_debate(task=task, agent_ids=agent_ids, rounds=3, **kwargs)
 
     return MultiAgentRunResponse(
         task=task,
@@ -254,6 +305,64 @@ async def _execute_debate(
         agent_outputs=[
             AgentOutputResponse(agent_id=aid, output=f"Argument presented for: {task}")
             for aid in agent_ids
+        ],
+    )
+
+
+async def _execute_autonomous_planning(
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
+) -> MultiAgentRunResponse:
+    """Execute with autonomous planning (Plan-and-Execute) pattern"""
+    planner_id = agent_ids[0]
+    worker_ids = agent_ids[1:] if len(agent_ids) > 1 else agent_ids
+
+    result = await coordinator.execute_autonomous_planning(
+        task=task, planner_id=planner_id, worker_ids=worker_ids, **kwargs
+    )
+
+    return MultiAgentRunResponse(
+        task=task,
+        strategy="autonomous_planning",
+        final_result=_safe_get(result, "final_result", ""),
+        agent_outputs=[
+            AgentOutputResponse(
+                agent_id=planner_id, output="Generated and verified plan", role="planner"
+            ),
+            *[
+                AgentOutputResponse(agent_id=wid, output="Executed planned task", role="worker")
+                for wid in worker_ids
+            ],
+        ],
+    )
+
+
+async def _execute_reflective(
+    coordinator: Any, task: str, agent_ids: List[str], **kwargs
+) -> MultiAgentRunResponse:
+    """Execute with reflective (self-correction) pattern"""
+    if len(agent_ids) < 2:
+        raise HTTPException(
+            400, "Reflective strategy requires at least 2 agents (primary and reviewer)"
+        )
+
+    primary_id = agent_ids[0]
+    reviewer_id = agent_ids[1]
+
+    result = await coordinator.execute_reflective(
+        task=task, primary_id=primary_id, reviewer_id=reviewer_id, rounds=2, **kwargs
+    )
+
+    return MultiAgentRunResponse(
+        task=task,
+        strategy="reflective",
+        final_result=_safe_get(result, "final_result", ""),
+        agent_outputs=[
+            AgentOutputResponse(
+                agent_id=primary_id, output="Generated and refined answer", role="primary"
+            ),
+            AgentOutputResponse(
+                agent_id=reviewer_id, output="Provided feedback and quality check", role="reviewer"
+            ),
         ],
     )
 

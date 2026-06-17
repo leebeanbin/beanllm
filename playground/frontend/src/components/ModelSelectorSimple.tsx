@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { API_URL } from "@/lib/api-client";
 import { ChevronDown, Download, Loader2, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -34,7 +35,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
   const abortControllersRef = useRef<Map<string, AbortController>>(new Map());
 
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     
     // Default fallback models (빈 배열로 시작 - API에서 가져온 모델만 표시)
     const defaultModels: ModelsGrouped = {
@@ -52,7 +53,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    fetch(`${apiUrl}/api/models`, {
+    fetch(`${API_URL}/api/models`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -125,7 +126,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
   };
 
   const handleDownloadModel = async (modelName: string) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
     
     // 이미 다운로드 중이면 중복 시작 방지
     if (downloading.has(modelName)) {
@@ -141,7 +142,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
     abortControllersRef.current.set(modelName, abortController);
     
     try {
-      const response = await fetch(`${apiUrl}/api/models/${encodeURIComponent(modelName)}/pull`, {
+      const response = await fetch(`${API_URL}/api/models/${encodeURIComponent(modelName)}/pull`, {
         method: "POST",
         signal: abortController.signal,
       });
@@ -242,7 +243,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
                 // 약간의 지연을 두어 Ollama가 모델 목록을 업데이트할 시간을 줌
                 setTimeout(async () => {
                   try {
-                    const res = await fetch(`${apiUrl}/api/models`);
+                    const res = await fetch(`${API_URL}/api/models`);
                     if (res.ok) {
                       const updatedModels = await res.json();
                       setModels(updatedModels);
@@ -296,7 +297,7 @@ export function ModelSelectorSimple({ value, onChange, className }: ModelSelecto
               if (data.status === "completed") {
                 setDownloadProgress((prev) => ({ ...prev, [modelName]: 100 }));
                 toast.success(`${modelName} download complete`);
-                const res = await fetch(`${apiUrl}/api/models`);
+                const res = await fetch(`${API_URL}/api/models`);
                 if (res.ok) {
                   const updatedModels = await res.json();
                   setModels(updatedModels);
