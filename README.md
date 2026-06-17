@@ -671,6 +671,121 @@ Current coverage: **80%** (6,340 tests pass)
 
 ---
 
+## API Reference
+
+### `Client` — Unified LLM Client
+
+```python
+from beanllm import Client, create_client
+
+# Constructor
+client = Client(
+    model="gpt-4o-mini",          # Model ID
+    provider=None,                 # Auto-detected from model name
+    api_key=None,                  # Falls back to env var (OPENAI_API_KEY, etc.)
+)
+
+# Non-streaming chat
+response = await client.chat(
+    messages=[{"role": "user", "content": "Hello!"}],
+    system="You are a helpful assistant.",  # optional
+    temperature=0.7,
+    max_tokens=1024,
+)
+print(response.content)
+
+# Streaming
+async for chunk in client.stream_chat(messages):
+    print(chunk, end="")
+
+# Convenience factory
+client = create_client("claude-3-5-sonnet-20241022")
+```
+
+Supported provider values: `"openai"`, `"anthropic"` / `"claude"`, `"gemini"` / `"google"`, `"deepseek"`, `"ollama"`, `"perplexity"`, `"grok"`.
+
+---
+
+### `RAGChain` — Retrieval-Augmented Generation
+
+```python
+from beanllm import RAGChain, create_rag
+
+# One-liner from documents
+rag = RAGChain.from_documents("my_doc.pdf")
+answer = rag.query("What is this about?")
+
+# Fine-grained control
+rag = RAGChain(
+    vector_store=store,
+    llm=client,
+    prompt_template="Context: {context}\nQuestion: {question}\nAnswer:",
+)
+answer = rag.query("question", k=5, rerank=True)
+
+# Convenience factory
+rag = create_rag(documents=docs, model="gpt-4o-mini")
+```
+
+---
+
+### `Agent` — ReAct Agent with Tools
+
+```python
+from beanllm import Agent, Tool, create_agent
+
+def search(query: str) -> str:
+    return f"Results for: {query}"
+
+agent = Agent(
+    model="gpt-4o-mini",
+    tools=[Tool.from_function(search)],
+    max_iterations=10,
+    verbose=False,
+)
+result = await agent.run("서울 인구는?")
+print(result.answer)           # str
+print(result.steps)            # list[AgentStep]
+print(result.success)          # bool
+```
+
+---
+
+### Utilities
+
+```python
+from beanllm import count_tokens, estimate_cost, get_registry
+
+# Token counting
+n = count_tokens("Hello, world!", model="gpt-4o")
+
+# Cost estimation
+cost = estimate_cost(prompt_tokens=1000, completion_tokens=500, model="gpt-4o")
+print(cost.total_usd)
+
+# Model registry
+registry = get_registry()
+models = registry.get_available_models()    # list all
+info = registry.get_model_info("gpt-4o")   # get one
+```
+
+---
+
+### Document Utilities
+
+```python
+from beanllm import DocumentLoader, TextSplitter
+
+# Load any file (auto-detects type: txt, pdf, csv)
+docs = DocumentLoader.load("file.pdf")
+
+# Split into chunks
+chunks = TextSplitter.recursive(chunk_size=1000, chunk_overlap=200).split_documents(docs)
+# Or: TextSplitter.character(), TextSplitter.markdown()
+```
+
+---
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file.
