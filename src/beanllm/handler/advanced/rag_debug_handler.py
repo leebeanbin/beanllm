@@ -23,6 +23,7 @@ from beanllm.dto.response.ml.rag_debug_response import (
     ValidateChunksResponse,
 )
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.utils.exceptions import ValidationError
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -60,13 +61,13 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             DebugSessionResponse: 세션 정보
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.vector_store_id:
-            raise ValueError("vector_store_id is required")
+            raise ValidationError("vector_store_id is required")
 
         if not request.config or "vector_store" not in request.config:
-            raise ValueError("vector_store must be provided in config")
+            raise ValidationError("vector_store must be provided in config")
 
         return await self._service.start_session(request)
 
@@ -84,16 +85,16 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             AnalyzeEmbeddingsResponse: 분석 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.session_id:
-            raise ValueError("session_id is required")
+            raise ValidationError("session_id is required")
 
         if request.method not in ["umap", "tsne"]:
-            raise ValueError("method must be 'umap' or 'tsne'")
+            raise ValidationError("method must be 'umap' or 'tsne'")
 
         if request.n_clusters <= 0:
-            raise ValueError("n_clusters must be positive")
+            raise ValidationError("n_clusters must be positive")
 
         return await self._service.analyze_embeddings(request)
 
@@ -111,13 +112,13 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             ValidateChunksResponse: 검증 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.session_id:
-            raise ValueError("session_id is required")
+            raise ValidationError("session_id is required")
 
         if request.size_threshold <= 0:
-            raise ValueError("size_threshold must be positive")
+            raise ValidationError("size_threshold must be positive")
 
         return await self._service.validate_chunks(request)
 
@@ -135,17 +136,17 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             TuneParametersResponse: 튜닝 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.session_id:
-            raise ValueError("session_id is required")
+            raise ValidationError("session_id is required")
 
         if not request.parameters:
-            raise ValueError("parameters dictionary is required")
+            raise ValidationError("parameters dictionary is required")
 
         top_k = request.parameters.get("top_k")
         if top_k is not None and isinstance(top_k, (int, float)) and top_k <= 0:
-            raise ValueError("top_k must be positive")
+            raise ValidationError("top_k must be positive")
 
         score_threshold = request.parameters.get("score_threshold")
         if (
@@ -153,7 +154,7 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             and isinstance(score_threshold, (int, float))
             and not 0 <= score_threshold <= 1
         ):
-            raise ValueError("score_threshold must be between 0 and 1")
+            raise ValidationError("score_threshold must be between 0 and 1")
 
         return await self._service.tune_parameters(request)
 
@@ -169,9 +170,9 @@ class RAGDebugHandler(BaseHandler["IRAGDebugService"]):
             Dict: 리포트 데이터
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not session_id:
-            raise ValueError("session_id is required")
+            raise ValidationError("session_id is required")
 
         return await self._service.export_report(session_id)
