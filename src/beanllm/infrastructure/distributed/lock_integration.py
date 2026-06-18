@@ -59,9 +59,17 @@ def with_distributed_lock(lock_key: str, timeout: float = 30.0):
 
         @functools.wraps(func)
         def sync_wrapper(*args, **kwargs):
-            # 동기 함수는 비동기로 래핑
+            # sync 함수를 락과 함께 실행: lock.acquire 안에서 func()를 직접 호출
+            # (async_wrapper를 통하면 await func()가 되어 TypeError 발생)
             async def _async_wrapper():
-                return await async_wrapper(*args, **kwargs)
+                try:
+                    async with lock.acquire(lock_key, timeout=timeout):
+                        return func(*args, **kwargs)
+                except Exception as e:
+                    logger.error(
+                        f"Failed to acquire lock {lock_key}: {sanitize_error_message(str(e))}"
+                    )
+                    raise
 
             try:
                 asyncio.get_running_loop()

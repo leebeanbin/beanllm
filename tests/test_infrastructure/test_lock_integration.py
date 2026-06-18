@@ -118,25 +118,21 @@ class TestWithDistributedLockSync:
         assert call_count[0] == 1
 
     def test_sync_function_runs_with_loop_not_running(self):
-        mock_loop = MagicMock()
-        mock_loop.is_running.return_value = False
-        mock_loop.run_until_complete.return_value = "ok"
-
-        with (
-            patch(
-                "beanllm.infrastructure.distributed.lock_integration.get_distributed_lock",
-                return_value=_mock_lock(),
-            ),
-            patch("asyncio.get_event_loop", return_value=mock_loop),
+        # sync_wrapper: get_running_loop() raises RuntimeError (no loop) →
+        # asyncio.run(_async_wrapper()) is called, which acquires the lock and
+        # calls func() directly (no await — func is sync).
+        with patch(
+            "beanllm.infrastructure.distributed.lock_integration.get_distributed_lock",
+            return_value=_mock_lock(),
         ):
 
             @with_distributed_lock("sync:no:loop")
             def fn():
                 return "ok"
 
-            fn()
+            result = fn()
 
-        mock_loop.run_until_complete.assert_called_once()
+        assert result == "ok"
 
     def test_sync_function_uses_asyncio_run_on_runtime_error(self):
         with (
