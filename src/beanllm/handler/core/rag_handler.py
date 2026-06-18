@@ -19,6 +19,7 @@ from beanllm.dto.request.core.rag_request import RAGRequest
 from beanllm.dto.response.core.rag_response import RAGResponse
 from beanllm.handler.base_handler import BaseHandler
 from beanllm.service.rag_service import IRAGService
+from beanllm.utils.exceptions import ValidationError
 
 
 class RAGHandler(BaseHandler[IRAGService]):
@@ -87,7 +88,7 @@ class RAGHandler(BaseHandler[IRAGService]):
         """
         # 추가 검증: source 또는 vector_store 중 하나는 필수
         if not source and not vector_store:
-            raise ValueError("Either source or vector_store must be provided")
+            raise ValidationError("Either source or vector_store must be provided")
 
         # DTO 생성 (헬퍼 메서드 사용)
         request = self._create_request(
@@ -186,7 +187,7 @@ class RAGHandler(BaseHandler[IRAGService]):
         """
         # 추가 검증: source 또는 vector_store 중 하나는 필수
         if not source and not vector_store:
-            raise ValueError("Either source or vector_store must be provided")
+            raise ValidationError("Either source or vector_store must be provided")
 
         # DTO 생성
         request = RAGRequest(

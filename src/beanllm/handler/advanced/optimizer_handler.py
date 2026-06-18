@@ -24,6 +24,7 @@ from beanllm.dto.response.advanced.optimizer_response import (
     RecommendationResponse,
 )
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.utils.exceptions import ValidationError
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -80,18 +81,18 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             BenchmarkResponse
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if not request.queries and not request.num_queries:
-            raise ValueError("Either queries or num_queries must be provided")
+            raise ValidationError("Either queries or num_queries must be provided")
 
         if request.num_queries and request.num_queries <= 0:
-            raise ValueError("num_queries must be positive")
+            raise ValidationError("num_queries must be positive")
 
         if request.query_types:
             for qt in request.query_types:
                 if qt.lower() not in _VALID_QUERY_TYPES:
-                    raise ValueError(f"Invalid query type: {qt}")
+                    raise ValidationError(f"Invalid query type: {qt}")
 
         return await self._service.benchmark(request)
 
@@ -107,17 +108,17 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             OptimizeResponse
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if not request.parameters:
-            raise ValueError("parameters are required")
+            raise ValidationError("parameters are required")
 
         if request.n_trials and request.n_trials <= 0:
-            raise ValueError("n_trials must be positive")
+            raise ValidationError("n_trials must be positive")
 
         method = request.method or request.optimization_method
         if method.lower() not in _VALID_OPTIMIZATION_METHODS:
-            raise ValueError(
+            raise ValidationError(
                 f"Invalid optimization method: {method}. "
                 f"Must be one of {sorted(_VALID_OPTIMIZATION_METHODS)}"
             )
@@ -139,12 +140,12 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             ProfileResponse
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if request.components:
             for component in request.components:
                 if component.lower() not in _VALID_PROFILE_COMPONENTS:
-                    raise ValueError(f"Invalid component: {component}")
+                    raise ValidationError(f"Invalid component: {component}")
 
         return await self._service.profile(request)
 
@@ -160,20 +161,20 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             ABTestResponse
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if not request.variant_a_name:
-            raise ValueError("variant_a_name is required")
+            raise ValidationError("variant_a_name is required")
 
         if not request.variant_b_name:
-            raise ValueError("variant_b_name is required")
+            raise ValidationError("variant_b_name is required")
 
         if request.num_queries and request.num_queries <= 0:
-            raise ValueError("num_queries must be positive")
+            raise ValidationError("num_queries must be positive")
 
         if request.confidence_level:
             if not (0 < request.confidence_level < 1):
-                raise ValueError("confidence_level must be between 0 and 1")
+                raise ValidationError("confidence_level must be between 0 and 1")
 
         return await self._service.ab_test(request)
 
@@ -189,10 +190,10 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             RecommendationResponse
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if not profile_id:
-            raise ValueError("profile_id is required")
+            raise ValidationError("profile_id is required")
 
         return await self._service.get_recommendations(profile_id)
 
@@ -208,13 +209,13 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
             Dict with comparison results
 
         Raises:
-            ValueError: 검증 실패
+            ValidationError: 검증 실패
         """
         if not config_ids:
-            raise ValueError("config_ids is required")
+            raise ValidationError("config_ids is required")
 
         if len(config_ids) < _MIN_CONFIGS_FOR_COMPARISON:
-            raise ValueError(
+            raise ValidationError(
                 f"At least {_MIN_CONFIGS_FOR_COMPARISON} config IDs required for comparison"
             )
 
@@ -227,26 +228,28 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
         """파라미터 목록 검증"""
         for param in parameters:
             if "name" not in param:
-                raise ValueError("Parameter must have 'name' field")
+                raise ValidationError("Parameter must have 'name' field")
 
             if "type" not in param:
-                raise ValueError(f"Parameter {param['name']} must have 'type' field")
+                raise ValidationError(f"Parameter {param['name']} must have 'type' field")
 
             param_type = str(param["type"]).lower()
             if param_type not in _VALID_PARAM_TYPES:
-                raise ValueError(f"Invalid parameter type: {param_type} for {param['name']}")
+                raise ValidationError(f"Invalid parameter type: {param_type} for {param['name']}")
 
             if param_type in _NUMERIC_PARAM_TYPES:
                 if "low" not in param or "high" not in param:
-                    raise ValueError(f"Parameter {param['name']} must have 'low' and 'high' fields")
+                    raise ValidationError(
+                        f"Parameter {param['name']} must have 'low' and 'high' fields"
+                    )
                 low = float(str(param["low"]))
                 high = float(str(param["high"]))
                 if low >= high:
-                    raise ValueError(f"Parameter {param['name']}: low must be less than high")
+                    raise ValidationError(f"Parameter {param['name']}: low must be less than high")
 
             elif param_type == "categorical":
                 if "categories" not in param or not param["categories"]:
-                    raise ValueError(
+                    raise ValidationError(
                         f"Parameter {param['name']} must have non-empty 'categories' field"
                     )
 
@@ -255,10 +258,10 @@ class OptimizerHandler(BaseHandler["IOptimizerService"]):
         """멀티 오브젝티브 검증"""
         if request.multi_objective:
             if not request.objectives or len(request.objectives) < _MIN_OBJECTIVES_FOR_MULTI:
-                raise ValueError(
+                raise ValidationError(
                     f"multi_objective requires at least {_MIN_OBJECTIVES_FOR_MULTI} objectives"
                 )
 
             for obj in request.objectives:
                 if "name" not in obj:
-                    raise ValueError("Objective must have 'name' field")
+                    raise ValidationError("Objective must have 'name' field")

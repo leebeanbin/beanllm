@@ -22,6 +22,7 @@ from beanllm.dto.response.advanced.orchestrator_response import (
     MonitorWorkflowResponse,
 )
 from beanllm.handler.base_handler import BaseHandler
+from beanllm.utils.exceptions import ValidationError
 from beanllm.utils.logging import get_logger
 
 if TYPE_CHECKING:
@@ -61,16 +62,16 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             CreateWorkflowResponse: 생성 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.workflow_name:
-            raise ValueError("workflow_name is required")
+            raise ValidationError("workflow_name is required")
 
         if request.strategy == "custom":
             if not request.nodes:
-                raise ValueError("nodes are required for custom workflow")
+                raise ValidationError("nodes are required for custom workflow")
             if not request.edges:
-                raise ValueError("edges are required for custom workflow")
+                raise ValidationError("edges are required for custom workflow")
 
         return await self._service.create_workflow(request)
 
@@ -88,13 +89,13 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             ExecuteWorkflowResponse: 실행 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.workflow_id:
-            raise ValueError("workflow_id is required")
+            raise ValidationError("workflow_id is required")
 
         if not request.input_data:
-            raise ValueError("input_data is required")
+            raise ValidationError("input_data is required")
 
         return await self._service.execute_workflow(request)
 
@@ -112,13 +113,13 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             MonitorWorkflowResponse: 모니터링 데이터
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not request.workflow_id:
-            raise ValueError("workflow_id is required")
+            raise ValidationError("workflow_id is required")
 
         if not request.execution_id:
-            raise ValueError("execution_id is required")
+            raise ValidationError("execution_id is required")
 
         return await self._service.monitor_workflow(request)
 
@@ -134,10 +135,10 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             AnalyticsResponse: 분석 결과
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not workflow_id:
-            raise ValueError("workflow_id is required")
+            raise ValidationError("workflow_id is required")
 
         return await self._service.get_analytics(workflow_id)
 
@@ -153,10 +154,10 @@ class OrchestratorHandler(BaseHandler["IOrchestratorService"]):
             str: ASCII 다이어그램
 
         Raises:
-            ValueError: Validation 실패 시
+            ValidationError: Validation 실패 시
         """
         if not workflow_id:
-            raise ValueError("workflow_id is required")
+            raise ValidationError("workflow_id is required")
 
         return await self._service.visualize_workflow(workflow_id)
 
