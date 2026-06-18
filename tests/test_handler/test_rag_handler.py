@@ -11,6 +11,7 @@ from beanllm.domain.vector_stores.base import VectorSearchResult
 from beanllm.dto.response import RAGResponse
 from beanllm.handler import RAGHandler
 from beanllm.service.rag_service import IRAGService
+from beanllm.utils.exceptions import ValidationError
 
 
 class TestRAGHandler:
@@ -137,7 +138,7 @@ class TestRAGHandler:
     @pytest.mark.asyncio
     async def test_handle_query_validation_missing_query(self, rag_handler):
         """입력 검증 - query 누락 테스트"""
-        with pytest.raises((ValueError, TypeError)):
+        with pytest.raises((ValueError, TypeError, ValidationError)):
             await rag_handler.handle_query(
                 query=None,  # 필수 파라미터 누락
                 vector_store=Mock(),
@@ -148,7 +149,7 @@ class TestRAGHandler:
     @pytest.mark.asyncio
     async def test_handle_query_validation_missing_vector_store(self, rag_handler):
         """입력 검증 - vector_store 누락 테스트"""
-        with pytest.raises((ValueError, TypeError)):
+        with pytest.raises((ValueError, TypeError, ValidationError)):
             await rag_handler.handle_query(
                 query="What is this?",
                 vector_store=None,  # 필수 파라미터 누락

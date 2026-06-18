@@ -308,30 +308,33 @@ Action Input: {invalid json}
         # 잘못된 JSON은 빈 dict로 처리
         assert parsed["action_input"] == {}
 
-    def test_execute_tool_success(self, agent_service):
+    @pytest.mark.asyncio
+    async def test_execute_tool_success(self, agent_service):
         """도구 실행 성공 테스트"""
         agent_service._tool_registry.execute = Mock(return_value="Result")
 
-        result = agent_service._execute_tool("calculator", {"expression": "1 + 1"})
+        result = await agent_service._execute_tool("calculator", {"expression": "1 + 1"})
 
         assert result == "Result"
         agent_service._tool_registry.execute.assert_called_once_with(
             "calculator", {"expression": "1 + 1"}
         )
 
-    def test_execute_tool_no_registry(self, agent_service):
+    @pytest.mark.asyncio
+    async def test_execute_tool_no_registry(self, agent_service):
         """도구 레지스트리가 없는 경우 테스트"""
         agent_service._tool_registry = None
 
-        result = agent_service._execute_tool("calculator", {"expression": "1 + 1"})
+        result = await agent_service._execute_tool("calculator", {"expression": "1 + 1"})
 
         assert "Tool registry not available" in result
 
-    def test_execute_tool_error(self, agent_service):
+    @pytest.mark.asyncio
+    async def test_execute_tool_error(self, agent_service):
         """도구 실행 에러 테스트"""
         agent_service._tool_registry.execute = Mock(side_effect=ValueError("Tool error"))
 
-        result = agent_service._execute_tool("calculator", {"expression": "1 + 1"})
+        result = await agent_service._execute_tool("calculator", {"expression": "1 + 1"})
 
         assert "Error executing tool" in result
         assert "Tool error" in result

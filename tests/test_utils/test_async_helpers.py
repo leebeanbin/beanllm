@@ -271,7 +271,7 @@ class TestAsyncHelperMixin:
         assert len(created) == 1
 
     def test_log_event_fire_and_forget_loop_not_running(self):
-        """loop.is_running() False → loop.run_until_complete."""
+        """No running loop → asyncio.run() is called."""
 
         async def log_fn(event, data):
             pass
@@ -280,17 +280,12 @@ class TestAsyncHelperMixin:
         mock_logger.log_event = MagicMock(side_effect=lambda e, d: log_fn(e, d))
         helper = ConcreteHelper(event_logger=mock_logger)
 
-        mock_loop = MagicMock()
-        mock_loop.is_running.return_value = False
-        mock_loop.run_until_complete.return_value = None
+        import unittest.mock as _mock
 
-        with MagicMock() as _:
-            import unittest.mock as _mock
+        with _mock.patch("asyncio.run") as mock_run:
+            helper._log_event("test.event", {})
 
-            with _mock.patch("asyncio.get_event_loop", return_value=mock_loop):
-                helper._log_event("test.event", {})
-
-        mock_loop.run_until_complete.assert_called_once()
+        mock_run.assert_called_once()
 
     # ------------------------------------------------------------------
     # _set_cache: fire_and_forget=True branches (lines 194-210)
@@ -322,7 +317,7 @@ class TestAsyncHelperMixin:
         assert len(created) == 1
 
     def test_set_cache_fire_and_forget_loop_not_running(self):
-        """loop.is_running() False → loop.run_until_complete."""
+        """No running loop → asyncio.run() is called."""
         import unittest.mock as _mock
 
         async def set_fn(key, value):
@@ -332,14 +327,10 @@ class TestAsyncHelperMixin:
         mock_cache.set = MagicMock(side_effect=lambda k, v: set_fn(k, v))
         helper = ConcreteHelper(cache=mock_cache)
 
-        mock_loop = MagicMock()
-        mock_loop.is_running.return_value = False
-        mock_loop.run_until_complete.return_value = None
-
-        with _mock.patch("asyncio.get_event_loop", return_value=mock_loop):
+        with _mock.patch("asyncio.run") as mock_run:
             helper._set_cache("key", "value", fire_and_forget=True)
 
-        mock_loop.run_until_complete.assert_called_once()
+        mock_run.assert_called_once()
 
     def test_set_cache_fire_and_forget_runtime_error_fallback(self):
         """RuntimeError from get_event_loop → asyncio.run."""

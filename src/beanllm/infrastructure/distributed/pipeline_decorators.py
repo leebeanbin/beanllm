@@ -169,6 +169,23 @@ def with_distributed_features(
             # 분산 락 획득 및 실행
             if lock_key_value:
                 lock_manager = get_lock_manager()
+
+                # _execute_with_lock을 try 블록 밖에 정의 — except에서도 참조 가능
+                async def _execute_with_lock():
+                    async with lock_manager.with_file_lock(
+                        lock_key_value, timeout=pipeline_config.lock_timeout
+                    ):
+                        return _execute_with_features(
+                            func,
+                            self,
+                            args,
+                            kwargs,
+                            pipeline_config,
+                            cache_key,
+                            actual_rate_key,
+                            event_prefix,
+                        )
+
                 try:
                     loop = asyncio.get_event_loop()
                     if loop.is_running():
@@ -184,22 +201,6 @@ def with_distributed_features(
                             event_prefix,
                         )
                     else:
-
-                        async def _execute_with_lock():
-                            async with lock_manager.with_file_lock(
-                                lock_key_value, timeout=pipeline_config.lock_timeout
-                            ):
-                                return _execute_with_features(
-                                    func,
-                                    self,
-                                    args,
-                                    kwargs,
-                                    pipeline_config,
-                                    cache_key,
-                                    actual_rate_key,
-                                    event_prefix,
-                                )
-
                         result = loop.run_until_complete(_execute_with_lock())
                 except RuntimeError:
                     result = asyncio.run(_execute_with_lock())

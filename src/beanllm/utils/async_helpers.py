@@ -117,8 +117,8 @@ class AsyncHelperMixin:
 
         if fire_and_forget:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(event_coro)
+                asyncio.get_running_loop()
+                asyncio.create_task(event_coro)
             except RuntimeError:
                 asyncio.run(event_coro)
         else:
@@ -185,8 +185,8 @@ class AsyncHelperMixin:
 
         if fire_and_forget:
             try:
-                loop = asyncio.get_running_loop()
-                loop.create_task(cache_coro)
+                asyncio.get_running_loop()
+                asyncio.create_task(cache_coro)
             except RuntimeError:
                 try:
                     asyncio.run(cache_coro)
