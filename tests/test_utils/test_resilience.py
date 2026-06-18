@@ -3,6 +3,7 @@ Resilience Utilities 테스트 - ErrorTracker, FallbackHandler, ProductionErrorS
 RetryHandler, CircuitBreaker
 """
 
+import asyncio
 import time
 
 import pytest
@@ -708,3 +709,193 @@ class TestAsyncTokenBucket:
         await bucket.wait(cost=1.0)
         status = bucket.get_status()
         assert status["tokens"] < 5.0
+
+
+# ---------------------------------------------------------------------------
+# CircuitBreaker.async_call()
+# ---------------------------------------------------------------------------
+
+
+class TestCircuitBreakerAsyncCall:
+    """async_call() 경로 — 이번 PR에서 추가된 신규 메서드."""
+
+    async def test_async_call_success_returns_result(self) -> None:
+        cb = CircuitBreaker(CircuitBreakerConfig(failure_threshold=5))
+
+        async def good() -> str:
+            return "ok"
+
+        result = await cb.async_call(good)
+        assert result == "ok"
+
+    async def test_async_call_success_recorded(self) -> None:
+        config = CircuitBreakerConfig(failure_threshold=5)
+        cb = CircuitBreaker(config)
+
+        async def good() -> str:
+            return "recorded"
+
+        await cb.async_call(good)
+        state = cb.get_state()
+        assert state["state"] == CircuitState.CLOSED.value
+        assert state["failure_count"] == 0
+
+    async def test_async_call_failure_increments_count(self) -> None:
+        config = CircuitBreakerConfig(failure_threshold=10)
+        cb = CircuitBreaker(config)
+
+        async def fail() -> None:
+            raise RuntimeError("async fail")
+
+        with pytest.raises(RuntimeError):
+            await cb.async_call(fail)
+
+        assert cb.failure_count == 1
+
+    async def test_async_call_opens_after_threshold(self) -> None:
+        config = CircuitBreakerConfig(failure_threshold=3, timeout=60.0)
+        cb = CircuitBreaker(config)
+
+        async def fail() -> None:
+            raise RuntimeError("fail")
+
+        for _ in range(3):
+            with pytest.raises(RuntimeError):
+                await cb.async_call(fail)
+
+        assert cb.state == CircuitState.OPEN
+
+    async def test_async_call_open_raises_circuit_breaker_error(self) -> None:
+        config = CircuitBreakerConfig(failure_threshold=2, timeout=60.0)
+        cb = CircuitBreaker(config)
+
+        async def fail() -> None:
+            raise RuntimeError("fail")
+
+        for _ in range(2):
+            with pytest.raises(RuntimeError):
+                await cb.async_call(fail)
+
+        with pytest.raises(CircuitBreakerError):
+            await cb.async_call(fail)
+
+    async def test_async_call_circuit_breaker_error_not_counted_as_failure(self) -> None:
+        # CircuitBreakerError 자체가 failure_count를 늘리면 안 됨
+        # — 이미 OPEN이므로 추가 카운팅은 불필요하고 오해를 야기함
+        config = CircuitBreakerConfig(failure_threshold=2, timeout=60.0)
+        cb = CircuitBreaker(config)
+
+        async def fail() -> None:
+            raise RuntimeError("fail")
+
+        for _ in range(2):
+            with pytest.raises(RuntimeError):
+                await cb.async_call(fail)
+
+        count_before = cb.failure_count
+        with pytest.raises(CircuitBreakerError):
+            await cb.async_call(fail)
+
+        assert cb.failure_count == count_before  # 증가 없음
+
+    async def test_async_call_with_sync_callable(self) -> None:
+        """sync 함수도 async_call로 호출 가능해야 함."""
+        cb = CircuitBreaker()
+
+        def sync_func() -> int:
+            return 42
+
+        result = await cb.async_call(sync_func)
+        assert result == 42
+
+
+# ---------------------------------------------------------------------------
+# @retry decorator — async generator 경로
+# ---------------------------------------------------------------------------
+
+
+class TestRetryDecoratorAsyncGen:
+    """inspect.isasyncgenfunction() 분기 — 이번 PR에서 추가된 신규 경로."""
+
+    async def test_asyncgen_success_yields_all_items(self) -> None:
+        @retry(max_retries=3, initial_delay=0.0)
+        async def gen():
+            for i in range(3):
+                yield i
+
+        result = [item async for item in gen()]
+        assert result == [0, 1, 2]
+
+    async def test_asyncgen_retries_on_transient_error(self) -> None:
+        attempt = [0]
+
+        @retry(max_retries=3, initial_delay=0.0, retry_on=(ValueError,))
+        async def gen():
+            attempt[0] += 1
+            if attempt[0] < 2:
+                raise ValueError("transient")
+            yield "ok"
+
+        result = [item async for item in gen()]
+        assert result == ["ok"]
+        assert attempt[0] == 2  # 1번 실패 후 2번째 성공
+
+    async def test_asyncgen_raises_after_max_retries(self) -> None:
+        @retry(max_retries=2, initial_delay=0.0, retry_on=(ValueError,))
+        async def gen():
+            raise ValueError("always")
+            yield  # unreachable — makes this an async generator
+
+        with pytest.raises(MaxRetriesExceededError):
+            async for _ in gen():
+                pass
+
+    async def test_asyncgen_does_not_retry_cancelled_error(self) -> None:
+        call_count = [0]
+
+        @retry(max_retries=5, initial_delay=0.0)
+        async def gen():
+            call_count[0] += 1
+            raise asyncio.CancelledError()
+            yield  # makes this async generator
+
+        with pytest.raises(asyncio.CancelledError):
+            async for _ in gen():
+                pass
+
+        assert call_count[0] == 1  # 재시도 없음
+
+    async def test_asyncgen_does_not_retry_non_matching_exception(self) -> None:
+        call_count = [0]
+
+        @retry(max_retries=5, initial_delay=0.0, retry_on=(ValueError,))
+        async def gen():
+            call_count[0] += 1
+            raise TypeError("not in retry_on")
+            yield
+
+        with pytest.raises(TypeError):
+            async for _ in gen():
+                pass
+
+        assert call_count[0] == 1  # 재시도 없음
+
+    async def test_asyncgen_partial_yield_then_retry(self) -> None:
+        """재시도 시 generator가 처음부터 재시작되는지 확인."""
+        attempt = [0]
+        yielded: list = []
+
+        @retry(max_retries=3, initial_delay=0.0, retry_on=(RuntimeError,))
+        async def gen():
+            attempt[0] += 1
+            yield f"a{attempt[0]}"
+            if attempt[0] < 2:
+                raise RuntimeError("fail mid-stream")
+            yield f"b{attempt[0]}"
+
+        async for item in gen():
+            yielded.append(item)
+
+        # 2번째 시도에서 성공: ["a1"] 실패 후 ["a2", "b2"] 수집
+        assert attempt[0] == 2
+        assert yielded == ["a1", "a2", "b2"]
