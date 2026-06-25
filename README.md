@@ -32,6 +32,24 @@
 
 ---
 
+## Used in Production
+
+beanllm is the AI infrastructure layer for **[careerOS](https://github.com/leebeanbin/careerOS)**, a production career platform (Spring Boot 3.3, 14 domains, 415 tests):
+
+| Use Case | Model | Volume |
+|----------|-------|--------|
+| Resume structured extraction | gpt-4o-mini | Per upload |
+| Job posting normalization | gpt-4o-mini | Batch, 7 collectors |
+| Advisor skill-gap report | gpt-4o | On-demand |
+| Match narrative generation | gpt-4o | Daily digest |
+| Candidate graph embeddings | text-embedding-3-small (1536-dim) | Per graph rebuild |
+
+careerOS routes all AI calls through beanllm's unified interface via a self-hosted proxy (`POST /ai/complete`, `POST /ai/embed`). Setting `app.ai.provider: mock` swaps in stub responses — enabling all 415 tests to run without any live API calls.
+
+→ See [careerOS ecosystem architecture](https://github.com/leebeanbin/careerOS/blob/main/docs/architecture/ecosystem.md) for the full integration diagram.
+
+---
+
 ## Features Overview
 
 | Module | Highlights |
