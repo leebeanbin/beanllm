@@ -73,11 +73,13 @@ client = Client(model="claude-sonnet-4-6", provider="claude")
 
 연속 장애 시 일정 시간 동안 해당 프로바이더 호출을 차단합니다.
 
-```
-CLOSED → (5회 연속 실패) → OPEN (60초)
-OPEN   → (60초 경과)     → HALF_OPEN
-HALF_OPEN → (2회 성공)   → CLOSED
-HALF_OPEN → (실패)       → OPEN (60초 리셋)
+```mermaid
+stateDiagram-v2
+    [*] --> CLOSED
+    CLOSED --> OPEN : 5회 연속 실패
+    OPEN --> HALF_OPEN : 60초 경과
+    HALF_OPEN --> CLOSED : 2회 연속 성공
+    HALF_OPEN --> OPEN : 실패 (60초 리셋)
 ```
 
 설정은 config dict로 주입 가능합니다:

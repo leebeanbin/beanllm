@@ -2,7 +2,54 @@
 
 beanllm은 Clean Architecture를 적용하여 프로바이더 교체 시 도메인 코드 변경 없이 80% 테스트 커버리지를 달성합니다.
 
-![System Architecture](../docs/architecture/system-architecture.png)
+```mermaid
+graph TB
+    subgraph FACADE["Facade Layer"]
+        CLIENT[Client<br/>chat / embed / stream]
+        RAGCHAIN[RAGChain<br/>chain.ask]
+        AGENT[Agent<br/>agent.run]
+    end
+
+    subgraph HANDLER["Handler Layer"]
+        CH[ChatHandler]
+        EH[EmbedHandler]
+        RAG_H[RAGHandler]
+    end
+
+    subgraph SERVICE["Service Layer"]
+        CS[CompletionService]
+        ES[EmbeddingService]
+        RS[RetrievalService]
+    end
+
+    subgraph DOMAIN["Domain Layer"]
+        MSG[Message]
+        TOKEN[TokenCounter]
+        CHUNK[Chunker]
+    end
+
+    subgraph INFRA["Infrastructure Layer"]
+        PF[ProviderFactory<br/>+ CircuitBreaker]
+        OAI[OpenAIProvider]
+        ANT[AnthropicProvider]
+        GEM[GeminiProvider]
+        MORE[Grok / DeepSeek<br/>Perplexity / Ollama / HF]
+        VEC[VectorStoreAdapter<br/>Chroma / FAISS]
+    end
+
+    CLIENT --> CH & EH
+    RAGCHAIN --> RAG_H
+    AGENT --> CH
+    CH --> CS
+    EH --> ES
+    RAG_H --> RS
+    CS --> DOMAIN
+    ES --> DOMAIN
+    CS --> PF
+    ES --> PF
+    PF --> OAI & ANT & GEM & MORE
+    RS --> VEC
+```
 
 ---
 
