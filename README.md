@@ -67,7 +67,7 @@ careerOS routes all AI calls through beanllm's unified interface via a self-host
 | **Optimizer** | Parameter search, benchmarking, A/B testing |
 | **Multi-Agent** | Sequential, parallel, hierarchical, debate patterns |
 | **Orchestrator** | 10 node types, DAG workflow graph, visual builder |
-| **Knowledge Graph** | Multi NER engines, relation extraction, **GraphRAG** (Gartner Critical Enabler 2026), Neo4j |
+| **Knowledge Graph** | Multi NER engines, relation extraction, GraphRAG, Neo4j |
 | **MCP Server** | Model Context Protocol server for tool integration |
 
 ### Key Capabilities
@@ -223,9 +223,9 @@ asyncio.run(main())
 
 ---
 
-## GraphRAG — Gartner Critical Enabler 2026
+## GraphRAG
 
-> GraphRAG was designated a **Critical Enabler** by Gartner in 2026. Unlike vector similarity search, GraphRAG traverses entity relationships and achieves up to **99% retrieval accuracy** on multi-hop questions.
+> Unlike vector similarity search, GraphRAG traverses entity relationships — achieving up to **99% retrieval accuracy** on multi-hop questions (see benchmark table below).
 
 ```python
 import asyncio
