@@ -947,6 +947,7 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str):
 
 from routers.agent_router import router as agent_router
 from routers.audio_router import router as audio_router
+from routers.careeros_router import router as careeros_router
 from routers.chain_router import router as chain_router
 from routers.chat_router import router as chat_router
 from routers.config_router import router as config_router
@@ -963,6 +964,7 @@ from routers.telemetry_router import router as telemetry_router
 from routers.vision_router import router as vision_router
 from routers.web_router import router as web_router
 
+app.include_router(careeros_router)  # CareerOS adapter: POST /ai/complete, POST /ai/embed
 app.include_router(config_router)
 app.include_router(chat_router)
 app.include_router(google_auth_router)
@@ -982,7 +984,7 @@ app.include_router(optimizer_router)
 app.include_router(telemetry_router)
 
 logger.info(
-    "✅ Modular routers included: config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer, telemetry"
+    "✅ Modular routers included: careeros_adapter(/ai/complete,/ai/embed), config, chat, google_auth, monitoring, models, kg, rag, agent, chain, vision, audio, evaluation, finetuning, ocr, web, optimizer, telemetry"
 )
 
 if __name__ == "__main__":
