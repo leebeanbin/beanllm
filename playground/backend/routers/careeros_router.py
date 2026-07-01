@@ -8,11 +8,13 @@ Bridges CareerOS's expected API contract to beanllm's internals.
   POST /ai/ocr/glm          — per-page OCR via Ollama glm-ocr (image multipart)
   POST /ai/ocr/unlimited    — multi-page OCR via Baidu unlimited-ocr (PDF base64)
   POST /ai/models/pull      — pull an Ollama model (storage management)
+  POST /ai/models/warmup    — preload models into Ollama memory (keep_alive=-1)
   DELETE /ai/models/{name}  — delete an Ollama model (storage management)
 
 Contract matches BeanllmAiClient, BeanllmEmbeddingClient, OcrTextExtractor in CareerOS.
 """
 
+import asyncio
 import base64
 import logging
 import os
@@ -27,6 +29,15 @@ router = APIRouter(prefix="/ai", tags=["CareerOS Adapter"])
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 DEFAULT_EMBED_MODEL = os.getenv("DEFAULT_EMBED_MODEL", "qwen3-embedding:8b")
+
+# Models kept warm in Ollama memory at all times (keep_alive=-1).
+# Default is tuned for 16GB RAM: glm-ocr(2GB) + qwen3:7b(4.5GB) = ~6.5GB.
+# For 24GB+: add qwen3-embedding:8b (5GB) or qwen3-vl:8b (6GB).
+# Set WARMUP_MODELS='' to disable warmup entirely.
+_DEFAULT_WARMUP = "glm-ocr,qwen3:7b"
+WARMUP_MODELS: list[str] = [
+    m.strip() for m in os.getenv("WARMUP_MODELS", _DEFAULT_WARMUP).split(",") if m.strip()
+]
 
 
 # ---------------------------------------------------------------------------
@@ -360,3 +371,55 @@ async def delete_model(model_name: str):
     except Exception as e:
         logger.error("Ollama delete failed model=%s: %s", model_name, e)
         raise HTTPException(status_code=500, detail=f"delete error: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# /ai/models/warmup — preload models into Ollama memory
+# ---------------------------------------------------------------------------
+
+
+class WarmupResponse(BaseModel):
+    warmed: list[str]
+    skipped: list[str]  # not installed
+
+
+async def _warmup_one(model: str) -> bool:
+    """Send empty prompt with keep_alive=-1 to load model into Ollama memory."""
+    try:
+        async with httpx.AsyncClient(timeout=300.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_BASE_URL}/api/generate",
+                json={"model": model, "prompt": "", "keep_alive": -1},
+            )
+        if resp.status_code == 200:
+            logger.info("warmup OK: %s is now resident in Ollama memory", model)
+            return True
+        logger.warning(
+            "warmup skipped %s — HTTP %d (model may not be installed)", model, resp.status_code
+        )
+        return False
+    except Exception as e:
+        logger.warning("warmup skipped %s — %s", model, e)
+        return False
+
+
+@router.post("/models/warmup", response_model=WarmupResponse)
+async def warmup_models(models: list[str] | None = None):
+    """
+    Preload models into Ollama memory (keep_alive=-1) so first inference is instant.
+    If models is omitted, uses WARMUP_MODELS env var (default: glm-ocr, qwen3:7b, qwen3-embedding:8b).
+    Models not installed in Ollama are silently skipped.
+    """
+    targets = models if models else WARMUP_MODELS
+    results = await asyncio.gather(*[_warmup_one(m) for m in targets])
+    warmed = [m for m, ok in zip(targets, results) if ok]
+    skipped = [m for m, ok in zip(targets, results) if not ok]
+    return WarmupResponse(warmed=warmed, skipped=skipped)
+
+
+async def warmup_on_startup() -> None:
+    """Called from main.py startup_event — fire-and-forget warmup."""
+    if not WARMUP_MODELS:
+        return
+    logger.info("Starting warmup for: %s", WARMUP_MODELS)
+    await warmup_models(WARMUP_MODELS)

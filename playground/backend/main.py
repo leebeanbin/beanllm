@@ -123,6 +123,11 @@ async def startup_event():
         else:
             logger.warning("⚠️  MongoDB not available - chat history will not be saved")
 
+    # Preload CareerOS models into Ollama memory (fire-and-forget)
+    from routers.careeros_router import warmup_on_startup
+
+    asyncio.create_task(warmup_on_startup())
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
